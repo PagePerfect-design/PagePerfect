@@ -1,0 +1,32 @@
+% Modern Trade Paperback
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{parskip}
+\usepackage{setspace}
+\usepackage{fontspec}
+\setmainfont{Lato}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{0.5em}{}
+\usepackage{sectsty}
+\allsectionsfont{\raggedright}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+
+\begin{document}
+$if(title)$\begin{center}{\LARGE $title$}\end{center}\vspace{1em}$endif$
+
+$body$
+
+$if(bibliography)$
+\newpage
+\section*{Bibliography}
+$bibliography$
+$endif$
+\end{document}

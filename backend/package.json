@@ -1,0 +1,21 @@
+{
+  "name": "pageperfect-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "docker:build": "docker build -t pageperfect-backend .",
+    "docker:run": "docker run --rm -p 4000:4000 -e PORT=4000 pageperfect-backend"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "morgan": "^1.10.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

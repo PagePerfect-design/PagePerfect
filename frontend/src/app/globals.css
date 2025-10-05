@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ENS-inspired tokens (no trademarks/fonts from ENS used) */
+:root {
+  --ens-blue: #0080bc;
+  --ens-blue-50: #cee1e8;
+  --ens-midnight: #093c52;
+  --ens-dark: #011a25;
+  --ens-white: #f6f6f6;
+  --ens-green: #007c23;
+  --ens-magenta: #f53293;
+  --ens-yellow: #fff72f;
+  --ens-gray-700: #4a5c63;
+  --ens-gray-300: #c4c7c8;
+  --ens-gray-200: #e5e5e5;
+}
+
+html, body { height: 100%; }
+body { background: var(--ens-white); color: var(--ens-dark); }
+
+/* layout helper */
+.container-grid { @apply mx-auto max-w-7xl px-6 md:px-8; }
+
+/* buttons */
+.btn-pill { @apply inline-flex items-center gap-2 rounded-pill px-5 py-3 font-semibold shadow-pill transition; }
+.btn-primary { @apply bg-ens-blue text-white hover:opacity-90; }
+.btn-secondary { @apply bg-ens-yellow text-black shadow-none hover:opacity-90; }
+
+/* cards/sections */
+.card { @apply bg-white border border-ens-gray-200 rounded-2xl shadow-card; }
+.section-dark { background: var(--ens-dark); color: var(--ens-white); }
+
+/* type helpers (will use next/font in Task 2) */
+.h1 { @apply font-display text-h1 leading-tight tracking-tight; }
+.h2 { @apply font-display text-h2 leading-tight tracking-tight; }
+.p { @apply font-body text-base leading-7; }
+.small-mono { @apply font-mono text-sm text-ens-gray-700; }
+
+/* Skip link for keyboard users */
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 1000;
+  background: var(--ens-yellow); color: #000;
+  padding: 0.5rem 0.75rem; border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+}
+.skip-link:focus { left: 1rem; top: 1rem; outline: 2px solid var(--ens-dark); }

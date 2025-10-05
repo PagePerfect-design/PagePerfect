@@ -1,0 +1,31 @@
+% Classic Academic (Chicago-like)
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{fontspec}
+\setmainfont{DejaVu Serif}
+\usepackage{microtype}
+\usepackage{csquotes}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+
+\begin{document}
+$if(title)$\begin{center}{\LARGE $title$}\end{center}\vspace{2em}$endif$
+
+$body$
+
+$if(bibliography)$
+\newpage
+\section*{References}
+$bibliography$
+$endif$
+\end{document}
