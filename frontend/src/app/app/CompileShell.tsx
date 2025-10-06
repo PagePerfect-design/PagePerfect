@@ -1,5 +1,7 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
 import { SAMPLE_MD } from './sample'
 import TemplateHelp from './TemplateHelp'
 
@@ -111,7 +113,7 @@ export default function CompileShell() {
         }
       } else {
         // expect a JSON error (501 for now)
-        let payload: any = null
+        let payload: { message?: string; error?: string; missingCitations?: string[]; missingPackages?: string[]; warnings?: string[] } | null = null
         try { payload = await resp.json() } catch { /* noop */ }
         const msgs: CompileError[] = []
         if (payload?.message) msgs.push({ message: payload.message })
@@ -123,8 +125,8 @@ export default function CompileShell() {
         setMissingPackages(Array.isArray(payload?.missingPackages) ? payload.missingPackages : [])
         setWarnings(Array.isArray(payload?.warnings) ? payload.warnings : [])
       }
-    } catch (e: any) {
-      if (e?.name !== 'AbortError') {
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== 'AbortError') {
         setErrors([{ message: 'Network or server error. Please try again.' }])
         setStatus('error')
       }
@@ -149,16 +151,18 @@ export default function CompileShell() {
             <div className="sticky top-0 z-10">
               <div className="container-grid py-4">
                 <div className="bg-white border border-ens-gray-200 rounded-2xl shadow-card px-4 md:px-6 py-3 flex flex-col md:flex-row items-start md:items-center gap-3">
-          <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img 
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <Image 
               src="/PagePerfect_1_Icon.png" 
               alt="Page Perfect" 
+              width={32}
+              height={32}
               className="h-8 w-8"
             />
             <span className="font-display text-xl font-black tracking-tight text-ens-dark">
               Page Perfect
             </span>
-          </a>
+          </Link>
           <div className="w-full md:w-auto flex flex-col md:flex-row items-stretch md:items-center gap-3 md:ml-auto">
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <div className="flex items-center gap-2">
@@ -289,7 +293,7 @@ export default function CompileShell() {
                 </ul>
               )}
               <p className="mt-2 text-xs text-ens-gray-700">
-                Examples: <code>Undefined citation: 'Finch2023'</code>, double spaces after a period, missing package, etc.
+                Examples: <code>Undefined citation: &apos;Finch2023&apos;</code>, double spaces after a period, missing package, etc.
               </p>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import Container from '@/components/Container'
 import Section from '@/components/Section'
 import Button from '@/components/Button'
+import Image from 'next/image'
 
 export default function Home() {
   return (
@@ -9,9 +10,11 @@ export default function Home() {
         <Section>
           <header className="text-center">
             <div className="flex items-center justify-center gap-4 mb-4">
-              <img 
+              <Image 
                 src="/PagePerfect_1_Icon.png" 
                 alt="Page Perfect" 
+                width={64}
+                height={64}
                 className="h-16 w-16"
               />
               <h1 className="font-display text-hero font-black leading-tight tracking-tight">Page Perfect</h1>

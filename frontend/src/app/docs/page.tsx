@@ -1,6 +1,7 @@
 import Container from '@/components/Container'
 import Section from '@/components/Section'
 import CopyCitation from '@/components/CopyCitation'
+import Image from 'next/image'
 
 export const metadata = {
   title: 'Docs — Page Perfect',
@@ -14,9 +15,11 @@ export default function DocsPage() {
       <Container>
         <Section>
           <div className="flex items-center gap-4 mb-6">
-            <img 
+            <Image 
               src="/PagePerfect_1_Icon.png" 
               alt="Page Perfect" 
+              width={48}
+              height={48}
               className="h-12 w-12"
             />
             <h1 className="font-display text-h1 font-black leading-tight tracking-tight">Docs</h1>
@@ -59,7 +62,7 @@ export default function DocsPage() {
             <div className="card p-5">
               <h2 className="h2 mb-2">Style warnings (non-fatal)</h2>
               <p className="p">
-                Double spaces after punctuation are flagged as warnings. They won't stop compilation but are worth fixing for polish.
+                Double spaces after punctuation are flagged as warnings. They won&apos;t stop compilation but are worth fixing for polish.
               </p>
             </div>
           </div>
