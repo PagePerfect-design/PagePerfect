@@ -70,13 +70,25 @@ export default function TemplateHelp() {
             left: position.left - 176, // Half of width (22rem = 352px)
           }}
         >
-          <div className="font-semibold text-ens-midnight">Choose a template</div>
+          <div className="font-semibold text-ens-midnight">Choose a design template</div>
           <ul className="mt-2 space-y-2 text-sm leading-6 text-ens-midnight">
             <li>
-              <span className="font-semibold">Classic Academic (Chicago)</span> — serif (Libertinus), indented paragraphs, section headings in a classic style. Best for journal submissions, dissertations, and press guidelines that cite Chicago.
+              <span className="font-semibold">🎼 Symphony Layout</span> — Classic academic design with harmonious typography. Perfect for scholarly papers, dissertations, and academic publications.
             </li>
             <li>
-              <span className="font-semibold">Modern Trade Paperback</span> — sans (Lato), space between paragraphs, left-aligned headings. Best for trade non-fiction, proofs, and general-audience manuscripts.
+              <span className="font-semibold">📰 Chronicle Grid</span> — Editorial-style layout with multi-column grid system. Ideal for reports, white papers, and professional documents.
+            </li>
+            <li>
+              <span className="font-semibold">🖼️ Exhibit Frame</span> — Modern trade design with clean lines and generous white space. Perfect for trade books and business documents.
+            </li>
+            <li>
+              <span className="font-semibold">🏢 Corporate Matrix</span> — Structured business layout with systematic organization. Designed for corporate reports and presentations.
+            </li>
+            <li>
+              <span className="font-semibold">🎨 Avant-Garde Canvas</span> — Experimental design with creative freedom. Perfect for creative projects and innovative publications.
+            </li>
+            <li>
+              <span className="font-semibold">📚 Legacy Templates</span> — Classic Academic (Chicago) and Modern Trade Paperback for existing users.
             </li>
           </ul>
           <p className="mt-2 text-xs text-ens-gray-700">
