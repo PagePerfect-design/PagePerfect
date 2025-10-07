@@ -20,7 +20,7 @@ Trade was driven by prices, risk, and information flows across the Atlantic. See
 # References
 `
 
-const BACKEND = 'http://localhost:4000'
+const BACKEND = 'https://pageperfect-production.up.railway.app'
 
 const STATUS_LABEL: Record<Status, string> = {
   idle: 'Idle',
