@@ -225,14 +225,13 @@ export default function CompileShell() {
                     value={template}
                     onChange={(e) => setTemplate(e.target.value as TemplateKey)}
                   >
-                    <option value="symphony">🎼 Symphony Layout - Classic Academic</option>
-                    <option value="chronicle">📰 Chronicle Grid - Editorial Style</option>
-                    <option value="exhibit">🖼️ Exhibit Frame - Modern Trade</option>
-                    <option value="matrix">🏢 Corporate Matrix - Business</option>
-                    <option value="avantgarde">🎨 Avant-Garde Canvas - Creative</option>
-                    <option value="chicago">📚 Classic Academic (Chicago) - Legacy</option>
-                    <option value="paperback">📖 Modern Trade Paperback - Legacy</option>
-                  </select>
+                    <option value="symphony">Symphony Layout - Classic Academic</option>
+                    <option value="chronicle">Chronicle Grid - Editorial Style</option>
+                    <option value="exhibit">Exhibit Frame - Modern Trade</option>
+                    <option value="matrix">Corporate Matrix - Business</option>
+                    <option value="avantgarde">Avant-Garde Canvas - Creative</option>
+                    <option value="chicago">Classic Academic (Chicago) - Legacy</option>
+                    <option value="paperback">Modern Trade Paperback - Legacy</option>                  </select>
                 </div>
 
                 {/* Page Size */}

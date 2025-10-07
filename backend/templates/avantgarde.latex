@@ -16,7 +16,7 @@
 \usepackage{setspace}
 \usepackage{parskip}
 \usepackage{fontspec}
-\setmainfont{Source Sans Pro}
+\setmainfont{Source Sans 3}
 \usepackage{microtype}
 \usepackage{xcolor}
 \usepackage{hyperref}
