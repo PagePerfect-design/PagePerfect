@@ -193,18 +193,18 @@ export default function CompileShell() {
                   value={pageSize}
                   onChange={(e) => setPageSize(e.target.value as PageSize)}
                 >
-                  <option value="letter">US Letter (8.5×11")</option>
+                  <option value="letter">US Letter (8.5×11&quot;)</option>
                   <option value="a4">A4 (210×297 mm)</option>
-                  <option value="sixByNine">Trade 6×9"</option>
-                  <option value="fiveFiveByEightFive">Digest 5.5×8.5"</option>
-                  <option value="sevenByTen">7×10"</option>
+                  <option value="sixByNine">Trade 6×9&quot;</option>
+                  <option value="fiveFiveByEightFive">Digest 5.5×8.5&quot;</option>
+                  <option value="sevenByTen">7×10&quot;</option>
                   <option value="a5">A5 (148×210 mm)</option>
                   <optgroup label="Amazon KDP Sizes">
-                    <option value="amazonFiveByEight">Amazon 5×8"</option>
-                    <option value="amazonSixByNine">Amazon 6×9"</option>
-                    <option value="amazonSevenByTen">Amazon 7×10"</option>
-                    <option value="amazonEightByTen">Amazon 8×10"</option>
-                    <option value="amazonEightFiveByEleven">Amazon 8.5×11"</option>
+                    <option value="amazonFiveByEight">Amazon 5×8&quot;</option>
+                    <option value="amazonSixByNine">Amazon 6×9&quot;</option>
+                    <option value="amazonSevenByTen">Amazon 7×10&quot;</option>
+                    <option value="amazonEightByTen">Amazon 8×10&quot;</option>
+                    <option value="amazonEightFiveByEleven">Amazon 8.5×11&quot;</option>
                   </optgroup>
                 </select>
               </div>
