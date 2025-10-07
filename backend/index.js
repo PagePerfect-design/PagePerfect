@@ -35,22 +35,39 @@ const TEMPLATES = {
 
 const BIB_PATH = path.resolve(__dirname, 'references/references.bib');
 
-// Helper function to map page sizes to LaTeX geometry options
-function geometryFor(size) {
+// Helper function to map page sizes and margin presets to LaTeX geometry options
+function geometryFor(size, preset) {
+  // Per-size safe margins:
+  // Normal = comfortable reading + print-safe; Narrow = more text; Wide = academic roomy.
+  const mm = (n) => `${n}mm`;
+  const in_ = (n) => `${n}in`;
+
   switch (size) {
-    case 'a4':
-      return 'a4paper,margin=25mm';
-    case 'sixByNine': // common trade
-      return 'paperwidth=6in,paperheight=9in,margin=0.875in';
-    case 'fiveFiveByEightFive': // digest
-      return 'paperwidth=5.5in,paperheight=8.5in,margin=0.75in';
-    case 'sevenByTen':
-      return 'paperwidth=7in,paperheight=10in,margin=0.9in';
-    case 'a5':
-      return 'paperwidth=148mm,paperheight=210mm,margin=15mm';
+    case 'a4': {
+      const m = preset === 'narrow' ? mm(15) : preset === 'wide' ? mm(30) : mm(25);
+      return `a4paper,margin=${m}`;
+    }
+    case 'a5': {
+      const m = preset === 'narrow' ? mm(12) : preset === 'wide' ? mm(18) : mm(15);
+      return `paperwidth=148mm,paperheight=210mm,margin=${m}`;
+    }
+    case 'sixByNine': { // trade 6×9"
+      const m = preset === 'narrow' ? in_(0.65) : preset === 'wide' ? in_(1.1) : in_(0.875);
+      return `paperwidth=6in,paperheight=9in,margin=${m}`;
+    }
+    case 'fiveFiveByEightFive': { // 5.5×8.5"
+      const m = preset === 'narrow' ? in_(0.6) : preset === 'wide' ? in_(0.9) : in_(0.75);
+      return `paperwidth=5.5in,paperheight=8.5in,margin=${m}`;
+    }
+    case 'sevenByTen': {
+      const m = preset === 'narrow' ? in_(0.7) : preset === 'wide' ? in_(1.2) : in_(0.9);
+      return `paperwidth=7in,paperheight=10in,margin=${m}`;
+    }
     case 'letter':
-    default:
-      return 'letterpaper,margin=1in';
+    default: {
+      const m = preset === 'narrow' ? in_(0.75) : preset === 'wide' ? in_(1.25) : in_(1.0);
+      return `letterpaper,margin=${m}`;
+    }
   }
 }
 
@@ -90,7 +107,7 @@ function parseMissingPackages(stderr) {
 }
 
 app.post('/api/compile', async (req, res) => {
-  let { manuscriptText, template, title, pageSize } = req.body || {};
+  let { manuscriptText, template, title, pageSize, marginPreset } = req.body || {};
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
   }
@@ -105,13 +122,17 @@ app.post('/api/compile', async (req, res) => {
   const allowedSizes = new Set(['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen']);
   if (!allowedSizes.has(pageSize)) pageSize = 'letter';
 
+  // sanitize marginPreset
+  const allowedMargins = new Set(['normal','narrow','wide']);
+  if (!allowedMargins.has(marginPreset)) marginPreset = 'normal';
+
   const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-'));
   const mdPath  = path.join(tmpBase, 'input.md');
   const pdfPath = path.join(tmpBase, 'output.pdf');
 
   fs.writeFileSync(mdPath, manuscriptText, 'utf8');
 
-  const geo = geometryFor(pageSize);
+  const geo = geometryFor(pageSize, marginPreset);
   const args = [
     mdPath,
     '--from=markdown',

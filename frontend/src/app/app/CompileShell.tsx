@@ -8,6 +8,7 @@ import TemplateNotes from './TemplateNotes'
 
 type TemplateKey = 'chicago' | 'paperback'
 type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen'
+type MarginPreset = 'normal' | 'narrow' | 'wide'
 type CompileError = { message: string }
 type Status = 'idle' | 'compiling' | 'success' | 'error'
 
@@ -54,6 +55,7 @@ export default function CompileShell() {
   const [template, setTemplate] = useState<TemplateKey>('chicago')
   const [title, setTitle] = useState<string>('Maritime Trade in the 17th Century')
   const [pageSize, setPageSize] = useState<PageSize>('letter')
+  const [marginPreset, setMarginPreset] = useState<MarginPreset>('normal')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [errors, setErrors] = useState<CompileError[]>([])
@@ -76,7 +78,7 @@ export default function CompileShell() {
     debounceRef.current = window.setTimeout(() => { void compile(false) }, 1000)
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscript, template, title, pageSize])
+  }, [manuscript, template, title, pageSize, marginPreset])
 
   async function compile(downloadAfter: boolean) {
     // cancel any in-flight request
@@ -92,7 +94,7 @@ export default function CompileShell() {
       const resp = await fetch(`${BACKEND}/api/compile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ manuscriptText: manuscript, template, title, pageSize }),
+        body: JSON.stringify({ manuscriptText: manuscript, template, title, pageSize, marginPreset }),
         signal: controller.signal,
       })
       const ct = resp.headers.get('content-type') || ''
@@ -197,6 +199,21 @@ export default function CompileShell() {
                   <option value="fiveFiveByEightFive">Digest 5.5×8.5"</option>
                   <option value="sevenByTen">7×10"</option>
                   <option value="a5">A5 (148×210 mm)</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="flex items-center gap-2">
+                <label className="small-mono" htmlFor="margins">Margins</label>
+                <select
+                  id="margins"
+                  className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
+                  value={marginPreset}
+                  onChange={(e) => setMarginPreset(e.target.value as MarginPreset)}
+                >
+                  <option value="normal">Normal</option>
+                  <option value="narrow">Narrow</option>
+                  <option value="wide">Wide</option>
                 </select>
               </div>
             </div>
