@@ -15,7 +15,17 @@ app.use(cors({
   origin: ['http://localhost:3001', 'https://pageperfectdesign.netlify.app'],
   methods: ['GET','POST','OPTIONS'],
   allowedHeaders: ['Content-Type'],
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
+
+// Handle preflight requests explicitly
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(200);
+});
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'pageperfect-backend', timestamp: new Date().toISOString() });
