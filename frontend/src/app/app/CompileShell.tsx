@@ -168,28 +168,27 @@ export default function CompileShell() {
               Page Perfect
             </span>
           </Link>
-          <div className="w-full md:w-auto flex flex-col md:flex-row items-stretch md:items-center gap-3 md:ml-auto">
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="w-full flex flex-col gap-4 md:ml-auto">
+            {/* First row: Template and Page Size */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
                 <label className="small-mono" htmlFor="template">Template</label>
                 <TemplateHelp />
+                <select
+                  id="template"
+                  className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2 min-w-[200px]"
+                  value={template}
+                  onChange={(e) => setTemplate(e.target.value as TemplateKey)}
+                >
+                  <option value="chicago">Classic Academic (Chicago)</option>
+                  <option value="paperback">Modern Trade Paperback</option>
+                </select>
               </div>
-              <select
-                id="template"
-                className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2 flex-1 sm:flex-none"
-                value={template}
-                onChange={(e) => setTemplate(e.target.value as TemplateKey)}
-              >
-                <option value="chicago">Classic Academic (Chicago)</option>
-                <option value="paperback">Modern Trade Paperback</option>
-              </select>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <div className="flex items-center gap-2">
                 <label className="small-mono" htmlFor="pageSize">Page size</label>
                 <select
                   id="pageSize"
-                  className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
+                  className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2 min-w-[200px]"
                   value={pageSize}
                   onChange={(e) => setPageSize(e.target.value as PageSize)}
                 >
@@ -209,12 +208,14 @@ export default function CompileShell() {
                 </select>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            
+            {/* Second row: Margins, Title, and Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
               <div className="flex items-center gap-2">
                 <label className="small-mono" htmlFor="margins">Margins</label>
                 <select
                   id="margins"
-                  className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
+                  className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2 min-w-[140px]"
                   value={marginPreset}
                   onChange={(e) => setMarginPreset(e.target.value as MarginPreset)}
                 >
@@ -227,20 +228,20 @@ export default function CompileShell() {
                   <option value="compact">Compact</option>
                 </select>
               </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Manuscript title"
                 aria-label="Manuscript title"
-                className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2 w-72"
+                className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2 flex-1 min-w-[200px] max-w-[300px]"
               />
-              <button className="btn-pill btn-primary flex-1 sm:flex-none" onClick={() => compile(true)}>
-                Download PDF
-              </button>
-              <StatusPill status={status} />
+              <div className="flex items-center gap-3">
+                <button className="btn-pill btn-primary" onClick={() => compile(true)}>
+                  Download PDF
+                </button>
+                <StatusPill status={status} />
+              </div>
             </div>
           </div>
                 </div>
