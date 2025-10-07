@@ -6,7 +6,7 @@ import { SAMPLE_MD } from './sample'
 import TemplateHelp from './TemplateHelp'
 import TemplateNotes from './TemplateNotes'
 
-type TemplateKey = 'chicago' | 'paperback'
+type TemplateKey = 'symphony' | 'chronicle' | 'exhibit' | 'matrix' | 'avantgarde' | 'chicago' | 'paperback'
 type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
 type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'generous' | 'compact'
 type CompileError = { message: string }
@@ -52,7 +52,7 @@ function StatusPill({ status }: { status: Status }) {
 
 export default function CompileShell() {
   const [manuscript, setManuscript] = useState(DEFAULT_MD)
-  const [template, setTemplate] = useState<TemplateKey>('chicago')
+  const [template, setTemplate] = useState<TemplateKey>('symphony')
   const [title, setTitle] = useState<string>('Maritime Trade in the 17th Century')
   const [pageSize, setPageSize] = useState<PageSize>('letter')
   const [marginPreset, setMarginPreset] = useState<MarginPreset>('normal')
@@ -225,8 +225,13 @@ export default function CompileShell() {
                     value={template}
                     onChange={(e) => setTemplate(e.target.value as TemplateKey)}
                   >
-                    <option value="chicago">Classic Academic (Chicago)</option>
-                    <option value="paperback">Modern Trade Paperback</option>
+                    <option value="symphony">🎼 Symphony Layout - Classic Academic</option>
+                    <option value="chronicle">📰 Chronicle Grid - Editorial Style</option>
+                    <option value="exhibit">🖼️ Exhibit Frame - Modern Trade</option>
+                    <option value="matrix">🏢 Corporate Matrix - Business</option>
+                    <option value="avantgarde">🎨 Avant-Garde Canvas - Creative</option>
+                    <option value="chicago">📚 Classic Academic (Chicago) - Legacy</option>
+                    <option value="paperback">📖 Modern Trade Paperback - Legacy</option>
                   </select>
                 </div>
 
