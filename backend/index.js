@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 4000;
 app.use(morgan('tiny'));
 app.use(express.json({ limit: '20mb' }));
 app.use(cors({
-  origin: ['http://localhost:3001'],
+  origin: ['http://localhost:3001', 'https://pageperfectdesign.netlify.app'],
   methods: ['GET','POST','OPTIONS'],
   allowedHeaders: ['Content-Type'],
 }));
