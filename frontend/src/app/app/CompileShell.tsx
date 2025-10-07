@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { SAMPLE_MD } from './sample'
 import TemplateHelp from './TemplateHelp'
+import TemplateNotes from './TemplateNotes'
 
 type TemplateKey = 'chicago' | 'paperback'
 type CompileError = { message: string }
@@ -200,6 +201,7 @@ export default function CompileShell() {
 
       {/* Two-panel layout */}
       <div className="container-grid py-4 md:py-6">
+        <TemplateNotes />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* Left: Editor + Error console */}
           <div className="flex flex-col gap-3">
