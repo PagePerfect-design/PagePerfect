@@ -248,6 +248,7 @@ app.post('/api/compile', async (req, res) => {
   fs.writeFileSync(mdPath, manuscriptText, 'utf8');
 
   const geo = geometryFor(pageSize, marginPreset);
+  console.log(`Generating PDF with pageSize: ${pageSize}, marginPreset: ${marginPreset}, geometry: ${geo}`);
   const args = [
     mdPath,
     '--from=markdown',

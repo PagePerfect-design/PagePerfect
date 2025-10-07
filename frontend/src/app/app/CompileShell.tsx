@@ -92,10 +92,12 @@ export default function CompileShell() {
     setErrors([])
 
     try {
+      const requestBody = { manuscriptText: manuscript, template, title, pageSize, marginPreset };
+      console.log('Sending compile request:', requestBody);
       const resp = await fetch(`${BACKEND}/api/compile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ manuscriptText: manuscript, template, title, pageSize, marginPreset }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       })
       const ct = resp.headers.get('content-type') || ''
