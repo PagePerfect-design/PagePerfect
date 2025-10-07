@@ -18,7 +18,7 @@ app.use(cors({
 }));
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'pageperfect-backend' });
+  res.json({ ok: true, service: 'pageperfect-backend', timestamp: new Date().toISOString() });
 });
 
 // Template registry
