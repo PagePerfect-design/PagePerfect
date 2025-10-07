@@ -1,0 +1,129 @@
+% Exhibit Frame - Modern Trade Design
+% Müller-Brockmann Grid System Implementation
+% Based on principles of clarity, objectivity, and systematic organization
+%
+% 📚 REFERENCE: Josef Müller-Brockmann's "Grid Systems in Graphic Design"
+% https://ia902309.us.archive.org/4/items/GridSystemsInGraphicDesignJosefMullerBrockmann/Grid%20systems%20in%20graphic%20design%20-%20Josef%20Muller-Brockmann.pdf
+%
+% This template embodies Müller-Brockmann's principles of:
+% - Clean lines and generous white space
+% - Modern typography and spacing
+% - Professional trade book design
+% - Systematic organization with visual appeal
+
+\documentclass[11pt]{article}
+\usepackage{geometry} % margin & size come from Pandoc -V geometry:...
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{fontspec}
+\setmainfont{Lato}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+
+% Grid System Typography (Trade - 11pt baseline)
+\usepackage{setspace}
+\setstretch{1.4}
+
+% Enhanced Typographic Scale based on Golden Ratio
+\newcommand{\gridDisplay}{\fontsize{33pt}{37.95pt}\selectfont}
+\newcommand{\gridHOne}{\fontsize{24.75pt}{30.9375pt}\selectfont}
+\newcommand{\gridHTwo}{\fontsize{19.25pt}{24.0625pt}\selectfont}
+\newcommand{\gridHThree}{\fontsize{15.125pt}{19.65625pt}\selectfont}
+\newcommand{\gridHFour}{\fontsize{12.375pt}{16.09375pt}\selectfont}
+\newcommand{\gridSubhead}{\fontsize{16.5pt}{21.45pt}\selectfont}
+\newcommand{\gridBody}{\fontsize{11pt}{15.4pt}\selectfont}
+\newcommand{\gridSmall}{\fontsize{9.625pt}{12.99375pt}\selectfont}
+\newcommand{\gridCaption}{\fontsize{8.25pt}{11.55pt}\selectfont}
+\newcommand{\gridFootnote}{\fontsize{7.7pt}{9.625pt}\selectfont}
+
+% Enhanced Grid-based Spacing (multiples of 11pt baseline)
+\newcommand{\gridSpaceXs}{\vspace{2.75pt}}
+\newcommand{\gridSpaceSm}{\vspace{5.5pt}}
+\newcommand{\gridSpaceMd}{\vspace{11pt}}
+\newcommand{\gridSpaceLg}{\vspace{16.5pt}}
+\newcommand{\gridSpaceXl}{\vspace{22pt}}
+\newcommand{\gridSpaceXxl}{\vspace{33pt}}
+\newcommand{\gridSpaceXxxl}{\vspace{44pt}}
+\newcommand{\gridSpaceXxxxl}{\vspace{66pt}}
+
+% Strategic White Space System
+% Micro White Space
+\newcommand{\gridLineSpace}{\setlength{\baselineskip}{11pt}}
+\newcommand{\gridWordSpace}{\setlength{\spaceskip}{2.75pt}}
+\newcommand{\gridCharSpace}{\setlength{\fontdimen2\font}{2.75pt}}
+\newcommand{\gridListItemSpace}{\setlength{\itemsep}{5.5pt}}
+\newcommand{\gridTableCellSpace}{\setlength{\tabcolsep}{5.5pt}}
+\newcommand{\gridCodeBlockSpace}{\setlength{\fboxsep}{5.5pt}}
+
+% Macro White Space
+\newcommand{\gridSectionSpace}{\vspace{33pt}}
+\newcommand{\gridSubsectionSpace}{\vspace{22pt}}
+\newcommand{\gridParagraphSpace}{\vspace{16.5pt}}
+\newcommand{\gridBlockSpace}{\vspace{16.5pt}}
+\newcommand{\gridFigureSpace}{\vspace{22pt}}
+\newcommand{\gridTableSpace}{\vspace{22pt}}
+
+% Vertical Rhythm
+\newcommand{\gridBaselineSpace}{\setlength{\baselineskip}{11pt}}
+\newcommand{\gridHeadingSpace}{\vspace{16.5pt}}
+\newcommand{\gridBodySpace}{\setlength{\parskip}{11pt}}
+\newcommand{\gridCaptionSpace}{\vspace{5.5pt}}
+\newcommand{\gridFootnoteSpace}{\vspace{2.75pt}}
+
+% Horizontal Rhythm
+\newcommand{\gridMarginSpace}{\setlength{\textwidth}{22pt}}
+\newcommand{\gridColumnSpace}{\setlength{\columnsep}{16.5pt}}
+\newcommand{\gridGutterSpace}{\setlength{\columnseprule}{11pt}}
+\newcommand{\gridIndentSpace}{\setlength{\parindent}{11pt}}
+\newcommand{\gridListIndentSpace}{\setlength{\leftmargin}{11pt}}
+
+% Modular Design Elements
+\newcommand{\gridParagraph}{\setlength{\parindent}{0pt}\setlength{\parskip}{16.5pt}}
+\newcommand{\gridList}{\setlength{\itemsep}{5.5pt}\setlength{\parsep}{5.5pt}}
+\newcommand{\gridBlockquote}{\setlength{\leftmargin}{16.5pt}\setlength{\rightmargin}{16.5pt}}
+\newcommand{\gridCode}{\setlength{\fboxsep}{5.5pt}\setlength{\fboxrule}{0.5pt}}
+
+% Alignment System
+\newcommand{\gridCenter}{\centering}
+\newcommand{\gridLeft}{\raggedright}
+\newcommand{\gridRight}{\raggedleft}
+\newcommand{\gridJustify}{\justifying}
+
+% Grid-aligned heading formats (Trade Style)
+\titleformat{\section}{\gridHTwo\bfseries}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{0.5em}{}
+\usepackage{sectsty}
+\allsectionsfont{\raggedright}
+
+% Apply grid system spacing
+\gridBaselineSpace
+\gridBodySpace
+\gridParagraph
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+
+\begin{document}
+
+% Title with grid spacing
+$if(title)$
+\begin{center}
+{\gridHOne $title$}
+\end{center}
+\gridSpaceMd
+$endif$
+
+$body$
+
+$if(bibliography)$
+\newpage
+\section*{Bibliography}
+$bibliography$
+$endif$
+
+\end{document}

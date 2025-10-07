@@ -1,0 +1,128 @@
+% Symphony Layout - Classic Academic Design
+% Müller-Brockmann Grid System Implementation
+% Based on principles of clarity, objectivity, and systematic organization
+%
+% 📚 REFERENCE: Josef Müller-Brockmann's "Grid Systems in Graphic Design"
+% https://ia902309.us.archive.org/4/items/GridSystemsInGraphicDesignJosefMullerBrockmann/Grid%20systems%20in%20graphic%20design%20-%20Josef%20Muller-Brockmann.pdf
+%
+% This template embodies Müller-Brockmann's principles of:
+% - Systematic organization and rationalization
+% - Clarity and objectivity in design
+% - Harmonious typography and spacing
+% - Professional academic presentation
+
+\documentclass[12pt]{article}
+\usepackage{geometry} % margin & size come from Pandoc -V geometry:...
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{fontspec}
+\setmainfont{DejaVu Serif}
+\usepackage{microtype}
+\usepackage{csquotes}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{titlesec}
+
+% Grid System Typography (Academic - 12pt baseline)
+\usepackage{setspace}
+\setstretch{1.5}
+
+% Enhanced Typographic Scale based on Golden Ratio
+\newcommand{\gridDisplay}{\fontsize{36pt}{43.2pt}\selectfont}
+\newcommand{\gridHOne}{\fontsize{27pt}{35.1pt}\selectfont}
+\newcommand{\gridHTwo}{\fontsize{21pt}{27.3pt}\selectfont}
+\newcommand{\gridHThree}{\fontsize{16.5pt}{21.45pt}\selectfont}
+\newcommand{\gridHFour}{\fontsize{13.5pt}{17.55pt}\selectfont}
+\newcommand{\gridSubhead}{\fontsize{18pt}{23.4pt}\selectfont}
+\newcommand{\gridBody}{\fontsize{12pt}{18pt}\selectfont}
+\newcommand{\gridSmall}{\fontsize{10.5pt}{14.7pt}\selectfont}
+\newcommand{\gridCaption}{\fontsize{9pt}{12.6pt}\selectfont}
+\newcommand{\gridFootnote}{\fontsize{8.4pt}{10.92pt}\selectfont}
+
+% Enhanced Grid-based Spacing (multiples of 12pt baseline)
+\newcommand{\gridSpaceXs}{\vspace{3pt}}
+\newcommand{\gridSpaceSm}{\vspace{6pt}}
+\newcommand{\gridSpaceMd}{\vspace{12pt}}
+\newcommand{\gridSpaceLg}{\vspace{18pt}}
+\newcommand{\gridSpaceXl}{\vspace{24pt}}
+\newcommand{\gridSpaceXxl}{\vspace{36pt}}
+\newcommand{\gridSpaceXxxl}{\vspace{48pt}}
+\newcommand{\gridSpaceXxxxl}{\vspace{72pt}}
+
+% Strategic White Space System
+% Micro White Space
+\newcommand{\gridLineSpace}{\setlength{\baselineskip}{12pt}}
+\newcommand{\gridWordSpace}{\setlength{\spaceskip}{3pt}}
+\newcommand{\gridCharSpace}{\setlength{\fontdimen2\font}{3pt}}
+\newcommand{\gridListItemSpace}{\setlength{\itemsep}{6pt}}
+\newcommand{\gridTableCellSpace}{\setlength{\tabcolsep}{6pt}}
+\newcommand{\gridCodeBlockSpace}{\setlength{\fboxsep}{6pt}}
+
+% Macro White Space
+\newcommand{\gridSectionSpace}{\vspace{36pt}}
+\newcommand{\gridSubsectionSpace}{\vspace{24pt}}
+\newcommand{\gridParagraphSpace}{\vspace{18pt}}
+\newcommand{\gridBlockSpace}{\vspace{18pt}}
+\newcommand{\gridFigureSpace}{\vspace{24pt}}
+\newcommand{\gridTableSpace}{\vspace{24pt}}
+
+% Vertical Rhythm
+\newcommand{\gridBaselineSpace}{\setlength{\baselineskip}{12pt}}
+\newcommand{\gridHeadingSpace}{\vspace{18pt}}
+\newcommand{\gridBodySpace}{\setlength{\parskip}{12pt}}
+\newcommand{\gridCaptionSpace}{\vspace{6pt}}
+\newcommand{\gridFootnoteSpace}{\vspace{3pt}}
+
+% Horizontal Rhythm
+\newcommand{\gridMarginSpace}{\setlength{\textwidth}{24pt}}
+\newcommand{\gridColumnSpace}{\setlength{\columnsep}{18pt}}
+\newcommand{\gridGutterSpace}{\setlength{\columnseprule}{12pt}}
+\newcommand{\gridIndentSpace}{\setlength{\parindent}{12pt}}
+\newcommand{\gridListIndentSpace}{\setlength{\leftmargin}{12pt}}
+
+% Modular Design Elements
+\newcommand{\gridParagraph}{\setlength{\parindent}{12pt}\setlength{\parskip}{18pt}}
+\newcommand{\gridList}{\setlength{\itemsep}{6pt}\setlength{\parsep}{6pt}}
+\newcommand{\gridBlockquote}{\setlength{\leftmargin}{18pt}\setlength{\rightmargin}{18pt}}
+\newcommand{\gridCode}{\setlength{\fboxsep}{6pt}\setlength{\fboxrule}{0.5pt}}
+
+% Alignment System
+\newcommand{\gridCenter}{\centering}
+\newcommand{\gridLeft}{\raggedright}
+\newcommand{\gridRight}{\raggedleft}
+\newcommand{\gridJustify}{\justifying}
+
+% Grid-aligned heading formats (Academic Style)
+\titleformat{\section}{\gridHTwo\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+% Apply grid system spacing
+\gridBaselineSpace
+\gridBodySpace
+\gridParagraph
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+
+\begin{document}
+
+% Title with grid spacing
+$if(title)$
+\begin{center}
+{\gridHOne $title$}
+\end{center}
+\gridSpaceLg
+$endif$
+
+$body$
+
+$if(bibliography)$
+\newpage
+\section*{References}
+$bibliography$
+$endif$
+
+\end{document}
