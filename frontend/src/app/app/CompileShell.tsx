@@ -190,11 +190,11 @@ export default function CompileShell() {
             </div>
 
       {/* Formatting Controls Panel */}
-      <div className="border-b border-ens-gray-200 bg-white">
-        <div className="container-grid">
+      <div className="container-grid py-4 md:py-6">
+        <div className="card p-0 overflow-hidden">
           <button
             onClick={() => setShowFormatting(!showFormatting)}
-            className="w-full flex items-center justify-between py-4 text-left hover:bg-ens-light/30 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-ens-light/30 transition-colors border-b border-ens-gray-200"
           >
             <div className="flex items-center gap-2">
               <span className="font-semibold text-ens-midnight">Formatting Options</span>
@@ -208,7 +208,7 @@ export default function CompileShell() {
           </button>
           
           {showFormatting && (
-            <div className="pb-6">
+            <div className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Template */}
                 <div className="flex flex-col gap-2">
