@@ -92,6 +92,7 @@ app.post('/api/compile', async (req, res) => {
            mdPath,
            '--from=markdown',
            '--pdf-engine=xelatex',
+           '--filter=pandoc-citeproc',
            `--bibliography=${BIB_PATH}`,
            '-M', `title=${title}`,
            `--template=${tpl.templatePath}`,
