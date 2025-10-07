@@ -35,6 +35,25 @@ const TEMPLATES = {
 
 const BIB_PATH = path.resolve(__dirname, 'references/references.bib');
 
+// Helper function to map page sizes to LaTeX geometry options
+function geometryFor(size) {
+  switch (size) {
+    case 'a4':
+      return 'a4paper,margin=25mm';
+    case 'sixByNine': // common trade
+      return 'paperwidth=6in,paperheight=9in,margin=0.875in';
+    case 'fiveFiveByEightFive': // digest
+      return 'paperwidth=5.5in,paperheight=8.5in,margin=0.75in';
+    case 'sevenByTen':
+      return 'paperwidth=7in,paperheight=10in,margin=0.9in';
+    case 'a5':
+      return 'paperwidth=148mm,paperheight=210mm,margin=15mm';
+    case 'letter':
+    default:
+      return 'letterpaper,margin=1in';
+  }
+}
+
 // Basic style warnings (non-fatal)
 function styleWarnings(md) {
   const warnings = [];
@@ -71,7 +90,7 @@ function parseMissingPackages(stderr) {
 }
 
 app.post('/api/compile', async (req, res) => {
-  let { manuscriptText, template, title } = req.body || {};
+  let { manuscriptText, template, title, pageSize } = req.body || {};
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
   }
@@ -82,22 +101,27 @@ app.post('/api/compile', async (req, res) => {
   if (typeof title !== 'string' || !title.trim()) title = 'Manuscript';
   title = title.replace(/[\r\n]/g, ' ').slice(0, 200);
 
+  // sanitize pageSize
+  const allowedSizes = new Set(['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen']);
+  if (!allowedSizes.has(pageSize)) pageSize = 'letter';
+
   const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-'));
   const mdPath  = path.join(tmpBase, 'input.md');
   const pdfPath = path.join(tmpBase, 'output.pdf');
 
   fs.writeFileSync(mdPath, manuscriptText, 'utf8');
 
-         const args = [
-           mdPath,
-           '--from=markdown',
-           '--pdf-engine=xelatex',
-           '-M', `title=${title}`,
-           `--template=${tpl.templatePath}`,
-           '-V', `mainfont=${tpl.mainfont}`,
-           '-V', 'geometry:margin=1in',
-           '-o', pdfPath,
-         ];
+  const geo = geometryFor(pageSize);
+  const args = [
+    mdPath,
+    '--from=markdown',
+    '--pdf-engine=xelatex',
+    '-M', `title=${title}`,
+    `--template=${tpl.templatePath}`,
+    '-V', `mainfont=${tpl.mainfont}`,
+    '-V', `geometry:${geo}`,
+    '-o', pdfPath,
+  ];
 
   const warnings = styleWarnings(manuscriptText);
   const pandoc = spawn('pandoc', args, { cwd: tmpBase });

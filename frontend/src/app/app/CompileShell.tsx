@@ -7,6 +7,7 @@ import TemplateHelp from './TemplateHelp'
 import TemplateNotes from './TemplateNotes'
 
 type TemplateKey = 'chicago' | 'paperback'
+type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen'
 type CompileError = { message: string }
 type Status = 'idle' | 'compiling' | 'success' | 'error'
 
@@ -52,6 +53,7 @@ export default function CompileShell() {
   const [manuscript, setManuscript] = useState(DEFAULT_MD)
   const [template, setTemplate] = useState<TemplateKey>('chicago')
   const [title, setTitle] = useState<string>('Maritime Trade in the 17th Century')
+  const [pageSize, setPageSize] = useState<PageSize>('letter')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [errors, setErrors] = useState<CompileError[]>([])
@@ -74,7 +76,7 @@ export default function CompileShell() {
     debounceRef.current = window.setTimeout(() => { void compile(false) }, 1000)
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscript, template, title])
+  }, [manuscript, template, title, pageSize])
 
   async function compile(downloadAfter: boolean) {
     // cancel any in-flight request
@@ -90,7 +92,7 @@ export default function CompileShell() {
       const resp = await fetch(`${BACKEND}/api/compile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ manuscriptText: manuscript, template, title }),
+        body: JSON.stringify({ manuscriptText: manuscript, template, title, pageSize }),
         signal: controller.signal,
       })
       const ct = resp.headers.get('content-type') || ''
@@ -179,6 +181,24 @@ export default function CompileShell() {
                 <option value="chicago">Classic Academic (Chicago)</option>
                 <option value="paperback">Modern Trade Paperback</option>
               </select>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="flex items-center gap-2">
+                <label className="small-mono" htmlFor="pageSize">Page size</label>
+                <select
+                  id="pageSize"
+                  className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
+                  value={pageSize}
+                  onChange={(e) => setPageSize(e.target.value as PageSize)}
+                >
+                  <option value="letter">US Letter (8.5×11")</option>
+                  <option value="a4">A4 (210×297 mm)</option>
+                  <option value="sixByNine">Trade 6×9"</option>
+                  <option value="fiveFiveByEightFive">Digest 5.5×8.5"</option>
+                  <option value="sevenByTen">7×10"</option>
+                  <option value="a5">A5 (148×210 mm)</option>
+                </select>
+              </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <input

@@ -1,6 +1,6 @@
 % Classic Academic (Chicago-like)
 \documentclass[12pt]{article}
-\usepackage[margin=1in]{geometry}
+\usepackage{geometry} % margin & size come from Pandoc -V geometry:...
 \usepackage{setspace}
 \usepackage{parskip}
 \usepackage{fontspec}

@@ -1,6 +1,6 @@
 % Modern Trade Paperback
 \documentclass[11pt]{article}
-\usepackage[margin=1in]{geometry}
+\usepackage{geometry} % margin & size come from Pandoc -V geometry:...
 \usepackage{parskip}
 \usepackage{setspace}
 \usepackage{fontspec}
