@@ -1,11 +1,24 @@
 'use client'
 import { useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function TemplateHelp() {
   const [open, setOpen] = useState(false)
+  const [position, setPosition] = useState({ top: 0, left: 0 })
   const tipId = useId()
   const btnRef = useRef<HTMLButtonElement | null>(null)
   const tipRef = useRef<HTMLDivElement | null>(null)
+
+  // Calculate position when opening
+  useEffect(() => {
+    if (open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      setPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX + rect.width / 2
+      })
+    }
+  }, [open])
 
   // close on escape / outside click
   useEffect(() => {
@@ -45,13 +58,17 @@ export default function TemplateHelp() {
         <span className="font-mono text-xs">?</span>
       </button>
 
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div
           ref={tipRef}
           role="dialog"
           id={tipId}
           aria-label="Template guidance"
-          className="absolute left-1/2 z-20 mt-2 w-[22rem] -translate-x-1/2 rounded-xl border border-ens-gray-200 bg-white p-4 shadow-card"
+          className="fixed z-[9999] w-[22rem] rounded-xl border border-ens-gray-200 bg-white p-4 shadow-xl"
+          style={{
+            top: position.top,
+            left: position.left - 176, // Half of width (22rem = 352px)
+          }}
         >
           <div className="font-semibold text-ens-midnight">Choose a template</div>
           <ul className="mt-2 space-y-2 text-sm leading-6 text-ens-midnight">
@@ -65,7 +82,8 @@ export default function TemplateHelp() {
           <p className="mt-2 text-xs text-ens-gray-700">
             You can switch templates any time — the PDF recompiles automatically.
           </p>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
