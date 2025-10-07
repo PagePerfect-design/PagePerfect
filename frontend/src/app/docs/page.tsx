@@ -66,6 +66,28 @@ export default function DocsPage() {
                 Double spaces after punctuation are flagged as warnings. They won&apos;t stop compilation but are worth fixing for polish.
               </p>
             </div>
+
+            <div className="card p-5">
+              <h2 className="h2 mb-2">Recommended Reading</h2>
+              <p className="p mb-3">
+                For a comprehensive understanding of grid systems in graphic design, we recommend Josef Müller-Brockmann&apos;s seminal work that inspired PagePerfect&apos;s systematic approach:
+              </p>
+              <div className="bg-ens-light p-4 rounded-lg">
+                <p className="text-sm font-medium text-ens-midnight mb-2">📚 Grid Systems in Graphic Design</p>
+                <p className="text-sm text-ens-gray-700 mb-3">Josef Müller-Brockmann</p>
+                <a 
+                  href="https://ia902309.us.archive.org/4/items/GridSystemsInGraphicDesignJosefMullerBrockmann/Grid%20systems%20in%20graphic%20design%20-%20Josef%20Muller-Brockmann.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-ens-blue hover:text-ens-blue-dark text-sm font-medium"
+                >
+                  Read the PDF →
+                </a>
+              </div>
+              <p className="p mt-3 text-sm text-ens-gray-600">
+                PagePerfect implements Müller-Brockmann&apos;s principles of systematic organization, baseline grids, and proportional typography for professional-quality PDF generation.
+              </p>
+            </div>
           </div>
         </Section>
       </Container>

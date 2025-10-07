@@ -1,5 +1,16 @@
 // Müller-Brockmann Grid System Implementation
 // Based on principles of clarity, objectivity, and systematic organization
+//
+// 📚 REFERENCE: Josef Müller-Brockmann's "Grid Systems in Graphic Design"
+// For comprehensive understanding of grid systems in graphic design, we recommend
+// Josef Müller-Brockmann's seminal work: 
+// https://ia902309.us.archive.org/4/items/GridSystemsInGraphicDesignJosefMullerBrockmann/Grid%20systems%20in%20graphic%20design%20-%20Josef%20Muller-Brockmann.pdf
+//
+// This implementation follows Müller-Brockmann's principles of:
+// - Systematic organization and rationalization
+// - Baseline grid for consistent vertical rhythm
+// - Typographic scale based on proportional relationships
+// - Grid-based spacing for visual harmony
 
 /**
  * Grid System Configuration

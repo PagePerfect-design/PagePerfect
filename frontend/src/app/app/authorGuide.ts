@@ -53,4 +53,11 @@ Use **Download PDF** for a submission-ready file.
 
 ## 7) Support
 If something fails, include the last lines of the error console when asking for help.
+
+## 8) Recommended Reading
+For a comprehensive understanding of grid systems in graphic design, we recommend Josef Müller-Brockmann's "Grid Systems in Graphic Design." This seminal work inspired PagePerfect's systematic approach to typography and layout:
+
+📚 [Grid Systems in Graphic Design - Josef Müller-Brockmann](https://ia902309.us.archive.org/4/items/GridSystemsInGraphicDesignJosefMullerBrockmann/Grid%20systems%20in%20graphic%20design%20-%20Josef%20Muller-Brockmann.pdf)
+
+PagePerfect implements Müller-Brockmann's principles of systematic organization, baseline grids, and proportional typography for professional-quality PDF generation.
 `
