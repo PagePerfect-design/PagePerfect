@@ -302,4 +302,5 @@ app.post('/api/compile', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);
+  console.log('Routes loaded:', app._router.stack.map(r => r.route?.path).filter(Boolean));
 });
