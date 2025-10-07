@@ -47,6 +47,10 @@ temp/
 
 # PDF test files (keep sample ones)
 test*.pdf
+*-test.pdf
+grid-test.pdf
+margin-test.pdf
+trade-grid-test.pdf
 !sample*.pdf
 
 # Docker
