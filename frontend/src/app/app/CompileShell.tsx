@@ -8,7 +8,7 @@ import TemplateNotes from './TemplateNotes'
 
 type TemplateKey = 'chicago' | 'paperback'
 type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen'
-type MarginPreset = 'normal' | 'narrow' | 'wide'
+type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'generous' | 'compact'
 type CompileError = { message: string }
 type Status = 'idle' | 'compiling' | 'success' | 'error'
 
@@ -214,6 +214,10 @@ export default function CompileShell() {
                   <option value="normal">Normal</option>
                   <option value="narrow">Narrow</option>
                   <option value="wide">Wide</option>
+                  <option value="minimal">Minimal</option>
+                  <option value="academic">Academic</option>
+                  <option value="generous">Generous</option>
+                  <option value="compact">Compact</option>
                 </select>
               </div>
             </div>

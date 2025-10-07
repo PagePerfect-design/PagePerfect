@@ -37,36 +37,91 @@ const BIB_PATH = path.resolve(__dirname, 'references/references.bib');
 
 // Helper function to map page sizes and margin presets to LaTeX geometry options
 function geometryFor(size, preset) {
-  // Per-size safe margins:
-  // Normal = comfortable reading + print-safe; Narrow = more text; Wide = academic roomy.
+  // Enhanced margin philosophy:
+  // Minimal = maximum text, minimal whitespace (draft/notes)
+  // Compact = tight but readable (technical docs, references)
+  // Narrow = more text space (dense academic work)
+  // Normal = comfortable reading + print-safe (general use)
+  // Wide = academic roomy (annotations, comments)
+  // Academic = generous margins for scholarly work (dissertations, journals)
+  // Generous = maximum whitespace (presentation, luxury books)
+  
   const mm = (n) => `${n}mm`;
   const in_ = (n) => `${n}in`;
 
   switch (size) {
     case 'a4': {
-      const m = preset === 'narrow' ? mm(15) : preset === 'wide' ? mm(30) : mm(25);
-      return `a4paper,margin=${m}`;
+      const margins = {
+        minimal: mm(10),    // Maximum text space
+        compact: mm(15),    // Tight but readable
+        narrow: mm(18),     // More text space
+        normal: mm(25),     // Comfortable reading
+        wide: mm(30),       // Academic roomy
+        academic: mm(35),   // Generous scholarly
+        generous: mm(40)    // Maximum whitespace
+      };
+      return `a4paper,margin=${margins[preset] || margins.normal}`;
     }
     case 'a5': {
-      const m = preset === 'narrow' ? mm(12) : preset === 'wide' ? mm(18) : mm(15);
-      return `paperwidth=148mm,paperheight=210mm,margin=${m}`;
+      const margins = {
+        minimal: mm(8),     // Maximum text space
+        compact: mm(12),    // Tight but readable
+        narrow: mm(15),     // More text space
+        normal: mm(18),     // Comfortable reading
+        wide: mm(22),       // Academic roomy
+        academic: mm(25),   // Generous scholarly
+        generous: mm(30)    // Maximum whitespace
+      };
+      return `paperwidth=148mm,paperheight=210mm,margin=${margins[preset] || margins.normal}`;
     }
     case 'sixByNine': { // trade 6×9"
-      const m = preset === 'narrow' ? in_(0.65) : preset === 'wide' ? in_(1.1) : in_(0.875);
-      return `paperwidth=6in,paperheight=9in,margin=${m}`;
+      const margins = {
+        minimal: in_(0.4),  // Maximum text space
+        compact: in_(0.55), // Tight but readable
+        narrow: in_(0.65),  // More text space
+        normal: in_(0.875), // Comfortable reading
+        wide: in_(1.1),     // Academic roomy
+        academic: in_(1.25), // Generous scholarly
+        generous: in_(1.4)  // Maximum whitespace
+      };
+      return `paperwidth=6in,paperheight=9in,margin=${margins[preset] || margins.normal}`;
     }
     case 'fiveFiveByEightFive': { // 5.5×8.5"
-      const m = preset === 'narrow' ? in_(0.6) : preset === 'wide' ? in_(0.9) : in_(0.75);
-      return `paperwidth=5.5in,paperheight=8.5in,margin=${m}`;
+      const margins = {
+        minimal: in_(0.35), // Maximum text space
+        compact: in_(0.5),  // Tight but readable
+        narrow: in_(0.6),   // More text space
+        normal: in_(0.75),  // Comfortable reading
+        wide: in_(0.9),     // Academic roomy
+        academic: in_(1.0), // Generous scholarly
+        generous: in_(1.15) // Maximum whitespace
+      };
+      return `paperwidth=5.5in,paperheight=8.5in,margin=${margins[preset] || margins.normal}`;
     }
     case 'sevenByTen': {
-      const m = preset === 'narrow' ? in_(0.7) : preset === 'wide' ? in_(1.2) : in_(0.9);
-      return `paperwidth=7in,paperheight=10in,margin=${m}`;
+      const margins = {
+        minimal: in_(0.5),  // Maximum text space
+        compact: in_(0.65), // Tight but readable
+        narrow: in_(0.7),  // More text space
+        normal: in_(0.9),   // Comfortable reading
+        wide: in_(1.2),     // Academic roomy
+        academic: in_(1.35), // Generous scholarly
+        generous: in_(1.5)  // Maximum whitespace
+      };
+      return `paperwidth=7in,paperheight=10in,margin=${margins[preset] || margins.normal}`;
     }
     case 'letter':
     default: {
-      const m = preset === 'narrow' ? in_(0.75) : preset === 'wide' ? in_(1.25) : in_(1.0);
-      return `letterpaper,margin=${m}`;
+      const margins = {
+        minimal: in_(0.5),  // Maximum text space
+        compact: in_(0.65), // Tight but readable
+        narrow: in_(0.75), // More text space
+        normal: in_(1.0),   // Comfortable reading
+        wide: in_(1.25),    // Academic roomy
+        academic: in_(1.5), // Generous scholarly
+        generous: in_(1.75) // Maximum whitespace
+      };
+      return `letterpaper,margin=${margins[preset] || margins.normal}`;
     }
   }
 }
@@ -123,7 +178,7 @@ app.post('/api/compile', async (req, res) => {
   if (!allowedSizes.has(pageSize)) pageSize = 'letter';
 
   // sanitize marginPreset
-  const allowedMargins = new Set(['normal','narrow','wide']);
+  const allowedMargins = new Set(['normal','narrow','wide','minimal','academic','generous','compact']);
   if (!allowedMargins.has(marginPreset)) marginPreset = 'normal';
 
   const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-'));
