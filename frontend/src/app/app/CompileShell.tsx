@@ -190,88 +190,90 @@ export default function CompileShell() {
             </div>
 
       {/* Formatting Controls Panel */}
-      <div className="border-b border-ens-gray-200 bg-ens-light/30">
-        <button
-          onClick={() => setShowFormatting(!showFormatting)}
-          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-ens-light/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-ens-midnight">Formatting Options</span>
+      <div className="border-b border-ens-gray-200 bg-white">
+        <div className="container-grid">
+          <button
+            onClick={() => setShowFormatting(!showFormatting)}
+            className="w-full flex items-center justify-between py-4 text-left hover:bg-ens-light/30 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-ens-midnight">Formatting Options</span>
+              <span className="small-mono text-ens-gray-700">
+                {template} • {pageSize} • {marginPreset}
+              </span>
+            </div>
             <span className="small-mono text-ens-gray-700">
-              {template} • {pageSize} • {marginPreset}
+              {showFormatting ? 'Hide' : 'Show'} formatting
             </span>
-          </div>
-          <span className="small-mono text-ens-gray-700">
-            {showFormatting ? 'Hide' : 'Show'} formatting
-          </span>
-        </button>
-        
-        {showFormatting && (
-          <div className="px-4 pb-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Template */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <label className="small-mono" htmlFor="template">Template</label>
-                  <TemplateHelp />
+          </button>
+          
+          {showFormatting && (
+            <div className="pb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Template */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <label className="small-mono" htmlFor="template">Template</label>
+                    <TemplateHelp />
+                  </div>
+                  <select
+                    id="template"
+                    className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
+                    value={template}
+                    onChange={(e) => setTemplate(e.target.value as TemplateKey)}
+                  >
+                    <option value="chicago">Classic Academic (Chicago)</option>
+                    <option value="paperback">Modern Trade Paperback</option>
+                  </select>
                 </div>
-                <select
-                  id="template"
-                  className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
-                  value={template}
-                  onChange={(e) => setTemplate(e.target.value as TemplateKey)}
-                >
-                  <option value="chicago">Classic Academic (Chicago)</option>
-                  <option value="paperback">Modern Trade Paperback</option>
-                </select>
-              </div>
 
-              {/* Page Size */}
-              <div className="flex flex-col gap-2">
-                <label className="small-mono" htmlFor="pageSize">Page size</label>
-                <select
-                  id="pageSize"
-                  className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
-                  value={pageSize}
-                  onChange={(e) => setPageSize(e.target.value as PageSize)}
-                >
-                  <option value="letter">US Letter (8.5×11&quot;)</option>
-                  <option value="a4">A4 (210×297 mm)</option>
-                  <option value="sixByNine">Trade 6×9&quot;</option>
-                  <option value="fiveFiveByEightFive">Digest 5.5×8.5&quot;</option>
-                  <option value="sevenByTen">7×10&quot;</option>
-                  <option value="a5">A5 (148×210 mm)</option>
-                  <optgroup label="Amazon KDP Sizes">
-                    <option value="amazonFiveByEight">Amazon 5×8&quot;</option>
-                    <option value="amazonSixByNine">Amazon 6×9&quot;</option>
-                    <option value="amazonSevenByTen">Amazon 7×10&quot;</option>
-                    <option value="amazonEightByTen">Amazon 8×10&quot;</option>
-                    <option value="amazonEightFiveByEleven">Amazon 8.5×11&quot;</option>
-                  </optgroup>
-                </select>
-              </div>
+                {/* Page Size */}
+                <div className="flex flex-col gap-2">
+                  <label className="small-mono" htmlFor="pageSize">Page size</label>
+                  <select
+                    id="pageSize"
+                    className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
+                    value={pageSize}
+                    onChange={(e) => setPageSize(e.target.value as PageSize)}
+                  >
+                    <option value="letter">US Letter (8.5×11&quot;)</option>
+                    <option value="a4">A4 (210×297 mm)</option>
+                    <option value="sixByNine">Trade 6×9&quot;</option>
+                    <option value="fiveFiveByEightFive">Digest 5.5×8.5&quot;</option>
+                    <option value="sevenByTen">7×10&quot;</option>
+                    <option value="a5">A5 (148×210 mm)</option>
+                    <optgroup label="Amazon KDP Sizes">
+                      <option value="amazonFiveByEight">Amazon 5×8&quot;</option>
+                      <option value="amazonSixByNine">Amazon 6×9&quot;</option>
+                      <option value="amazonSevenByTen">Amazon 7×10&quot;</option>
+                      <option value="amazonEightByTen">Amazon 8×10&quot;</option>
+                      <option value="amazonEightFiveByEleven">Amazon 8.5×11&quot;</option>
+                    </optgroup>
+                  </select>
+                </div>
 
-              {/* Margins */}
-              <div className="flex flex-col gap-2">
-                <label className="small-mono" htmlFor="margins">Margins</label>
-                <select
-                  id="margins"
-                  className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
-                  value={marginPreset}
-                  onChange={(e) => setMarginPreset(e.target.value as MarginPreset)}
-                >
-                  <option value="normal">Normal</option>
-                  <option value="narrow">Narrow</option>
-                  <option value="wide">Wide</option>
-                  <option value="minimal">Minimal</option>
-                  <option value="academic">Academic</option>
-                  <option value="generous">Generous</option>
-                  <option value="compact">Compact</option>
-                </select>
+                {/* Margins */}
+                <div className="flex flex-col gap-2">
+                  <label className="small-mono" htmlFor="margins">Margins</label>
+                  <select
+                    id="margins"
+                    className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
+                    value={marginPreset}
+                    onChange={(e) => setMarginPreset(e.target.value as MarginPreset)}
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="narrow">Narrow</option>
+                    <option value="wide">Wide</option>
+                    <option value="minimal">Minimal</option>
+                    <option value="academic">Academic</option>
+                    <option value="generous">Generous</option>
+                    <option value="compact">Compact</option>
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Two-panel layout */}
