@@ -1,4 +1,4 @@
-% Classic Academic (Chicago-like)
+% Classic Academic (Chicago-like) - Müller-Brockmann Grid System
 \documentclass[12pt]{article}
 \usepackage{geometry} % margin & size come from Pandoc -V geometry:...
 \usepackage{setspace}
@@ -10,8 +10,28 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{titlesec}
-\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
-\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% Grid System Typography (Academic - 12pt baseline)
+\usepackage{setspace}
+\setstretch{1.5}
+
+% Typographic Scale based on Golden Ratio
+\newcommand{\gridHOne}{\fontsize{27pt}{40.5pt}\selectfont}
+\newcommand{\gridHTwo}{\fontsize{21pt}{31.5pt}\selectfont}
+\newcommand{\gridHThree}{\fontsize{16.5pt}{24.75pt}\selectfont}
+\newcommand{\gridSmall}{\fontsize{10.5pt}{15.75pt}\selectfont}
+
+% Grid-based Spacing (multiples of 12pt baseline)
+\newcommand{\gridSpaceXs}{\vspace{3pt}}
+\newcommand{\gridSpaceSm}{\vspace{6pt}}
+\newcommand{\gridSpaceMd}{\vspace{12pt}}
+\newcommand{\gridSpaceLg}{\vspace{18pt}}
+\newcommand{\gridSpaceXl}{\vspace{24pt}}
+\newcommand{\gridSpaceXxl}{\vspace{36pt}}
+
+% Grid-aligned heading formats
+\titleformat{\section}{\gridHTwo\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\gridHThree\bfseries}{\thesubsection}{1em}{}
 
 \usepackage{fancyhdr}
 \pagestyle{fancy}
@@ -19,7 +39,7 @@
 \rhead{\thepage}
 
 \begin{document}
-$if(title)$\begin{center}{\LARGE $title$}\end{center}\vspace{2em}$endif$
+$if(title)$\begin{center}{\gridHOne $title$}\end{center}\gridSpaceLg$endif$
 
 $body$
 

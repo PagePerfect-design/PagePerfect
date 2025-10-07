@@ -1,4 +1,4 @@
-% Modern Trade Paperback
+% Modern Trade Paperback - Müller-Brockmann Grid System
 \documentclass[11pt]{article}
 \usepackage{geometry} % margin & size come from Pandoc -V geometry:...
 \usepackage{parskip}
@@ -9,8 +9,28 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{titlesec}
-\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{0.5em}{}
-\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{0.5em}{}
+
+% Grid System Typography (Trade - 11pt baseline)
+\usepackage{setspace}
+\setstretch{1.4}
+
+% Typographic Scale based on Golden Ratio
+\newcommand{\gridHOne}{\fontsize{24.75pt}{34.65pt}\selectfont}
+\newcommand{\gridHTwo}{\fontsize{19.25pt}{26.95pt}\selectfont}
+\newcommand{\gridHThree}{\fontsize{15.125pt}{21.175pt}\selectfont}
+\newcommand{\gridSmall}{\fontsize{9.625pt}{13.475pt}\selectfont}
+
+% Grid-based Spacing (multiples of 11pt baseline)
+\newcommand{\gridSpaceXs}{\vspace{2.75pt}}
+\newcommand{\gridSpaceSm}{\vspace{5.5pt}}
+\newcommand{\gridSpaceMd}{\vspace{11pt}}
+\newcommand{\gridSpaceLg}{\vspace{16.5pt}}
+\newcommand{\gridSpaceXl}{\vspace{22pt}}
+\newcommand{\gridSpaceXxl}{\vspace{33pt}}
+
+% Grid-aligned heading formats
+\titleformat{\section}{\gridHTwo\bfseries}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\gridHThree\bfseries}{\thesubsection}{0.5em}{}
 \usepackage{sectsty}
 \allsectionsfont{\raggedright}
 
@@ -20,7 +40,7 @@
 \rhead{\thepage}
 
 \begin{document}
-$if(title)$\begin{center}{\LARGE $title$}\end{center}\vspace{1em}$endif$
+$if(title)$\begin{center}{\gridHOne $title$}\end{center}\gridSpaceMd$endif$
 
 $body$
 
