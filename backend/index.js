@@ -34,7 +34,7 @@ app.options('/api/compile', (req, res) => {
 });
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'pageperfect-backend', timestamp: new Date().toISOString() });
+  res.json({ ok: true, service: 'pageperfect-backend', timestamp: new Date().toISOString(), version: '2.0' });
 });
 
 // Template registry
