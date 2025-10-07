@@ -110,6 +110,66 @@ function geometryFor(size, preset) {
       };
       return `paperwidth=7in,paperheight=10in,margin=${margins[preset] || margins.normal}`;
     }
+    case 'amazonFiveByEight': { // Amazon KDP 5×8"
+      const margins = {
+        minimal: in_(0.3),  // Maximum text space
+        compact: in_(0.45), // Tight but readable
+        narrow: in_(0.55),  // More text space
+        normal: in_(0.7),    // Comfortable reading
+        wide: in_(0.85),     // Academic roomy
+        academic: in_(0.95), // Generous scholarly
+        generous: in_(1.05)  // Maximum whitespace
+      };
+      return `paperwidth=5in,paperheight=8in,margin=${margins[preset] || margins.normal}`;
+    }
+    case 'amazonSixByNine': { // Amazon KDP 6×9"
+      const margins = {
+        minimal: in_(0.4),  // Maximum text space
+        compact: in_(0.55), // Tight but readable
+        narrow: in_(0.65),  // More text space
+        normal: in_(0.8),    // Comfortable reading
+        wide: in_(1.0),      // Academic roomy
+        academic: in_(1.15), // Generous scholarly
+        generous: in_(1.3)   // Maximum whitespace
+      };
+      return `paperwidth=6in,paperheight=9in,margin=${margins[preset] || margins.normal}`;
+    }
+    case 'amazonSevenByTen': { // Amazon KDP 7×10"
+      const margins = {
+        minimal: in_(0.5),  // Maximum text space
+        compact: in_(0.65), // Tight but readable
+        narrow: in_(0.75),  // More text space
+        normal: in_(0.9),    // Comfortable reading
+        wide: in_(1.1),      // Academic roomy
+        academic: in_(1.25), // Generous scholarly
+        generous: in_(1.4)   // Maximum whitespace
+      };
+      return `paperwidth=7in,paperheight=10in,margin=${margins[preset] || margins.normal}`;
+    }
+    case 'amazonEightByTen': { // Amazon KDP 8×10"
+      const margins = {
+        minimal: in_(0.6),  // Maximum text space
+        compact: in_(0.75), // Tight but readable
+        narrow: in_(0.85),  // More text space
+        normal: in_(1.0),    // Comfortable reading
+        wide: in_(1.2),      // Academic roomy
+        academic: in_(1.35), // Generous scholarly
+        generous: in_(1.5)   // Maximum whitespace
+      };
+      return `paperwidth=8in,paperheight=10in,margin=${margins[preset] || margins.normal}`;
+    }
+    case 'amazonEightFiveByEleven': { // Amazon KDP 8.5×11"
+      const margins = {
+        minimal: in_(0.5),  // Maximum text space
+        compact: in_(0.65), // Tight but readable
+        narrow: in_(0.75),  // More text space
+        normal: in_(1.0),    // Comfortable reading
+        wide: in_(1.25),     // Academic roomy
+        academic: in_(1.5), // Generous scholarly
+        generous: in_(1.75)  // Maximum whitespace
+      };
+      return `paperwidth=8.5in,paperheight=11in,margin=${margins[preset] || margins.normal}`;
+    }
     case 'letter':
     default: {
       const margins = {
@@ -174,7 +234,7 @@ app.post('/api/compile', async (req, res) => {
   title = title.replace(/[\r\n]/g, ' ').slice(0, 200);
 
   // sanitize pageSize
-  const allowedSizes = new Set(['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen']);
+  const allowedSizes = new Set(['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven']);
   if (!allowedSizes.has(pageSize)) pageSize = 'letter';
 
   // sanitize marginPreset

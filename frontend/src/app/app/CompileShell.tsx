@@ -7,7 +7,7 @@ import TemplateHelp from './TemplateHelp'
 import TemplateNotes from './TemplateNotes'
 
 type TemplateKey = 'chicago' | 'paperback'
-type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen'
+type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
 type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'generous' | 'compact'
 type CompileError = { message: string }
 type Status = 'idle' | 'compiling' | 'success' | 'error'
@@ -199,6 +199,13 @@ export default function CompileShell() {
                   <option value="fiveFiveByEightFive">Digest 5.5×8.5"</option>
                   <option value="sevenByTen">7×10"</option>
                   <option value="a5">A5 (148×210 mm)</option>
+                  <optgroup label="Amazon KDP Sizes">
+                    <option value="amazonFiveByEight">Amazon 5×8"</option>
+                    <option value="amazonSixByNine">Amazon 6×9"</option>
+                    <option value="amazonSevenByTen">Amazon 7×10"</option>
+                    <option value="amazonEightByTen">Amazon 8×10"</option>
+                    <option value="amazonEightFiveByEleven">Amazon 8.5×11"</option>
+                  </optgroup>
                 </select>
               </div>
             </div>
