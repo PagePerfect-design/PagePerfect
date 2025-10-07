@@ -55,3 +55,6 @@ trade-grid-test.pdf
 
 # Docker
 .dockerignore
+
+# Local Netlify folder
+.netlify
