@@ -41,17 +41,99 @@ app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'pageperfect-backend', timestamp: new Date().toISOString(), version: '2.0' });
 });
 
-// Template registry
-const TEMPLATES = {
-         chicago: {
-           templatePath: path.resolve(__dirname, 'templates/chicago.latex'),
-           mainfont: 'DejaVu Serif'
-         },
+// Get available design templates
+app.get('/api/templates', (_req, res) => {
+  const templates = Object.entries(DESIGN_TEMPLATES).map(([key, template]) => ({
+    key,
+    name: template.name,
+    description: template.description,
+    category: template.category,
+    characteristics: template.characteristics,
+    gridType: template.gridType
+  }));
+  
+  res.json({ templates });
+});
+
+// Design Template Registry - Müller-Brockmann Inspired Templates
+const DESIGN_TEMPLATES = {
+  // Academic & Scholarly Templates
+  symphony: {
+    name: 'Symphony Layout',
+    description: 'Classic academic design with harmonious typography and structured hierarchy. Perfect for scholarly papers, dissertations, and academic publications.',
+    category: 'Academic',
+    templatePath: path.resolve(__dirname, 'templates/symphony.latex'),
+    mainfont: 'DejaVu Serif',
+    gridType: 'academic',
+    characteristics: ['Serif typography', 'Indented paragraphs', 'Classic hierarchy', 'Formal spacing']
+  },
+  
+  chronicle: {
+    name: 'Chronicle Grid',
+    description: 'Editorial-style layout with multi-column grid system. Ideal for reports, white papers, and professional documents.',
+    category: 'Editorial',
+    templatePath: path.resolve(__dirname, 'templates/chronicle.latex'),
+    mainfont: 'DejaVu Sans',
+    gridType: 'editorial',
+    characteristics: ['Sans-serif typography', 'Block paragraphs', 'Editorial hierarchy', 'Professional spacing']
+  },
+  
+  // Trade & Commercial Templates
+  exhibit: {
+    name: 'Exhibit Frame',
+    description: 'Modern trade design with clean lines and generous white space. Perfect for trade books, business documents, and general audience publications.',
+    category: 'Trade',
+    templatePath: path.resolve(__dirname, 'templates/exhibit.latex'),
+    mainfont: 'Lato',
+    gridType: 'trade',
+    characteristics: ['Modern sans-serif', 'Block paragraphs', 'Clean hierarchy', 'Generous spacing']
+  },
+  
+  matrix: {
+    name: 'Corporate Matrix',
+    description: 'Structured business layout with systematic organization. Designed for corporate reports, presentations, and professional communications.',
+    category: 'Corporate',
+    templatePath: path.resolve(__dirname, 'templates/matrix.latex'),
+    mainfont: 'Inter',
+    gridType: 'corporate',
+    characteristics: ['Professional typography', 'Systematic layout', 'Business hierarchy', 'Structured spacing']
+  },
+  
+  // Creative & Experimental Templates
+  avantgarde: {
+    name: 'Avant-Garde Canvas',
+    description: 'Experimental design with creative freedom within systematic constraints. Perfect for creative projects, portfolios, and innovative publications.',
+    category: 'Creative',
+    templatePath: path.resolve(__dirname, 'templates/avantgarde.latex'),
+    mainfont: 'Source Sans Pro',
+    gridType: 'creative',
+    characteristics: ['Creative typography', 'Flexible layout', 'Experimental hierarchy', 'Dynamic spacing']
+  },
+  
+  // Legacy Templates (for backward compatibility)
+  chicago: {
+    name: 'Classic Academic (Chicago)',
+    description: 'Traditional academic style with Chicago Manual of Style conventions. Legacy template for existing users.',
+    category: 'Legacy',
+    templatePath: path.resolve(__dirname, 'templates/chicago.latex'),
+    mainfont: 'DejaVu Serif',
+    gridType: 'academic',
+    characteristics: ['Serif typography', 'Indented paragraphs', 'Classic hierarchy', 'Traditional spacing']
+  },
+  
   paperback: {
+    name: 'Modern Trade Paperback',
+    description: 'Contemporary trade book design with modern typography. Legacy template for existing users.',
+    category: 'Legacy',
     templatePath: path.resolve(__dirname, 'templates/paperback.latex'),
-    mainfont: 'Lato'
+    mainfont: 'Lato',
+    gridType: 'trade',
+    characteristics: ['Sans-serif typography', 'Block paragraphs', 'Modern hierarchy', 'Contemporary spacing']
   }
 };
+
+// Backward compatibility - map old template names to new system
+const TEMPLATES = DESIGN_TEMPLATES;
 
 const BIB_PATH = path.resolve(__dirname, 'references/references.bib');
 
@@ -102,8 +184,8 @@ app.post('/api/compile', async (req, res) => {
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
   }
-  const tplKey = TEMPLATES[String(template)] ? String(template) : 'chicago';
-  const tpl = TEMPLATES[tplKey];
+  const tplKey = DESIGN_TEMPLATES[String(template)] ? String(template) : 'symphony';
+  const tpl = DESIGN_TEMPLATES[tplKey];
 
   // sanitize title
   if (typeof title !== 'string' || !title.trim()) title = 'Manuscript';
@@ -123,7 +205,7 @@ app.post('/api/compile', async (req, res) => {
 
   fs.writeFileSync(mdPath, manuscriptText, 'utf8');
 
-  const templateType = tplKey === 'chicago' ? 'academic' : 'trade';
+  const templateType = tpl.gridType || 'academic';
   const geo = geometryFor(pageSize, marginPreset, templateType);
   console.log(`Generating PDF with pageSize: ${pageSize}, marginPreset: ${marginPreset}, geometry: ${geo}`);
   const args = [

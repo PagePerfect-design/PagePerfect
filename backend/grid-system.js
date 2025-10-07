@@ -20,8 +20,11 @@ class GridSystem {
   constructor() {
     // Baseline grid: 12pt baseline for academic, 11pt for trade
     this.baseline = {
-      academic: 12, // 12pt baseline for Chicago template
-      trade: 11     // 11pt baseline for Paperback template
+      academic: 12,  // 12pt baseline for Chicago template
+      trade: 11,     // 11pt baseline for Paperback template
+      editorial: 11, // 11pt baseline for Chronicle template
+      corporate: 11, // 11pt baseline for Matrix template
+      creative: 11   // 11pt baseline for Avant-Garde template
     };
     
     // Typographic scale based on golden ratio (1.618)
