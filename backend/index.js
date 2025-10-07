@@ -12,7 +12,13 @@ const PORT = process.env.PORT || 4000;
 app.use(morgan('tiny'));
 app.use(express.json({ limit: '20mb' }));
 app.use(cors({
-  origin: ['http://localhost:3001', 'https://pageperfectdesign.netlify.app'],
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001', 
+    'http://localhost:5173',
+    'https://pageperfectdesign.netlify.app',
+    process.env.ALLOWED_ORIGIN
+  ].filter(Boolean),
   methods: ['GET','POST','OPTIONS'],
   allowedHeaders: ['Content-Type'],
   credentials: true,
@@ -310,7 +316,19 @@ app.post('/api/compile', async (req, res) => {
   });
 });
 
+// Route debugging function
+function logRoutes(app) {
+  const routes = []
+  app._router?.stack?.forEach((s) => {
+    if (s.route?.path) {
+      const methods = Object.keys(s.route.methods).join(',').toUpperCase()
+      routes.push(`${methods} ${s.route.path}`)
+    }
+  })
+  console.log('[routes]', routes)
+}
+
 app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);
-  console.log('Routes loaded:', app._router.stack.map(r => r.route?.path).filter(Boolean));
+  logRoutes(app);
 });
