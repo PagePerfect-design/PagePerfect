@@ -90,9 +90,8 @@ app.post('/api/compile', async (req, res) => {
 
          const args = [
            mdPath,
-           '--from=markdown+citations',
+           '--from=markdown',
            '--pdf-engine=xelatex',
-           '--citeproc',
            `--bibliography=${BIB_PATH}`,
            '-M', `title=${title}`,
            `--template=${tpl.templatePath}`,
