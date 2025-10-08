@@ -120,6 +120,52 @@ function cleanFromWord(input: string): string {
   return s
 }
 
+// Chapter helper functions
+// Find the next Chapter number by scanning "# Chapter N" headings
+function nextChapterNumber(md: string) {
+  const re = /^#\s*Chapter\s+(\d+)\b/igm
+  let max = 0, m
+  while ((m = re.exec(md)) !== null) {
+    const n = parseInt(m[1], 10)
+    if (!Number.isNaN(n)) max = Math.max(max, n)
+  }
+  return max + 1
+}
+
+// Build a Markdown chapter skeleton with a LaTeX page break
+function chapterSkeleton(n: number) {
+  return `\\newpage
+
+# Chapter ${n} — Your Title Here
+
+Intro paragraph. Set the scene and thesis for this chapter.
+
+## Section 1
+Write a few sentences. Cite sources like [@Finch2023].
+
+## Section 2
+Continue your argument. Use *italics*/**bold** sparingly.
+
+`
+}
+
+// Insert text at the current caret position in the textarea
+function insertAtCursor(el: HTMLTextAreaElement, source: string, setValue: (s: string) => void) {
+  const start = el.selectionStart ?? 0
+  const end = el.selectionEnd ?? start
+  const before = el.value.slice(0, start)
+  const after = el.value.slice(end)
+  const next = before + source + after
+  setValue(next)
+  // Restore caret right after inserted block
+  const pos = start + source.length
+  setTimeout(() => {
+    el.selectionStart = pos
+    el.selectionEnd = pos
+    el.focus()
+  }, 0)
+}
+
 const STATUS_LABEL: Record<Status, string> = {
   idle: 'Idle',
   compiling: 'Compiling…',
@@ -563,6 +609,21 @@ Notes:
                     title="Normalize the entire manuscript now"
                   >
                     Clean now
+                  </button>
+
+                  {/* Insert Chapter */}
+                  <button
+                    type="button"
+                    className="small-mono underline text-ens-blue hover:opacity-80 text-sm"
+                    title="Insert a numbered chapter heading with a page break"
+                    onClick={() => {
+                      const el = textRef.current
+                      if (!el) return
+                      const n = nextChapterNumber(manuscript)
+                      insertAtCursor(el, chapterSkeleton(n), setManuscript)
+                    }}
+                  >
+                    Insert chapter
                   </button>
                   
                   <StatusPill status={status} />
