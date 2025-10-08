@@ -12,6 +12,15 @@ type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'gen
 type CompileError = { message: string }
 type Status = 'idle' | 'compiling' | 'success' | 'error'
 
+const PREFS_KEY = 'pp-prefs-v1'
+type Prefs = {
+  template: TemplateKey
+  pageSize: PageSize
+  marginPreset: MarginPreset
+  safeMode: boolean
+  title: string
+}
+
 const DEFAULT_MD = `# Chapter 1: The New World
 
 The **17th century** was a pivotal time for maritime trade. Ships like the *Sea Serpent* sailed from Bristol to the New World. As noted by [@Finch2023], this had profound economic implications.
@@ -77,6 +86,40 @@ function buildFilename(title: string, t: TemplateKey, size: PageSize) {
   return `${left}_${templateCode(t)}_${sizeCode(size)}_${timestamp()}.pdf`
 }
 
+function cleanFromWord(input: string): string {
+  if (!input) return input
+  let s = input
+
+  // Normalize line endings and spaces
+  s = s.replace(/\r\n?/g, '\n')
+  s = s.replace(/[\u00A0\u2007\u202F]/g, ' ') // NBSP & narrow NBSPs → space
+  s = s.replace(/\t/g, ' ')
+
+  // Smart quotes/apostrophes → straight ASCII
+  s = s.replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB]/g, '"') // " " „ ‟ « »
+  s = s.replace(/[\u2018\u2019\u2032]/g, "'")                  // ' ' ′
+
+  // Ellipsis
+  s = s.replace(/\u2026/g, '...')
+
+  // Dashes: en/em to em with spaces around (XeLaTeX handles Unicode)
+  s = s.replace(/\s*[\u2013\u2014]\s*/g, ' — ')
+
+  // Word bullets at line start → markdown dashes
+  s = s.replace(/^[\s]*[•·]\s?/gm, '- ')
+
+  // Collapse 3+ newlines → 2 (paragraph break)
+  s = s.replace(/\n{3,}/g, '\n\n')
+
+  // After punctuation, collapse double+ spaces → single
+  s = s.replace(/([.!?;:])\s{2,}/g, '$1 ')
+
+  // Trim trailing spaces per line
+  s = s.split('\n').map(l => l.replace(/\s+$/,'')).join('\n')
+
+  return s
+}
+
 const STATUS_LABEL: Record<Status, string> = {
   idle: 'Idle',
   compiling: 'Compiling…',
@@ -118,16 +161,59 @@ export default function CompileShell() {
   const [missingPackages, setMissingPackages] = useState<string[]>([])
   const [warnings, setWarnings] = useState<string[]>([])
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
-  const [lastErrorJson, setLastErrorJson] = useState<any | null>(null)
-  const [lastRequest, setLastRequest] = useState<any | null>(null)
+  const [lastErrorJson, setLastErrorJson] = useState<{
+    httpStatus: number | string
+    response: unknown
+    when: string
+  } | null>(null)
+
+  const CLEAN_KEY = 'pp-clean-on-paste-v1'
+  const [cleanOnPaste, setCleanOnPaste] = useState<boolean>(true)
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const textRef = useRef<HTMLTextAreaElement | null>(null)
 
   // Clean blob URLs on unmount/swap
   useEffect(() => {
     return () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl) }
   }, [pdfUrl])
+
+  // Load saved preferences on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PREFS_KEY)
+      if (!raw) return
+      const p: Partial<Prefs> = JSON.parse(raw)
+
+      if (p.template) setTemplate(p.template)
+      if (p.pageSize) setPageSize(p.pageSize)
+      if (p.marginPreset) setMarginPreset(p.marginPreset)
+      if (typeof p.safeMode === 'boolean') setSafeMode(p.safeMode)
+      if (typeof p.title === 'string' && p.title.trim()) setTitle(p.title)
+    } catch {
+      // ignore malformed storage
+    }
+  }, [])
+
+  // Save preferences whenever they change
+  useEffect(() => {
+    const prefs: Prefs = { template, pageSize, marginPreset, safeMode, title }
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)) } catch {}
+  }, [template, pageSize, marginPreset, safeMode, title])
+
+  // Load cleanOnPaste setting on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CLEAN_KEY)
+      if (raw != null) setCleanOnPaste(raw === '1')
+    } catch {}
+  }, [])
+
+  // Save cleanOnPaste setting when it changes
+  useEffect(() => {
+    try { localStorage.setItem(CLEAN_KEY, cleanOnPaste ? '1' : '0') } catch {}
+  }, [cleanOnPaste])
 
   // Debounced auto-compile
   useEffect(() => {
@@ -149,8 +235,6 @@ export default function CompileShell() {
 
     try {
       const requestBody = { manuscriptText: manuscript, template, title, pageSize, marginPreset, safeMode };
-      const payload = { ...requestBody, ts: new Date().toISOString() };
-      setLastRequest(payload);
       console.log('Sending compile request:', requestBody);
       const resp = await fetch('/api/compile', {
         method: 'POST',
@@ -202,7 +286,7 @@ export default function CompileShell() {
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== 'AbortError') {
         setPdfBlob(null)
-        setLastErrorJson({ httpStatus: 'network', message: String(e?.message || e), when: new Date().toISOString() })
+        setLastErrorJson({ httpStatus: 'network', response: String(e?.message || e), when: new Date().toISOString() })
         setErrors([{ message: 'Network or server error. Please try again.' }])
         setStatus('error')
       }
@@ -400,6 +484,24 @@ Notes:
                     title="Compile without citations/bibliography"
                   />
                 </div>
+
+                {/* Reset Preferences */}
+                <button
+                  type="button"
+                  className="small-mono underline text-ens-blue/80 hover:opacity-80"
+                  onClick={() => {
+                    try { localStorage.removeItem(PREFS_KEY) } catch {}
+                    // revert to sensible defaults
+                    setTemplate('symphony')
+                    setPageSize('letter')
+                    setMarginPreset('normal')
+                    setSafeMode(false)
+                    setTitle('Maritime Trade in the 17th Century')
+                  }}
+                  title="Clear saved preferences"
+                >
+                  Reset prefs
+                </button>
               </div>
             </div>
           )}
@@ -441,12 +543,56 @@ Notes:
                       Reset
                     </button>
                   </div>
+                  
+                  {/* Clean on paste toggle */}
+                  <label className="small-mono inline-flex items-center gap-2 text-sm" title="Normalize Word punctuation, bullets, and spaces when pasting">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-ens-blue"
+                      checked={cleanOnPaste}
+                      onChange={(e) => setCleanOnPaste(e.target.checked)}
+                    />
+                    Clean on paste
+                  </label>
+
+                  {/* One-click clean */}
+                  <button
+                    type="button"
+                    className="small-mono underline text-ens-blue hover:opacity-80 text-sm"
+                    onClick={() => setManuscript(m => cleanFromWord(m))}
+                    title="Normalize the entire manuscript now"
+                  >
+                    Clean now
+                  </button>
+                  
                   <StatusPill status={status} />
                 </div>
               </div>
               <textarea
+                ref={textRef}
                 value={manuscript}
                 onChange={(e) => setManuscript(e.target.value)}
+                onPaste={(e) => {
+                  if (!cleanOnPaste) return
+                  const t = e.clipboardData?.getData('text/plain') ?? ''
+                  if (!t) return
+                  e.preventDefault()
+                  const cleaned = cleanFromWord(t)
+                  const el = e.currentTarget
+                  const start = el.selectionStart ?? manuscript.length
+                  const end = el.selectionEnd ?? start
+                  const next = manuscript.slice(0, start) + cleaned + manuscript.slice(end)
+                  setManuscript(next)
+                  // Restore caret on next tick
+                  setTimeout(() => {
+                    const pos = start + cleaned.length
+                    if (textRef.current) {
+                      textRef.current.selectionStart = pos
+                      textRef.current.selectionEnd = pos
+                      textRef.current.focus()
+                    }
+                  }, 0)
+                }}
                 className="h-[50vh] sm:h-[60vh] w-full resize-vertical p-4 outline-none"
                 placeholder="# Your manuscript in Markdown…"
                 aria-label="Manuscript editor"

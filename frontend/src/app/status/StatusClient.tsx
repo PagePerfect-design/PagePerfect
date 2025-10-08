@@ -28,7 +28,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
       setHealth(h.status === 'fulfilled' ? h.value : { ok: false })
       setDetails(d.status === 'fulfilled' ? d.value : { ok: false })
       setTs(new Date().toLocaleString())
-    } catch (e) {
+    } catch {
       setError('Failed to contact API via /api/* (check rewrites and Railway).')
     } finally {
       setLoading(false)
