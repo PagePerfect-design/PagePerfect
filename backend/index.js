@@ -38,6 +38,7 @@ function sizeCode(size) {
 }
 function templateCode(t) {
   switch (t) {
+    case 'minimal': return 'minimal';
     case 'symphony': return 'symphony';
     case 'chronicle': return 'chronicle';
     case 'exhibit': return 'exhibit';
@@ -114,6 +115,17 @@ app.get('/api/templates', (_req, res) => {
 
 // Design Template Registry - Müller-Brockmann Inspired Templates
 const DESIGN_TEMPLATES = {
+  // Minimal Template (BasicTeX Compatible)
+  minimal: {
+    name: 'Minimal Layout',
+    description: 'Simple, clean template compatible with BasicTeX. Uses only basic LaTeX packages for maximum compatibility.',
+    category: 'Minimal',
+    templatePath: path.resolve(__dirname, 'templates/minimal.latex'),
+    mainfont: 'DejaVu Serif',
+    gridType: 'basic',
+    characteristics: ['Basic typography', 'Simple formatting', 'Maximum compatibility', 'No external packages']
+  },
+
   // Academic & Scholarly Templates
   symphony: {
     name: 'Symphony Layout',

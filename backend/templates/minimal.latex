@@ -1,0 +1,54 @@
+% Minimal LaTeX Template - BasicTeX Compatible
+\documentclass[12pt]{article}
+\usepackage{geometry} % margin & size come from Pandoc -V geometry:...
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{fontspec}
+\setmainfont{DejaVu Serif}
+\usepackage{hyperref}
+
+% Basic Typography
+\setstretch{1.5}
+
+% Simple heading styles
+\makeatletter
+\renewcommand{\section}{\@startsection{section}{1}{\z@}%
+  {-3.5ex \@plus -1ex \@minus -.2ex}%
+  {2.3ex \@plus.2ex}%
+  {\normalfont\Large\bfseries}}
+
+\renewcommand{\subsection}{\@startsection{subsection}{2}{\z@}%
+  {-3.25ex\@plus -1ex \@minus -.2ex}%
+  {1.5ex \@plus .2ex}%
+  {\normalfont\large\bfseries}}
+\makeatother
+
+% Basic formatting
+\renewcommand{\textbf}[1]{\textbf{#1}}
+\renewcommand{\textit}[1]{\textit{#1}}
+
+% Page setup
+\pagestyle{plain}
+
+% Hyperref setup
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+$if(title)$
+\title{$title$}
+\date{}
+$endif$
+
+\begin{document}
+
+$if(title)$
+\maketitle
+$endif$
+
+$body$
+
+\end{document}

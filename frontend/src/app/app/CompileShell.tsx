@@ -6,7 +6,7 @@ import { SAMPLE_MD } from './sample'
 import TemplateHelp from './TemplateHelp'
 import TemplateNotes from './TemplateNotes'
 
-type TemplateKey = 'symphony' | 'chronicle' | 'exhibit' | 'matrix' | 'avantgarde' | 'chicago' | 'paperback'
+type TemplateKey = 'minimal' | 'symphony' | 'chronicle' | 'exhibit' | 'matrix' | 'avantgarde' | 'chicago' | 'paperback'
 type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
 type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'generous' | 'compact'
 type CompileError = { message: string }
@@ -147,7 +147,7 @@ function StatusPill({ status }: { status: Status }) {
 
 export default function CompileShell() {
   const [manuscript, setManuscript] = useState(DEFAULT_MD)
-  const [template, setTemplate] = useState<TemplateKey>('symphony')
+  const [template, setTemplate] = useState<TemplateKey>('minimal')
   const [title, setTitle] = useState<string>('Maritime Trade in the 17th Century')
   const [pageSize, setPageSize] = useState<PageSize>('letter')
   const [marginPreset, setMarginPreset] = useState<MarginPreset>('normal')
@@ -492,7 +492,7 @@ Notes:
                   onClick={() => {
                     try { localStorage.removeItem(PREFS_KEY) } catch {}
                     // revert to sensible defaults
-                    setTemplate('symphony')
+                    setTemplate('minimal')
                     setPageSize('letter')
                     setMarginPreset('normal')
                     setSafeMode(false)

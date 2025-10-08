@@ -24,7 +24,8 @@ class GridSystem {
       trade: 11,     // 11pt baseline for Paperback template
       editorial: 11, // 11pt baseline for Chronicle template
       corporate: 11, // 11pt baseline for Matrix template
-      creative: 11   // 11pt baseline for Avant-Garde template
+      creative: 11,  // 11pt baseline for Avant-Garde template
+      basic: 12      // 12pt baseline for Minimal template
     };
     
     // Typographic scale based on golden ratio (1.618)
@@ -58,7 +59,7 @@ class GridSystem {
    * Ensures margins are multiples of baseline grid
    */
   calculateMargins(pageSize, preset, template = 'academic') {
-    const base = this.baseline[template];
+    const base = this.baseline[template] || this.baseline.academic; // Fallback to academic
     const mm = (n) => `${n}mm`;
     const in_ = (n) => `${n}in`;
     
