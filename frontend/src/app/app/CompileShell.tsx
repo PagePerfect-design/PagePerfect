@@ -117,6 +117,9 @@ export default function CompileShell() {
   const [missingCitations, setMissingCitations] = useState<string[]>([])
   const [missingPackages, setMissingPackages] = useState<string[]>([])
   const [warnings, setWarnings] = useState<string[]>([])
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
+  const [lastErrorJson, setLastErrorJson] = useState<any | null>(null)
+  const [lastRequest, setLastRequest] = useState<any | null>(null)
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -146,6 +149,8 @@ export default function CompileShell() {
 
     try {
       const requestBody = { manuscriptText: manuscript, template, title, pageSize, marginPreset, safeMode };
+      const payload = { ...requestBody, ts: new Date().toISOString() };
+      setLastRequest(payload);
       console.log('Sending compile request:', requestBody);
       const resp = await fetch('/api/compile', {
         method: 'POST',
@@ -157,6 +162,8 @@ export default function CompileShell() {
 
       if (resp.ok && ct.includes('application/pdf')) {
         const blob = await resp.blob()
+        setPdfBlob(blob)
+        setLastErrorJson(null) // clear previous errors
         const url = URL.createObjectURL(blob)
         setPdfUrl(prev => { if (prev) URL.revokeObjectURL(prev); return url })
         setStatus('success')
@@ -176,6 +183,12 @@ export default function CompileShell() {
         // expect a JSON error (501 for now)
         let payload: { message?: string; error?: string; missingCitations?: string[]; missingPackages?: string[]; warnings?: string[] } | null = null
         try { payload = await resp.json() } catch { /* noop */ }
+        setPdfBlob(null)
+        setLastErrorJson({
+          httpStatus: resp.status,
+          response: payload ?? null,
+          when: new Date().toISOString(),
+        })
         const msgs: CompileError[] = []
         if (payload?.message) msgs.push({ message: payload.message })
         if (payload?.error) msgs.push({ message: String(payload.error) })
@@ -188,12 +201,57 @@ export default function CompileShell() {
       }
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== 'AbortError') {
+        setPdfBlob(null)
+        setLastErrorJson({ httpStatus: 'network', message: String(e?.message || e), when: new Date().toISOString() })
         setErrors([{ message: 'Network or server error. Please try again.' }])
         setStatus('error')
       }
     } finally {
       setLoading(false)
     }
+  }
+
+  async function downloadDebugBundle() {
+    const { default: JSZip } = await import('jszip')
+    const zip = new JSZip()
+
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const stamp = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`
+
+    const settings = {
+      title, template, pageSize, marginPreset, safeMode,
+      status,
+      ts: now.toISOString()
+    }
+
+    const readme =
+`Page Perfect Debug Bundle
+
+Files:
+- manuscript.md        → Current editor contents
+- settings.json        → Compile parameters and UI status
+- last-error.json      → Last error response (if any)
+- output.pdf           → Last compiled PDF (if available)
+
+Notes:
+• This bundle may contain sensitive content from your manuscript.
+• Remove anything you don't want to share before sending.`
+
+    zip.file('README.txt', readme)
+    zip.file('manuscript.md', manuscript)
+    zip.file('settings.json', JSON.stringify(settings, null, 2))
+    if (lastErrorJson) zip.file('last-error.json', JSON.stringify(lastErrorJson, null, 2))
+    if (pdfBlob) zip.file('output.pdf', pdfBlob)
+
+    const blob = await zip.generateAsync({ type: 'blob' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `pp-debug-${stamp}.zip`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(a.href), 0)
   }
 
   const Spinner = useMemo(
@@ -397,7 +455,17 @@ export default function CompileShell() {
 
             {/* Error console */}
             <div className="card p-4" role="region" aria-live="polite" aria-label="Error console">
-              <div className="small-mono mb-2">Errors & Warnings</div>
+              <div className="mb-2 flex items-center justify-between">
+                <div className="small-mono">Errors & Warnings</div>
+                <button
+                  type="button"
+                  onClick={downloadDebugBundle}
+                  className="btn-pill btn-secondary"
+                  title="Download a .zip with manuscript, settings, last error, and (if available) the last PDF"
+                >
+                  Share debug bundle (.zip)
+                </button>
+              </div>
               
               {/* Missing citations block */}
               {missingCitations.length > 0 && (
