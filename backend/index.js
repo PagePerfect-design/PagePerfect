@@ -95,7 +95,7 @@ app.get('/api/health/details', (_req, res) => {
   const templates = Object.keys(DESIGN_TEMPLATES)
   const pageSizes = ['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven']
   const marginPresets = ['normal','narrow','wide','minimal','academic','generous','compact']
-  res.json({ ok: true, service: 'pageperfect-backend', templates, pageSizes, marginPresets })
+  res.json({ ok: true, service: 'pageperfect-backend', templates, pageSizes, marginPresets, safeModeAvailable: true })
 });
 
 // Get available design templates
@@ -211,6 +211,15 @@ function styleWarnings(md) {
   return warnings;
 }
 
+// Crude but effective: replace bracketed citations like [@Key; see @Key2, p.33]
+function stripCitations(md) {
+  // Replace bracketed citation clusters with "(citation)"
+  let out = md.replace(/\[[^[\]]*@[^[\]]*\]/g, '(citation)');
+  // Common variants like "see @Key" (bare @) — make them plain text "see Key"
+  out = out.replace(/@([A-Za-z0-9:_\-]+)/g, '$1');
+  return out;
+}
+
 // Parse missing citations from stderr
 function parseMissingCitations(stderr) {
   const keys = new Set();
@@ -237,7 +246,8 @@ function parseMissingPackages(stderr) {
 }
 
 app.post('/api/compile', async (req, res) => {
-  let { manuscriptText, template, title, pageSize, marginPreset } = req.body || {};
+  let { manuscriptText, template, title, pageSize, marginPreset, safeMode } = req.body || {};
+  safeMode = Boolean(safeMode);
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
   }
@@ -271,14 +281,17 @@ app.post('/api/compile', async (req, res) => {
   const mdPath  = path.join(tmpBase, 'input.md');
   const pdfPath = path.join(tmpBase, 'output.pdf');
 
-  fs.writeFileSync(mdPath, manuscriptText, 'utf8');
+  // If safe mode, strip citations and skip citeproc/bibliography
+  const effectiveMd = safeMode ? stripCitations(manuscriptText) : manuscriptText;
+  fs.writeFileSync(mdPath, effectiveMd, 'utf8');
 
   const templateType = tpl.gridType || 'academic';
   const geo = geometryFor(pageSize, marginPreset, templateType);
-  console.log(`Generating PDF with pageSize: ${pageSize}, marginPreset: ${marginPreset}, geometry: ${geo}`);
-  const args = [
+  console.log(`Generating PDF with pageSize: ${pageSize}, marginPreset: ${marginPreset}, geometry: ${geo}, safeMode: ${safeMode}`);
+  
+  const baseArgs = [
     mdPath,
-    '--from=markdown',
+    safeMode ? '--from=markdown' : '--from=markdown+citations',
     '--pdf-engine=xelatex',
     '-M', `title=${title}`,
     `--template=${tpl.templatePath}`,
@@ -286,6 +299,13 @@ app.post('/api/compile', async (req, res) => {
     '-V', `geometry:${geo}`,
     '-o', pdfPath,
   ];
+
+  const args = safeMode
+    ? baseArgs
+    : baseArgs.concat([
+        '--citeproc',
+        `--bibliography=${BIB_PATH}`,
+      ]);
 
   const warnings = styleWarnings(manuscriptText);
   const startTs = Date.now();
@@ -327,13 +347,17 @@ app.post('/api/compile', async (req, res) => {
       });
       stream.pipe(res);
     } else {
-      const missingCitations = parseMissingCitations(stderr);
+      const missingCitations = safeMode ? [] : parseMissingCitations(stderr);
       const missingPackages  = parseMissingPackages(stderr);
 
       const messages = [];
-      if (missingCitations.length) messages.push(`Undefined citations: ${missingCitations.join(', ')}.`);
+      if (!safeMode) {
+        if (missingCitations.length) messages.push(`Undefined citations: ${missingCitations.join(', ')}.`);
+      } else {
+        messages.push('Safe mode was enabled. Citations/bibliography were not processed.');
+      }
       if (missingPackages.length)  messages.push(`Missing LaTeX packages: ${missingPackages.join(', ')}.`);
-      if (messages.length === 0)   messages.push('Typesetting failed. Please review your Markdown and citations.');
+      if (messages.length === 0)   messages.push('Typesetting failed. Please review your Markdown.');
 
       const tail = stderr.split('\n').slice(-15).join('\n');
 

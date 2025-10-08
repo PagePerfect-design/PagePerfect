@@ -108,6 +108,7 @@ export default function CompileShell() {
   const [title, setTitle] = useState<string>('Maritime Trade in the 17th Century')
   const [pageSize, setPageSize] = useState<PageSize>('letter')
   const [marginPreset, setMarginPreset] = useState<MarginPreset>('normal')
+  const [safeMode, setSafeMode] = useState<boolean>(false)
   const [showFormatting, setShowFormatting] = useState(false)
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
@@ -131,7 +132,7 @@ export default function CompileShell() {
     debounceRef.current = window.setTimeout(() => { void compile(false) }, 1000)
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscript, template, title, pageSize, marginPreset])
+  }, [manuscript, template, title, pageSize, marginPreset, safeMode])
 
   async function compile(downloadAfter: boolean) {
     // cancel any in-flight request
@@ -144,7 +145,7 @@ export default function CompileShell() {
     setErrors([])
 
     try {
-      const requestBody = { manuscriptText: manuscript, template, title, pageSize, marginPreset };
+      const requestBody = { manuscriptText: manuscript, template, title, pageSize, marginPreset, safeMode };
       console.log('Sending compile request:', requestBody);
       const resp = await fetch('/api/compile', {
         method: 'POST',
@@ -328,11 +329,33 @@ export default function CompileShell() {
                     <option value="compact">Compact</option>
                   </select>
                 </div>
+
+                {/* Safe Mode */}
+                <div className="flex items-center gap-2">
+                  <label htmlFor="safeMode" className="small-mono">Safe mode</label>
+                  <input
+                    id="safeMode"
+                    type="checkbox"
+                    checked={safeMode}
+                    onChange={(e) => setSafeMode(e.target.checked)}
+                    className="h-4 w-4 accent-blue-600"
+                    title="Compile without citations/bibliography"
+                  />
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Safe Mode Banner */}
+      {safeMode && (
+        <div className="mb-3 rounded-lg border border-yellow-300 bg-yellow-50 p-3">
+          <div className="text-sm text-gray-800">
+            <strong>Safe mode:</strong> Citations and bibliography are disabled for this compile.
+          </div>
+        </div>
+      )}
 
       {/* Two-panel layout */}
       <div className="container-grid py-4 md:py-6">
