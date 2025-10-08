@@ -56,7 +56,6 @@ trade-grid-test.pdf
 # Docker
 .dockerignore
 
-# Local Netlify folder
-.netlify
+# Local deployment folders
 .vercel
 .env*.local
