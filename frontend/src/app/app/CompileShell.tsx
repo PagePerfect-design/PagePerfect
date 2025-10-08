@@ -25,6 +25,57 @@ Trade was driven by prices, risk, and information flows across the Atlantic. See
 
 const BACKEND = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') || 'http://localhost:4000'
 
+// Filename helper functions
+function slug(s: string) {
+  return s
+    .toLowerCase()
+    .replace(/['']/g, '')                 // drop apostrophes
+    .replace(/[^a-z0-9]+/g, '-')          // non-alnum -> dashes
+    .replace(/^-+|-+$/g, '')              // trim dashes
+    .slice(0, 60)
+}
+
+function sizeCode(size: PageSize) {
+  switch (size) {
+    case 'a4': return 'a4'
+    case 'a5': return 'a5'
+    case 'sixByNine': return '6x9'
+    case 'fiveFiveByEightFive': return '5.5x8.5'
+    case 'sevenByTen': return '7x10'
+    case 'amazonFiveByEight': return 'amazon-5x8'
+    case 'amazonSixByNine': return 'amazon-6x9'
+    case 'amazonSevenByTen': return 'amazon-7x10'
+    case 'amazonEightByTen': return 'amazon-8x10'
+    case 'amazonEightFiveByEleven': return 'amazon-8.5x11'
+    case 'letter':
+    default: return 'letter'
+  }
+}
+
+function templateCode(t: TemplateKey) {
+  switch (t) {
+    case 'symphony': return 'symphony'
+    case 'chronicle': return 'chronicle'
+    case 'exhibit': return 'exhibit'
+    case 'matrix': return 'matrix'
+    case 'avantgarde': return 'avantgarde'
+    case 'paperback': return 'paperback'
+    case 'chicago':
+    default: return 'chicago'
+  }
+}
+
+function timestamp() {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`
+}
+
+function buildFilename(title: string, t: TemplateKey, size: PageSize) {
+  const left = slug(title) || 'manuscript'
+  return `${left}_${templateCode(t)}_${sizeCode(size)}_${timestamp()}.pdf`
+}
+
 const STATUS_LABEL: Record<Status, string> = {
   idle: 'Idle',
   compiling: 'Compiling…',
@@ -115,7 +166,7 @@ export default function CompileShell() {
         if (downloadAfter) {
           const a = document.createElement('a')
           a.href = url
-          a.download = `PagePerfect-${template}.pdf`
+          a.download = buildFilename(title, template, pageSize)
           document.body.appendChild(a)
           a.click()
           a.remove()
