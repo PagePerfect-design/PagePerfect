@@ -58,3 +58,5 @@ trade-grid-test.pdf
 
 # Local Netlify folder
 .netlify
+.vercel
+.env*.local
