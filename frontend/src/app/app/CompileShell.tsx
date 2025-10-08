@@ -23,7 +23,8 @@ Trade was driven by prices, risk, and information flows across the Atlantic. See
 # References
 `
 
-const BACKEND = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') || 'http://localhost:4000'
+// No longer needed - using Next.js rewrites to proxy /api/* to Railway
+// const BACKEND = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') || 'http://localhost:4000'
 
 // Filename helper functions
 function slug(s: string) {
@@ -144,9 +145,8 @@ export default function CompileShell() {
 
     try {
       const requestBody = { manuscriptText: manuscript, template, title, pageSize, marginPreset };
-      console.log('API Base:', BACKEND);
       console.log('Sending compile request:', requestBody);
-      const resp = await fetch(`${BACKEND}/api/compile`, {
+      const resp = await fetch('/api/compile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
