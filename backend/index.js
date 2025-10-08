@@ -87,8 +87,15 @@ app.options('/api/compile', (req, res) => {
   res.sendStatus(200);
 });
 
-app.get('/health', (_req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'pageperfect-backend', timestamp: new Date().toISOString(), version: '2.0' });
+});
+
+app.get('/api/health/details', (_req, res) => {
+  const templates = Object.keys(DESIGN_TEMPLATES)
+  const pageSizes = ['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven']
+  const marginPresets = ['normal','narrow','wide','minimal','academic','generous','compact']
+  res.json({ ok: true, service: 'pageperfect-backend', templates, pageSizes, marginPresets })
 });
 
 // Get available design templates
