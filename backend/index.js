@@ -7,6 +7,56 @@ const path = require('path');
 const { spawn } = require('child_process');
 const GridSystem = require('./grid-system');
 
+// ---- limits (env overridable) ----
+const MAX_MD_BYTES = Number(process.env.MAX_MD_BYTES || 2_000_000); // ~2 MB
+const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000); // 45s
+
+// Filename helper functions
+function slug(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/['']/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'manuscript';
+}
+function sizeCode(size) {
+  switch (size) {
+    case 'a4': return 'a4';
+    case 'a5': return 'a5';
+    case 'sixByNine': return '6x9';
+    case 'fiveFiveByEightFive': return '5.5x8.5';
+    case 'sevenByTen': return '7x10';
+    case 'amazonFiveByEight': return 'amazon-5x8';
+    case 'amazonSixByNine': return 'amazon-6x9';
+    case 'amazonSevenByTen': return 'amazon-7x10';
+    case 'amazonEightByTen': return 'amazon-8x10';
+    case 'amazonEightFiveByEleven': return 'amazon-8.5x11';
+    case 'letter':
+    default: return 'letter';
+  }
+}
+function templateCode(t) {
+  switch (t) {
+    case 'symphony': return 'symphony';
+    case 'chronicle': return 'chronicle';
+    case 'exhibit': return 'exhibit';
+    case 'matrix': return 'matrix';
+    case 'avantgarde': return 'avantgarde';
+    case 'paperback': return 'paperback';
+    case 'chicago':
+    default: return 'chicago';
+  }
+}
+function timestamp() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+function buildFilename(title, template, pageSize) {
+  return `${slug(title)}_${templateCode(template)}_${sizeCode(pageSize)}_${timestamp()}.pdf`;
+}
+
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -184,6 +234,17 @@ app.post('/api/compile', async (req, res) => {
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
   }
+
+  // Enforce payload size before spawning Pandoc
+  const mdBytes = Buffer.byteLength(manuscriptText, 'utf8');
+  if (mdBytes > MAX_MD_BYTES) {
+    return res
+      .status(413)
+      .json({
+        error: 'payload_too_large',
+        message: `Manuscript exceeds limit (${mdBytes} > ${MAX_MD_BYTES} bytes). Try splitting chapters or removing images.`,
+      });
+  }
   const tplKey = DESIGN_TEMPLATES[String(template)] ? String(template) : 'symphony';
   const tpl = DESIGN_TEMPLATES[tplKey];
 
@@ -220,15 +281,39 @@ app.post('/api/compile', async (req, res) => {
   ];
 
   const warnings = styleWarnings(manuscriptText);
+  const startTs = Date.now();
   const pandoc = spawn('pandoc', args, { cwd: tmpBase });
 
   let stderr = '';
   pandoc.stderr.on('data', (d) => { stderr += d.toString(); });
 
+  let timedOut = false;
+  const killer = setTimeout(() => {
+    timedOut = true;
+    try { pandoc.kill('SIGKILL'); } catch {}
+  }, COMPILE_TIMEOUT_MS);
+
   pandoc.on('close', (code) => {
+    clearTimeout(killer);
+    const elapsed = Date.now() - startTs;
+    res.setHeader('X-PP-Compile-Time', String(elapsed)); // handy in prod
+    
+    // ----- timeout path -----
+    if (timedOut) {
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+      return res.status(504).json({
+        error: 'compile_timeout',
+        message: `Compilation exceeded ${COMPILE_TIMEOUT_MS}ms and was stopped.`,
+        detail: stderr.split('\n').slice(-15).join('\n'),
+      });
+    }
+    
+    // ----- success / failure paths (existing) -----
     if (code === 0 && fs.existsSync(pdfPath)) {
+      const filename = buildFilename(title, tplKey, pageSize);
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'inline; filename="PagePerfect.pdf"');
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.setHeader('X-PP-Filename', filename);
       const stream = fs.createReadStream(pdfPath);
       stream.on('close', () => {
         try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
