@@ -5,7 +5,9 @@
 \usepackage{setspace}
 \usepackage{fontspec}
 \setmainfont{Lato}
+$if(microtype)$
 \usepackage{microtype}
+$endif$
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{titlesec}

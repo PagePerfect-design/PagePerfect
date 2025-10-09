@@ -5,8 +5,13 @@
 \usepackage{parskip}
 \usepackage{fontspec}
 \setmainfont{DejaVu Serif}
+$if(microtype)$
 \usepackage{microtype}
+$endif$
+
+$if(csquotes)$
 \usepackage{csquotes}
+$endif$
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{titlesec}

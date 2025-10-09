@@ -96,7 +96,8 @@ app.get('/api/health/details', (_req, res) => {
   const templates = Object.keys(DESIGN_TEMPLATES)
   const pageSizes = ['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven']
   const marginPresets = ['normal','narrow','wide','minimal','academic','generous','compact']
-  res.json({ ok: true, service: 'pageperfect-backend', templates, pageSizes, marginPresets, safeModeAvailable: true })
+  const compileModes = ['fast','full']
+  res.json({ ok: true, service: 'pageperfect-backend', templates, pageSizes, marginPresets, compileModes, safeModeAvailable: true })
 });
 
 // Get available design templates
@@ -258,8 +259,9 @@ function parseMissingPackages(stderr) {
 }
 
 app.post('/api/compile', async (req, res) => {
-  let { manuscriptText, template, title, pageSize, marginPreset, safeMode } = req.body || {};
+  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode } = req.body || {};
   safeMode = Boolean(safeMode);
+  compileMode = (compileMode === 'full') ? 'full' : 'fast';
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
   }
@@ -299,7 +301,13 @@ app.post('/api/compile', async (req, res) => {
 
   const templateType = tpl.gridType || 'academic';
   const geo = geometryFor(pageSize, marginPreset, templateType);
-  console.log(`Generating PDF with pageSize: ${pageSize}, marginPreset: ${marginPreset}, geometry: ${geo}, safeMode: ${safeMode}`);
+  
+  // Decide which template variables to enable based on compile mode
+  const isFast = compileMode === 'fast';
+  const enableMicrotype = !isFast;   // heavy: better kept for "full"
+  const enableCsquotes  = !isFast;   // also heavier with citeproc stacks
+  
+  console.log(`Generating PDF with pageSize: ${pageSize}, marginPreset: ${marginPreset}, geometry: ${geo}, safeMode: ${safeMode}, compileMode: ${compileMode}`);
   
   const baseArgs = [
     mdPath,
@@ -309,6 +317,9 @@ app.post('/api/compile', async (req, res) => {
     `--template=${tpl.templatePath}`,
     '-V', `mainfont=${tpl.mainfont}`,
     '-V', `geometry:${geo}`,
+    // template booleans:
+    ...(enableMicrotype ? ['-V','microtype=true'] : []),
+    ...(enableCsquotes  ? ['-V','csquotes=true']  : []),
     '-o', pdfPath,
   ];
 

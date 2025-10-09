@@ -9,6 +9,7 @@ import TemplateNotes from './TemplateNotes'
 type TemplateKey = 'minimal' | 'symphony' | 'chronicle' | 'exhibit' | 'matrix' | 'avantgarde' | 'chicago' | 'paperback'
 type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
 type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'generous' | 'compact'
+type CompileMode = 'fast' | 'full'
 type CompileError = { message: string }
 type Status = 'idle' | 'compiling' | 'success' | 'error'
 
@@ -206,6 +207,7 @@ export default function CompileShell() {
   const [pageSize, setPageSize] = useState<PageSize>('letter')
   const [marginPreset, setMarginPreset] = useState<MarginPreset>('normal')
   const [safeMode, setSafeMode] = useState<boolean>(false)
+  const [compileMode, setCompileMode] = useState<CompileMode>('fast')
   const [showFormatting, setShowFormatting] = useState(false)
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
@@ -275,7 +277,7 @@ export default function CompileShell() {
     debounceRef.current = window.setTimeout(() => { void compile(false) }, 1000)
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscript, template, title, pageSize, marginPreset, safeMode])
+  }, [manuscript, template, title, pageSize, marginPreset, safeMode, compileMode])
 
   async function compile(downloadAfter: boolean) {
     // cancel any in-flight request
@@ -289,7 +291,7 @@ export default function CompileShell() {
 
     try {
       const effectiveMd = adjustHeadingsForTemplate(manuscript, template)
-      const requestBody = { manuscriptText: effectiveMd, template, title, pageSize, marginPreset, safeMode };
+      const requestBody = { manuscriptText: effectiveMd, template, title, pageSize, marginPreset, safeMode, compileMode };
       console.log('Sending compile request:', requestBody);
       const resp = await fetch('/api/compile', {
         method: 'POST',
@@ -538,6 +540,21 @@ Notes:
                     className="h-4 w-4 accent-blue-600"
                     title="Compile without citations/bibliography"
                   />
+                </div>
+
+                {/* Compile Mode */}
+                <div className="flex items-center gap-2">
+                  <label htmlFor="compileMode" className="small-mono">Mode</label>
+                  <select
+                    id="compileMode"
+                    className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
+                    value={compileMode}
+                    onChange={(e) => setCompileMode(e.target.value as CompileMode)}
+                    title="Fast preview skips heavy typographic passes; Full quality is best for final PDFs."
+                  >
+                    <option value="fast">Fast preview</option>
+                    <option value="full">Full quality</option>
+                  </select>
                 </div>
 
                 {/* Reset Preferences */}
