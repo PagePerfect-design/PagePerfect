@@ -2,6 +2,7 @@ import Container from '@/components/Container'
 import Section from '@/components/Section'
 import CopyCitation from '@/components/CopyCitation'
 import AuthorGuideTools from '@/components/AuthorGuideTools'
+import RequirementsCheck from './RequirementsCheck'
 import Image from 'next/image'
 
 export const metadata = {
@@ -30,6 +31,7 @@ export default function DocsPage() {
           </p>
           <div className="mt-6"><CopyCitation /></div>
           <div className="mt-4"><AuthorGuideTools /></div>
+          <div className="mt-6"><RequirementsCheck /></div>
         </Section>
 
         <Section className="pt-0">
