@@ -121,6 +121,13 @@ function cleanFromWord(input: string): string {
 }
 
 // Chapter helper functions
+// Demote H1 chapter headings to H2 for Paperback, leave others alone
+function adjustHeadingsForTemplate(md: string, template: TemplateKey): string {
+  if (template !== 'paperback') return md
+  // Only demote lines that look like "# Chapter ..." (case-insensitive)
+  return md.replace(/^#\s+(chapter\b.*)$/gim, '## $1')
+}
+
 // Find the next Chapter number by scanning "# Chapter N" headings
 function nextChapterNumber(md: string) {
   const re = /^#\s*Chapter\s+(\d+)\b/igm
@@ -133,17 +140,18 @@ function nextChapterNumber(md: string) {
 }
 
 // Build a Markdown chapter skeleton with a LaTeX page break
-function chapterSkeleton(n: number) {
+function chapterSkeleton(n: number, template: TemplateKey) {
+  const h = template === 'paperback' ? '##' : '#'
   return `\\newpage
 
-# Chapter ${n} — Your Title Here
+${h} Chapter ${n} — Your Title Here
 
 Intro paragraph. Set the scene and thesis for this chapter.
 
-## Section 1
+${h}# Section 1
 Write a few sentences. Cite sources like [@Finch2023].
 
-## Section 2
+${h}# Section 2
 Continue your argument. Use *italics*/**bold** sparingly.
 
 `
@@ -280,7 +288,8 @@ export default function CompileShell() {
     setErrors([])
 
     try {
-      const requestBody = { manuscriptText: manuscript, template, title, pageSize, marginPreset, safeMode };
+      const effectiveMd = adjustHeadingsForTemplate(manuscript, template)
+      const requestBody = { manuscriptText: effectiveMd, template, title, pageSize, marginPreset, safeMode };
       console.log('Sending compile request:', requestBody);
       const resp = await fetch('/api/compile', {
         method: 'POST',
@@ -620,7 +629,7 @@ Notes:
                       const el = textRef.current
                       if (!el) return
                       const n = nextChapterNumber(manuscript)
-                      insertAtCursor(el, chapterSkeleton(n), setManuscript)
+                      insertAtCursor(el, chapterSkeleton(n, template), setManuscript)
                     }}
                   >
                     Insert chapter
