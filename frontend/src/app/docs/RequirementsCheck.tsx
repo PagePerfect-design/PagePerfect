@@ -34,7 +34,7 @@ export default function RequirementsCheck() {
 
     // 1) Proxy: /api/health (should hit Railway via Next rewrite)
     set('proxy', { status: 'running', note: '' })
-    let healthJson: any = null
+    let healthJson: { ok?: boolean } | null = null
     try {
       const res = await fetch('/api/health', { method: 'GET' })
       healthJson = await res.json().catch(() => ({}))
@@ -43,7 +43,7 @@ export default function RequirementsCheck() {
       } else {
         set('proxy', { status: 'fail', note: `Status ${res.status}` })
       }
-    } catch (e: any) {
+    } catch {
       set('proxy', { status: 'fail', note: 'Network error' })
     }
 
