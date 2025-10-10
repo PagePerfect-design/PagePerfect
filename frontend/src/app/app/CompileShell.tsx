@@ -407,41 +407,41 @@ Notes:
 
   return (
     <div className="min-h-[calc(100vh-0px)]">
-            {/* Top bar */}
-            <div className="sticky top-0 z-10">
-              <div className="container-grid py-4">
-                <div className="bg-white border border-ens-gray-200 rounded-2xl shadow-card px-4 md:px-6 py-3 flex flex-col md:flex-row items-start md:items-center gap-3">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <Image 
-              src="/PagePerfect_1_Icon.png" 
-              alt="Page Perfect" 
-              width={32}
-              height={32}
-              className="h-8 w-8"
-            />
-            <span className="font-display text-xl font-black tracking-tight text-ens-dark">
-              Page Perfect
-            </span>
-          </Link>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center md:ml-auto">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Manuscript title"
-              aria-label="Manuscript title"
-              className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2 min-w-[200px] max-w-[300px]"
-            />
-            <div className="flex items-center gap-3">
-              <button className="btn-pill btn-primary" onClick={() => compile(true)}>
-                Download PDF
-              </button>
-              <StatusPill status={status} />
-            </div>
-          </div>
-                </div>
+      {/* Top bar */}
+      <div className="sticky top-0 z-10">
+        <div className="container-grid py-4">
+          <div className="bg-white border border-ens-gray-200 rounded-2xl shadow-card px-4 md:px-6 py-3 flex flex-col md:flex-row items-start md:items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <Image 
+                src="/PagePerfect_1_Icon.png" 
+                alt="Page Perfect" 
+                width={32}
+                height={32}
+                className="h-8 w-8"
+              />
+              <span className="font-display text-xl font-black tracking-tight text-ens-dark">
+                Page Perfect
+              </span>
+            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center md:ml-auto">
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Manuscript title"
+                aria-label="Manuscript title"
+                className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2 min-w-[200px] max-w-[300px]"
+              />
+              <div className="flex items-center gap-3">
+                <button className="btn-pill btn-primary" onClick={() => compile(true)}>
+                  Download PDF
+                </button>
+                <StatusPill status={status} />
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
       {/* Formatting Controls Panel */}
       <div className="container-grid py-4 md:py-6">
@@ -596,109 +596,126 @@ Notes:
           {/* Left: Editor + Error console */}
           <div className="flex flex-col gap-3">
             <div className="card p-0 overflow-hidden">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b px-3 py-2 gap-2">
-                <div className="small-mono">Editor</div>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                  <div className="flex gap-2">
+              {/* Editor Header with Improved Visual Hierarchy */}
+              <div className="border-b border-ens-gray-200 bg-ens-light/20">
+                <div className="px-4 py-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-ens-midnight">Manuscript Editor</h3>
+                    <StatusPill status={status} />
+                  </div>
+                  
+                  {/* Action Buttons - Consistent with Header Design */}
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
-                      className="small-mono underline text-ens-blue hover:opacity-80 text-sm"
+                      className="btn-pill btn-secondary text-sm"
                       onClick={() => setManuscript(SAMPLE_MD)}
                       type="button"
                     >
-                      Load sample
+                      Load Sample
                     </button>
                     <button
-                      className="small-mono underline text-ens-blue/80 hover:opacity-80 text-sm"
+                      className="btn-pill btn-secondary text-sm"
                       onClick={() => setManuscript('# Your manuscript in Markdown…')}
                       type="button"
                     >
                       Reset
                     </button>
+                    <button
+                      type="button"
+                      className="btn-pill btn-secondary text-sm"
+                      onClick={() => setManuscript(m => cleanFromWord(m))}
+                      title="Normalize the entire manuscript now"
+                    >
+                      Clean Text
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-pill btn-primary text-sm"
+                      title="Insert a numbered chapter heading with a page break"
+                      onClick={() => {
+                        const el = textRef.current
+                        if (!el) return
+                        const n = nextChapterNumber(manuscript)
+                        insertAtCursor(el, chapterSkeleton(n, template), setManuscript)
+                      }}
+                    >
+                      Insert Chapter
+                    </button>
                   </div>
                   
-                  {/* Clean on paste toggle */}
-                  <label className="small-mono inline-flex items-center gap-2 text-sm" title="Normalize Word punctuation, bullets, and spaces when pasting">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-ens-blue"
-                      checked={cleanOnPaste}
-                      onChange={(e) => setCleanOnPaste(e.target.checked)}
-                    />
-                    Clean on paste
-                  </label>
-
-                  {/* One-click clean */}
-                  <button
-                    type="button"
-                    className="small-mono underline text-ens-blue hover:opacity-80 text-sm"
-                    onClick={() => setManuscript(m => cleanFromWord(m))}
-                    title="Normalize the entire manuscript now"
-                  >
-                    Clean now
-                  </button>
-
-                  {/* Insert Chapter */}
-                  <button
-                    type="button"
-                    className="small-mono underline text-ens-blue hover:opacity-80 text-sm"
-                    title="Insert a numbered chapter heading with a page break"
-                    onClick={() => {
-                      const el = textRef.current
-                      if (!el) return
-                      const n = nextChapterNumber(manuscript)
-                      insertAtCursor(el, chapterSkeleton(n, template), setManuscript)
-                    }}
-                  >
-                    Insert chapter
-                  </button>
-                  
-                  <StatusPill status={status} />
+                  {/* Settings Row */}
+                  <div className="mt-3 pt-3 border-t border-ens-gray-200">
+                    <label className="inline-flex items-center gap-2 text-sm text-ens-gray-700" title="Normalize Word punctuation, bullets, and spaces when pasting">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-ens-blue rounded border-ens-gray-300"
+                        checked={cleanOnPaste}
+                        onChange={(e) => setCleanOnPaste(e.target.checked)}
+                      />
+                      <span className="font-medium">Auto-clean on paste</span>
+                      <span className="text-xs text-ens-gray-500">(Smart quotes, dashes, bullets)</span>
+                    </label>
+                  </div>
                 </div>
               </div>
-              <textarea
-                ref={textRef}
-                value={manuscript}
-                onChange={(e) => setManuscript(e.target.value)}
-                onPaste={(e) => {
-                  if (!cleanOnPaste) return
-                  const t = e.clipboardData?.getData('text/plain') ?? ''
-                  if (!t) return
-                  e.preventDefault()
-                  const cleaned = cleanFromWord(t)
-                  const el = e.currentTarget
-                  const start = el.selectionStart ?? manuscript.length
-                  const end = el.selectionEnd ?? start
-                  const next = manuscript.slice(0, start) + cleaned + manuscript.slice(end)
-                  setManuscript(next)
-                  // Restore caret on next tick
-                  setTimeout(() => {
-                    const pos = start + cleaned.length
-                    if (textRef.current) {
-                      textRef.current.selectionStart = pos
-                      textRef.current.selectionEnd = pos
-                      textRef.current.focus()
-                    }
-                  }, 0)
-                }}
-                className="h-[50vh] sm:h-[60vh] w-full resize-vertical p-4 outline-none"
-                placeholder="# Your manuscript in Markdown…"
-                aria-label="Manuscript editor"
-              />
+              {/* Enhanced Textarea with Better Typography */}
+              <div className="relative">
+                <textarea
+                  ref={textRef}
+                  value={manuscript}
+                  onChange={(e) => setManuscript(e.target.value)}
+                  onPaste={(e) => {
+                    if (!cleanOnPaste) return
+                    const t = e.clipboardData?.getData('text/plain') ?? ''
+                    if (!t) return
+                    e.preventDefault()
+                    const cleaned = cleanFromWord(t)
+                    const el = e.currentTarget
+                    const start = el.selectionStart ?? manuscript.length
+                    const end = el.selectionEnd ?? start
+                    const next = manuscript.slice(0, start) + cleaned + manuscript.slice(end)
+                    setManuscript(next)
+                    // Restore caret on next tick
+                    setTimeout(() => {
+                      const pos = start + cleaned.length
+                      if (textRef.current) {
+                        textRef.current.selectionStart = pos
+                        textRef.current.selectionEnd = pos
+                        textRef.current.focus()
+                      }
+                    }, 0)
+                  }}
+                  className="h-[50vh] sm:h-[60vh] w-full resize-vertical p-6 outline-none border-0 bg-white font-mono text-sm leading-relaxed focus:ring-0 focus:outline-none"
+                  placeholder="# Your manuscript in Markdown…"
+                  aria-label="Manuscript editor"
+                  style={{ 
+                    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                    lineHeight: '1.6'
+                  }}
+                />
+                {/* Word count indicator */}
+                <div className="absolute bottom-3 right-3 text-xs text-ens-gray-400 bg-white/80 px-2 py-1 rounded">
+                  {manuscript.split(/\s+/).filter(w => w.length > 0).length} words
+                </div>
+              </div>
             </div>
 
-            {/* Error console */}
-            <div className="card p-4" role="region" aria-live="polite" aria-label="Error console">
-              <div className="mb-2 flex items-center justify-between">
-                <div className="small-mono">Errors & Warnings</div>
-                <button
-                  type="button"
-                  onClick={downloadDebugBundle}
-                  className="btn-pill btn-secondary"
-                  title="Download a .zip with manuscript, settings, last error, and (if available) the last PDF"
-                >
-                  Share debug bundle (.zip)
-                </button>
+            {/* Enhanced Error Console */}
+            <div className="card p-0 overflow-hidden" role="region" aria-live="polite" aria-label="Error console">
+              <div className="bg-ens-light/20 border-b border-ens-gray-200 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-ens-midnight">Compilation Status</h3>
+                  <button
+                    type="button"
+                    onClick={downloadDebugBundle}
+                    className="btn-pill btn-secondary text-sm"
+                    title="Download a .zip with manuscript, settings, last error, and (if available) the last PDF"
+                  >
+                    Debug Bundle
+                  </button>
+                </div>
               </div>
+              <div className="p-4">
               
               {/* Missing citations block */}
               {missingCitations.length > 0 && (
@@ -756,6 +773,7 @@ Notes:
               <p className="mt-2 text-xs text-ens-gray-700">
                 Examples: <code>Undefined citation: &apos;Finch2023&apos;</code>, double spaces after a period, missing package, etc.
               </p>
+              </div>
             </div>
           </div>
 
