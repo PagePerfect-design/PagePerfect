@@ -45,3 +45,4 @@ Our implementation follows Müller-Brockmann's principles of:
 ---
 
 *PagePerfect embodies Müller-Brockmann's vision of design as a systematic, objective discipline that serves the content and the reader.*
+# Vercel redeploy trigger Sun Oct 12 09:20:14 BST 2025
