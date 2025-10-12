@@ -3,8 +3,6 @@
 \usepackage{geometry} % margin & size come from Pandoc -V geometry:...
 \usepackage{setspace}
 \usepackage{parskip}
-\usepackage{fontspec}
-\setmainfont{DejaVu Serif}
 \usepackage{hyperref}
 
 % Basic Typography
