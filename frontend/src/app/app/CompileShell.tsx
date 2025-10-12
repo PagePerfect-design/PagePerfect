@@ -206,7 +206,7 @@ export default function CompileShell() {
   const [title, setTitle] = useState<string>('Maritime Trade in the 17th Century')
   const [pageSize, setPageSize] = useState<PageSize>('letter')
   const [marginPreset, setMarginPreset] = useState<MarginPreset>('normal')
-  const [safeMode, setSafeMode] = useState<boolean>(false)
+  const [safeMode, setSafeMode] = useState<boolean>(true)
   const [compileMode, setCompileMode] = useState<CompileMode>('fast')
   const [showFormatting, setShowFormatting] = useState(false)
   const [loading, setLoading] = useState(false)
