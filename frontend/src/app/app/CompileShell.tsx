@@ -418,6 +418,7 @@ Notes:
                 width={32}
                 height={32}
                 className="h-8 w-8"
+                priority
               />
               <span className="font-display text-xl font-black tracking-tight text-ens-dark">
                 Page Perfect

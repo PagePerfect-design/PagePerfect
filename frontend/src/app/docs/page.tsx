@@ -22,6 +22,7 @@ export default function DocsPage() {
               width={48}
               height={48}
               className="h-12 w-12"
+              priority
             />
             <h1 className="font-display text-h1 font-black leading-tight tracking-tight">Docs</h1>
           </div>

@@ -16,6 +16,7 @@ export default function Home() {
                 width={64}
                 height={64}
                 className="h-16 w-16"
+                priority
               />
               <h1 className="font-display text-hero font-black leading-tight tracking-tight">Page Perfect</h1>
             </div>
