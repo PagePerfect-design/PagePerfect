@@ -67,13 +67,7 @@ const gridSystem = new GridSystem();
 app.use(morgan('tiny'));
 app.use(express.json({ limit: '20mb' }));
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001', 
-    'http://localhost:5173',
-    'https://pageperfectdesign.netlify.app',
-    process.env.ALLOWED_ORIGIN
-  ].filter(Boolean),
+  origin: true, // Allow all origins temporarily for testing
   methods: ['GET','POST','OPTIONS'],
   allowedHeaders: ['Content-Type'],
   credentials: true,
