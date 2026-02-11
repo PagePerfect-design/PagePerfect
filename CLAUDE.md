@@ -4,6 +4,8 @@
 
 PagePerfect is a PDF generation system that converts Markdown manuscripts to professionally typeset PDFs using XeLaTeX. It implements Josef Müller-Brockmann's grid system principles (baseline grids, golden-ratio typography, proportional spacing). The app is a loosely-coupled monorepo with a React/Next.js frontend and a Node.js/Express backend.
 
+The product targets authors, academics, and publishers who need professional typesetting without the complexity of InDesign or the limitations of consumer tools like Vellum (Mac-only, $500) or Atticus ($147, limited typography). PagePerfect undercuts all competitors with a free tier and a $199 lifetime option.
+
 ## Repository Structure
 
 ```
@@ -11,21 +13,33 @@ PagePerfect/
 ├── frontend/                  # Next.js 15 React app (TypeScript)
 │   ├── src/
 │   │   ├── app/               # App Router pages
-│   │   │   ├── page.tsx       # Landing page (/)
-│   │   │   ├── layout.tsx     # Root layout with Google Fonts
-│   │   │   ├── globals.css    # Global styles & CSS tokens
+│   │   │   ├── page.tsx       # Product landing page (/) — hero, features, comparison table
+│   │   │   ├── layout.tsx     # Root layout with Nav, Footer, Google Fonts
+│   │   │   ├── globals.css    # Dark design system — tokens, utilities, button/card styles
+│   │   │   ├── page.module.css # Legacy (unused) — left over from create-next-app
 │   │   │   ├── app/           # Editor (/app)
-│   │   │   │   ├── CompileShell.tsx   # Main editor component (~1030 lines)
+│   │   │   │   ├── CompileShell.tsx   # Main editor component (~670 lines)
 │   │   │   │   ├── TemplateHelp.tsx   # Template help tooltip
 │   │   │   │   ├── TemplateNotes.tsx  # Template-specific notes
 │   │   │   │   ├── authorGuide.ts     # Author guide content
 │   │   │   │   └── sample.ts          # Sample manuscript
 │   │   │   ├── docs/          # Documentation (/docs)
+│   │   │   │   ├── page.tsx           # Docs page with troubleshooting cards
+│   │   │   │   └── RequirementsCheck.tsx  # Automated health/compile checks
+│   │   │   ├── pricing/       # Pricing (/pricing)
+│   │   │   │   └── page.tsx           # 3-tier pricing with FAQ
 │   │   │   └── status/        # Health check (/status)
-│   │   └── components/        # Reusable UI (Button, Container, Section, etc.)
-│   ├── public/                # Static assets & PWA manifest
-│   ├── tailwind.config.ts     # Custom theme (ENS-inspired palette)
-│   ├── next.config.ts         # API rewrites to backend
+│   │   │       ├── page.tsx           # Server-rendered status shell
+│   │   │       └── StatusClient.tsx   # Client-side connectivity diagnostics
+│   │   └── components/        # Reusable UI
+│   │       ├── Button.tsx             # primary/secondary/ghost × sm/md/lg
+│   │       ├── Container.tsx          # max-w-7xl centered wrapper
+│   │       ├── Section.tsx            # default/raised/light/dark page sections
+│   │       ├── AuthorGuideTools.tsx   # Copy/download author guide
+│   │       └── CopyCitation.tsx       # Copy citation example to clipboard
+│   ├── public/                # Static assets, PWA manifest, icons
+│   ├── tailwind.config.ts     # Dark design system tokens (colors, shadows, animations)
+│   ├── next.config.ts         # API rewrites to backend, unoptimized images for Netlify
 │   ├── eslint.config.mjs      # ESLint flat config (next/core-web-vitals)
 │   └── tsconfig.json          # Strict mode, @/* path alias
 │
@@ -44,6 +58,7 @@ PagePerfect/
 │   ├── references/            # Sample .bib for citations
 │   └── Dockerfile             # Ubuntu 22.04, Node 18, Pandoc, texlive-xetex
 │
+├── CLAUDE.md                  # This file
 ├── README.md
 ├── GRID_SYSTEM.md             # Grid system design documentation
 ├── GIT_WORKFLOW.md            # Branching & commit conventions
@@ -56,7 +71,7 @@ PagePerfect/
 |-------|-----------|
 | Frontend framework | Next.js 15.5.4 (React 19, App Router) |
 | Frontend language | TypeScript 5 (strict mode) |
-| Styling | Tailwind CSS 3.4 with custom theme tokens |
+| Styling | Tailwind CSS 3.4 with dark design system tokens |
 | Build tool | Turbopack (via Next.js) |
 | Linting | ESLint 9 (next/core-web-vitals, next/typescript) |
 | Backend framework | Express 5.1 |
@@ -122,6 +137,102 @@ User edits Markdown in browser
 - `GET /api/templates` — Design template registry
 - `POST /api/compile` — Compile Markdown to PDF (accepts: markdown, template, pageSize, marginPreset, compileMode, safeMode, title)
 
+### Frontend Routes
+
+| Route | File | Description |
+|-------|------|-------------|
+| `/` | `app/page.tsx` | Product landing page with hero, features, comparison table, CTA |
+| `/app` | `app/app/page.tsx` | Markdown editor with live PDF preview |
+| `/docs` | `app/docs/page.tsx` | Author guide, citation help, troubleshooting, requirements check |
+| `/pricing` | `app/pricing/page.tsx` | 3-tier pricing (Drafter / Publisher / Studio) with FAQ |
+| `/status` | `app/status/page.tsx` | API connectivity diagnostics and server capabilities |
+
+## Design System
+
+The frontend uses a **dark-first** design language. All color tokens, shadows, and animations are defined in `tailwind.config.ts` with supporting CSS utilities in `globals.css`.
+
+### Color Tokens
+
+Use these token names in Tailwind classes (e.g., `bg-surface-raised`, `text-accent`, `border-border`).
+
+**Surfaces (dark backgrounds):**
+- `surface` — `#0a0a0f` (page background)
+- `surface-raised` — `#111118` (cards, panels)
+- `surface-overlay` — `#1a1a24` (modals, dropdowns)
+- `surface-subtle` — `#22222e` (hover states, code blocks)
+
+**Accent (blue spectrum):**
+- `accent` — `#4f8fff` (links, primary actions)
+- `accent-hover` — `#6ba1ff`
+- `accent-muted` — `#2a4a7f`
+- `accent-glow` — `rgba(79,143,255,0.15)` (glow effects)
+- `accent-soft` — `rgba(79,143,255,0.08)` (tinted backgrounds)
+
+**Text hierarchy:**
+- `text-primary` — `#f0f0f5` (headings, important text)
+- `text-secondary` — `#a0a0b0` (body copy)
+- `text-tertiary` — `#606070` (labels, captions)
+- `text-ghost` — `#404050` (placeholders, disabled)
+
+**Status:**
+- `success` / `success-muted` — green (`#34d399`)
+- `warning` / `warning-muted` — amber (`#fbbf24`)
+- `danger` / `danger-muted` — red (`#f87171`)
+
+**Borders:**
+- `border` — `rgba(255,255,255,0.06)` (default dividers)
+- `border-subtle` — `rgba(255,255,255,0.03)`
+- `border-accent` — `rgba(79,143,255,0.2)` (focus rings, active states)
+
+**Legacy ENS tokens** (`ens-blue`, `ens-dark`, `ens-midnight`, etc.) remain in the config for backward compatibility but should not be used in new code.
+
+### Typography
+
+Three Google Fonts loaded in `layout.tsx`:
+- **Space Grotesk** (`--font-display`) — headings, nav, UI labels
+- **Source Serif 4** (`--font-body`) — body text, paragraphs
+- **IBM Plex Mono** (`--font-mono`) — code, status indicators
+
+Responsive type scale in `globals.css`:
+- `.h1` — `clamp(2rem, 3.5vw, 3.5rem)`
+- `.h2` — `clamp(1.5rem, 2.5vw, 2.5rem)`
+- `.h3` — `clamp(1.25rem, 1.8vw, 1.5rem)`
+- Hero size — `clamp(3rem, 6vw, 5.5rem)`
+
+### Shadows
+
+- `shadow-card` / `shadow-card-hover` — card elevation
+- `shadow-elevated` — modals, overlays
+- `shadow-pill` / `shadow-pill-hover` — accent-glowing buttons
+- `shadow-paper` — PDF preview skeuomorphic shadow
+- `shadow-glow-accent` / `shadow-glow-success` — colored glow halos
+
+### Animations
+
+- `animate-fade-in` — 0.5s opacity
+- `animate-fade-in-up` — 0.6s opacity + translateY
+- `animate-fade-in-down` — 0.4s opacity + translateY
+- `animate-scale-in` — 0.3s scale
+- `animate-shimmer` — 2s infinite gradient sweep
+- `animate-pulse-soft` — 2s breathing opacity
+- `animate-slide-up` — 0.5s translateY
+
+### CSS Utility Classes (globals.css)
+
+| Class | Purpose |
+|-------|---------|
+| `.btn-pill` | Base pill-shaped button (rounded-full, transitions) |
+| `.btn-primary` | Accent blue button with glow shadow |
+| `.btn-secondary` | Bordered ghost button |
+| `.btn-ghost` | Transparent text-only button |
+| `.card` | Dark raised surface with border and shadow |
+| `.input-dark` | Dark form input/select styling |
+| `.paper-surface` | Radial-gradient dark desk for PDF preview |
+| `.gradient-text` | White→gray gradient text |
+| `.gradient-accent-text` | Blue→indigo gradient text |
+| `.divider` | Horizontal gradient separator line |
+| `.skip-link` | Accessibility skip-to-content link |
+
 ## Key Conventions
 
 ### File Naming
@@ -139,7 +250,25 @@ User edits Markdown in browser
 - **Tooltips**: Rendered via `createPortal` to `document.body`
 - **Path alias**: `@/*` maps to `./src/*`
 - **Types**: Defined locally at the top of files (e.g., `TemplateKey`, `PageSize`, `MarginPreset`, `CompileMode`)
-- **CSS**: Utility-first Tailwind with custom tokens (ens-blue, ens-dark, etc.)
+- **CSS**: Utility-first Tailwind with dark design system tokens (`surface-*`, `accent-*`, `text-*`, `border-*`). Do NOT use legacy `ens-*` tokens in new code.
+- **Layout**: Root layout provides sticky `Nav` (blur header with logo, Pricing, Docs, Open Editor CTA) and `Footer` (logo, links, tagline). Pages render between them.
+- **Fonts**: Space Grotesk for display, Source Serif 4 for body, IBM Plex Mono for mono — loaded via `next/font/google` in `layout.tsx`.
+
+### Component APIs
+
+**`Button`** (`@/components/Button`):
+- `variant`: `'primary'` | `'secondary'` | `'ghost'` (default: `'primary'`)
+- `size`: `'sm'` | `'md'` | `'lg'` (default: `'md'`)
+- `href`: optional — renders as `<Link>` instead of `<button>`
+- Extends `ButtonHTMLAttributes<HTMLButtonElement>`
+
+**`Section`** (`@/components/Section`):
+- `variant`: `'default'` | `'raised'` | `'light'` | `'dark'` (default: `'default'`)
+- `id`: optional — for anchor links
+- Default padding: `py-16 md:py-24`
+
+**`Container`** (`@/components/Container`):
+- Centered wrapper: `mx-auto max-w-7xl px-6 md:px-8`
 
 ### Backend Patterns
 
@@ -155,7 +284,7 @@ User edits Markdown in browser
 
 The `GridSystem` class in `backend/grid-system.js` implements:
 
-- **Baseline grids**: 12pt (academic) or 11pt (trade) depending on template
+- **Baseline grids**: 12pt (academic/basic) or 11pt (trade/editorial/corporate/creative) depending on template
 - **Golden-ratio typographic scale** (multiplier 1.618): heading sizes derived from baseline
 - **Margin presets**: 7 presets (minimal→generous) expressed as grid-unit multiples
 - **LaTeX generation**: Produces `\geometry{}` commands and typography preamble
@@ -165,6 +294,16 @@ The `GridSystem` class in `backend/grid-system.js` implements:
 - **Branches**: `main` (production), `develop` (integration), `feature/*`, `bugfix/*`, `hotfix/*`
 - **Commits**: Conventional Commits format (`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`, `chore:`)
 - **Commit template**: `.gitmessage` at repo root
+
+## Pricing Model
+
+Defined in `frontend/src/app/pricing/page.tsx`. Currently informational (no paywall enforced).
+
+| Tier | Price | Key differentiators |
+|------|-------|-------------------|
+| **Drafter** | Free | All 8 templates, 3 page sizes, real-time preview, watermarked output |
+| **Publisher** | $9.99/mo | No watermark, all 11 page sizes, full quality, citations, priority queue |
+| **Studio** | $199 one-time | Lifetime Publisher access, future EPUB/custom fonts/batch export, direct support |
 
 ## Environment Variables
 
@@ -177,13 +316,13 @@ The `GridSystem` class in `backend/grid-system.js` implements:
 
 ## Testing
 
-No automated test suite is configured. Testing is manual via the frontend UI. Health check endpoints (`/api/health`, `/api/health/details`) and the `/status` page provide connectivity diagnostics.
+No automated test suite is configured. Testing is manual via the frontend UI. Health check endpoints (`/api/health`, `/api/health/details`) and the `/status` page provide connectivity diagnostics. The `/docs` page includes a `RequirementsCheck` component that runs automated proxy, health, and compile checks.
 
 When adding tests in the future, note that `.gitignore` excludes `test*.pdf` and `*-test.pdf` but preserves `sample*.pdf`.
 
 ## Deployment
 
-- **Frontend**: Deploys to Netlify from the `frontend/` directory
+- **Frontend**: Deploys to Netlify from the `frontend/` directory (images unoptimized via `next.config.ts`)
 - **Backend**: Deploys to Railway from the `backend/` directory via Docker
 - No CI/CD pipeline; deployments are triggered via platform dashboards
 - Environment variables are configured in each platform's dashboard
@@ -197,7 +336,10 @@ When adding tests in the future, note that `.gitignore` excludes `test*.pdf` and
 | Grid/typography changes | `backend/grid-system.js` |
 | API route changes | `backend/index.js` |
 | Landing page | `frontend/src/app/page.tsx` |
-| Tailwind theme | `frontend/tailwind.config.ts` |
+| Pricing page | `frontend/src/app/pricing/page.tsx` |
+| Design system tokens | `frontend/tailwind.config.ts` |
+| CSS utilities & global styles | `frontend/src/app/globals.css` |
+| Nav & Footer / layout | `frontend/src/app/layout.tsx` |
 | API proxy config | `frontend/next.config.ts` |
 | Reusable UI components | `frontend/src/components/` |
-| Global styles | `frontend/src/app/globals.css` |
+| Status/health diagnostics | `frontend/src/app/status/StatusClient.tsx`, `frontend/src/app/docs/RequirementsCheck.tsx` |
