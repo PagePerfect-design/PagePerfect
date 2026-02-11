@@ -10,10 +10,10 @@ type Check = {
 }
 
 const MINIMAL_MD = `# Test\n\nThis is a minimal test.`
-const PASS_ICON = <span className="text-ens-green">●</span>
-const FAIL_ICON = <span className="text-red-600">●</span>
-const RUN_ICON  = <span className="text-ens-blue animate-pulse">●</span>
-const IDLE_ICON = <span className="text-ens-gray-300">●</span>
+const PASS_ICON = <span className="text-success">●</span>
+const FAIL_ICON = <span className="text-danger">●</span>
+const RUN_ICON  = <span className="text-accent animate-pulse">●</span>
+const IDLE_ICON = <span className="text-text-ghost">●</span>
 
 export default function RequirementsCheck() {
   const [checks, setChecks] = useState<Check[]>([
@@ -91,19 +91,19 @@ export default function RequirementsCheck() {
 
   return (
     <div className="card p-5">
-      <div className="h2 mb-2">Requirements</div>
-      <p className="p text-ens-gray-700 mb-3">
+      <div className="text-lg font-bold text-text-primary mb-2">Requirements</div>
+      <p className="text-sm text-text-secondary mb-3">
         Verifies the frontend proxy, backend health, and a minimal compile path. Useful for Vercel + Railway sanity checks.
       </p>
 
-      <ul className="divide-y">
+      <ul className="divide-y divide-border">
         {checks.map((c) => (
           <li key={c.key} className="py-2 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span aria-hidden>{icon(c.status)}</span>
-              <span>{c.label}</span>
+              <span className="text-text-primary">{c.label}</span>
             </div>
-            <div className="small-mono text-right text-ens-gray-700">
+            <div className="small-mono text-right text-text-secondary">
               {c.note || '\u00A0'}
             </div>
           </li>
@@ -112,7 +112,7 @@ export default function RequirementsCheck() {
 
       <div className="mt-4 flex items-center gap-3">
         <Button onClick={() => void run()}>Run checks</Button>
-        {ts && <span className="small-mono">Last run: {ts}</span>}
+        {ts && <span className="small-mono text-text-ghost">Last run: {ts}</span>}
       </div>
     </div>
   )

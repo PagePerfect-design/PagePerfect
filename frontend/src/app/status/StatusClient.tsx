@@ -42,56 +42,56 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
   return (
     <div className="grid gap-4">
       {/* Proxy / Env card */}
-      <div className="rounded-lg border border-ens-gray-200 bg-white p-5 shadow-sm">
+      <div className="card p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-xl font-bold text-ens-midnight mb-1">API Connectivity</div>
-            <p className="text-ens-gray-700">
-              Frontend calls <code className="rounded bg-ens-light px-2 py-1">/api/*</code> and Next.js rewrites proxy to:
+            <div className="text-xl font-bold text-text-primary mb-1">API Connectivity</div>
+            <p className="text-text-secondary">
+              Frontend calls <code className="rounded bg-surface-subtle px-2 py-1 text-accent text-sm font-mono">/api/*</code> and Next.js rewrites proxy to:
             </p>
-            <p className="mt-1"><code className="rounded bg-ens-light px-2 py-1">{apiBase || '(not set)'}</code></p>
+            <p className="mt-1"><code className="rounded bg-surface-subtle px-2 py-1 text-accent text-sm font-mono">{apiBase || '(not set)'}</code></p>
           </div>
           <div>
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${ok ? 'bg-ens-green text-white' : 'bg-red-600 text-white'}`}>
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${ok ? 'bg-success text-surface' : 'bg-danger text-surface'}`}>
               {ok ? 'Healthy' : 'Unreachable'}
             </span>
           </div>
         </div>
         <div className="mt-4 flex items-center gap-2">
-          <button 
-            onClick={() => fetchAll()} 
+          <button
+            onClick={() => fetchAll()}
             disabled={loading}
-            className="rounded-lg bg-ens-blue px-4 py-2 text-white font-semibold hover:bg-ens-blue/90 disabled:opacity-50"
+            className="btn-pill btn-primary disabled:opacity-50"
           >
-            {loading ? 'Checking…' : 'Re-check'}
+            {loading ? 'Checking\u2026' : 'Re-check'}
           </button>
-          {ts && <span className="text-sm font-mono text-ens-gray-600">Last checked: {ts}</span>}
-          {error && <span className="text-sm font-mono text-red-700">{error}</span>}
+          {ts && <span className="text-sm font-mono text-text-ghost">Last checked: {ts}</span>}
+          {error && <span className="text-sm font-mono text-danger">{error}</span>}
         </div>
       </div>
 
       {/* Details card */}
-      <div className="rounded-lg border border-ens-gray-200 bg-white p-5 shadow-sm">
-        <div className="text-xl font-bold text-ens-midnight mb-3">Server Capabilities</div>
+      <div className="card p-5">
+        <div className="text-xl font-bold text-text-primary mb-3">Server Capabilities</div>
         {!details?.ok ? (
-          <p className="text-ens-gray-700">No details endpoint or not available. (Optional.)</p>
+          <p className="text-text-secondary">No details endpoint or not available. (Optional.)</p>
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
             <div>
-              <div className="font-semibold">Templates</div>
-              <ul className="mt-1 list-disc pl-5">
+              <div className="font-semibold text-text-primary">Templates</div>
+              <ul className="mt-1 list-disc pl-5 text-text-secondary">
                 {details.templates?.map(t => <li key={t}>{t}</li>)}
               </ul>
             </div>
             <div>
-              <div className="font-semibold">Page sizes</div>
-              <ul className="mt-1 list-disc pl-5">
+              <div className="font-semibold text-text-primary">Page sizes</div>
+              <ul className="mt-1 list-disc pl-5 text-text-secondary">
                 {details.pageSizes?.map(s => <li key={s}>{s}</li>)}
               </ul>
             </div>
             <div>
-              <div className="font-semibold">Margin presets</div>
-              <ul className="mt-1 list-disc pl-5">
+              <div className="font-semibold text-text-primary">Margin presets</div>
+              <ul className="mt-1 list-disc pl-5 text-text-secondary">
                 {details.marginPresets?.map(m => <li key={m}>{m}</li>)}
               </ul>
             </div>
@@ -101,15 +101,15 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
 
       {/* Links */}
       <div className="flex gap-3">
-        <Link 
+        <Link
           href="/app"
-          className="rounded-lg bg-ens-blue px-4 py-2 text-white font-semibold hover:bg-ens-blue/90"
+          className="btn-pill btn-primary"
         >
           Back to Editor
         </Link>
-        <Link 
+        <Link
           href="/docs"
-          className="rounded-lg border border-ens-gray-300 bg-white px-4 py-2 text-ens-midnight font-semibold hover:bg-ens-light"
+          className="btn-pill btn-secondary"
         >
           Docs
         </Link>
