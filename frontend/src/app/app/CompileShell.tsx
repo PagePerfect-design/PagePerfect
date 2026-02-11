@@ -182,19 +182,27 @@ const STATUS_LABEL: Record<Status, string> = {
   error: 'Failed',
 }
 
+const STATUS_DOT: Record<Status, string> = {
+  idle: 'bg-text-ghost',
+  compiling: 'bg-accent animate-pulse',
+  success: 'bg-success',
+  error: 'bg-danger',
+}
+
 const STATUS_CLASS: Record<Status, string> = {
-  idle: 'bg-ens-gray-200 text-ens-midnight',
-  compiling: 'bg-ens-blue text-white animate-pulse',
-  success: 'bg-ens-green text-white',
-  error: 'bg-red-600 text-white', // tailwind red for clear failure
+  idle: 'bg-surface-subtle text-text-tertiary',
+  compiling: 'bg-accent/10 text-accent',
+  success: 'bg-success/10 text-success',
+  error: 'bg-danger/10 text-danger',
 }
 
 function StatusPill({ status }: { status: Status }) {
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-pill px-5 py-3 font-semibold shadow-pill transition ${STATUS_CLASS[status]}`}
+      className={`inline-flex items-center gap-2 rounded-pill px-4 py-2 text-sm font-medium transition ${STATUS_CLASS[status]}`}
       aria-live="polite"
     >
+      <span className={`h-2 w-2 rounded-full ${STATUS_DOT[status]}`} />
       {STATUS_LABEL[status]}
     </span>
   )
@@ -397,8 +405,11 @@ Notes:
 
   const Spinner = useMemo(
     () => (
-      <div className="absolute inset-0 grid place-items-center bg-white/70">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-ens-blue border-t-transparent" aria-hidden="true" />
+      <div className="absolute inset-0 grid place-items-center bg-surface/60 backdrop-blur-sm">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" aria-hidden="true" />
+          <span className="text-xs text-text-tertiary">Typesetting...</span>
+        </div>
         <span className="sr-only">Compiling…</span>
       </div>
     ),
@@ -406,120 +417,84 @@ Notes:
   )
 
   return (
-    <div className="min-h-[calc(100vh-0px)]">
-      {/* Top bar */}
-      <div className="sticky top-0 z-10">
-        <div className="container-grid py-4">
-          <div className="bg-white border border-ens-gray-200 rounded-2xl shadow-card px-4 md:px-6 py-3 flex flex-col md:flex-row items-start md:items-center gap-3">
-            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <Image 
-                src="/PagePerfect_1_Icon.png" 
-                alt="Page Perfect" 
-                width={32}
-                height={32}
-                className="h-8 w-8"
-                priority
-              />
-              <span className="font-display text-xl font-black tracking-tight text-ens-dark">
-                Page Perfect
-              </span>
-            </Link>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center md:ml-auto">
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Manuscript title"
-                aria-label="Manuscript title"
-                className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2 min-w-[200px] max-w-[300px]"
-              />
-              <div className="flex items-center gap-3">
-                <button className="btn-pill btn-primary" onClick={() => compile(true)}>
-                  Download PDF
-                </button>
-                <StatusPill status={status} />
-              </div>
+    <div className="min-h-[calc(100vh-4rem)]">
+      {/* Editor toolbar */}
+      <div className="border-b border-[rgba(255,255,255,0.06)] bg-surface-raised/80 backdrop-blur-sm">
+        <div className="container-grid py-3">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Manuscript title"
+              aria-label="Manuscript title"
+              className="input-dark min-w-[200px] max-w-[300px] text-sm"
+            />
+            <div className="flex items-center gap-3 md:ml-auto">
+              <StatusPill status={status} />
+              <button className="btn-pill btn-primary text-sm" onClick={() => compile(true)}>
+                Download PDF
+              </button>
             </div>
           </div>
         </div>
       </div>
 
       {/* Formatting Controls Panel */}
-      <div className="container-grid py-4 md:py-6">
+      <div className="container-grid py-4">
         <div className="card p-0 overflow-hidden">
           <button
             onClick={() => setShowFormatting(!showFormatting)}
-            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-ens-light/30 transition-colors border-b border-ens-gray-200"
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-surface-subtle/50 transition-colors"
           >
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-ens-midnight">Formatting Options</span>
-              <span className="small-mono text-ens-gray-700">
-                {template} • {pageSize} • {marginPreset}
+            <div className="flex items-center gap-3">
+              <span className="font-semibold text-sm text-text-primary">Formatting</span>
+              <span className="font-mono text-xs text-text-ghost">
+                {template} / {pageSize} / {marginPreset}
               </span>
             </div>
-            <span className="small-mono text-ens-gray-700">
-              {showFormatting ? 'Hide' : 'Show'} formatting
-            </span>
+            <svg className={`h-4 w-4 text-text-ghost transition-transform ${showFormatting ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
           </button>
-          
+
           {showFormatting && (
-            <div className="p-4">
+            <div className="p-4 border-t border-[rgba(255,255,255,0.04)]">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Template */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2">
-                    <label className="small-mono" htmlFor="template">Template</label>
+                    <label className="text-xs font-medium text-text-tertiary" htmlFor="template">Template</label>
                     <TemplateHelp />
                   </div>
-                  <select
-                    id="template"
-                    className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
-                    value={template}
-                    onChange={(e) => setTemplate(e.target.value as TemplateKey)}
-                  >
-                    <option value="symphony">Symphony Layout - Classic Academic</option>
-                    <option value="chronicle">Chronicle Grid - Editorial Style</option>
-                    <option value="exhibit">Exhibit Frame - Modern Trade</option>
-                    <option value="matrix">Corporate Matrix - Business</option>
-                    <option value="avantgarde">Avant-Garde Canvas - Creative</option>
-                    <option value="chicago">Classic Academic (Chicago) - Legacy</option>
-                    <option value="paperback">Modern Trade Paperback - Legacy</option>                  </select>
+                  <select id="template" className="input-dark text-sm" value={template} onChange={(e) => setTemplate(e.target.value as TemplateKey)}>
+                    <option value="symphony">Symphony - Classic Academic</option>
+                    <option value="chronicle">Chronicle - Editorial Grid</option>
+                    <option value="exhibit">Exhibit - Modern Trade</option>
+                    <option value="matrix">Matrix - Corporate</option>
+                    <option value="avantgarde">Avant-Garde - Creative</option>
+                    <option value="chicago">Chicago - Academic Legacy</option>
+                    <option value="paperback">Paperback - Trade Legacy</option>
+                  </select>
                 </div>
-
-                {/* Page Size */}
-                <div className="flex flex-col gap-2">
-                  <label className="small-mono" htmlFor="pageSize">Page size</label>
-                  <select
-                    id="pageSize"
-                    className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
-                    value={pageSize}
-                    onChange={(e) => setPageSize(e.target.value as PageSize)}
-                  >
-                    <option value="letter">US Letter (8.5×11&quot;)</option>
-                    <option value="a4">A4 (210×297 mm)</option>
-                    <option value="sixByNine">Trade 6×9&quot;</option>
-                    <option value="fiveFiveByEightFive">Digest 5.5×8.5&quot;</option>
-                    <option value="sevenByTen">7×10&quot;</option>
-                    <option value="a5">A5 (148×210 mm)</option>
-                    <optgroup label="Amazon KDP Sizes">
-                      <option value="amazonFiveByEight">Amazon 5×8&quot;</option>
-                      <option value="amazonSixByNine">Amazon 6×9&quot;</option>
-                      <option value="amazonSevenByTen">Amazon 7×10&quot;</option>
-                      <option value="amazonEightByTen">Amazon 8×10&quot;</option>
-                      <option value="amazonEightFiveByEleven">Amazon 8.5×11&quot;</option>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-text-tertiary" htmlFor="pageSize">Page size</label>
+                  <select id="pageSize" className="input-dark text-sm" value={pageSize} onChange={(e) => setPageSize(e.target.value as PageSize)}>
+                    <option value="letter">US Letter (8.5x11&quot;)</option>
+                    <option value="a4">A4 (210x297 mm)</option>
+                    <option value="sixByNine">Trade 6x9&quot;</option>
+                    <option value="fiveFiveByEightFive">Digest 5.5x8.5&quot;</option>
+                    <option value="sevenByTen">7x10&quot;</option>
+                    <option value="a5">A5 (148x210 mm)</option>
+                    <optgroup label="Amazon KDP">
+                      <option value="amazonFiveByEight">Amazon 5x8&quot;</option>
+                      <option value="amazonSixByNine">Amazon 6x9&quot;</option>
+                      <option value="amazonSevenByTen">Amazon 7x10&quot;</option>
+                      <option value="amazonEightByTen">Amazon 8x10&quot;</option>
+                      <option value="amazonEightFiveByEleven">Amazon 8.5x11&quot;</option>
                     </optgroup>
                   </select>
                 </div>
-
-                {/* Margins */}
-                <div className="flex flex-col gap-2">
-                  <label className="small-mono" htmlFor="margins">Margins</label>
-                  <select
-                    id="margins"
-                    className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
-                    value={marginPreset}
-                    onChange={(e) => setMarginPreset(e.target.value as MarginPreset)}
-                  >
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-text-tertiary" htmlFor="margins">Margins</label>
+                  <select id="margins" className="input-dark text-sm" value={marginPreset} onChange={(e) => setMarginPreset(e.target.value as MarginPreset)}>
                     <option value="normal">Normal</option>
                     <option value="narrow">Narrow</option>
                     <option value="wide">Wide</option>
@@ -529,52 +504,22 @@ Notes:
                     <option value="compact">Compact</option>
                   </select>
                 </div>
-
-                {/* Safe Mode */}
-                <div className="flex items-center gap-2">
-                  <label htmlFor="safeMode" className="small-mono">Safe mode</label>
-                  <input
-                    id="safeMode"
-                    type="checkbox"
-                    checked={safeMode}
-                    onChange={(e) => setSafeMode(e.target.checked)}
-                    className="h-4 w-4 accent-blue-600"
-                    title="Compile without citations/bibliography"
-                  />
+                <div className="flex items-center gap-3">
+                  <label htmlFor="safeMode" className="text-xs font-medium text-text-tertiary">Safe mode</label>
+                  <input id="safeMode" type="checkbox" checked={safeMode} onChange={(e) => setSafeMode(e.target.checked)} className="h-4 w-4 accent-accent rounded" title="Compile without citations/bibliography" />
                 </div>
-
-                {/* Compile Mode */}
-                <div className="flex items-center gap-2">
-                  <label htmlFor="compileMode" className="small-mono">Mode</label>
-                  <select
-                    id="compileMode"
-                    className="rounded-lg border border-ens-gray-200 bg-white px-3 py-2"
-                    value={compileMode}
-                    onChange={(e) => setCompileMode(e.target.value as CompileMode)}
-                    title="Fast preview skips heavy typographic passes; Full quality is best for final PDFs."
-                  >
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="compileMode" className="text-xs font-medium text-text-tertiary">Compile mode</label>
+                  <select id="compileMode" className="input-dark text-sm" value={compileMode} onChange={(e) => setCompileMode(e.target.value as CompileMode)} title="Fast preview skips heavy typographic passes; Full quality is best for final PDFs.">
                     <option value="fast">Fast preview</option>
                     <option value="full">Full quality</option>
                   </select>
                 </div>
-
-                {/* Reset Preferences */}
-                <button
-                  type="button"
-                  className="small-mono underline text-ens-blue/80 hover:opacity-80"
-                  onClick={() => {
-                    try { localStorage.removeItem(PREFS_KEY) } catch {}
-                    // revert to sensible defaults
-                    setTemplate('minimal')
-                    setPageSize('letter')
-                    setMarginPreset('normal')
-                    setSafeMode(false)
-                    setTitle('Maritime Trade in the 17th Century')
-                  }}
-                  title="Clear saved preferences"
-                >
-                  Reset prefs
-                </button>
+                <div className="flex items-end">
+                  <button type="button" className="text-xs text-text-ghost hover:text-text-tertiary underline transition-colors" onClick={() => { try { localStorage.removeItem(PREFS_KEY) } catch {} setTemplate('minimal'); setPageSize('letter'); setMarginPreset('normal'); setSafeMode(false); setTitle('Maritime Trade in the 17th Century') }} title="Clear saved preferences">
+                    Reset preferences
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -583,83 +528,42 @@ Notes:
 
       {/* Safe Mode Banner */}
       {safeMode && (
-        <div className="mb-3 rounded-lg border border-yellow-300 bg-yellow-50 p-3">
-          <div className="text-sm text-gray-800">
-            <strong>Safe mode:</strong> Citations and bibliography are disabled for this compile.
+        <div className="container-grid pb-2">
+          <div className="rounded-lg border border-warning/20 bg-warning/5 p-3">
+            <p className="text-sm text-warning"><strong>Safe mode:</strong> Citations and bibliography disabled.</p>
           </div>
         </div>
       )}
 
       {/* Two-panel layout */}
-      <div className="container-grid py-4 md:py-6">
+      <div className="container-grid py-4">
         <TemplateNotes />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* Left: Editor + Error console */}
           <div className="flex flex-col gap-3">
             <div className="card p-0 overflow-hidden">
-              {/* Editor Header with Improved Visual Hierarchy */}
-              <div className="border-b border-ens-gray-200 bg-ens-light/20">
-                <div className="px-4 py-3">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-ens-midnight">Manuscript Editor</h3>
-                    <StatusPill status={status} />
-                  </div>
-                  
-                  {/* Action Buttons - Consistent with Header Design */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      className="btn-pill btn-secondary text-sm"
-                      onClick={() => setManuscript(SAMPLE_MD)}
-                      type="button"
-                    >
-                      Load Sample
-                    </button>
-                    <button
-                      className="btn-pill btn-secondary text-sm"
-                      onClick={() => setManuscript('# Your manuscript in Markdown…')}
-                      type="button"
-                    >
-                      Reset
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-pill btn-secondary text-sm"
-                      onClick={() => setManuscript(m => cleanFromWord(m))}
-                      title="Normalize the entire manuscript now"
-                    >
-                      Clean Text
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-pill btn-primary text-sm"
-                      title="Insert a numbered chapter heading with a page break"
-                      onClick={() => {
-                        const el = textRef.current
-                        if (!el) return
-                        const n = nextChapterNumber(manuscript)
-                        insertAtCursor(el, chapterSkeleton(n, template), setManuscript)
-                      }}
-                    >
-                      Insert Chapter
-                    </button>
-                  </div>
-                  
-                  {/* Settings Row */}
-                  <div className="mt-3 pt-3 border-t border-ens-gray-200">
-                    <label className="inline-flex items-center gap-2 text-sm text-ens-gray-700" title="Normalize Word punctuation, bullets, and spaces when pasting">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-ens-blue rounded border-ens-gray-300"
-                        checked={cleanOnPaste}
-                        onChange={(e) => setCleanOnPaste(e.target.checked)}
-                      />
-                      <span className="font-medium">Auto-clean on paste</span>
-                      <span className="text-xs text-ens-gray-500">(Smart quotes, dashes, bullets)</span>
-                    </label>
+              {/* Editor Header */}
+              <div className="border-b border-[rgba(255,255,255,0.06)] bg-surface-overlay/50 px-4 py-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-text-primary">Editor</h3>
+                  <div className="font-mono text-xs text-text-ghost">
+                    {manuscript.split(/\s+/).filter(w => w.length > 0).length} words
                   </div>
                 </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button className="btn-pill btn-secondary px-3 py-1.5 text-xs" onClick={() => setManuscript(SAMPLE_MD)} type="button">Load Sample</button>
+                  <button className="btn-pill btn-secondary px-3 py-1.5 text-xs" onClick={() => setManuscript('# Your manuscript in Markdown…')} type="button">Reset</button>
+                  <button type="button" className="btn-pill btn-secondary px-3 py-1.5 text-xs" onClick={() => setManuscript(m => cleanFromWord(m))} title="Normalize the entire manuscript now">Clean Text</button>
+                  <button type="button" className="btn-pill btn-primary px-3 py-1.5 text-xs" title="Insert a numbered chapter heading" onClick={() => { const el = textRef.current; if (!el) return; const n = nextChapterNumber(manuscript); insertAtCursor(el, chapterSkeleton(n, template), setManuscript) }}>+ Chapter</button>
+                </div>
+                <div className="mt-2 pt-2 border-t border-[rgba(255,255,255,0.04)]">
+                  <label className="inline-flex items-center gap-2 text-xs text-text-ghost" title="Normalize Word punctuation, bullets, and spaces when pasting">
+                    <input type="checkbox" className="h-3.5 w-3.5 accent-accent rounded" checked={cleanOnPaste} onChange={(e) => setCleanOnPaste(e.target.checked)} />
+                    <span>Auto-clean on paste</span>
+                  </label>
+                </div>
               </div>
-              {/* Enhanced Textarea with Better Typography */}
+              {/* Textarea */}
               <div className="relative">
                 <textarea
                   ref={textRef}
@@ -676,120 +580,84 @@ Notes:
                     const end = el.selectionEnd ?? start
                     const next = manuscript.slice(0, start) + cleaned + manuscript.slice(end)
                     setManuscript(next)
-                    // Restore caret on next tick
                     setTimeout(() => {
                       const pos = start + cleaned.length
-                      if (textRef.current) {
-                        textRef.current.selectionStart = pos
-                        textRef.current.selectionEnd = pos
-                        textRef.current.focus()
-                      }
+                      if (textRef.current) { textRef.current.selectionStart = pos; textRef.current.selectionEnd = pos; textRef.current.focus() }
                     }, 0)
                   }}
-                  className="h-[50vh] sm:h-[60vh] w-full resize-vertical p-6 outline-none border-0 bg-white font-mono text-sm leading-relaxed focus:ring-0 focus:outline-none"
+                  className="h-[50vh] sm:h-[60vh] w-full resize-vertical p-5 outline-none border-0 bg-surface text-text-primary font-mono text-sm leading-relaxed focus:ring-0 focus:outline-none placeholder:text-text-ghost"
                   placeholder="# Your manuscript in Markdown…"
                   aria-label="Manuscript editor"
-                  style={{ 
-                    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                    lineHeight: '1.6'
-                  }}
+                  style={{ lineHeight: '1.7' }}
                 />
-                {/* Word count indicator */}
-                <div className="absolute bottom-3 right-3 text-xs text-ens-gray-400 bg-white/80 px-2 py-1 rounded">
-                  {manuscript.split(/\s+/).filter(w => w.length > 0).length} words
-                </div>
               </div>
             </div>
 
-            {/* Enhanced Error Console */}
+            {/* Error Console */}
             <div className="card p-0 overflow-hidden" role="region" aria-live="polite" aria-label="Error console">
-              <div className="bg-ens-light/20 border-b border-ens-gray-200 px-4 py-3">
+              <div className="border-b border-[rgba(255,255,255,0.06)] bg-surface-overlay/50 px-4 py-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-ens-midnight">Compilation Status</h3>
-                  <button
-                    type="button"
-                    onClick={downloadDebugBundle}
-                    className="btn-pill btn-secondary text-sm"
-                    title="Download a .zip with manuscript, settings, last error, and (if available) the last PDF"
-                  >
-                    Debug Bundle
-                  </button>
+                  <h3 className="text-sm font-semibold text-text-primary">Status</h3>
+                  <button type="button" onClick={downloadDebugBundle} className="btn-pill btn-secondary px-3 py-1.5 text-xs" title="Download debug bundle">Debug Bundle</button>
                 </div>
               </div>
               <div className="p-4">
-              
-              {/* Missing citations block */}
-              {missingCitations.length > 0 && (
-                <div
-                  className="mb-3 rounded-lg border border-red-300 bg-red-50 p-3"
-                  role="alert"
-                  aria-live="polite"
-                >
-                  <div className="font-semibold text-red-800">Undefined citations</div>
-                  <ul className="mt-1 flex flex-wrap gap-2">
-                    {missingCitations.map(k => (
-                      <li key={k} className="rounded-md bg-white px-2 py-0.5 text-sm text-red-800 shadow">
-                        <code>[@{k}]</code>
-                      </li>
+                {missingCitations.length > 0 && (
+                  <div className="mb-3 rounded-lg border border-danger/20 bg-danger/5 p-3" role="alert">
+                    <div className="font-semibold text-sm text-danger">Undefined citations</div>
+                    <ul className="mt-1 flex flex-wrap gap-2">
+                      {missingCitations.map(k => (
+                        <li key={k} className="rounded bg-surface-subtle px-2 py-0.5 text-xs text-danger font-mono">[@{k}]</li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 text-xs text-text-ghost">Ensure keys exist in references.bib with exact spelling.</p>
+                  </div>
+                )}
+                {warnings.length > 0 && (
+                  <div className="mb-3 rounded-lg border border-warning/20 bg-warning/5 p-3" role="note">
+                    <div className="font-semibold text-sm text-warning">Style warnings</div>
+                    <ul className="mt-1 list-disc pl-5 text-xs text-text-secondary">
+                      {warnings.map((w, i) => <li key={i}>{w}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {missingPackages.length > 0 && (
+                  <div className="mb-3 rounded-lg border border-[rgba(255,255,255,0.08)] bg-surface-subtle p-3">
+                    <div className="font-semibold text-sm text-text-primary">Missing LaTeX packages</div>
+                    <p className="mt-1 text-xs text-text-secondary">{missingPackages.join(', ')}</p>
+                  </div>
+                )}
+                {errors.length === 0 && missingCitations.length === 0 && warnings.length === 0 && missingPackages.length === 0 ? (
+                  <p className="text-xs text-text-ghost">No issues detected.</p>
+                ) : (
+                  <ul className="list-disc pl-5 space-y-1">
+                    {errors.map((e, i) => (
+                      <li key={i} className="text-xs text-danger">{e.message}</li>
                     ))}
                   </ul>
-                  <p className="mt-2 text-xs text-red-900">
-                    Make sure each key exists in <code>references.bib</code>, the spelling matches exactly, and the file is valid BibTeX.
-                  </p>
-                </div>
-              )}
-
-              {/* Style warnings (non-fatal hints from backend) */}
-              {warnings.length > 0 && (
-                <div className="mb-3 rounded-lg border border-ens-yellow bg-yellow-50 p-3" role="note">
-                  <div className="font-semibold text-ens-midnight">Style warnings</div>
-                  <ul className="mt-1 list-disc pl-5 text-sm text-ens-midnight">
-                    {warnings.map((w, i) => <li key={i}>{w}</li>)}
-                  </ul>
-                </div>
-              )}
-
-              {/* Missing LaTeX packages (hint for ops) */}
-              {missingPackages.length > 0 && (
-                <div className="mb-3 rounded-lg border border-ens-gray-300 bg-ens-light p-3">
-                  <div className="font-semibold text-ens-midnight">LaTeX packages missing</div>
-                  <p className="mt-1 text-sm text-ens-midnight">
-                    The compiler image may need additional TeX packages: {missingPackages.join(', ')}.
-                  </p>
-                  <p className="mt-1 text-xs text-ens-gray-700">
-                    (Maintainers: add via <code>tlmgr install &lt;pkg&gt;</code> in the Dockerfile.)
-                  </p>
-                </div>
-              )}
-
-              {errors.length === 0 && missingCitations.length === 0 && warnings.length === 0 && missingPackages.length === 0 ? (
-                <p className="text-sm text-ens-gray-700">No issues detected.</p>
-              ) : (
-                <ul className="list-disc pl-5 space-y-1">
-                  {errors.map((e, i) => (
-                    <li key={i} className="text-sm text-red-700">{e.message}</li>
-                  ))}
-                </ul>
-              )}
-              <p className="mt-2 text-xs text-ens-gray-700">
-                Examples: <code>Undefined citation: &apos;Finch2023&apos;</code>, double spaces after a period, missing package, etc.
-              </p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Right: Preview */}
+          {/* Right: Preview with paper shadow */}
           <div className="relative card overflow-hidden">
-            <div className="flex items-center justify-between border-b px-3 py-2">
-              <div className="small-mono">Preview</div>
-              <div className="small-mono text-ens-gray-700">PDF</div>
+            <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-4 py-2">
+              <span className="text-xs font-medium text-text-tertiary">Preview</span>
+              <span className="font-mono text-xs text-text-ghost">PDF</span>
             </div>
-            <div className="relative h-[50vh] sm:h-[70vh] bg-ens-light">
+            <div className="relative h-[50vh] sm:h-[70vh] paper-surface">
               {pdfUrl ? (
-                <iframe title="PDF preview" src={pdfUrl} className="h-full w-full" />
+                <div className="h-full p-4">
+                  <iframe title="PDF preview" src={pdfUrl} className="h-full w-full rounded shadow-paper bg-white" />
+                </div>
               ) : (
-                <div className="grid h-full place-items-center text-ens-gray-700 px-6 text-center">
-                  <p className="text-sm">Your PDF preview will appear here.</p>
+                <div className="grid h-full place-items-center px-6 text-center">
+                  <div>
+                    <div className="mx-auto mb-4 h-16 w-12 rounded bg-surface-subtle/50 shadow-inner-subtle" />
+                    <p className="text-sm text-text-ghost">Your typeset PDF will appear here</p>
+                    <p className="mt-1 text-xs text-text-ghost">Auto-compiles as you type</p>
+                  </div>
                 </div>
               )}
               {loading && Spinner}

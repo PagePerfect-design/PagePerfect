@@ -1,8 +1,13 @@
 import { PropsWithChildren } from 'react'
 
-type Props = PropsWithChildren<{ variant?: 'light' | 'dark'; className?: string }>
+type Props = PropsWithChildren<{ variant?: 'default' | 'raised' | 'light' | 'dark'; className?: string; id?: string }>
 
-export default function Section({ children, variant='light', className='' }: Props) {
-  const tone = variant === 'dark' ? 'section-dark' : ''
-  return <section className={`py-14 md:py-20 ${tone} ${className}`}>{children}</section>
+export default function Section({ children, variant='default', className='', id }: Props) {
+  const bg: Record<string, string> = {
+    default: '',
+    raised: 'bg-surface-raised',
+    light: '',
+    dark: 'section-dark',
+  }
+  return <section id={id} className={`py-16 md:py-24 ${bg[variant]} ${className}`}>{children}</section>
 }

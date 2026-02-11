@@ -20,7 +20,7 @@ export default function CopyCitation() {
     <div className="card p-4 flex flex-col md:flex-row items-center gap-3">
       <div className="flex items-center gap-2">
         <span className="small-mono">Example citation:</span>
-        <code className="rounded bg-ens-light px-2 py-1">[@Finch2023]</code>
+        <code className="rounded bg-surface-subtle px-2 py-1 text-accent text-sm font-mono">[@Finch2023]</code>
       </div>
       <div className="ml-auto flex items-center gap-2">
         <button id="copy-cite-btn" className="btn-pill btn-primary" onClick={copy}>
