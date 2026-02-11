@@ -30,8 +30,8 @@ export default function AuthorGuideTools() {
   return (
     <div className="card p-4 flex flex-col gap-3 md:flex-row md:items-center">
       <div className="flex-1">
-        <div className="font-semibold text-ens-midnight">Author Guide</div>
-        <p className="text-sm text-ens-gray-700">
+        <div className="font-semibold text-text-primary">Author Guide</div>
+        <p className="text-sm text-text-secondary">
           Copy or download a ready-to-share Markdown guide for authors.
         </p>
       </div>

@@ -3,31 +3,20 @@ import Section from '@/components/Section'
 import CopyCitation from '@/components/CopyCitation'
 import AuthorGuideTools from '@/components/AuthorGuideTools'
 import RequirementsCheck from './RequirementsCheck'
-import Image from 'next/image'
 
 export const metadata = {
-  title: 'Docs — Page Perfect',
-  description: 'Quick troubleshooting guide and citation helper for Page Perfect.',
+  title: 'Docs — PagePerfect',
+  description: 'Quick troubleshooting guide and citation helper for PagePerfect.',
 }
 
 export default function DocsPage() {
   return (
-    <main id="main" className="min-h-dvh bg-ens-white text-ens-dark">
+    <main id="main">
       <Container>
         <Section>
-          <div className="flex items-center gap-4 mb-6">
-            <Image 
-              src="/PagePerfect_1_Icon.png" 
-              alt="Page Perfect" 
-              width={48}
-              height={48}
-              className="h-12 w-12"
-              priority
-            />
-            <h1 className="font-display text-h1 font-black leading-tight tracking-tight">Docs</h1>
-          </div>
-          <p className="p mt-3 text-ens-gray-700">
-            Quick tips to get your manuscript compiling smoothly. Use the helper below to copy a valid
+          <h1 className="font-display text-h1 font-bold tracking-tight text-text-primary mb-2">Documentation</h1>
+          <p className="p mt-3">
+            Quick tips to get your manuscript compiling smoothly. Use the helpers below to copy a valid
             citation and test that your bibliography is set up.
           </p>
           <div className="mt-6"><CopyCitation /></div>
@@ -37,59 +26,57 @@ export default function DocsPage() {
 
         <Section className="pt-0">
           <div className="grid gap-4">
-            <div className="card p-5">
-              <h2 className="h2 mb-2">Undefined citation</h2>
+            <div className="card p-6">
+              <h2 className="font-display text-xl font-bold text-text-primary mb-3">Undefined citation</h2>
               <p className="p">
-                If the error console shows <code>Undefined citations</code>, confirm the keys exist in
-                <code> references.bib</code> on the server and that your in-text cites use the Pandoc syntax
-                <code> [@Key]</code> exactly. Example: <code>[@Finch2023]</code>.
+                If the error console shows <code className="text-accent text-sm">Undefined citations</code>, confirm the keys exist in
+                <code className="text-accent text-sm"> references.bib</code> on the server and that your in-text cites use Pandoc syntax
+                <code className="text-accent text-sm"> [@Key]</code> exactly.
               </p>
             </div>
 
-            <div className="card p-5">
-              <h2 className="h2 mb-2">No PDF / 400–501 errors</h2>
-              <ul className="list-disc pl-5 text-base leading-7">
-                <li>Make sure the compiler backend is running on <code>http://localhost:4000</code>.</li>
-                <li>If using Docker, run: <code>npm run docker:build</code> then <code>npm run docker:run</code> in <code>backend/</code>.</li>
-                <li>Network errors: check that your browser can reach <code>/health</code>.</li>
+            <div className="card p-6">
+              <h2 className="font-display text-xl font-bold text-text-primary mb-3">No PDF / 400-501 errors</h2>
+              <ul className="list-disc pl-5 text-text-secondary leading-7">
+                <li>Make sure the compiler backend is running on <code className="text-accent text-sm">http://localhost:4000</code>.</li>
+                <li>If using Docker: <code className="text-accent text-sm">npm run docker:build && npm run docker:run</code> in <code className="text-accent text-sm">backend/</code>.</li>
+                <li>Network errors: check that your browser can reach <code className="text-accent text-sm">/api/health</code>.</li>
               </ul>
             </div>
 
-            <div className="card p-5">
-              <h2 className="h2 mb-2">Template or package issues</h2>
+            <div className="card p-6">
+              <h2 className="font-display text-xl font-bold text-text-primary mb-3">Template or package issues</h2>
               <p className="p">
-                If the console lists missing LaTeX packages, a maintainer should add them to the Dockerfile via
-                <code> tlmgr install &lt;package&gt;</code>, rebuild, and rerun.
+                If the console lists missing LaTeX packages, add them to the Dockerfile via
+                <code className="text-accent text-sm"> tlmgr install &lt;package&gt;</code>, rebuild, and redeploy.
               </p>
             </div>
 
-            <div className="card p-5">
-              <h2 className="h2 mb-2">Style warnings (non-fatal)</h2>
+            <div className="card p-6">
+              <h2 className="font-display text-xl font-bold text-text-primary mb-3">Style warnings</h2>
               <p className="p">
                 Double spaces after punctuation are flagged as warnings. They won&apos;t stop compilation but are worth fixing for polish.
               </p>
             </div>
 
-            <div className="card p-5">
-              <h2 className="h2 mb-2">Recommended Reading</h2>
-              <p className="p mb-3">
-                For a comprehensive understanding of grid systems in graphic design, we recommend Josef Müller-Brockmann&apos;s seminal work that inspired PagePerfect&apos;s systematic approach:
+            <div className="card p-6">
+              <h2 className="font-display text-xl font-bold text-text-primary mb-3">Recommended Reading</h2>
+              <p className="p mb-4">
+                PagePerfect&apos;s grid system is inspired by Josef Muller-Brockmann&apos;s systematic approach to graphic design — baseline grids, proportional typography, and mathematical spacing.
               </p>
-              <div className="bg-ens-light p-4 rounded-lg">
-                <p className="text-sm font-medium text-ens-midnight mb-2">📚 Grid Systems in Graphic Design</p>
-                <p className="text-sm text-ens-gray-700 mb-3">Josef Müller-Brockmann</p>
-                <a 
+              <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
+                <p className="text-sm font-medium text-text-primary mb-1">Grid Systems in Graphic Design</p>
+                <p className="text-sm text-text-tertiary mb-3">Josef Muller-Brockmann</p>
+                <a
                   href="https://ia902309.us.archive.org/4/items/GridSystemsInGraphicDesignJosefMullerBrockmann/Grid%20systems%20in%20graphic%20design%20-%20Josef%20Muller-Brockmann.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-ens-blue hover:text-ens-blue-dark text-sm font-medium"
+                  className="inline-flex items-center gap-1 text-accent hover:text-accent-hover text-sm font-medium transition-colors"
                 >
-                  Read the PDF →
+                  Read the PDF
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                 </a>
               </div>
-              <p className="p mt-3 text-sm text-ens-gray-600">
-                PagePerfect implements Müller-Brockmann&apos;s principles of systematic organization, baseline grids, and proportional typography for professional-quality PDF generation.
-              </p>
             </div>
           </div>
         </Section>
