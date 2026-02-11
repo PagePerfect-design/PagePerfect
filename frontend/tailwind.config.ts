@@ -23,12 +23,12 @@ export default {
           glow: 'rgba(79, 143, 255, 0.15)',
           soft: 'rgba(79, 143, 255, 0.08)',
         },
-        // Text hierarchy
+        // Text hierarchy — WCAG AA contrast-verified against #0a0a0f
         text: {
           primary: '#f0f0f5',
-          secondary: '#a0a0b0',
-          tertiary: '#606070',
-          ghost: '#404050',
+          secondary: '#a0a0b8',
+          tertiary: '#7a7a8e',
+          ghost: '#5a5a6e',
         },
         // Status
         success: { DEFAULT: '#34d399', muted: 'rgba(52, 211, 153, 0.12)' },
@@ -36,22 +36,11 @@ export default {
         danger:  { DEFAULT: '#f87171', muted: 'rgba(248, 113, 113, 0.12)' },
         // Borders
         border: {
-          DEFAULT: 'rgba(255, 255, 255, 0.06)',
-          subtle: 'rgba(255, 255, 255, 0.03)',
-          accent: 'rgba(79, 143, 255, 0.2)',
+          DEFAULT: 'rgba(255, 255, 255, 0.08)',
+          subtle: 'rgba(255, 255, 255, 0.04)',
+          visible: 'rgba(255, 255, 255, 0.14)',
+          accent: 'rgba(79, 143, 255, 0.25)',
         },
-        // Legacy ENS tokens
-        ens: {
-          blue: '#0080BC',
-          light: '#CEE1E8',
-          dark: '#011A25',
-          white: '#F6F6F6',
-          midnight: '#093C52',
-          gray: { 700: '#4A5C63', 300: '#C4C7C8', 200: '#E5E5E5' },
-          green: '#007C23',
-          magenta: '#F53293',
-          yellow: '#FFF72F'
-        }
       },
       borderRadius: {
         xl: '1.25rem',

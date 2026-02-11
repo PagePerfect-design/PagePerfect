@@ -216,7 +216,7 @@ function WelcomeScreen({ onStart, onLoadSample }: { onStart: () => void; onLoadS
             onClick={onLoadSample}
             className="card p-6 text-left transition-all duration-200 hover:border-[rgba(255,255,255,0.1)] hover:shadow-card-hover hover:-translate-y-0.5 group"
           >
-            <div className="w-10 h-10 rounded-lg bg-surface-subtle border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-text-tertiary mb-3 group-hover:text-text-secondary transition-colors">
+            <div className="w-10 h-10 rounded-lg bg-surface-subtle border border-border-visible flex items-center justify-center text-text-tertiary mb-3 group-hover:text-text-secondary transition-colors">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
@@ -462,7 +462,7 @@ export default function CompileShell() {
   return (
     <div className="min-h-[calc(100vh-4rem)]">
       {/* Editor toolbar */}
-      <div className="border-b border-[rgba(255,255,255,0.06)] bg-surface-raised/80 backdrop-blur-sm">
+      <div className="border-b border-border bg-surface-raised/80 backdrop-blur-sm">
         <div className="container-grid py-3">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
             {/* Title input */}
@@ -510,7 +510,7 @@ export default function CompileShell() {
           </button>
 
           {showFormatting && (
-            <div className="p-4 border-t border-[rgba(255,255,255,0.04)]">
+            <div className="p-4 border-t border-border-subtle">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2">
@@ -565,7 +565,7 @@ export default function CompileShell() {
                   </select>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.04)] flex flex-wrap items-center gap-4">
+              <div className="mt-3 pt-3 border-t border-border-subtle flex flex-wrap items-center gap-4">
                 <label htmlFor="safeMode" className="inline-flex items-center gap-2 text-xs text-text-tertiary cursor-pointer">
                   <input id="safeMode" type="checkbox" checked={safeMode} onChange={(e) => setSafeMode(e.target.checked)} className="h-3.5 w-3.5 accent-accent rounded" />
                   <span>Safe mode <span className="text-text-ghost">(skip citations)</span></span>
@@ -590,7 +590,7 @@ export default function CompileShell() {
           <div className="flex flex-col gap-3">
             <div className="card p-0 overflow-hidden">
               {/* Editor Header */}
-              <div className="border-b border-[rgba(255,255,255,0.06)] bg-surface-overlay/50 px-4 py-2.5">
+              <div className="border-b border-border bg-surface-overlay/50 px-4 py-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <h3 className="text-sm font-semibold text-text-primary">Editor</h3>
@@ -625,7 +625,7 @@ export default function CompileShell() {
                       if (textRef.current) { textRef.current.selectionStart = pos; textRef.current.selectionEnd = pos; textRef.current.focus() }
                     }, 0)
                   }}
-                  className="h-[55vh] sm:h-[65vh] w-full resize-vertical p-5 outline-none border-0 bg-surface text-text-primary font-mono text-sm leading-relaxed focus:ring-0 focus:outline-none placeholder:text-text-ghost"
+                  className="h-[55vh] sm:h-[65vh] w-full resize-vertical p-5 border-0 bg-surface text-text-primary font-mono text-sm leading-relaxed focus:ring-2 focus:ring-accent/30 focus:outline-none placeholder:text-text-tertiary"
                   placeholder="# My First Chapter&#10;&#10;Paste your manuscript here, or start typing...&#10;&#10;Use **bold** and *italic* for emphasis.&#10;Use # for chapter headings."
                   aria-label="Manuscript editor"
                   style={{ lineHeight: '1.7' }}
@@ -636,7 +636,7 @@ export default function CompileShell() {
             {/* Error/Status Console — only show when there are issues */}
             {hasErrors && (
               <div className="card p-0 overflow-hidden" role="region" aria-live="polite" aria-label="Issues">
-                <div className="border-b border-[rgba(255,255,255,0.06)] bg-surface-overlay/50 px-4 py-2.5">
+                <div className="border-b border-border bg-surface-overlay/50 px-4 py-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-danger" />
@@ -666,7 +666,7 @@ export default function CompileShell() {
                     </div>
                   )}
                   {missingPackages.length > 0 && (
-                    <div className="rounded-lg border border-[rgba(255,255,255,0.08)] bg-surface-subtle p-3">
+                    <div className="rounded-lg border border-border-visible bg-surface-subtle p-3">
                       <div className="font-semibold text-sm text-text-primary mb-1">Missing LaTeX packages</div>
                       <p className="text-xs text-text-secondary">{missingPackages.join(', ')}</p>
                     </div>
@@ -683,7 +683,7 @@ export default function CompileShell() {
 
           {/* Right: Preview */}
           <div className="relative card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-4 py-2">
+            <div className="flex items-center justify-between border-b border-border px-4 py-2">
               <span className="text-xs font-medium text-text-tertiary">Preview</span>
               {pdfUrl && (
                 <button onClick={() => compile(true)} className="text-xs text-accent hover:text-accent-hover transition-colors">
@@ -700,7 +700,7 @@ export default function CompileShell() {
                 <div className="grid h-full place-items-center px-6 text-center">
                   <div className="max-w-[240px]">
                     {/* Stylized page placeholder */}
-                    <div className="mx-auto mb-6 w-20 h-28 rounded-lg bg-surface-subtle/30 border border-[rgba(255,255,255,0.06)] shadow-inner-subtle flex items-center justify-center">
+                    <div className="mx-auto mb-6 w-20 h-28 rounded-lg bg-surface-subtle/30 border border-border shadow-inner-subtle flex items-center justify-center">
                       <svg className="w-8 h-8 text-text-ghost/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
