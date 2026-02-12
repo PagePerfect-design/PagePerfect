@@ -1,12 +1,13 @@
-import Button from '@/components/Button'
+'use client'
 
-export const metadata = {
-  title: 'Pricing — PagePerfect',
-  description: 'Free forever for basic typesetting. Pro when you need print-ready output.',
-}
+import Button from '@/components/Button'
+import { useAuth } from '@/lib/auth-context'
+import { redirectToCheckout } from '@/lib/stripe'
+import { useState } from 'react'
 
 const TIERS = [
   {
+    key: 'drafter' as const,
     name: 'Drafter',
     price: 'Free',
     period: 'forever',
@@ -25,6 +26,7 @@ const TIERS = [
     ],
   },
   {
+    key: 'publisher' as const,
     name: 'Publisher',
     price: '$9.99',
     period: '/month',
@@ -43,6 +45,7 @@ const TIERS = [
     ],
   },
   {
+    key: 'studio' as const,
     name: 'Studio',
     price: '$199',
     period: 'one-time',
@@ -90,6 +93,43 @@ const FAQ = [
 ]
 
 export default function PricingPage() {
+  const { user, tier: currentTier } = useAuth()
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleUpgrade(tierKey: 'publisher' | 'studio') {
+    if (!user) {
+      window.location.href = '/auth/login?redirect=/pricing'
+      return
+    }
+
+    setError(null)
+    setCheckoutLoading(tierKey)
+    try {
+      await redirectToCheckout(tierKey)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.')
+    } finally {
+      setCheckoutLoading(null)
+    }
+  }
+
+  function getCtaForTier(tier: typeof TIERS[number]) {
+    // If user already has this tier or higher
+    if (tier.key === 'drafter') {
+      if (currentTier === 'drafter' && user) return { label: 'Current Plan', disabled: true }
+      return { label: tier.cta, disabled: false }
+    }
+    if (tier.key === 'publisher') {
+      if (currentTier === 'publisher') return { label: 'Current Plan', disabled: true }
+      if (currentTier === 'studio') return { label: 'Included', disabled: true }
+      return { label: user ? tier.cta : 'Sign in to Upgrade', disabled: false }
+    }
+    // studio
+    if (currentTier === 'studio') return { label: 'Current Plan', disabled: true }
+    return { label: user ? tier.cta : 'Sign in to Upgrade', disabled: false }
+  }
+
   return (
     <main id="main">
       {/* Header */}
@@ -106,51 +146,86 @@ export default function PricingPage() {
         </div>
       </section>
 
+      {error && (
+        <div className="mx-auto max-w-6xl px-6 md:px-8 mb-4">
+          <div className="rounded-xl border border-danger/20 bg-danger-muted px-4 py-3 text-sm text-danger">
+            {error}
+          </div>
+        </div>
+      )}
+
       {/* Tiers */}
       <section className="py-8 md:py-12">
         <div className="mx-auto max-w-6xl px-6 md:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-            {TIERS.map(tier => (
-              <div
-                key={tier.name}
-                className={`card p-8 flex flex-col transition-all duration-200 ${
-                  tier.highlight
-                    ? 'border-accent/30 shadow-glow-accent ring-1 ring-accent/20 scale-[1.02] md:scale-105'
-                    : 'hover:border-[rgba(255,255,255,0.1)]'
-                }`}
-              >
-                {tier.highlight && (
-                  <div className="font-mono text-xs text-accent tracking-widest uppercase mb-4">Most Popular</div>
-                )}
-                <h3 className="font-display text-2xl font-bold text-text-primary">{tier.name}</h3>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="font-display text-4xl font-black text-text-primary">{tier.price}</span>
-                  <span className="text-sm text-text-tertiary">{tier.period}</span>
+            {TIERS.map(tier => {
+              const cta = getCtaForTier(tier)
+              const isLoading = checkoutLoading === tier.key
+
+              return (
+                <div
+                  key={tier.name}
+                  className={`card p-8 flex flex-col transition-all duration-200 ${
+                    tier.highlight
+                      ? 'border-accent/30 shadow-glow-accent ring-1 ring-accent/20 scale-[1.02] md:scale-105'
+                      : 'hover:border-border-visible'
+                  }`}
+                >
+                  {tier.highlight && (
+                    <div className="font-mono text-xs text-accent tracking-widest uppercase mb-4">Most Popular</div>
+                  )}
+                  <h3 className="font-display text-2xl font-bold text-text-primary">{tier.name}</h3>
+                  <div className="mt-3 flex items-baseline gap-1">
+                    <span className="font-display text-4xl font-black text-text-primary">{tier.price}</span>
+                    <span className="text-sm text-text-tertiary">{tier.period}</span>
+                  </div>
+                  <p className="mt-3 text-sm text-text-secondary leading-relaxed">{tier.desc}</p>
+                  <div className="mt-6">
+                    {tier.key === 'drafter' ? (
+                      <Button
+                        variant={tier.highlight ? 'primary' : 'secondary'}
+                        href={tier.href}
+                        className="w-full"
+                      >
+                        {cta.label}
+                      </Button>
+                    ) : (
+                      <button
+                        className={`btn-pill w-full px-5 py-3 text-sm font-semibold ${
+                          tier.highlight ? 'btn-primary' : 'btn-secondary'
+                        }`}
+                        disabled={cta.disabled || isLoading}
+                        onClick={() => void handleUpgrade(tier.key as 'publisher' | 'studio')}
+                      >
+                        {isLoading ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            Redirecting…
+                          </span>
+                        ) : (
+                          cta.label
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  <ul className="mt-8 space-y-3 flex-1">
+                    {tier.features.map(f => (
+                      <li key={f} className="flex items-start gap-3 text-sm">
+                        <span className="text-accent mt-0.5 flex-shrink-0">
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </span>
+                        <span className="text-text-secondary">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <p className="mt-3 text-sm text-text-secondary leading-relaxed">{tier.desc}</p>
-                <div className="mt-6">
-                  <Button
-                    variant={tier.highlight ? 'primary' : 'secondary'}
-                    href={tier.href}
-                    className="w-full"
-                  >
-                    {tier.cta}
-                  </Button>
-                </div>
-                <ul className="mt-8 space-y-3 flex-1">
-                  {tier.features.map(f => (
-                    <li key={f} className="flex items-start gap-3 text-sm">
-                      <span className="text-accent mt-0.5 flex-shrink-0">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </span>
-                      <span className="text-text-secondary">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>

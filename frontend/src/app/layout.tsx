@@ -3,6 +3,8 @@ import './globals.css'
 import { Space_Grotesk, Source_Serif_4, IBM_Plex_Mono } from 'next/font/google'
 import Link from 'next/link'
 import Image from 'next/image'
+import Providers from '@/components/Providers'
+import NavAuth from '@/components/NavAuth'
 
 const display = Space_Grotesk({ subsets: ['latin'], variable: '--font-display' })
 const body = Source_Serif_4({ subsets: ['latin'], variable: '--font-body' })
@@ -20,16 +22,17 @@ export const metadata: Metadata = {
 
 function Nav() {
   return (
-    <nav className="sticky top-0 z-50 border-b border-[rgba(255,255,255,0.06)] bg-surface/80 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-border bg-surface/80 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
         <div className="flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
+          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">
             <Image src="/PagePerfect_1_Icon.png" alt="PagePerfect" width={28} height={28} className="h-7 w-7" priority />
             <span className="font-display text-lg font-bold tracking-tight text-text-primary">PagePerfect</span>
           </Link>
           <div className="flex items-center gap-6">
-            <Link href="/pricing" className="text-sm text-text-secondary transition-colors hover:text-text-primary">Pricing</Link>
-            <Link href="/docs" className="text-sm text-text-secondary transition-colors hover:text-text-primary">Docs</Link>
+            <Link href="/pricing" className="text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">Pricing</Link>
+            <Link href="/docs" className="text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">Docs</Link>
+            <NavAuth />
             <Link href="/app" className="btn-pill btn-primary px-5 py-2 text-sm">Open Editor</Link>
           </div>
         </div>
@@ -40,17 +43,17 @@ function Nav() {
 
 function Footer() {
   return (
-    <footer className="border-t border-[rgba(255,255,255,0.06)] bg-surface py-12">
+    <footer className="border-t border-border bg-surface py-12">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
           <div className="flex items-center gap-3">
-            <Image src="/PagePerfect_1_Icon.png" alt="PagePerfect" width={20} height={20} className="h-5 w-5 opacity-50" />
+            <Image src="/PagePerfect_1_Icon.png" alt="PagePerfect" width={20} height={20} className="h-5 w-5 opacity-60" />
             <span className="text-sm text-text-tertiary">PagePerfect</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-text-tertiary">
-            <Link href="/pricing" className="transition-colors hover:text-text-secondary">Pricing</Link>
-            <Link href="/docs" className="transition-colors hover:text-text-secondary">Docs</Link>
-            <Link href="/status" className="transition-colors hover:text-text-secondary">Status</Link>
+            <Link href="/pricing" className="transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-accent">Pricing</Link>
+            <Link href="/docs" className="transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-accent">Docs</Link>
+            <Link href="/status" className="transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-accent">Status</Link>
           </div>
           <p className="text-xs text-text-ghost">Built on XeLaTeX. Inspired by Muller-Brockmann.</p>
         </div>
@@ -63,10 +66,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body className="flex min-h-dvh flex-col">
-        <a href="#main" className="skip-link">Skip to content</a>
-        <Nav />
-        <div className="flex-1">{children}</div>
-        <Footer />
+        <Providers>
+          <a href="#main" className="skip-link">Skip to content</a>
+          <Nav />
+          <div className="flex-1">{children}</div>
+          <Footer />
+        </Providers>
       </body>
     </html>
   )

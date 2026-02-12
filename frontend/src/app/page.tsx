@@ -54,7 +54,7 @@ function StepVisual({ type }: { type: string }) {
   if (type === 'paste') {
     return (
       <div className="relative w-full h-full flex items-center justify-center">
-        <div className="w-[80%] max-w-[280px] rounded-xl border border-[rgba(255,255,255,0.1)] bg-surface-raised p-5 font-mono text-xs text-text-tertiary leading-relaxed">
+        <div className="w-[80%] max-w-[280px] rounded-xl border border-border-visible bg-surface-raised p-5 font-mono text-xs text-text-tertiary leading-relaxed">
           <div className="text-accent mb-2"># Chapter 1</div>
           <div className="text-text-secondary">The morning light filtered</div>
           <div className="text-text-secondary">through the old windows of</div>
@@ -73,7 +73,7 @@ function StepVisual({ type }: { type: string }) {
           {['Symphony', 'Chronicle', 'Exhibit', 'Matrix', 'Avant-Garde', 'Paperback'].map((name, i) => (
             <div
               key={name}
-              className={`aspect-[3/4] rounded-lg border ${i === 0 ? 'border-accent/50 shadow-glow-accent bg-accent/5' : 'border-[rgba(255,255,255,0.08)] bg-surface-raised'} p-2 flex flex-col items-start`}
+              className={`aspect-[3/4] rounded-lg border ${i === 0 ? 'border-accent/50 shadow-glow-accent bg-accent/5' : 'border-border-visible bg-surface-raised'} p-2 flex flex-col items-start`}
             >
               <div className="h-[2px] w-[60%] bg-text-ghost/50 rounded-full mb-1" />
               <div className="h-[1.5px] w-[80%] bg-text-ghost/30 rounded-full mb-0.5" />
@@ -132,8 +132,8 @@ export default function Home() {
               </div>
 
               <h1 className="font-display text-hero font-black leading-[1.05] tracking-tight text-text-primary animate-fade-in-up">
-                Paste your words.<br />
-                Get a <span className="gradient-accent-text">beautiful book.</span>
+                Your words deserve<br />
+                <span className="gradient-accent-text">better typography</span>
               </h1>
 
               <p className="mt-6 text-lg md:text-xl text-text-secondary max-w-lg leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
@@ -161,7 +161,7 @@ export default function Home() {
                 {/* "Before" — raw text */}
                 <div className="w-[42%] max-w-[200px] relative">
                   <div className="absolute -top-6 left-0 font-mono text-[10px] uppercase tracking-widest text-text-ghost">Your text</div>
-                  <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface-raised p-4 font-mono text-[9px] md:text-[10px] text-text-tertiary leading-relaxed shadow-card">
+                  <div className="rounded-xl border border-border-visible bg-surface-raised p-4 font-mono text-[9px] md:text-[10px] text-text-tertiary leading-relaxed shadow-card">
                     <span className="text-accent"># My Novel</span><br /><br />
                     <span className="text-text-secondary">The morning light</span><br />
                     <span className="text-text-secondary">filtered through the</span><br />
@@ -189,7 +189,7 @@ export default function Home() {
               </div>
 
               {/* Floating accent element */}
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 font-mono text-[10px] text-text-ghost bg-surface-raised border border-[rgba(255,255,255,0.06)] rounded-full px-4 py-1.5 shadow-card whitespace-nowrap">
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 font-mono text-[10px] text-text-ghost bg-surface-raised border border-border rounded-full px-4 py-1.5 shadow-card whitespace-nowrap">
                 8 templates &middot; 11 page sizes &middot; Instant preview
               </div>
             </div>
@@ -219,7 +219,7 @@ export default function Home() {
                   <h3 className="font-display text-2xl md:text-3xl font-bold text-text-primary mb-4">{step.title}</h3>
                   <p className="text-text-secondary leading-relaxed text-lg">{step.desc}</p>
                 </div>
-                <div className={`h-[260px] md:h-[300px] rounded-2xl border border-[rgba(255,255,255,0.06)] bg-surface-raised/50 ${i % 2 === 1 ? 'md:[direction:ltr]' : ''}`}>
+                <div className={`h-[260px] md:h-[300px] rounded-2xl border border-border bg-surface-raised/50 ${i % 2 === 1 ? 'md:[direction:ltr]' : ''}`}>
                   <StepVisual type={step.visual} />
                 </div>
               </div>
@@ -301,7 +301,7 @@ export default function Home() {
                 ),
               },
             ].map(f => (
-              <div key={f.title} className="card p-6 transition-all duration-200 hover:border-[rgba(255,255,255,0.1)] hover:shadow-card-hover hover:-translate-y-0.5 group">
+              <div key={f.title} className="card p-6 transition-all duration-200 hover:border-border-visible hover:shadow-card-hover hover:-translate-y-0.5 group">
                 <div className="w-10 h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent mb-4 group-hover:bg-accent/15 transition-colors">
                   {f.icon}
                 </div>
