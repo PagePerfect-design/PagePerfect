@@ -3,6 +3,8 @@ import './globals.css'
 import { Space_Grotesk, Source_Serif_4, IBM_Plex_Mono } from 'next/font/google'
 import Link from 'next/link'
 import Image from 'next/image'
+import Providers from '@/components/Providers'
+import NavAuth from '@/components/NavAuth'
 
 const display = Space_Grotesk({ subsets: ['latin'], variable: '--font-display' })
 const body = Source_Serif_4({ subsets: ['latin'], variable: '--font-body' })
@@ -30,6 +32,7 @@ function Nav() {
           <div className="flex items-center gap-6">
             <Link href="/pricing" className="text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">Pricing</Link>
             <Link href="/docs" className="text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">Docs</Link>
+            <NavAuth />
             <Link href="/app" className="btn-pill btn-primary px-5 py-2 text-sm">Open Editor</Link>
           </div>
         </div>
@@ -63,10 +66,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body className="flex min-h-dvh flex-col">
-        <a href="#main" className="skip-link">Skip to content</a>
-        <Nav />
-        <div className="flex-1">{children}</div>
-        <Footer />
+        <Providers>
+          <a href="#main" className="skip-link">Skip to content</a>
+          <Nav />
+          <div className="flex-1">{children}</div>
+          <Footer />
+        </Providers>
       </body>
     </html>
   )
