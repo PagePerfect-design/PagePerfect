@@ -4,7 +4,10 @@ import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 
 export default function NavAuth() {
-  const { user, profile, loading, signOut } = useAuth()
+  const { user, profile, loading, configured, signOut } = useAuth()
+
+  // Don't show auth UI when Supabase isn't configured
+  if (!configured) return null
 
   if (loading) {
     return <div className="h-8 w-20 animate-pulse rounded-full bg-surface-subtle" />
