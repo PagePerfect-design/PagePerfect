@@ -22,6 +22,8 @@ type AuthState = {
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>
   signInWithOAuth: (provider: 'google' | 'github') => Promise<void>
   signOut: () => Promise<void>
+  resetPassword: (email: string) => Promise<{ error: Error | null }>
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
@@ -96,11 +98,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null)
   }
 
+  async function resetPassword(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    })
+    return { error: error as Error | null }
+  }
+
+  async function updatePassword(newPassword: string) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    return { error: error as Error | null }
+  }
+
   const tier: Tier = profile?.tier ?? 'drafter'
 
   return (
     <AuthContext.Provider
-      value={{ user, session, profile, loading, tier, signIn, signUp, signInWithOAuth, signOut }}
+      value={{ user, session, profile, loading, tier, signIn, signUp, signInWithOAuth, signOut, resetPassword, updatePassword }}
     >
       {children}
     </AuthContext.Provider>

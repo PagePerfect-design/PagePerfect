@@ -138,6 +138,14 @@ function LoginForm() {
           </button>
         </form>
 
+        {mode === 'login' && (
+          <p className="mt-3 text-center">
+            <Link href="/auth/forgot-password" className="text-xs text-text-ghost hover:text-text-tertiary transition-colors">
+              Forgot your password?
+            </Link>
+          </p>
+        )}
+
         <p className="mt-6 text-center text-sm text-text-tertiary">
           {mode === 'login' ? (
             <>
