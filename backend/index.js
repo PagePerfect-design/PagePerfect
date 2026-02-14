@@ -17,7 +17,7 @@ const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000); // 
 const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:4000',
-  process.env.FRONTEND_URL, // e.g. https://pageperfect.netlify.app
+  process.env.FRONTEND_URL, // e.g. https://pageperfect.studio
 ].filter(Boolean);
 
 // Filename helper functions
