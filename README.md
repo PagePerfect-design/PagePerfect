@@ -40,9 +40,8 @@ Our implementation follows Müller-Brockmann's principles of:
 - **Frontend**: Next.js with TypeScript and Tailwind CSS
 - **Backend**: Node.js with Express and Pandoc
 - **PDF Generation**: XeLaTeX with systematic grid templates
-- **Deployment**: Netlify (frontend) + Railway (backend)
+- **Deployment**: Vercel (frontend) + Railway (backend)
 
 ---
 
 *PagePerfect embodies Müller-Brockmann's vision of design as a systematic, objective discipline that serves the content and the reader.*
-# Vercel redeploy trigger Sun Oct 12 09:20:14 BST 2025

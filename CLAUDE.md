@@ -39,7 +39,7 @@ PagePerfect/
 │   │       └── CopyCitation.tsx       # Copy citation example to clipboard
 │   ├── public/                # Static assets, PWA manifest, icons
 │   ├── tailwind.config.ts     # Dark design system tokens (colors, shadows, animations)
-│   ├── next.config.ts         # API rewrites to backend, unoptimized images for Netlify
+│   ├── next.config.ts         # API rewrites to backend
 │   ├── eslint.config.mjs      # ESLint flat config (next/core-web-vitals)
 │   └── tsconfig.json          # Strict mode, @/* path alias
 │
@@ -78,7 +78,7 @@ PagePerfect/
 | Backend language | JavaScript (CommonJS) |
 | PDF engine | Pandoc + XeLaTeX |
 | Containerization | Docker (Ubuntu 22.04) |
-| Frontend hosting | Netlify |
+| Frontend hosting | Vercel |
 | Backend hosting | Railway |
 
 ## Common Commands
@@ -322,7 +322,7 @@ When adding tests in the future, note that `.gitignore` excludes `test*.pdf` and
 
 ## Deployment
 
-- **Frontend**: Deploys to Netlify from the `frontend/` directory (images unoptimized via `next.config.ts`)
+- **Frontend**: Deploys to Vercel from the `frontend/` directory
 - **Backend**: Deploys to Railway from the `backend/` directory via Docker
 - No CI/CD pipeline; deployments are triggered via platform dashboards
 - Environment variables are configured in each platform's dashboard

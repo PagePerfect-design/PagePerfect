@@ -1,0 +1,5 @@
+{
+  "Description": "Domain ownership verification file for Microsoft 365 - place in the website root",
+  "Domain": "pageperfect.studio",
+  "Id": "9a6e0b4b-8288-462d-89db-7948d61ca641"
+}
