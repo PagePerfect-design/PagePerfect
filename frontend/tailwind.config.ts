@@ -59,6 +59,8 @@ export default {
         'glow-accent': '0 0 20px rgba(79, 143, 255, 0.2)',
         'glow-success': '0 0 20px rgba(52, 211, 153, 0.2)',
         'inner-subtle': 'inset 0 1px 3px rgba(0,0,0,0.2)',
+        'glow-hero': '0 0 120px 40px rgba(79, 143, 255, 0.08)',
+        'glow-white': '0 0 40px -10px rgba(255, 255, 255, 0.3)',
       },
       fontFamily: {
         display: ['var(--font-display)'],
@@ -66,11 +68,13 @@ export default {
         mono: ['var(--font-mono)']
       },
       fontSize: {
-        'hero': 'clamp(3rem, 6vw, 5.5rem)',
+        'hero': 'clamp(3.5rem, 10vw, 9rem)',
         'hero-sub': 'clamp(1.25rem, 2vw, 1.75rem)',
         'h1': 'clamp(2rem, 3.5vw, 3.5rem)',
         'h2': 'clamp(1.5rem, 2.5vw, 2.5rem)',
         'h3': 'clamp(1.25rem, 1.8vw, 1.5rem)',
+        'display-lg': 'clamp(3rem, 7vw, 7rem)',
+        'step': 'clamp(4rem, 10vw, 8rem)',
       },
       spacing: {
         '18': '4.5rem',
