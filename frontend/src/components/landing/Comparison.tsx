@@ -49,7 +49,7 @@ export function Comparison() {
         <Reveal>
           <div className="mb-16 text-center md:mb-20">
             <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-white/20">Before &amp; After</div>
-            <h2 className="glow-text font-display text-4xl font-bold tracking-tighter text-white md:text-6xl lg:text-7xl">
+            <h2 className="text-glow headline-glow font-display text-4xl font-bold leading-[0.9] tracking-tighter text-white md:text-6xl lg:text-7xl">
               The difference is{' '}
               <span className="gradient-accent-text">visible</span>.
             </h2>

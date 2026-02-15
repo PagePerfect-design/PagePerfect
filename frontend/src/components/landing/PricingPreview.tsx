@@ -1,8 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
+import { ArrowRight, Check } from 'lucide-react'
+
+// LAW 1: Spring physics
+const spring = { type: 'spring' as const, stiffness: 100, damping: 20 }
 
 const TIERS = [
   {
@@ -67,15 +72,26 @@ export function PricingPreview() {
         <div className="absolute right-[10%] top-[20%] h-[300px] w-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(139,92,246,0.06)_0%,transparent_70%)]" />
       </div>
 
+      {/* Atmospheric image — hero laptop book */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
+        <Image
+          src="/images/hero-book-laptop.webp"
+          alt=""
+          fill
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-void via-transparent to-void" />
+      </div>
+
       <div className="relative mx-auto max-w-5xl px-6 md:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
-          animate={inView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
-          transition={{ duration: 0.7, ease: [0.25, 0.4, 0.25, 1] }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={spring}
           className="mb-16 text-center md:mb-20"
         >
           <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/50">Pricing</div>
-          <h2 className="font-display text-display-lg font-bold tracking-[-0.03em] text-white">
+          <h2 className="text-glow headline-glow font-display text-display-lg font-bold leading-[0.9] tracking-tighter text-white">
             Pricing that{' '}
             <span className="gradient-accent-text">respects</span>{' '}
             your budget.
@@ -89,21 +105,18 @@ export function PricingPreview() {
           {TIERS.map((tier, i) => (
             <motion.div
               key={tier.name}
-              initial={{ opacity: 0, y: 30 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: i * 0.12, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+              transition={{ ...spring, delay: i * 0.12 }}
               className={`group relative overflow-hidden rounded-2xl border backdrop-blur-sm transition-all duration-500 ${
                 tier.highlight
                   ? 'border-accent/30 bg-accent/[0.06] shadow-[0_0_60px_-20px_rgba(79,143,255,0.2)] hover:shadow-[0_0_80px_-20px_rgba(79,143,255,0.3)]'
                   : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12] hover:bg-white/[0.04]'
               } hover:-translate-y-1`}
             >
-              {/* Gradient shimmer on highlighted card */}
               {tier.highlight && (
                 <div className="absolute inset-0 bg-gradient-to-b from-accent/[0.08] via-transparent to-transparent" />
               )}
-
-              {/* Most popular badge */}
               {tier.highlight && (
                 <div className="absolute -top-px left-0 right-0 flex justify-center">
                   <div className="rounded-b-lg bg-accent px-4 py-1 text-[11px] font-semibold tracking-wide text-white shadow-[0_4px_20px_-4px_rgba(79,143,255,0.5)]">
@@ -118,7 +131,7 @@ export function PricingPreview() {
                     {tier.name}
                   </div>
                   <div className="mt-3 flex items-baseline gap-1.5">
-                    <span className={`font-display text-5xl font-bold tracking-tight ${tier.highlight ? 'text-white' : 'text-white/90'}`}>
+                    <span className={`font-display text-5xl font-bold leading-[0.9] tracking-tighter ${tier.highlight ? 'text-white' : 'text-white/90'}`}>
                       {tier.price}
                     </span>
                     <span className="text-sm text-white/25">{tier.period}</span>
@@ -126,20 +139,12 @@ export function PricingPreview() {
                   <p className="mt-3 text-[15px] leading-relaxed text-white/30">{tier.desc}</p>
                 </div>
 
-                {/* Divider */}
                 <div className={`mb-6 h-px ${tier.highlight ? 'bg-accent/20' : 'bg-white/[0.06]'}`} />
 
                 <ul className="mb-8 space-y-3.5">
                   {tier.features.map((f) => (
                     <li key={f} className="flex items-start gap-3 text-[14px] text-white/45">
-                      <svg
-                        className={`mt-0.5 h-4 w-4 flex-shrink-0 ${tier.highlight ? 'text-accent' : 'text-white/20'}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+                      <Check className={`mt-0.5 h-4 w-4 flex-shrink-0 ${tier.highlight ? 'text-accent' : 'text-white/20'}`} />
                       {f}
                     </li>
                   ))}
@@ -154,14 +159,7 @@ export function PricingPreview() {
                   }`}
                 >
                   {tier.cta}
-                  <svg
-                    className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-0.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
                 </Link>
               </div>
             </motion.div>

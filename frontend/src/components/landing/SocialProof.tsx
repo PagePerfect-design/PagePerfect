@@ -3,6 +3,9 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 
+// LAW 1: Spring physics
+const spring = { type: 'spring' as const, stiffness: 100, damping: 20 }
+
 const STATS = [
   { value: '8', label: 'Professional templates' },
   { value: '11', label: 'Page sizes' },
@@ -21,12 +24,12 @@ export function SocialProof() {
           {STATS.map((stat, i) => (
             <motion.div
               key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: i * 0.1, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+              transition={{ ...spring, delay: i * 0.1 }}
               className="text-center"
             >
-              <div className="font-display text-4xl font-bold tracking-tight text-white md:text-5xl">
+              <div className="text-glow font-display text-4xl font-bold leading-[0.9] tracking-tighter text-white md:text-5xl">
                 {stat.value}
               </div>
               <div className="mt-2 font-mono text-[11px] uppercase tracking-[0.15em] text-white/25">
