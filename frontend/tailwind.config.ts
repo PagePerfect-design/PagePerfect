@@ -8,22 +8,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Core dark palette — midnight blacks with subtle blue warmth
+        // Core dark palette — abyss-level black
         surface: {
-          DEFAULT: '#0a0a0f',
-          raised: '#111118',
-          overlay: '#1a1a24',
-          subtle: '#22222e',
+          DEFAULT: '#030305',
+          raised: '#0a0a12',
+          overlay: '#12121c',
+          subtle: '#1a1a26',
+          glass: 'rgba(255, 255, 255, 0.03)',
         },
-        // Accent — refined blue spectrum
+        // Accent — electric blue spectrum
         accent: {
-          DEFAULT: '#4f8fff',
-          hover: '#6ba1ff',
-          muted: '#2a4a7f',
-          glow: 'rgba(79, 143, 255, 0.15)',
-          soft: 'rgba(79, 143, 255, 0.08)',
+          DEFAULT: '#3b82f6',
+          hover: '#60a5fa',
+          muted: '#1e3a5f',
+          glow: 'rgba(59, 130, 246, 0.15)',
+          soft: 'rgba(59, 130, 246, 0.08)',
         },
-        // Text hierarchy — WCAG AA contrast-verified against #0a0a0f
+        // Text hierarchy — WCAG AA contrast-verified against #030305
         text: {
           primary: '#f0f0f5',
           secondary: '#a0a0b8',
@@ -39,7 +40,7 @@ export default {
           DEFAULT: 'rgba(255, 255, 255, 0.08)',
           subtle: 'rgba(255, 255, 255, 0.04)',
           visible: 'rgba(255, 255, 255, 0.14)',
-          accent: 'rgba(79, 143, 255, 0.25)',
+          accent: 'rgba(59, 130, 246, 0.25)',
         },
       },
       borderRadius: {
@@ -48,24 +49,37 @@ export default {
         '3xl': '2rem',
         pill: '9999px'
       },
+      backgroundImage: {
+        'gradient-text': 'linear-gradient(to bottom right, #ffffff 30%, #94a3b8 100%)',
+        'gradient-accent': 'linear-gradient(to right, #60a5fa, #a855f7)',
+        'glow-radial': 'radial-gradient(circle at center, rgba(59,130,246,0.2) 0%, transparent 70%)',
+        'glow-radial-violet': 'radial-gradient(circle at center, rgba(168,85,247,0.12) 0%, transparent 70%)',
+      },
       boxShadow: {
         'card': '0 1px 3px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.2)',
         'card-hover': '0 2px 8px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3)',
         'elevated': '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)',
-        'pill': '0 4px 16px rgba(79, 143, 255, 0.25)',
-        'pill-hover': '0 6px 24px rgba(79, 143, 255, 0.35)',
+        'pill': '0 4px 16px rgba(59, 130, 246, 0.25)',
+        'pill-hover': '0 6px 24px rgba(59, 130, 246, 0.35)',
         'paper': '0 2px 8px rgba(0,0,0,0.15), 0 20px 50px -12px rgba(0,0,0,0.35)',
         'paper-hover': '0 4px 12px rgba(0,0,0,0.2), 0 24px 60px -12px rgba(0,0,0,0.4)',
-        'glow-accent': '0 0 20px rgba(79, 143, 255, 0.2)',
+        'glow-accent': '0 0 20px rgba(59, 130, 246, 0.2)',
         'glow-success': '0 0 20px rgba(52, 211, 153, 0.2)',
         'inner-subtle': 'inset 0 1px 3px rgba(0,0,0,0.2)',
-        'glow-hero': '0 0 120px 40px rgba(79, 143, 255, 0.08)',
+        'glow-hero': '0 0 120px 40px rgba(59, 130, 246, 0.1)',
         'glow-white': '0 0 40px -10px rgba(255, 255, 255, 0.3)',
+        'glow-blue': '0 0 50px -10px rgba(59, 130, 246, 0.5)',
+        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
       },
       fontFamily: {
-        display: ['var(--font-display)'],
-        body: ['var(--font-body)'],
-        mono: ['var(--font-mono)']
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
+        body: ['var(--font-body)', 'system-ui', 'serif'],
+        mono: ['var(--font-mono)', 'monospace'],
+      },
+      letterSpacing: {
+        tightest: '-0.05em',
+        tighter: '-0.04em',
+        tight: '-0.02em',
       },
       fontSize: {
         'hero': 'clamp(3.5rem, 10vw, 9rem)',
@@ -84,11 +98,12 @@ export default {
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',
-        'fade-in-up': 'fadeInUp 0.6s ease-out',
+        'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
         'fade-in-down': 'fadeInDown 0.4s ease-out',
         'scale-in': 'scaleIn 0.3s ease-out',
         'shimmer': 'shimmer 2s infinite linear',
         'pulse-soft': 'pulseSoft 2s infinite ease-in-out',
+        'pulse-slow': 'pulseSlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'slide-up': 'slideUp 0.5s ease-out',
       },
       keyframes: {
@@ -115,6 +130,10 @@ export default {
         pulseSoft: {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.7' },
+        },
+        pulseSlow: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.6' },
         },
         slideUp: {
           '0%': { opacity: '0', transform: 'translateY(30px)' },

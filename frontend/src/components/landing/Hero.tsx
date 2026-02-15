@@ -9,13 +9,13 @@ function BookPage() {
     <motion.div
       initial={{ opacity: 0, y: 60, rotateX: 8 }}
       animate={{ opacity: 1, y: 0, rotateX: 0 }}
-      transition={{ delay: 0.8, duration: 1.2, ease: [0.25, 0.4, 0.25, 1] }}
+      transition={{ delay: 1.0, duration: 1.2, ease: [0.25, 0.4, 0.25, 1] }}
       className="relative mx-auto mt-20 w-full max-w-[380px] md:max-w-[440px]"
       style={{ perspective: '1200px' }}
     >
       {/* Page glow — light bleeding from the white page */}
-      <div className="absolute -inset-12 rounded-3xl bg-[radial-gradient(ellipse,rgba(255,255,255,0.06)_0%,transparent_70%)]" />
-      <div className="absolute -inset-20 rounded-full bg-[radial-gradient(ellipse,rgba(79,143,255,0.04)_0%,transparent_70%)]" />
+      <div className="absolute -inset-12 rounded-3xl bg-[radial-gradient(ellipse,rgba(255,255,255,0.08)_0%,transparent_70%)]" />
+      <div className="absolute -inset-24 rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.06)_0%,transparent_70%)]" />
 
       <motion.div
         animate={{ y: [0, -8, 0] }}
@@ -24,14 +24,14 @@ function BookPage() {
         style={{ transformStyle: 'preserve-3d' }}
       >
         {/* Shadow beneath the page */}
-        <div className="absolute -bottom-4 left-4 right-4 h-8 rounded-full bg-black/40 blur-xl" />
+        <div className="absolute -bottom-4 left-4 right-4 h-8 rounded-full bg-black/50 blur-xl" />
 
         {/* The page itself */}
         <div
           className="relative overflow-hidden rounded-sm border border-white/[0.08] bg-[#fafaf8] px-10 py-12 md:px-14 md:py-16"
           style={{
             boxShadow:
-              '0 25px 60px -15px rgba(0,0,0,0.5), 0 0 100px -30px rgba(79,143,255,0.12), inset 0 1px 0 rgba(255,255,255,0.1)',
+              '0 25px 60px -15px rgba(0,0,0,0.6), 0 0 120px -30px rgba(59,130,246,0.15), inset 0 1px 0 rgba(255,255,255,0.1)',
           }}
         >
           {/* Subtle paper texture grain */}
@@ -95,82 +95,93 @@ export function Hero() {
     <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-24 md:pb-28">
       {/* ===== ATMOSPHERIC BACKGROUND ===== */}
 
-      {/* Dot grid — more visible */}
-      <div className="pointer-events-none absolute inset-0 bg-dot-grid opacity-80" />
+      {/* God-Tier Dot Grid — fades to void via mask-image */}
+      <div className="pointer-events-none absolute inset-0 bg-dot-grid" />
 
-      {/* Primary aurora — large, bright, unmistakable */}
+      {/* Primary glow — massive, bright, unmistakable light source */}
       <div className="pointer-events-none absolute inset-0">
-        {/* Central blue glow — hero light source */}
-        <div className="absolute left-1/2 top-[15%] h-[800px] w-[1000px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(79,143,255,0.18)_0%,transparent_65%)]" />
+        {/* Central blue — the main light */}
+        <div className="absolute left-1/2 top-[18%] h-[800px] w-[1000px] -translate-x-1/2 bg-glow-radial" />
         {/* Violet accent — upper right */}
-        <div className="absolute right-[5%] top-[10%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(ellipse,rgba(139,92,246,0.12)_0%,transparent_65%)]" />
+        <div className="absolute right-[5%] top-[8%] h-[600px] w-[600px] bg-glow-radial-violet" />
         {/* Deep blue — lower left */}
-        <div className="absolute bottom-[10%] left-[5%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.1)_0%,transparent_65%)]" />
-        {/* Warm violet bloom — bottom center (page glow zone) */}
-        <div className="absolute bottom-[5%] left-1/2 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(139,92,246,0.07)_0%,transparent_70%)]" />
+        <div className="absolute bottom-[10%] left-[5%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.12)_0%,transparent_70%)]" />
+        {/* Violet bloom — bottom center (page glow zone) */}
+        <div className="absolute bottom-[5%] left-1/2 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(168,85,247,0.08)_0%,transparent_70%)]" />
       </div>
 
-      {/* Animated gradient sweep — slow aurora */}
+      {/* Animated aurora sweep — breathing light */}
       <motion.div
-        animate={{ opacity: [0.4, 0.7, 0.4] }}
-        transition={{ repeat: Infinity, duration: 8, ease: 'easeInOut' }}
-        className="pointer-events-none absolute left-1/2 top-[10%] h-[600px] w-[1200px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(79,143,255,0.08)_0%,rgba(139,92,246,0.04)_40%,transparent_70%)]"
+        animate={{ opacity: [0.5, 0.8, 0.5] }}
+        transition={{ repeat: Infinity, duration: 6, ease: 'easeInOut' }}
+        className="pointer-events-none absolute left-1/2 top-[12%] h-[700px] w-[1400px] -translate-x-1/2 bg-[radial-gradient(ellipse,rgba(59,130,246,0.1)_0%,rgba(168,85,247,0.05)_40%,transparent_70%)]"
       />
 
       {/* ===== CONTENT ===== */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, ease: [0.25, 0.4, 0.25, 1] }}
-        className="relative z-10 max-w-5xl text-center"
-      >
-        {/* Status pill */}
-        <motion.span
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="mb-10 inline-flex items-center gap-2.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-5 py-2 backdrop-blur-md"
+      <div className="relative z-10 flex max-w-5xl flex-col items-center text-center">
+
+        {/* Status pill — glassmorphism with pinging dot */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-white/[0.08] bg-surface-glass px-5 py-2 text-sm text-gray-300 shadow-glass backdrop-blur-md"
         >
-          <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-          <span className="font-mono text-xs tracking-wide text-white/70">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+          </span>
+          <span className="font-mono text-xs tracking-wide">
             Free to use — no account needed
           </span>
-        </motion.span>
+        </motion.div>
 
-        {/* Headline — stronger gradient */}
-        <h1 className="font-display text-hero font-bold leading-[0.92] tracking-[-0.04em]">
-          <span className="text-white">Paste text.</span>
-          <br />
-          <span className="bg-gradient-to-r from-white via-accent to-violet-400 bg-clip-text text-transparent">
+        {/* Headline — Swiss-tight, staggered unblur */}
+        <h1 className="font-display text-hero font-bold leading-[0.9] tracking-tightest">
+          <motion.span
+            initial={{ opacity: 0, filter: 'blur(12px)' }}
+            animate={{ opacity: 1, filter: 'blur(0px)' }}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="block text-white"
+          >
+            Paste text.
+          </motion.span>
+          <motion.span
+            initial={{ opacity: 0, filter: 'blur(12px)' }}
+            animate={{ opacity: 1, filter: 'blur(0px)' }}
+            transition={{ duration: 0.8, delay: 0.35 }}
+            className="block bg-gradient-accent bg-clip-text pb-2 text-transparent"
+          >
             Get a book.
-          </span>
+          </motion.span>
         </h1>
 
+        {/* Subhead — lighter weight, breathable */}
         <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.8 }}
-          className="mx-auto mt-8 max-w-2xl font-body text-xl leading-relaxed text-white/50 md:text-2xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.55 }}
+          className="mx-auto mt-8 max-w-2xl font-body text-xl font-light leading-relaxed text-gray-400 md:text-2xl"
         >
           Turn plain text into professionally typeset, print-ready PDFs.
           <br className="hidden md:block" />
           In your browser. In seconds.
         </motion.p>
 
-        {/* CTA buttons */}
+        {/* CTA buttons — glow button + uppercase link */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
-          className="mt-14 flex flex-col items-center gap-5 sm:flex-row sm:justify-center"
+          transition={{ duration: 0.8, delay: 0.75 }}
+          className="mt-12 flex flex-col items-center gap-6 sm:flex-row"
         >
           <Link
             href="/app"
-            className="group inline-flex h-14 items-center gap-3 rounded-full bg-white px-9 text-[17px] font-semibold text-[#0a0a0f] shadow-[0_0_60px_-12px_rgba(255,255,255,0.3),0_0_120px_-30px_rgba(79,143,255,0.2)] transition-all duration-300 hover:scale-[1.04] hover:shadow-[0_0_80px_-8px_rgba(255,255,255,0.4),0_0_150px_-30px_rgba(79,143,255,0.3)]"
+            className="group relative inline-flex h-14 items-center gap-3 rounded-full bg-white px-9 text-[17px] font-semibold text-[#030305] transition-all duration-300 hover:scale-105 hover:shadow-glow-blue"
           >
-            Open the Editor
+            <span>Open the Editor</span>
             <svg
-              className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1.5"
+              className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -178,9 +189,10 @@ export function Hero() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
           </Link>
+
           <Link
             href="#how-it-works"
-            className="inline-flex h-14 items-center gap-2 rounded-full border border-white/[0.08] px-8 text-[15px] font-medium text-white/60 transition-all duration-300 hover:border-white/[0.15] hover:text-white/80"
+            className="border-b border-transparent pb-0.5 text-sm font-medium uppercase tracking-wide text-gray-400 transition-colors hover:border-gray-500 hover:text-white"
           >
             See how it works
           </Link>
@@ -189,12 +201,12 @@ export function Hero() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.9, duration: 0.6 }}
-          className="mt-10 font-mono text-[13px] text-white/25"
+          transition={{ delay: 1.0, duration: 0.6 }}
+          className="mt-10 font-mono text-[13px] text-white/20"
         >
           Works with Amazon KDP &middot; IngramSpark &middot; Lulu &middot; Any browser
         </motion.p>
-      </motion.div>
+      </div>
 
       {/* ===== FLOATING BOOK PAGE ===== */}
       <BookPage />
@@ -203,7 +215,7 @@ export function Hero() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.8, duration: 0.8 }}
+        transition={{ delay: 2.0, duration: 0.8 }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2"
       >
         <motion.div

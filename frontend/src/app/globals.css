@@ -7,13 +7,13 @@
    ======================================================================== */
 
 :root {
-  --surface: #0a0a0f;
-  --surface-raised: #111118;
-  --surface-overlay: #1a1a24;
-  --surface-subtle: #22222e;
-  --accent: #4f8fff;
-  --accent-hover: #6ba1ff;
-  --accent-muted: #2a4a7f;
+  --surface: #030305;
+  --surface-raised: #0a0a12;
+  --surface-overlay: #12121c;
+  --surface-subtle: #1a1a26;
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-muted: #1e3a5f;
   --text-primary: #f0f0f5;
   --text-secondary: #a0a0b8;
   --text-tertiary: #7a7a8e;
@@ -30,6 +30,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Kinetic text selection */
+::selection {
+  background: #3b82f6;
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
 /* Layout */
 .container-grid { @apply mx-auto max-w-7xl px-6 md:px-8; }
 
@@ -41,18 +48,18 @@ body {
 .btn-primary {
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(79, 143, 255, 0.25);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
 }
 .btn-primary:hover {
   background: var(--accent-hover);
-  box-shadow: 0 6px 24px rgba(79, 143, 255, 0.35);
+  box-shadow: 0 6px 24px rgba(59, 130, 246, 0.35);
   transform: translateY(-1px);
 }
 .btn-primary:active { transform: translateY(0); }
 .btn-primary:focus-visible {
   outline: 2px solid var(--accent-hover);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(79, 143, 255, 0.2);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
 }
 .btn-primary:disabled {
   opacity: 0.5;
@@ -112,7 +119,7 @@ body {
   background-clip: text;
 }
 .gradient-accent-text {
-  background: linear-gradient(135deg, #4f8fff 0%, #a78bfa 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #a855f7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -133,7 +140,7 @@ body {
 .input-dark:focus {
   border-color: var(--accent);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(79, 143, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 .input-dark::placeholder { color: var(--text-ghost); }
 select.input-dark {
@@ -146,8 +153,8 @@ select.input-dark {
 
 /* Paper preview surface */
 .paper-surface {
-  background: #1a1a24;
-  background-image: radial-gradient(ellipse at 50% 0%, rgba(79,143,255,0.04) 0%, transparent 60%);
+  background: #12121c;
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.04) 0%, transparent 60%);
 }
 
 /* Divider */
@@ -158,24 +165,26 @@ select.input-dark {
 
 /* Landing page — visual depth layers */
 .glass-card {
-  background: rgba(17, 17, 24, 0.6);
+  background: rgba(10, 10, 18, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 1.25rem;
 }
 .glass-card-accent {
-  background: rgba(79, 143, 255, 0.04);
+  background: rgba(59, 130, 246, 0.04);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(79, 143, 255, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.15);
   border-radius: 1.25rem;
 }
 
-/* Dot grid background — subtle depth texture */
+/* God-Tier Dot Grid — visible texture that fades to void */
 .bg-dot-grid {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
 }
 
 /* Animated gradient border */
@@ -194,7 +203,7 @@ select.input-dark {
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  background: conic-gradient(from var(--angle), transparent 60%, rgba(79, 143, 255, 0.3), transparent 80%);
+  background: conic-gradient(from var(--angle), transparent 60%, rgba(59, 130, 246, 0.3), transparent 80%);
   z-index: -1;
   animation: rotateBorder 6s linear infinite;
 }
@@ -213,7 +222,7 @@ select.input-dark {
   transform: translateX(-50%);
   width: 80%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(79, 143, 255, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.25), transparent);
 }
 
 /* Accessibility */
