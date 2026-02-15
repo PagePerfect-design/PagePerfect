@@ -11,9 +11,41 @@ const VIRTUAL_W = 1600
 const VIRTUAL_H = 1000
 
 const CALLOUTS = [
-  { label: 'Margins', desc: 'Golden-ratio margins replace Word defaults' },
-  { label: 'Typography', desc: 'Baseline grid aligns every line of text' },
-  { label: 'Structure', desc: 'Drop caps, em-dashes, and proper chapter headings' },
+  {
+    label: 'Margins',
+    desc: 'Golden-ratio proportions replace cramped Word defaults',
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <rect x="7" y="7" width="10" height="10" rx="1" strokeDasharray="2 2" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Typography',
+    desc: 'Baseline grid locks every line to a consistent rhythm',
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <line x1="4" y1="6" x2="20" y2="6" />
+        <line x1="4" y1="10" x2="20" y2="10" />
+        <line x1="4" y1="14" x2="20" y2="14" />
+        <line x1="4" y1="18" x2="14" y2="18" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Structure',
+    desc: 'Drop caps, em-dashes, and proper chapter openings',
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+        <path d="M4 6h6v6H4z" />
+        <line x1="14" y1="6" x2="20" y2="6" />
+        <line x1="14" y1="10" x2="20" y2="10" />
+        <line x1="4" y1="16" x2="20" y2="16" />
+        <line x1="4" y1="20" x2="16" y2="20" />
+      </svg>
+    ),
+  },
 ]
 
 export function Comparison() {
@@ -134,7 +166,7 @@ export function Comparison() {
           >
             <div
               ref={containerRef}
-              className="relative mx-auto aspect-[16/10] max-w-5xl cursor-ew-resize select-none overflow-hidden rounded-xl border transition-colors duration-300"
+              className="relative mx-auto aspect-[16/10] max-w-5xl cursor-ew-resize select-none overflow-hidden rounded-t-xl border border-b-0 transition-colors duration-300"
               style={{
                 borderColor: isDragging ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.08)',
                 boxShadow: isDragging
@@ -227,30 +259,33 @@ export function Comparison() {
             </div>
           </motion.div>
 
-          {/* === CALLOUT ANNOTATIONS === */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={frameInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ ...spring, delay: 0.8 }}
-            className="mx-auto mt-8 grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3 md:mt-10"
-          >
-            {CALLOUTS.map((item, i) => (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0, y: 15 }}
-                animate={frameInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ ...spring, delay: 0.85 + i * 0.1 }}
-                className="text-center"
-              >
-                <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-accent/40">
-                  {item.label}
-                </div>
-                <p className="text-sm leading-relaxed text-white/25">
-                  {item.desc}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
+          {/* === ANNOTATION BAR — attached to frame bottom === */}
+          <div className="mx-auto max-w-5xl overflow-hidden rounded-b-xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm">
+            <div className="grid grid-cols-1 divide-y divide-white/[0.06] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              {CALLOUTS.map((item, i) => (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={frameInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ ...spring, delay: 0.7 + i * 0.1 }}
+                  className="flex flex-col items-center gap-2 px-6 py-5 text-center"
+                >
+                  {/* Icon */}
+                  <div className="text-accent/50">
+                    {item.icon}
+                  </div>
+                  {/* Label */}
+                  <div className="font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-white/50">
+                    {item.label}
+                  </div>
+                  {/* Description */}
+                  <p className="text-[13px] leading-relaxed text-white/25">
+                    {item.desc}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
