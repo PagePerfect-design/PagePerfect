@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
-import { createClient } from './supabase'
+import { createClient, isSupabaseConfigured } from './supabase'
 import type { Tier } from './database.types'
 
 type Profile = {
@@ -32,9 +32,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const supabase = createClient()
-
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false)
+      return
+    }
+
+    const supabase = createClient()
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s)
@@ -63,6 +68,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   async function fetchProfile(userId: string) {
+    if (!isSupabaseConfigured) return
+    const supabase = createClient()
     const { data } = await supabase
       .from('profiles')
       .select('id, email, display_name, tier')
@@ -75,16 +82,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signIn(email: string, password: string) {
+    if (!isSupabaseConfigured) return { error: new Error('Auth not configured') }
+    const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     return { error: error as Error | null }
   }
 
   async function signUp(email: string, password: string) {
+    if (!isSupabaseConfigured) return { error: new Error('Auth not configured') }
+    const supabase = createClient()
     const { error } = await supabase.auth.signUp({ email, password })
     return { error: error as Error | null }
   }
 
   async function signInWithOAuth(provider: 'google' | 'github') {
+    if (!isSupabaseConfigured) return
+    const supabase = createClient()
     await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -92,6 +105,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut() {
+    if (!isSupabaseConfigured) return
+    const supabase = createClient()
     await supabase.auth.signOut()
     setProfile(null)
   }
