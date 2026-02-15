@@ -14,10 +14,16 @@ export const metadata: Metadata = {
   title: 'PagePerfect — Professional Typesetting in Your Browser',
   description: 'Transform Markdown into beautifully typeset, print-ready PDFs. Powered by XeLaTeX with Muller-Brockmann grid systems, golden-ratio typography, and baseline grids.',
   icons: {
-    icon: '/PagePerfect_1_Icon.png',
-    shortcut: '/PagePerfect_1_Icon.png',
-    apple: '/PagePerfect_1_Icon.png',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
+  manifest: '/site.webmanifest',
+  themeColor: '#030305',
 }
 
 function Nav() {
