@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 
 function Nav() {
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#050507]/80 backdrop-blur-xl">
+    <nav className="sticky top-0 z-40 border-b border-white/[0.06] bg-void/80 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">
@@ -49,7 +49,7 @@ function Nav() {
 
 function Footer() {
   return (
-    <footer className="border-t border-white/[0.06] bg-surface py-12">
+    <footer className="border-t border-white/[0.06] bg-void py-12">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
           <div className="flex items-center gap-3">
@@ -71,7 +71,7 @@ function Footer() {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
-      <body className="flex min-h-dvh flex-col bg-surface text-white antialiased">
+      <body className="flex min-h-dvh flex-col bg-void text-white antialiased">
         <div className="bg-noise" />
         <Providers>
           <a href="#main" className="skip-link">Skip to content</a>

@@ -8,12 +8,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Core dark palette — the Void
+        // LAW 2: The Void — ban pure black
+        void: '#050507',
+        // Surfaces — elevated planes above the void
         surface: {
-          DEFAULT: '#050507',
-          raised: '#0a0a10',
-          overlay: '#111118',
-          subtle: '#1a1a22',
+          DEFAULT: '#0f0f16',
+          raised: '#14141e',
+          overlay: '#1a1a24',
+          subtle: '#22222e',
           glass: 'rgba(255, 255, 255, 0.03)',
         },
         // Accent — electric blue spectrum
@@ -24,7 +26,10 @@ export default {
           glow: 'rgba(59, 130, 246, 0.15)',
           soft: 'rgba(59, 130, 246, 0.08)',
         },
-        // Text hierarchy — kept for non-landing pages (editor, docs, pricing, auth)
+        // Named accent shortcuts for direct use
+        'accent-glare': '#3b82f6',
+        'accent-glow': '#60a5fa',
+        // Text hierarchy
         text: {
           primary: '#f0f0f5',
           secondary: '#a0a0b8',
@@ -35,7 +40,7 @@ export default {
         success: { DEFAULT: '#34d399', muted: 'rgba(52, 211, 153, 0.12)' },
         warning: { DEFAULT: '#fbbf24', muted: 'rgba(251, 191, 36, 0.12)' },
         danger:  { DEFAULT: '#f87171', muted: 'rgba(248, 113, 113, 0.12)' },
-        // Borders — white at varying opacity
+        // Borders
         border: {
           DEFAULT: 'rgba(255, 255, 255, 0.08)',
           subtle: 'rgba(255, 255, 255, 0.04)',
@@ -57,6 +62,12 @@ export default {
         'glow-radial': 'radial-gradient(circle at center, rgba(59,130,246,0.25) 0%, transparent 70%)',
         'glow-radial-violet': 'radial-gradient(circle at center, rgba(168,85,247,0.15) 0%, transparent 70%)',
         'glow-radial-hot': 'radial-gradient(ellipse at center, rgba(56,189,248,0.18) 0%, rgba(59,130,246,0.1) 40%, transparent 70%)',
+        // Glass gradients — LAW 2
+        'glass-subtle': 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+        'glass-accent': 'linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.02) 100%)',
+        'glass-warm': 'linear-gradient(135deg, rgba(251,191,36,0.06) 0%, rgba(251,191,36,0.01) 100%)',
+        'glass-cool': 'linear-gradient(135deg, rgba(56,189,248,0.06) 0%, rgba(56,189,248,0.01) 100%)',
+        'glass-surface': 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 100%)',
       },
       boxShadow: {
         'card': '0 1px 3px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.2)',
@@ -76,14 +87,16 @@ export default {
         'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
         'cta': '0 0 60px -12px rgba(255, 255, 255, 0.25), 0 0 20px -4px rgba(255, 255, 255, 0.15)',
         'cta-hover': '0 0 80px -12px rgba(255, 255, 255, 0.4), 0 0 30px -4px rgba(255, 255, 255, 0.25), 0 0 100px -20px rgba(59, 130, 246, 0.3)',
-        // 3D book shadows — colored light bleed
+        // LAW 1: Levitating card shadow — colored light bleed from accent
+        'levitate': '0 20px 60px -15px rgba(59, 130, 246, 0.5)',
+        'levitate-hover': '0 30px 80px -15px rgba(59, 130, 246, 0.6)',
+        // 3D book shadows
         'book-blue': '0 20px 50px -12px rgba(59, 130, 246, 0.5)',
         'book-emerald': '0 20px 50px -12px rgba(16, 185, 129, 0.5)',
         'book-amber': '0 20px 50px -12px rgba(245, 158, 11, 0.5)',
         'book-violet': '0 20px 50px -12px rgba(139, 92, 246, 0.5)',
         'book-rose': '0 20px 50px -12px rgba(244, 63, 94, 0.5)',
         'book-cyan': '0 20px 50px -12px rgba(6, 182, 212, 0.5)',
-        // Handle spark
         'spark': '0 0 20px 4px rgba(59, 130, 246, 0.6), 0 0 60px 8px rgba(59, 130, 246, 0.3)',
       },
       fontFamily: {
@@ -124,6 +137,8 @@ export default {
         'glow-breathe': 'glowBreathe 3s ease-in-out infinite',
         'reveal-up': 'revealUp 0.8s cubic-bezier(0.25, 0.4, 0.25, 1) forwards',
         'text-shimmer': 'textShimmer 4s linear infinite',
+        'float': 'float 6s ease-in-out infinite',
+        'rotate-slow': 'rotateSlow 20s linear infinite',
       },
       keyframes: {
         fadeIn: {
@@ -167,7 +182,6 @@ export default {
           '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
           '50%': { opacity: '1', transform: 'scale(1.05)' },
         },
-        // Physics: reveal-up — unblur + translateY for scroll reveals
         revealUp: {
           '0%': {
             opacity: '0',
@@ -180,10 +194,17 @@ export default {
             transform: 'translateY(0)',
           },
         },
-        // Shimmer: light passing across text
         textShimmer: {
           '0%': { backgroundPosition: '-100% 0' },
           '100%': { backgroundPosition: '200% 0' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        rotateSlow: {
+          '0%': { transform: 'rotateY(0deg)' },
+          '100%': { transform: 'rotateY(360deg)' },
         },
       },
     },

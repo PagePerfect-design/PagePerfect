@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Reveal } from './Reveal'
 
 const STATEMENTS = [
@@ -61,10 +62,21 @@ export function WhyDifferent() {
         <div className="absolute left-[20%] top-1/3 h-[400px] w-[400px] rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.04)_0%,transparent_70%)]" />
       </div>
 
+      {/* Atmospheric image — scattered books texture */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.025]">
+        <Image
+          src="/images/books-scattered.webp"
+          alt=""
+          fill
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-void via-transparent to-void" />
+      </div>
+
       <div className="relative mx-auto max-w-5xl px-6 md:px-8">
         <Reveal>
           <div className="mb-20 text-center md:mb-28">
-            <h2 className="font-display text-display-lg font-bold tracking-tighter text-white">
+            <h2 className="text-glow headline-glow font-display text-display-lg font-bold leading-[0.9] tracking-tighter text-white">
               Not just formatted.{' '}
               <span className="gradient-hero-text">
                 Typeset.
@@ -81,7 +93,7 @@ export function WhyDifferent() {
                   <span className="mb-4 inline-block font-mono text-[11px] uppercase tracking-[0.2em] text-accent/30">
                     {s.num}
                   </span>
-                  <h3 className="font-display text-3xl font-bold tracking-tight text-white md:text-4xl lg:text-5xl lg:leading-[1.1]">
+                  <h3 className="font-display text-3xl font-bold leading-[0.9] tracking-tighter text-white md:text-4xl lg:text-5xl">
                     {s.headline}
                   </h3>
                   <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/35 md:text-xl">

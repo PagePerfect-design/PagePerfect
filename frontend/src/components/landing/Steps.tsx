@@ -1,7 +1,11 @@
 'use client'
 
 import { motion, useInView } from 'framer-motion'
+import Image from 'next/image'
 import { useRef } from 'react'
+
+// LAW 1: Spring physics
+const spring = { type: 'spring' as const, stiffness: 100, damping: 20 }
 
 const STEPS = [
   {
@@ -30,27 +34,24 @@ function Step({ step, index }: { step: typeof STEPS[number]; index: number }) {
       ref={ref}
       initial={{ opacity: 0, x: -30 }}
       animate={inView ? { opacity: 1, x: 0 } : {}}
-      transition={{ delay: index * 0.15, duration: 0.7, ease: [0.25, 0.4, 0.25, 1] }}
+      transition={{ ...spring, delay: index * 0.15 }}
       className="group relative"
     >
-      {/* Glowing top border on hover */}
       <div className="absolute inset-x-0 top-0 h-px bg-white/[0.06] transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-transparent group-hover:via-accent/50 group-hover:to-transparent" />
 
       <div className="py-16 md:py-24">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-16 lg:gap-24">
-          {/* Giant gradient number */}
-          <span className="font-display text-step font-bold leading-none bg-gradient-to-b from-white/[0.12] to-white/[0.03] bg-clip-text text-transparent transition-all duration-500 group-hover:from-accent/60 group-hover:to-accent/10">
+          <span className="font-display text-step font-bold leading-none tracking-tighter bg-gradient-to-b from-white/[0.12] to-white/[0.03] bg-clip-text text-transparent transition-all duration-500 group-hover:from-accent/60 group-hover:to-accent/10">
             {step.num}
           </span>
           <div className="flex-1">
-            <h3 className="font-display text-2xl font-bold tracking-tight text-white md:text-3xl lg:text-[2.5rem] lg:leading-tight">
+            <h3 className="font-display text-2xl font-bold leading-[0.9] tracking-tighter text-white md:text-3xl lg:text-[2.5rem]">
               {step.title}
             </h3>
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-white/35 md:text-xl">
               {step.desc}
             </p>
           </div>
-          {/* Arrow indicator */}
           <div className="hidden items-center md:flex">
             <svg
               className="h-6 w-6 text-white/[0.06] transition-all duration-500 group-hover:text-accent/40 group-hover:translate-x-1"
@@ -67,14 +68,25 @@ function Step({ step, index }: { step: typeof STEPS[number]; index: number }) {
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="section-separator relative bg-surface-raised py-32 md:py-44">
+    <section id="how-it-works" className="section-separator relative bg-surface py-32 md:py-44">
       {/* Dot grid */}
       <div className="pointer-events-none absolute inset-0 bg-dot-grid-subtle" />
+
+      {/* Atmospheric image — book tunnel behind steps */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03]">
+        <Image
+          src="/images/book-tunnel.webp"
+          alt=""
+          fill
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-surface via-surface/80 to-surface" />
+      </div>
 
       <div className="relative mx-auto max-w-5xl px-6 md:px-8">
         <div className="mb-20 text-center md:mb-28">
           <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/50">How it works</div>
-          <h2 className="font-display text-display-lg font-bold tracking-[-0.03em] text-white">
+          <h2 className="text-glow headline-glow font-display text-display-lg font-bold leading-[0.9] tracking-tighter text-white">
             Three steps. That&apos;s it.
           </h2>
         </div>
@@ -83,7 +95,6 @@ export function HowItWorks() {
           {STEPS.map((step, i) => (
             <Step key={step.num} step={step} index={i} />
           ))}
-          {/* Final border */}
           <div className="h-px bg-white/[0.06]" />
         </div>
       </div>
