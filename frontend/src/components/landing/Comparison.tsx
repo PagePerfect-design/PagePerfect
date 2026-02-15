@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import { ReactCompareSlider } from 'react-compare-slider'
 import { Reveal } from './Reveal'
 
@@ -130,21 +129,9 @@ function GlowingHandle() {
 export function Comparison() {
   return (
     <section className="section-separator relative py-32 md:py-44">
-      {/* Background texture */}
-      <div className="absolute inset-0 overflow-hidden">
-        <Image
-          src="/images/books-scattered.webp"
-          alt=""
-          fill
-          className="object-cover opacity-[0.04]"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-surface via-transparent to-surface" />
-      </div>
-
-      {/* Background glow — more intense */}
+      {/* Single subtle glow */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/2 h-[600px] w-[1000px] -translate-x-1/2 -translate-y-1/2 bg-glow-radial opacity-50" />
+        <div className="absolute left-1/2 top-1/2 h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.05)_0%,transparent_70%)]" />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-6 md:px-8">
@@ -162,7 +149,7 @@ export function Comparison() {
         </Reveal>
 
         <Reveal delay={0.15}>
-          {/* Slider frame with glow border */}
+          {/* Slider frame */}
           <div className="relative mx-auto aspect-[16/10] max-w-5xl overflow-hidden rounded-2xl border border-white/[0.08] shadow-[0_8px_60px_-15px_rgba(59,130,246,0.15),0_2px_20px_rgba(0,0,0,0.5)] ring-1 ring-white/5">
             <ReactCompareSlider
               itemOne={<WordDocPanel />}
