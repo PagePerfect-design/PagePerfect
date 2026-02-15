@@ -30,11 +30,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Kinetic text selection */
+/* Kinetic text selection — electric blue */
 ::selection {
   background: #3b82f6;
   color: white;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
 }
 
 /* Layout */
@@ -111,15 +111,25 @@ body {
 .p  { @apply font-body text-base leading-7 text-text-secondary; }
 .small-mono { @apply font-mono text-sm text-text-tertiary; }
 
-/* Gradient text */
+/* Gradient text — subtle white to silver */
 .gradient-text {
   background: linear-gradient(135deg, #f0f0f5 0%, #a0a0b8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* Gradient accent text — electric blue to purple */
 .gradient-accent-text {
-  background: linear-gradient(135deg, #3b82f6 0%, #a855f7 100%);
+  background: linear-gradient(135deg, #38bdf8, #3b82f6 40%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hero gradient text — hotter, wider spectrum */
+.gradient-hero-text {
+  background: linear-gradient(135deg, #67e8f9, #60a5fa 30%, #c084fc 65%, #f472b6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -181,10 +191,18 @@ select.input-dark {
 
 /* God-Tier Dot Grid — visible texture that fades to void */
 .bg-dot-grid {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, black 30%, transparent 80%);
+  -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 80%);
+}
+
+/* Tighter dot grid for subtle sections */
+.bg-dot-grid-subtle {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(to bottom, black 20%, transparent 70%);
+  -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 70%);
 }
 
 /* Animated gradient border */
@@ -222,7 +240,21 @@ select.input-dark {
   transform: translateX(-50%);
   width: 80%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.25), transparent);
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+}
+
+/* Horizontal gradient separator — more visible than a plain border */
+.section-separator {
+  position: relative;
+}
+.section-separator::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.15), rgba(168, 85, 247, 0.1), transparent);
 }
 
 /* Accessibility */
@@ -244,7 +276,7 @@ select.input-dark {
   height: 100vh;
   pointer-events: none;
   z-index: 50;
-  opacity: 0.04;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 

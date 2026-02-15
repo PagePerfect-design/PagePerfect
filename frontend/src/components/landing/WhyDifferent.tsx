@@ -56,11 +56,11 @@ const STATEMENTS = [
 
 export function WhyDifferent() {
   return (
-    <section className="relative py-32 md:py-44">
+    <section className="section-separator relative py-32 md:py-44">
       {/* Background glows */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[20%] top-1/3 h-[400px] w-[400px] rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.04)_0%,transparent_70%)]" />
-        <div className="absolute right-[15%] bottom-1/4 h-[300px] w-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(168,85,247,0.04)_0%,transparent_70%)]" />
+        <div className="absolute left-[20%] top-1/3 h-[400px] w-[400px] rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.05)_0%,transparent_70%)]" />
+        <div className="absolute right-[15%] bottom-1/4 h-[300px] w-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(168,85,247,0.05)_0%,transparent_70%)]" />
       </div>
 
       <div className="relative mx-auto max-w-5xl px-6 md:px-8">
@@ -68,7 +68,7 @@ export function WhyDifferent() {
           <div className="mb-20 text-center md:mb-28">
             <h2 className="font-display text-display-lg font-bold tracking-tighter text-white">
               Not just formatted.{' '}
-              <span className="bg-gradient-accent bg-clip-text text-transparent">
+              <span className="gradient-hero-text">
                 Typeset.
               </span>
             </h2>
@@ -99,14 +99,14 @@ export function WhyDifferent() {
                   <span className="mb-4 inline-block font-mono text-[11px] uppercase tracking-[0.2em] text-accent/30">
                     {s.num}
                   </span>
-                  <h3 className="font-display text-3xl font-bold text-white md:text-4xl lg:text-5xl lg:leading-[1.1]">
+                  <h3 className="font-display text-3xl font-bold tracking-tight text-white md:text-4xl lg:text-5xl lg:leading-[1.1]">
                     {s.headline}
                   </h3>
-                  <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/40 md:text-xl">
+                  <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/35 md:text-xl">
                     {s.body}
                   </p>
                 </div>
-                <div className="hidden items-center justify-center rounded-2xl border border-white/[0.04] bg-white/[0.02] p-6 md:flex">
+                <div className="hidden items-center justify-center rounded-2xl border border-white/[0.04] bg-white/[0.02] p-6 transition-all duration-500 group-hover:border-accent/10 group-hover:bg-accent/[0.02] md:flex">
                   {s.visual}
                 </div>
               </div>

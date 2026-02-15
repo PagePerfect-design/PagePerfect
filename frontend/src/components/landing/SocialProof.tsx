@@ -16,17 +16,17 @@ export function SocialProof() {
   const inView = useInView(ref, { once: true, margin: '-40px' })
 
   return (
-    <section ref={ref} className="section-glow-top relative overflow-hidden border-y border-white/[0.04] py-16 md:py-20">
+    <section ref={ref} className="section-glow-top section-separator relative overflow-hidden border-t border-white/[0.04] py-20 md:py-24">
       {/* Background image — books viewed from above, heavily darkened */}
       <div className="absolute inset-0">
         <Image
           src="/images/books-fanned.webp"
           alt=""
           fill
-          className="object-cover opacity-[0.07]"
+          className="object-cover opacity-[0.06]"
           sizes="100vw"
         />
-        <div className="absolute inset-0 bg-surface/80" />
+        <div className="absolute inset-0 bg-surface/85" />
       </div>
 
       <div className="relative mx-auto max-w-5xl px-6 md:px-8">
@@ -34,15 +34,15 @@ export function SocialProof() {
           {STATS.map((stat, i) => (
             <motion.div
               key={stat.label}
-              initial={{ opacity: 0, y: 16 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: i * 0.1, duration: 0.5, ease: 'easeOut' }}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+              transition={{ delay: i * 0.1, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
               className="text-center"
             >
-              <div className="font-display text-4xl font-bold text-white md:text-5xl">
+              <div className="font-display text-4xl font-bold tracking-tight text-white md:text-5xl">
                 {stat.value}
               </div>
-              <div className="mt-2 font-mono text-[11px] uppercase tracking-[0.15em] text-white/30">
+              <div className="mt-2 font-mono text-[11px] uppercase tracking-[0.15em] text-white/25">
                 {stat.label}
               </div>
             </motion.div>

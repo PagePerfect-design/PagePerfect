@@ -60,11 +60,11 @@ export function PricingPreview() {
   const inView = useInView(ref, { once: true, margin: '-60px' })
 
   return (
-    <section className="relative py-32 md:py-44">
+    <section className="section-separator relative py-32 md:py-44">
       {/* Background glows */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/2 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(79,143,255,0.06)_0%,transparent_70%)]" />
-        <div className="absolute right-[10%] top-[20%] h-[300px] w-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(139,92,246,0.05)_0%,transparent_70%)]" />
+        <div className="absolute left-1/2 top-1/2 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(79,143,255,0.07)_0%,transparent_70%)]" />
+        <div className="absolute right-[10%] top-[20%] h-[300px] w-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(139,92,246,0.06)_0%,transparent_70%)]" />
       </div>
 
       <div className="relative mx-auto max-w-5xl px-6 md:px-8">
@@ -76,9 +76,11 @@ export function PricingPreview() {
         >
           <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/50">Pricing</div>
           <h2 className="font-display text-display-lg font-bold tracking-[-0.03em] text-white">
-            Pricing that respects your budget.
+            Pricing that{' '}
+            <span className="gradient-accent-text">respects</span>{' '}
+            your budget.
           </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-xl text-white/40">
+          <p className="mx-auto mt-5 max-w-2xl text-xl text-white/35">
             Start free. Upgrade when your book is ready.
           </p>
         </motion.div>
@@ -116,12 +118,12 @@ export function PricingPreview() {
                     {tier.name}
                   </div>
                   <div className="mt-3 flex items-baseline gap-1.5">
-                    <span className={`font-display text-5xl font-bold ${tier.highlight ? 'text-white' : 'text-white/90'}`}>
+                    <span className={`font-display text-5xl font-bold tracking-tight ${tier.highlight ? 'text-white' : 'text-white/90'}`}>
                       {tier.price}
                     </span>
                     <span className="text-sm text-white/25">{tier.period}</span>
                   </div>
-                  <p className="mt-3 text-[15px] leading-relaxed text-white/35">{tier.desc}</p>
+                  <p className="mt-3 text-[15px] leading-relaxed text-white/30">{tier.desc}</p>
                 </div>
 
                 {/* Divider */}
@@ -129,7 +131,7 @@ export function PricingPreview() {
 
                 <ul className="mb-8 space-y-3.5">
                   {tier.features.map((f) => (
-                    <li key={f} className="flex items-start gap-3 text-[14px] text-white/50">
+                    <li key={f} className="flex items-start gap-3 text-[14px] text-white/45">
                       <svg
                         className={`mt-0.5 h-4 w-4 flex-shrink-0 ${tier.highlight ? 'text-accent' : 'text-white/20'}`}
                         fill="none"

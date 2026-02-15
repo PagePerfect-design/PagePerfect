@@ -43,7 +43,7 @@ function WordDocPanel() {
               <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>She opened her laptop, pasted the text, and pressed compile.&nbsp;&nbsp;What came back was not a document.&nbsp;&nbsp;It was a book.
             </p>
           </div>
-          {/* Squiggly red underlines to show Word mess */}
+          {/* Placeholder lines */}
           <div className="mt-4 space-y-2">
             <div className="h-[2px] w-[70%] rounded bg-gray-200" />
             <div className="h-[2px] w-[85%] rounded bg-gray-200" />
@@ -115,9 +115,9 @@ function GlowingHandle() {
   return (
     <div className="group flex h-full cursor-ew-resize items-center justify-center">
       {/* Glowing line */}
-      <div className="h-full w-[2px] bg-accent shadow-[0_0_20px_3px_rgba(59,130,246,0.5)]" />
+      <div className="h-full w-[2px] bg-accent shadow-[0_0_24px_4px_rgba(59,130,246,0.5)]" />
       {/* Handle circle */}
-      <div className="absolute flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-accent shadow-[0_0_30px_rgba(59,130,246,0.6)] transition-transform group-hover:scale-110">
+      <div className="absolute flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-accent shadow-[0_0_40px_rgba(59,130,246,0.6)] transition-transform group-hover:scale-110">
         <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
         </svg>
@@ -129,7 +129,7 @@ function GlowingHandle() {
 /* ---------- Main Section ---------- */
 export function Comparison() {
   return (
-    <section className="relative py-32 md:py-44">
+    <section className="section-separator relative py-32 md:py-44">
       {/* Background texture */}
       <div className="absolute inset-0 overflow-hidden">
         <Image
@@ -142,18 +142,20 @@ export function Comparison() {
         <div className="absolute inset-0 bg-gradient-to-b from-surface via-transparent to-surface" />
       </div>
 
-      {/* Background glow */}
+      {/* Background glow — more intense */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/2 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/2 bg-glow-radial opacity-40" />
+        <div className="absolute left-1/2 top-1/2 h-[600px] w-[1000px] -translate-x-1/2 -translate-y-1/2 bg-glow-radial opacity-50" />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-6 md:px-8">
         <Reveal>
           <div className="mb-16 text-center md:mb-20">
-            <h2 className="font-display text-4xl font-bold tracking-tighter text-white md:text-6xl">
-              The difference is <span className="text-accent">visible</span>.
+            <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/50">Before & After</div>
+            <h2 className="font-display text-4xl font-bold tracking-tighter text-white md:text-6xl lg:text-7xl">
+              The difference is{' '}
+              <span className="gradient-accent-text">visible</span>.
             </h2>
-            <p className="mt-5 text-lg font-light text-gray-400">
+            <p className="mt-5 text-lg font-light text-white/40 md:text-xl">
               Stop fighting Word. Start publishing.
             </p>
           </div>
@@ -161,7 +163,7 @@ export function Comparison() {
 
         <Reveal delay={0.15}>
           {/* Slider frame with glow border */}
-          <div className="relative mx-auto aspect-[16/10] max-w-5xl overflow-hidden rounded-xl border border-white/10 shadow-2xl shadow-black/80 ring-1 ring-white/5">
+          <div className="relative mx-auto aspect-[16/10] max-w-5xl overflow-hidden rounded-2xl border border-white/[0.08] shadow-[0_8px_60px_-15px_rgba(59,130,246,0.15),0_2px_20px_rgba(0,0,0,0.5)] ring-1 ring-white/5">
             <ReactCompareSlider
               itemOne={<WordDocPanel />}
               itemTwo={<TypesetPanel />}
@@ -177,8 +179,8 @@ export function Comparison() {
               PagePerfect PDF
             </div>
 
-            {/* Vignette overlay — bleeds edges into the void */}
-            <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-white/10 shadow-[inset_0_0_100px_rgba(0,0,0,0.8)]" />
+            {/* Vignette overlay */}
+            <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/10 shadow-[inset_0_0_100px_rgba(0,0,0,0.8)]" />
           </div>
         </Reveal>
       </div>
