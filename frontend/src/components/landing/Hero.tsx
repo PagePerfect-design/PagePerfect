@@ -39,7 +39,7 @@ export function Hero() {
               src="/images/hero-book-laptop.webp"
               alt="Background Texture"
               fill
-              className="object-cover opacity-60 object-[80%_center]"
+              className="object-cover opacity-60 object-right"
               style={{
                 filter: 'grayscale(100%) contrast(1.2) brightness(0.6)',
               }}
