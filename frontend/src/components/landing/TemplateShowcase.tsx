@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import Link from 'next/link'
-import { motion, useScroll, useTransform, useInView } from 'framer-motion'
+import { motion, useScroll, useTransform, useInView, type MotionValue } from 'framer-motion'
 import { Reveal } from './Reveal'
 
 const TEMPLATES = [
@@ -57,7 +57,7 @@ function CarouselCard({
   progress,
 }: {
   template: typeof TEMPLATES[0]
-  progress: ReturnType<typeof useTransform<number>>
+  progress: MotionValue<number>
 }) {
   const rotateX = useTransform(progress, [0, 0.5, 1], [12, 0, -4])
   const translateZ = useTransform(progress, [0, 0.5, 1], [-60, 0, 20])
