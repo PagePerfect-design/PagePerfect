@@ -7,91 +7,87 @@ import { ArrowRight } from 'lucide-react'
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-[90vh] w-full items-center justify-center overflow-hidden bg-[#050507] px-6">
+    <section className="relative flex min-h-screen w-full items-center overflow-hidden bg-[#050507] pt-20 lg:pt-0">
 
-      {/* 1. ATMOSPHERIC GLOW (Behind everything) */}
-      <div className="absolute top-0 right-0 h-[800px] w-[800px] pointer-events-none rounded-full bg-blue-600/10 blur-[120px] mix-blend-screen" />
+      {/* 1. THE IMAGE (Positioned Absolutely to Break the Grid) */}
+      <div className="absolute right-0 top-0 bottom-0 w-full lg:w-[65%] z-0">
+        <div className="relative h-full w-full">
 
-      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-16 lg:grid-cols-2">
+          {/* A. The Image (Scaled & Pushed) */}
+          <div className="absolute right-[-10%] top-[-10%] bottom-[-10%] w-[120%] h-[120%]">
+            <Image
+              src="/images/hero-book-laptop.webp"
+              alt="Background Texture"
+              fill
+              className="object-cover object-left lg:object-center opacity-60"
+              style={{
+                filter: 'grayscale(100%) contrast(1.2) brightness(0.6)',
+              }}
+              priority
+            />
+          </div>
 
-        {/* LEFT: Typography */}
-        <div className="relative z-20 flex flex-col items-start text-left pt-20 lg:pt-0">
+          {/* B. The Color Grade (The "Electric" Tint) */}
+          <div className="absolute inset-0 bg-blue-900/40 mix-blend-color-dodge" />
 
+          {/* C. The Mask (Dissolves the image into the black void) */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#050507] via-[#050507]/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-transparent to-transparent" />
+        </div>
+      </div>
+
+      {/* 2. THE TYPOGRAPHY (Raised above the image) */}
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pointer-events-none">
+        <div className="max-w-3xl pointer-events-auto">
+
+          {/* Badge */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-xs text-blue-200 backdrop-blur-md"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-8 inline-flex items-center gap-3 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 backdrop-blur-md"
           >
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
             </span>
-            V2.0 LIVE
+            <span className="font-mono text-xs font-bold uppercase tracking-widest text-blue-300">
+              System Live
+            </span>
           </motion.div>
 
-          <h1 className="font-display text-7xl font-bold tracking-tighter text-white sm:text-8xl lg:text-[7.5rem] leading-[0.85]">
-            Paste text.
-            <br />
-            <span className="bg-gradient-to-r from-blue-400 to-white/60 bg-clip-text text-transparent">
+          {/* H1 - Massive & Overlapping */}
+          <h1 className="font-display text-7xl font-bold tracking-tighter text-white sm:text-8xl lg:text-[8rem] leading-[0.85] mb-8">
+            <span className="block text-white">Paste text.</span>
+            <span className="block bg-gradient-to-r from-blue-400 to-white/50 bg-clip-text text-transparent">
               Get a book.
             </span>
           </h1>
 
-          <p className="mt-8 max-w-md border-l border-white/10 pl-6 text-lg font-light leading-relaxed text-gray-400">
-            Stop fighting Word. Turn your manuscript into a{' '}
-            <span className="text-white">print-ready PDF</span>{' '}
-            that looks like it came from a publishing house.
+          <p className="mb-10 max-w-xl border-l-2 border-blue-500/50 pl-6 text-xl font-light leading-relaxed text-gray-400">
+            Stop fighting Word. We turn your raw manuscript into{' '}
+            <span className="font-medium text-white">precision typography</span>{' '}
+            and print-ready PDFs.
           </p>
 
-          <div className="mt-10 flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <Link
               href="/app"
-              className="group relative flex h-14 items-center gap-3 rounded-full bg-white px-8 text-lg font-semibold text-black transition-all hover:scale-105 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)]"
+              className="group relative flex h-16 items-center gap-4 bg-white px-10 text-lg font-bold text-black transition-all hover:bg-blue-50"
             >
               <span>Start Formatting</span>
               <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Link>
+
+            <Link
+              href="#how-it-works"
+              className="flex h-16 items-center px-8 text-sm font-medium uppercase tracking-widest text-gray-400 transition-colors hover:text-white"
+            >
+              How it works
+            </Link>
           </div>
+
         </div>
-
-        {/* RIGHT: The Image (Color Graded) */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1 }}
-          className="relative z-10 -mr-20 h-[500px] w-full lg:-mr-40 lg:h-[700px]"
-        >
-
-          {/* THE IMAGE CONTAINER */}
-          <div className="relative h-full w-full">
-
-            {/* 1. The Image with FILTERS to kill the 'Stock Blue' */}
-            <Image
-              src="/images/hero-book-laptop.webp"
-              alt="Book transformation"
-              fill
-              className="object-cover object-center"
-              style={{
-                filter: 'brightness(0.8) contrast(1.2) saturate(1.2) hue-rotate(-10deg)',
-              }}
-              priority
-            />
-
-            {/* 2. THE VIGNETTE MASK (Hides the edges) */}
-            <div
-              className="absolute inset-0 bg-[#050507]"
-              style={{
-                maskImage: 'radial-gradient(circle at center, transparent 40%, black 100%)',
-                WebkitMaskImage: 'radial-gradient(circle at center, transparent 40%, black 100%)',
-              }}
-            />
-
-            {/* 3. THE GRADIENT OVERLAY (Tints the image to your brand) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-transparent to-transparent opacity-80" />
-            <div className="absolute inset-0 bg-gradient-to-l from-[#050507] via-transparent to-transparent opacity-80" />
-          </div>
-        </motion.div>
       </div>
     </section>
   )
