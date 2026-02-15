@@ -66,7 +66,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     )
 
     return () => subscription.unsubscribe()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function fetchProfile(userId: string) {
@@ -114,6 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function resetPassword(email: string) {
+    if (!isSupabaseConfigured) return { error: new Error('Auth not configured') }
+    const supabase = createClient()
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/reset-password`,
     })
@@ -121,6 +122,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function updatePassword(newPassword: string) {
+    if (!isSupabaseConfigured) return { error: new Error('Auth not configured') }
+    const supabase = createClient()
     const { error } = await supabase.auth.updateUser({ password: newPassword })
     return { error: error as Error | null }
   }
