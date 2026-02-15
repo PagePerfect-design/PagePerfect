@@ -26,14 +26,14 @@ export function Hero() {
       className="relative flex min-h-screen w-full items-center overflow-hidden bg-[#050507] pt-20 lg:pt-0"
     >
 
-      {/* 1. THE IMAGE (Positioned Absolutely to Break the Grid) */}
+      {/* 1. THE IMAGE — Full-width container, dissolve controlled entirely by gradient masks */}
       <motion.div
         style={{ y: imageY }}
-        className="absolute right-0 top-0 bottom-0 z-0 hidden w-full lg:block lg:w-[65%]"
+        className="absolute inset-0 z-0"
       >
         <div className="relative h-full w-full will-change-transform">
 
-          {/* A. The Image (Scaled & Pushed) */}
+          {/* A. The Image (Scaled 120% & Pushed off edges) */}
           <div className="absolute right-[-10%] top-[-10%] bottom-[-10%] h-[120%] w-[120%]">
             <Image
               src="/images/hero-book-laptop.webp"
@@ -47,12 +47,17 @@ export function Hero() {
             />
           </div>
 
-          {/* B. The Color Grade (The "Electric" Tint) */}
+          {/* B. The Color Grade — forces electric blue via color-dodge */}
           <div className="absolute inset-0 bg-blue-900/40 mix-blend-color-dodge" />
 
-          {/* C. The Mask (Dissolves the image into the black void) */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#050507] via-[#050507]/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-transparent to-transparent" />
+          {/* C. The Dissolve Masks — wide multi-stop fade, no hard edges */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(to right, #050507 0%, #050507 25%, rgba(5,5,7,0.85) 40%, rgba(5,5,7,0.4) 60%, transparent 80%)',
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-transparent to-[#050507]/40" />
         </div>
       </motion.div>
 
@@ -107,7 +112,7 @@ export function Hero() {
             and print-ready PDFs.
           </motion.p>
 
-          {/* CTA — entrance: staggered, upgraded to pill with glow */}
+          {/* CTA — entrance: staggered, pill with glow */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
