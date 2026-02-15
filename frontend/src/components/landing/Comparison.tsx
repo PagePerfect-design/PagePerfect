@@ -15,7 +15,7 @@ const CALLOUTS = [
     label: 'Margins',
     desc: 'Golden-ratio proportions replace cramped Word defaults',
     icon: (
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
         <rect x="3" y="3" width="18" height="18" rx="2" />
         <rect x="7" y="7" width="10" height="10" rx="1" strokeDasharray="2 2" />
       </svg>
@@ -25,7 +25,7 @@ const CALLOUTS = [
     label: 'Typography',
     desc: 'Baseline grid locks every line to a consistent rhythm',
     icon: (
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
         <line x1="4" y1="6" x2="20" y2="6" />
         <line x1="4" y1="10" x2="20" y2="10" />
         <line x1="4" y1="14" x2="20" y2="14" />
@@ -37,7 +37,7 @@ const CALLOUTS = [
     label: 'Structure',
     desc: 'Drop caps, em-dashes, and proper chapter openings',
     icon: (
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
         <path d="M4 6h6v6H4z" />
         <line x1="14" y1="6" x2="20" y2="6" />
         <line x1="14" y1="10" x2="20" y2="10" />
@@ -260,7 +260,10 @@ export function Comparison() {
           </motion.div>
 
           {/* === ANNOTATION BAR — attached to frame bottom === */}
-          <div className="mx-auto max-w-5xl overflow-hidden rounded-b-xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm">
+          <div className="mx-auto max-w-5xl overflow-hidden rounded-b-xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-sm">
+            {/* Accent gradient top edge */}
+            <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+
             <div className="grid grid-cols-1 divide-y divide-white/[0.06] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
               {CALLOUTS.map((item, i) => (
                 <motion.div
@@ -268,18 +271,21 @@ export function Comparison() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={frameInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ ...spring, delay: 0.7 + i * 0.1 }}
-                  className="flex flex-col items-center gap-2 px-6 py-5 text-center"
+                  className="flex flex-col items-center gap-2.5 px-8 py-6 text-center"
                 >
-                  {/* Icon */}
-                  <div className="text-accent/50">
-                    {item.icon}
+                  {/* Icon with glow backdrop */}
+                  <div className="relative">
+                    <div className="absolute inset-[-4px] rounded-full bg-accent/10 blur-sm" />
+                    <div className="relative text-accent">
+                      {item.icon}
+                    </div>
                   </div>
                   {/* Label */}
-                  <div className="font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-white/50">
+                  <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
                     {item.label}
                   </div>
                   {/* Description */}
-                  <p className="text-[13px] leading-relaxed text-white/25">
+                  <p className="max-w-[220px] text-[13px] leading-relaxed text-white/40">
                     {item.desc}
                   </p>
                 </motion.div>
