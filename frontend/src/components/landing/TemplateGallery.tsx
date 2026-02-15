@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 
@@ -37,13 +38,25 @@ export function TemplateGallery() {
   const inView = useInView(ref, { once: true, margin: '-60px' })
 
   return (
-    <section className="relative bg-surface-raised py-32 md:py-44">
+    <section className="relative overflow-hidden bg-surface-raised py-32 md:py-44">
+      {/* Background image — bookshelf, heavily darkened */}
+      <div className="absolute inset-0">
+        <Image
+          src="/images/bookshelf-panorama.webp"
+          alt=""
+          fill
+          className="object-cover opacity-[0.06]"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-surface-raised/90" />
+      </div>
+
       <div className="pointer-events-none absolute inset-0 bg-dot-grid opacity-20" />
 
       <div className="relative mx-auto max-w-6xl px-6 md:px-8">
         <div className="mb-16 text-center md:mb-20">
           <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/50">Templates</div>
-          <h2 className="font-display text-display-lg font-bold tracking-[-0.03em] text-white">
+          <h2 className="font-display text-display-lg font-bold tracking-tighter text-white">
             Eight ways to look published.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-xl text-white/40">
@@ -62,13 +75,11 @@ export function TemplateGallery() {
             >
               <Link
                 href={`/app?template=${t.key}`}
-                className="group relative block overflow-hidden rounded-2xl border border-white/[0.06] bg-surface/80 backdrop-blur-sm transition-all duration-400 hover:-translate-y-2 hover:border-white/[0.12] hover:shadow-[0_20px_60px_-20px_rgba(79,143,255,0.15)]"
+                className="group relative block overflow-hidden rounded-2xl border border-white/[0.06] bg-surface/80 backdrop-blur-sm transition-all duration-400 hover:-translate-y-2 hover:border-white/[0.12] hover:shadow-[0_20px_60px_-20px_rgba(59,130,246,0.15)]"
               >
-                {/* Colored gradient header with mini page */}
                 <div className={`relative flex items-center justify-center bg-gradient-to-br ${t.gradient} py-8 md:py-10`}>
                   <MiniPage />
                 </div>
-                {/* Card body */}
                 <div className="p-4 md:p-5">
                   <div className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">
                     {t.tag}
@@ -77,7 +88,6 @@ export function TemplateGallery() {
                     {t.name}
                   </h3>
                   <p className="mt-1 text-[13px] text-white/30">{t.desc}</p>
-                  {/* Arrow on hover */}
                   <div className="mt-3 flex items-center gap-1.5 text-xs text-accent/0 transition-all duration-300 group-hover:text-accent/70">
                     <span>Try it</span>
                     <svg className="h-3 w-3 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

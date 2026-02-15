@@ -1,3 +1,6 @@
+'use client'
+
+import Image from 'next/image'
 import { Reveal } from './Reveal'
 
 const STATEMENTS = [
@@ -54,21 +57,37 @@ const STATEMENTS = [
 export function WhyDifferent() {
   return (
     <section className="relative py-32 md:py-44">
-      {/* Background glow */}
+      {/* Background glows */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[20%] top-1/3 h-[400px] w-[400px] rounded-full bg-[radial-gradient(ellipse,rgba(79,143,255,0.04)_0%,transparent_70%)]" />
-        <div className="absolute right-[15%] bottom-1/4 h-[300px] w-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(139,92,246,0.04)_0%,transparent_70%)]" />
+        <div className="absolute left-[20%] top-1/3 h-[400px] w-[400px] rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.04)_0%,transparent_70%)]" />
+        <div className="absolute right-[15%] bottom-1/4 h-[300px] w-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(168,85,247,0.04)_0%,transparent_70%)]" />
       </div>
 
       <div className="relative mx-auto max-w-5xl px-6 md:px-8">
         <Reveal>
           <div className="mb-20 text-center md:mb-28">
-            <h2 className="font-display text-display-lg font-bold tracking-[-0.03em] text-white">
+            <h2 className="font-display text-display-lg font-bold tracking-tighter text-white">
               Not just formatted.{' '}
-              <span className="bg-gradient-to-r from-accent via-violet-400 to-accent bg-clip-text text-transparent">
+              <span className="bg-gradient-accent bg-clip-text text-transparent">
                 Typeset.
               </span>
             </h2>
+          </div>
+        </Reveal>
+
+        {/* Cinematic image break — floating letters from open book */}
+        <Reveal delay={0.1}>
+          <div className="relative mx-auto mb-20 overflow-hidden rounded-2xl md:mb-28">
+            <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-surface via-surface/40 to-surface/60" />
+            <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-r from-surface/50 via-transparent to-surface/50" />
+            <Image
+              src="/images/book-magic-letters.webp"
+              alt="Letters floating from an open book — the magic of typesetting"
+              width={1400}
+              height={539}
+              className="w-full object-cover"
+              sizes="(max-width: 768px) 100vw, 1200px"
+            />
           </div>
         </Reveal>
 
@@ -87,7 +106,6 @@ export function WhyDifferent() {
                     {s.body}
                   </p>
                 </div>
-                {/* Visual accent */}
                 <div className="hidden items-center justify-center rounded-2xl border border-white/[0.04] bg-white/[0.02] p-6 md:flex">
                   {s.visual}
                 </div>

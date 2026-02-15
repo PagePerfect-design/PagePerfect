@@ -1,3 +1,6 @@
+'use client'
+
+import Image from 'next/image'
 import { Reveal } from './Reveal'
 
 function WordDoc() {
@@ -30,15 +33,12 @@ function WordDoc() {
 function TypesetPage() {
   const lines = [72, 68, 75, 62, 70, 65, 73, 58, 71, 66, 74, 60, 69, 64]
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5),0_0_60px_-20px_rgba(79,143,255,0.15)]">
-      {/* Inner page with proper margins */}
+    <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5),0_0_60px_-20px_rgba(59,130,246,0.15)]">
       <div className="px-[16%] py-[14%]">
-        {/* Chapter heading — centered, elegant */}
         <div className="mb-[10%] text-center">
           <div className="mb-3 font-mono text-[7px] uppercase tracking-[0.4em] text-gray-300">Chapter One</div>
           <div className="mx-auto h-px w-10 bg-gray-200" />
         </div>
-        {/* Drop cap + body lines simulating real typesetting */}
         <div className="flex gap-[6px]">
           <span className="font-serif text-[28px] font-light leading-[0.85] text-gray-600 md:text-[36px]">T</span>
           <div className="flex-1 space-y-[4px] pt-[3px]">
@@ -51,7 +51,6 @@ function TypesetPage() {
             ))}
           </div>
         </div>
-        {/* Page number */}
         <div className="mt-[10%] text-center font-mono text-[6px] tracking-widest text-gray-200">1</div>
       </div>
     </div>
@@ -61,15 +60,27 @@ function TypesetPage() {
 export function Comparison() {
   return (
     <section className="relative py-32 md:py-44">
-      {/* Background glow behind comparison */}
+      {/* Background image — scattered open books as texture */}
+      <div className="absolute inset-0 overflow-hidden">
+        <Image
+          src="/images/books-scattered.webp"
+          alt=""
+          fill
+          className="object-cover opacity-[0.04]"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-surface via-transparent to-surface" />
+      </div>
+
+      {/* Background glow */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/2 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(79,143,255,0.05)_0%,transparent_70%)]" />
+        <div className="absolute left-1/2 top-1/2 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.05)_0%,transparent_70%)]" />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-6 md:px-8">
         <Reveal>
           <div className="mb-16 text-center md:mb-24">
-            <h2 className="font-display text-display-lg font-bold tracking-[-0.03em] text-white">
+            <h2 className="font-display text-display-lg font-bold tracking-tighter text-white">
               The difference is visible.
             </h2>
             <p className="mt-5 text-xl text-white/40">
@@ -88,7 +99,6 @@ export function Comparison() {
               </div>
               <WordDoc />
             </div>
-            {/* Arrow divider on desktop */}
             {/* After */}
             <div>
               <div className="mb-4 flex items-center gap-2">
