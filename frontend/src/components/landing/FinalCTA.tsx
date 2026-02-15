@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 
@@ -11,26 +10,10 @@ export function FinalCTA() {
 
   return (
     <section className="relative overflow-hidden py-32 text-center md:py-44">
-      {/* Background image — book tunnel, moody atmosphere */}
-      <div className="absolute inset-0">
-        <Image
-          src="/images/book-tunnel.webp"
-          alt=""
-          fill
-          className="object-cover opacity-[0.07]"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/70 to-surface/90" />
-      </div>
-
-      {/* Multi-layer ambient glows — more intense for final punch */}
+      {/* Subtle ambient glow */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/2 h-[700px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.12)_0%,transparent_70%)]" />
-        <div className="absolute left-[20%] top-[30%] h-[400px] w-[400px] rounded-full bg-[radial-gradient(ellipse,rgba(168,85,247,0.08)_0%,transparent_70%)]" />
-        <div className="absolute right-[20%] bottom-[20%] h-[350px] w-[350px] rounded-full bg-[radial-gradient(ellipse,rgba(56,189,248,0.06)_0%,transparent_70%)]" />
+        <div className="absolute left-1/2 top-1/2 h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.08)_0%,transparent_70%)]" />
       </div>
-
-      <div className="pointer-events-none absolute inset-0 bg-dot-grid-subtle" />
 
       <div ref={ref} className="relative mx-auto max-w-3xl px-6 md:px-8">
         {/* Decorative top line */}
@@ -67,7 +50,7 @@ export function FinalCTA() {
           >
             <Link
               href="/app"
-              className="group relative inline-flex h-14 items-center gap-3 rounded-full bg-white px-10 text-[17px] font-semibold text-[#030305] shadow-cta transition-all duration-300 hover:scale-[1.04] hover:shadow-cta-hover"
+              className="group relative inline-flex h-14 items-center gap-3 rounded-full bg-white px-10 text-[17px] font-semibold text-[#030305] shadow-cta transition-all duration-300 hover:scale-[1.03] hover:shadow-cta-hover"
             >
               {/* Breathing glow */}
               <span className="pointer-events-none absolute inset-0 -z-10 animate-glow-breathe rounded-full bg-white/20 blur-xl" />

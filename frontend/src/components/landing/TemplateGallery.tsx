@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 
@@ -39,20 +38,6 @@ export function TemplateGallery() {
 
   return (
     <section className="section-separator relative overflow-hidden bg-surface-raised py-32 md:py-44">
-      {/* Background image — bookshelf, heavily darkened */}
-      <div className="absolute inset-0">
-        <Image
-          src="/images/bookshelf-panorama.webp"
-          alt=""
-          fill
-          className="object-cover opacity-[0.05]"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-surface-raised/90" />
-      </div>
-
-      <div className="pointer-events-none absolute inset-0 bg-dot-grid-subtle" />
-
       <div className="relative mx-auto max-w-6xl px-6 md:px-8">
         <div className="mb-16 text-center md:mb-20">
           <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/50">Templates</div>

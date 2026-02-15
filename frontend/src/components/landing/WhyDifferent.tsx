@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import { Reveal } from './Reveal'
 
 const STATEMENTS = [
@@ -57,10 +56,9 @@ const STATEMENTS = [
 export function WhyDifferent() {
   return (
     <section className="section-separator relative py-32 md:py-44">
-      {/* Background glows */}
+      {/* Subtle ambient glow */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[20%] top-1/3 h-[400px] w-[400px] rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.05)_0%,transparent_70%)]" />
-        <div className="absolute right-[15%] bottom-1/4 h-[300px] w-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(168,85,247,0.05)_0%,transparent_70%)]" />
+        <div className="absolute left-[20%] top-1/3 h-[400px] w-[400px] rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.04)_0%,transparent_70%)]" />
       </div>
 
       <div className="relative mx-auto max-w-5xl px-6 md:px-8">
@@ -72,22 +70,6 @@ export function WhyDifferent() {
                 Typeset.
               </span>
             </h2>
-          </div>
-        </Reveal>
-
-        {/* Cinematic image break — floating letters from open book */}
-        <Reveal delay={0.1}>
-          <div className="relative mx-auto mb-20 overflow-hidden rounded-2xl md:mb-28">
-            <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-surface via-surface/40 to-surface/60" />
-            <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-r from-surface/50 via-transparent to-surface/50" />
-            <Image
-              src="/images/book-magic-letters.webp"
-              alt="Letters floating from an open book — the magic of typesetting"
-              width={1400}
-              height={539}
-              className="w-full object-cover"
-              sizes="(max-width: 768px) 100vw, 1200px"
-            />
           </div>
         </Reveal>
 

@@ -2,50 +2,30 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { HeroImage } from './HeroImage'
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-24 md:pb-28">
-      {/* ===== ATMOSPHERIC BACKGROUND — layered for depth ===== */}
-
-      {/* Dot Grid — visible texture, fades down */}
-      <div className="pointer-events-none absolute inset-0 bg-dot-grid" />
-
-      {/* Primary glow — hot center, large diffuse spread */}
+    <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6">
+      {/* Single ambient glow — restrained, not a light show */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-[15%] h-[900px] w-[1200px] -translate-x-1/2 bg-glow-radial-hot" />
-        <div className="absolute right-[2%] top-[5%] h-[700px] w-[700px] bg-glow-radial-violet" />
-        <div className="absolute bottom-[10%] left-[2%] h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.14)_0%,transparent_70%)]" />
+        <div className="absolute left-1/2 top-1/3 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.06)_0%,transparent_70%)]" />
       </div>
-
-      {/* Animated aurora sweep — breathing light source */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-[10%] h-[800px] w-[1600px] -translate-x-1/2 animate-aurora bg-[radial-gradient(ellipse,rgba(56,189,248,0.12)_0%,rgba(59,130,246,0.08)_30%,rgba(168,85,247,0.06)_60%,transparent_80%)]"
-      />
-
-      {/* Secondary aurora — counter-phase for richness */}
-      <motion.div
-        animate={{ opacity: [0.3, 0.6, 0.3] }}
-        transition={{ repeat: Infinity, duration: 10, ease: 'easeInOut' }}
-        className="pointer-events-none absolute left-1/2 top-[25%] h-[600px] w-[1000px] -translate-x-1/2 bg-[radial-gradient(ellipse,rgba(168,85,247,0.08)_0%,rgba(59,130,246,0.04)_50%,transparent_80%)]"
-      />
 
       {/* ===== CONTENT ===== */}
       <div className="relative z-10 flex max-w-5xl flex-col items-center text-center">
 
-        {/* Status pill — glassmorphism, tight to heading */}
+        {/* Status pill — minimal glass */}
         <motion.div
-          initial={{ opacity: 0, y: 12, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-10 inline-flex items-center gap-2.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-5 py-2 shadow-glass backdrop-blur-xl"
+          className="mb-10 inline-flex items-center gap-2.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-5 py-2 backdrop-blur-sm"
         >
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
-          <span className="font-mono text-xs tracking-wide text-white/50">
+          <span className="font-mono text-xs tracking-wide text-white/40">
             Free to use — no account needed
           </span>
         </motion.div>
@@ -53,48 +33,47 @@ export function Hero() {
         {/* Headline — massive, Swiss-tight, staggered unblur */}
         <h1 className="font-display text-hero font-bold leading-[0.88] tracking-tightest">
           <motion.span
-            initial={{ opacity: 0, filter: 'blur(16px)', y: 10 }}
+            initial={{ opacity: 0, filter: 'blur(12px)', y: 8 }}
             animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
-            transition={{ duration: 0.9, delay: 0.1, ease: [0.25, 0.4, 0.25, 1] }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.25, 0.4, 0.25, 1] }}
             className="block text-white"
           >
             Paste text.
           </motion.span>
           <motion.span
-            initial={{ opacity: 0, filter: 'blur(16px)', y: 10 }}
+            initial={{ opacity: 0, filter: 'blur(12px)', y: 8 }}
             animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
-            transition={{ duration: 0.9, delay: 0.35, ease: [0.25, 0.4, 0.25, 1] }}
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.4, 0.25, 1] }}
             className="gradient-hero-text block pb-3"
           >
             Get a book.
           </motion.span>
         </h1>
 
-        {/* Subhead — wider column, body font, stronger contrast */}
+        {/* Subhead — wider column, body font */}
         <motion.p
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
-          className="mx-auto mt-8 max-w-2xl font-body text-xl font-light leading-relaxed text-white/50 md:text-[1.4rem] md:leading-[1.7]"
+          transition={{ duration: 0.7, delay: 0.55, ease: [0.25, 0.4, 0.25, 1] }}
+          className="mx-auto mt-8 max-w-2xl font-body text-xl font-light leading-relaxed text-white/40 md:text-[1.4rem] md:leading-[1.7]"
         >
           Turn plain text into professionally typeset, print-ready PDFs.
           <br className="hidden md:block" />
           In your browser. In seconds.
         </motion.p>
 
-        {/* CTAs — glowing primary, visible secondary */}
+        {/* CTAs */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8, ease: [0.25, 0.4, 0.25, 1] }}
+          transition={{ duration: 0.7, delay: 0.75, ease: [0.25, 0.4, 0.25, 1] }}
           className="mt-14 flex flex-col items-center gap-8 sm:flex-row"
         >
           {/* Primary CTA — white button with breathing glow */}
           <Link
             href="/app"
-            className="group relative inline-flex h-14 items-center gap-3 rounded-full bg-white px-9 text-[17px] font-semibold text-[#030305] shadow-cta transition-all duration-300 hover:scale-[1.04] hover:shadow-cta-hover"
+            className="group relative inline-flex h-14 items-center gap-3 rounded-full bg-white px-9 text-[17px] font-semibold text-[#030305] shadow-cta transition-all duration-300 hover:scale-[1.03] hover:shadow-cta-hover"
           >
-            {/* Glow halo behind button */}
             <span className="pointer-events-none absolute inset-0 -z-10 animate-glow-breathe rounded-full bg-white/20 blur-xl" />
             <span>Open the Editor</span>
             <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -102,10 +81,10 @@ export function Hero() {
             </svg>
           </Link>
 
-          {/* Secondary CTA — visible underline, not invisible */}
+          {/* Secondary CTA */}
           <Link
             href="#how-it-works"
-            className="group flex items-center gap-2 text-sm font-medium text-white/50 transition-all duration-300 hover:text-white"
+            className="group flex items-center gap-2 text-sm font-medium text-white/40 transition-all duration-300 hover:text-white"
           >
             <span className="border-b border-white/20 pb-0.5 transition-colors group-hover:border-white/50">
               See how it works
@@ -120,21 +99,18 @@ export function Hero() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 0.6 }}
-          className="mt-12 font-mono text-[13px] text-white/15"
+          transition={{ delay: 1.1, duration: 0.6 }}
+          className="mt-16 font-mono text-[13px] text-white/15"
         >
           Works with Amazon KDP &middot; IngramSpark &middot; Lulu &middot; Any browser
         </motion.p>
       </div>
 
-      {/* ===== LEVITATING HERO IMAGE ===== */}
-      <HeroImage />
-
       {/* Scroll indicator — minimal breathing line */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 2.0, duration: 0.8 }}
+        transition={{ delay: 1.8, duration: 0.8 }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2"
       >
         <motion.div
