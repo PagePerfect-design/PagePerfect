@@ -38,28 +38,29 @@ export function TemplateGallery() {
   const inView = useInView(ref, { once: true, margin: '-60px' })
 
   return (
-    <section className="relative overflow-hidden bg-surface-raised py-32 md:py-44">
+    <section className="section-separator relative overflow-hidden bg-surface-raised py-32 md:py-44">
       {/* Background image — bookshelf, heavily darkened */}
       <div className="absolute inset-0">
         <Image
           src="/images/bookshelf-panorama.webp"
           alt=""
           fill
-          className="object-cover opacity-[0.06]"
+          className="object-cover opacity-[0.05]"
           sizes="100vw"
         />
         <div className="absolute inset-0 bg-surface-raised/90" />
       </div>
 
-      <div className="pointer-events-none absolute inset-0 bg-dot-grid opacity-20" />
+      <div className="pointer-events-none absolute inset-0 bg-dot-grid-subtle" />
 
       <div className="relative mx-auto max-w-6xl px-6 md:px-8">
         <div className="mb-16 text-center md:mb-20">
           <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/50">Templates</div>
           <h2 className="font-display text-display-lg font-bold tracking-tighter text-white">
-            Eight ways to look published.
+            Eight ways to look{' '}
+            <span className="gradient-accent-text">published</span>.
           </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-xl text-white/40">
+          <p className="mx-auto mt-5 max-w-2xl text-xl text-white/35">
             Every template is a complete typographic system.
             Pick one. Your text does the rest.
           </p>
@@ -69,13 +70,13 @@ export function TemplateGallery() {
           {TEMPLATES.map((t, i) => (
             <motion.div
               key={t.key}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: i * 0.06, duration: 0.5, ease: 'easeOut' }}
+              transition={{ delay: i * 0.06, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
             >
               <Link
                 href={`/app?template=${t.key}`}
-                className="group relative block overflow-hidden rounded-2xl border border-white/[0.06] bg-surface/80 backdrop-blur-sm transition-all duration-400 hover:-translate-y-2 hover:border-white/[0.12] hover:shadow-[0_20px_60px_-20px_rgba(59,130,246,0.15)]"
+                className="group relative block overflow-hidden rounded-2xl border border-white/[0.06] bg-surface/80 backdrop-blur-sm transition-all duration-400 hover:-translate-y-2 hover:border-white/[0.12] hover:shadow-[0_20px_60px_-20px_rgba(59,130,246,0.2)]"
               >
                 <div className={`relative flex items-center justify-center bg-gradient-to-br ${t.gradient} py-8 md:py-10`}>
                   <MiniPage />

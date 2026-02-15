@@ -50,10 +50,16 @@ export default {
         pill: '9999px'
       },
       backgroundImage: {
+        // White-to-silver text gradient
         'gradient-text': 'linear-gradient(to bottom right, #ffffff 30%, #94a3b8 100%)',
-        'gradient-accent': 'linear-gradient(to right, #60a5fa, #a855f7)',
-        'glow-radial': 'radial-gradient(circle at center, rgba(59,130,246,0.2) 0%, transparent 70%)',
-        'glow-radial-violet': 'radial-gradient(circle at center, rgba(168,85,247,0.12) 0%, transparent 70%)',
+        // The signature electric gradient — cyan through blue to purple
+        'gradient-accent': 'linear-gradient(135deg, #38bdf8, #3b82f6 40%, #a855f7 100%)',
+        // Hotter variant for hero headline
+        'gradient-hero': 'linear-gradient(135deg, #67e8f9, #60a5fa 35%, #c084fc 70%, #f472b6 100%)',
+        // Atmospheric radial glows
+        'glow-radial': 'radial-gradient(circle at center, rgba(59,130,246,0.25) 0%, transparent 70%)',
+        'glow-radial-violet': 'radial-gradient(circle at center, rgba(168,85,247,0.15) 0%, transparent 70%)',
+        'glow-radial-hot': 'radial-gradient(ellipse at center, rgba(56,189,248,0.18) 0%, rgba(59,130,246,0.1) 40%, transparent 70%)',
       },
       boxShadow: {
         'card': '0 1px 3px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.2)',
@@ -66,10 +72,14 @@ export default {
         'glow-accent': '0 0 20px rgba(59, 130, 246, 0.2)',
         'glow-success': '0 0 20px rgba(52, 211, 153, 0.2)',
         'inner-subtle': 'inset 0 1px 3px rgba(0,0,0,0.2)',
-        'glow-hero': '0 0 120px 40px rgba(59, 130, 246, 0.1)',
+        'glow-hero': '0 0 120px 40px rgba(59, 130, 246, 0.12)',
         'glow-white': '0 0 40px -10px rgba(255, 255, 255, 0.3)',
-        'glow-blue': '0 0 50px -10px rgba(59, 130, 246, 0.5)',
+        'glow-blue': '0 0 60px -10px rgba(59, 130, 246, 0.6)',
+        'glow-blue-intense': '0 0 80px -5px rgba(59, 130, 246, 0.5), 0 0 30px -5px rgba(59, 130, 246, 0.3)',
         'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+        // CTA button glow — persistent warm white light
+        'cta': '0 0 60px -12px rgba(255, 255, 255, 0.25), 0 0 20px -4px rgba(255, 255, 255, 0.15)',
+        'cta-hover': '0 0 80px -12px rgba(255, 255, 255, 0.4), 0 0 30px -4px rgba(255, 255, 255, 0.25), 0 0 100px -20px rgba(59, 130, 246, 0.3)',
       },
       fontFamily: {
         display: ['var(--font-display)', 'system-ui', 'sans-serif'],
@@ -105,6 +115,8 @@ export default {
         'pulse-soft': 'pulseSoft 2s infinite ease-in-out',
         'pulse-slow': 'pulseSlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'slide-up': 'slideUp 0.5s ease-out',
+        'aurora': 'aurora 8s ease-in-out infinite',
+        'glow-breathe': 'glowBreathe 3s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -138,6 +150,15 @@ export default {
         slideUp: {
           '0%': { opacity: '0', transform: 'translateY(30px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        aurora: {
+          '0%, 100%': { opacity: '0.4', transform: 'translateX(-50%) scale(1)' },
+          '33%': { opacity: '0.7', transform: 'translateX(-48%) scale(1.05)' },
+          '66%': { opacity: '0.5', transform: 'translateX(-52%) scale(0.98)' },
+        },
+        glowBreathe: {
+          '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
+          '50%': { opacity: '1', transform: 'scale(1.05)' },
         },
       },
     }

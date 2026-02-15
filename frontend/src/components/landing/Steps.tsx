@@ -28,13 +28,13 @@ function Step({ step, index }: { step: typeof STEPS[number]; index: number }) {
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, x: -20 }}
+      initial={{ opacity: 0, x: -30 }}
       animate={inView ? { opacity: 1, x: 0 } : {}}
-      transition={{ delay: index * 0.15, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
+      transition={{ delay: index * 0.15, duration: 0.7, ease: [0.25, 0.4, 0.25, 1] }}
       className="group relative"
     >
       {/* Glowing top border on hover */}
-      <div className="absolute inset-x-0 top-0 h-px bg-white/[0.06] transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-transparent group-hover:via-accent/40 group-hover:to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-white/[0.06] transition-all duration-500 group-hover:bg-gradient-to-r group-hover:from-transparent group-hover:via-accent/50 group-hover:to-transparent" />
 
       <div className="py-16 md:py-24">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-16 lg:gap-24">
@@ -43,17 +43,17 @@ function Step({ step, index }: { step: typeof STEPS[number]; index: number }) {
             {step.num}
           </span>
           <div className="flex-1">
-            <h3 className="font-display text-2xl font-bold text-white md:text-3xl lg:text-[2.5rem] lg:leading-tight">
+            <h3 className="font-display text-2xl font-bold tracking-tight text-white md:text-3xl lg:text-[2.5rem] lg:leading-tight">
               {step.title}
             </h3>
-            <p className="mt-4 max-w-xl text-lg leading-relaxed text-white/40 md:text-xl">
+            <p className="mt-4 max-w-xl text-lg leading-relaxed text-white/35 md:text-xl">
               {step.desc}
             </p>
           </div>
           {/* Arrow indicator */}
           <div className="hidden items-center md:flex">
             <svg
-              className="h-6 w-6 text-white/[0.08] transition-all duration-500 group-hover:text-accent/40 group-hover:translate-x-1"
+              className="h-6 w-6 text-white/[0.06] transition-all duration-500 group-hover:text-accent/40 group-hover:translate-x-1"
               fill="none" viewBox="0 0 24 24" stroke="currentColor"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -67,9 +67,9 @@ function Step({ step, index }: { step: typeof STEPS[number]; index: number }) {
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="relative bg-surface-raised py-32 md:py-44">
-      {/* Subtle dot grid */}
-      <div className="pointer-events-none absolute inset-0 bg-dot-grid opacity-30" />
+    <section id="how-it-works" className="section-separator relative bg-surface-raised py-32 md:py-44">
+      {/* Dot grid */}
+      <div className="pointer-events-none absolute inset-0 bg-dot-grid-subtle" />
 
       <div className="relative mx-auto max-w-5xl px-6 md:px-8">
         <div className="mb-20 text-center md:mb-28">
