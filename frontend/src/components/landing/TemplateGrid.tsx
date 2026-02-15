@@ -362,7 +362,7 @@ export function TemplateGrid() {
   const active = TEMPLATES[selectedIndex]
 
   return (
-    <section ref={sectionRef} className="section-separator relative overflow-hidden py-32 md:py-44">
+    <section ref={sectionRef} className="section-separator relative overflow-hidden py-24 md:py-32">
       {/* === ATMOSPHERIC LAYERS === */}
 
       {/* Background glow */}
@@ -389,7 +389,7 @@ export function TemplateGrid() {
 
       <div className="relative">
         {/* === SECTION HEADER === */}
-        <div ref={headerRef} className="mb-16 px-6 text-center md:mb-20 md:px-8">
+        <div ref={headerRef} className="mb-10 px-6 text-center md:mb-14 md:px-8">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={headerInView ? { opacity: 1, x: 0 } : {}}
@@ -439,7 +439,7 @@ export function TemplateGrid() {
                   return (
                     <div
                       key={t.key}
-                      className="min-w-0 flex-[0_0_80%] px-3 sm:flex-[0_0_55%] md:flex-[0_0_42%] lg:flex-[0_0_34%]"
+                      className="min-w-0 flex-[0_0_68%] px-3 sm:flex-[0_0_44%] md:flex-[0_0_34%] lg:flex-[0_0_28%]"
                     >
                       <div
                         className="transition-all duration-500"
@@ -459,13 +459,13 @@ export function TemplateGrid() {
                           }}
                         >
                           {/* Page mockup area */}
-                          <div className="relative p-6 pb-4 md:p-8 md:pb-5">
+                          <div className="relative px-5 pb-3 pt-5 md:px-6 md:pb-4 md:pt-6">
                             {/* Subtle color tint behind page */}
                             <div
                               className="pointer-events-none absolute inset-0 opacity-[0.03]"
                               style={{ background: `radial-gradient(ellipse at center, ${t.color}, transparent 70%)` }}
                             />
-                            <div className="relative mx-auto w-[85%] max-w-[220px]">
+                            <div className="relative mx-auto max-w-[160px]">
                               <TemplatePage template={t} />
                             </div>
                           </div>
@@ -479,14 +479,14 @@ export function TemplateGrid() {
                           />
 
                           {/* Card info */}
-                          <div className="p-4 md:p-5">
-                            <div className="mb-1 font-mono text-[9px] uppercase tracking-[0.15em]" style={{ color: `${t.color}80` }}>
+                          <div className="px-4 pb-4 pt-3 md:px-5 md:pb-5">
+                            <div className="mb-0.5 font-mono text-[9px] uppercase tracking-[0.15em]" style={{ color: `${t.color}80` }}>
                               {t.tag}
                             </div>
-                            <h3 className="font-display text-base font-bold tracking-tight text-white md:text-lg">
+                            <h3 className="font-display text-sm font-bold tracking-tight text-white md:text-base">
                               {t.name}
                             </h3>
-                            <p className="mt-1.5 text-[12px] leading-relaxed text-white/25">
+                            <p className="mt-1 text-[11px] leading-snug text-white/25">
                               {t.fontLabel} · {t.baseline} · {t.alignment}
                             </p>
                           </div>
@@ -510,7 +510,7 @@ export function TemplateGrid() {
           </div>
 
           {/* Dot indicators */}
-          <div className="mt-8 flex justify-center gap-2">
+          <div className="mt-6 flex justify-center gap-2">
             {TEMPLATES.map((t, i) => (
               <button
                 key={t.key}
@@ -527,7 +527,7 @@ export function TemplateGrid() {
         </motion.div>
 
         {/* === ACTIVE TEMPLATE DETAILS PANEL === */}
-        <div className="mx-auto mt-12 max-w-2xl px-6 md:mt-16 md:px-8">
+        <div className="mx-auto mt-10 max-w-2xl px-6 md:mt-12 md:px-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={active.key}
@@ -543,10 +543,10 @@ export function TemplateGrid() {
                 style={{ background: `linear-gradient(90deg, transparent, ${active.color}40, transparent)` }}
               />
 
-              <div className="p-6 md:p-8">
+              <div className="p-5 md:p-6">
                 {/* Name + tag */}
                 <div className="flex items-center gap-3">
-                  <h3 className="font-display text-xl font-bold tracking-tight text-white md:text-2xl">
+                  <h3 className="font-display text-lg font-bold tracking-tight text-white md:text-xl">
                     {active.name}
                   </h3>
                   <span
@@ -558,12 +558,12 @@ export function TemplateGrid() {
                 </div>
 
                 {/* Description */}
-                <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-white/35">
+                <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-white/35">
                   {active.desc}
                 </p>
 
                 {/* Specs row */}
-                <div className="mt-5 flex flex-wrap items-center gap-4">
+                <div className="mt-4 flex flex-wrap items-center gap-4">
                   {[
                     { label: 'Font', value: active.fontLabel },
                     { label: 'Baseline', value: active.baseline },
@@ -578,7 +578,7 @@ export function TemplateGrid() {
                 </div>
 
                 {/* Feature tags */}
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-1.5">
                   {active.features.map((f) => (
                     <span
                       key={f}
@@ -590,7 +590,7 @@ export function TemplateGrid() {
                 </div>
 
                 {/* CTA */}
-                <div className="mt-6 flex items-center gap-4">
+                <div className="mt-5 flex items-center gap-4">
                   <Link
                     href={`/app?template=${active.key}`}
                     className="group inline-flex items-center gap-2 rounded-full border px-5 py-2.5 font-mono text-xs font-medium transition-all duration-300 hover:shadow-pill"
