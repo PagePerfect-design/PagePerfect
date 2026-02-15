@@ -26,20 +26,32 @@ PagePerfect/
 │   │   │   ├── docs/          # Documentation (/docs)
 │   │   │   │   ├── page.tsx           # Docs page with troubleshooting cards
 │   │   │   │   └── RequirementsCheck.tsx  # Automated health/compile checks
+│   │   │   ├── auth/          # Auth routes
+│   │   │   │   ├── login/page.tsx     # Sign in / sign up (email + OAuth)
+│   │   │   │   ├── forgot-password/page.tsx  # Request password reset
+│   │   │   │   ├── reset-password/page.tsx   # Set new password
+│   │   │   │   └── callback/route.ts  # OAuth callback handler
 │   │   │   ├── pricing/       # Pricing (/pricing)
 │   │   │   │   └── page.tsx           # 3-tier pricing with FAQ
 │   │   │   └── status/        # Health check (/status)
 │   │   │       ├── page.tsx           # Server-rendered status shell
 │   │   │       └── StatusClient.tsx   # Client-side connectivity diagnostics
+│   │   ├── lib/               # Shared utilities
+│   │   │   ├── supabase.ts            # Browser Supabase client factory + isSupabaseConfigured guard
+│   │   │   ├── supabase-server.ts     # Server-side Supabase client (cookie-based)
+│   │   │   ├── auth-context.tsx       # AuthProvider context (user, session, profile, tier)
+│   │   │   └── database.types.ts      # Supabase DB schema types (profiles, manuscripts, compile_history)
 │   │   └── components/        # Reusable UI
 │   │       ├── Button.tsx             # primary/secondary/ghost × sm/md/lg
 │   │       ├── Container.tsx          # max-w-7xl centered wrapper
 │   │       ├── Section.tsx            # default/raised/light/dark page sections
+│   │       ├── Providers.tsx          # Client provider wrapper (AuthProvider)
+│   │       ├── NavAuth.tsx            # Auth state in nav (sign in / user menu)
 │   │       ├── AuthorGuideTools.tsx   # Copy/download author guide
 │   │       └── CopyCitation.tsx       # Copy citation example to clipboard
 │   ├── public/                # Static assets, PWA manifest, icons
 │   ├── tailwind.config.ts     # Dark design system tokens (colors, shadows, animations)
-│   ├── next.config.ts         # API rewrites to backend
+│   ├── next.config.ts         # API rewrites to backend (Coolify via RAILWAY_API_BASE)
 │   ├── eslint.config.mjs      # ESLint flat config (next/core-web-vitals)
 │   └── tsconfig.json          # Strict mode, @/* path alias
 │
@@ -56,7 +68,7 @@ PagePerfect/
 │   │   ├── matrix.latex       # Corporate structured
 │   │   └── avantgarde.latex   # Experimental creative
 │   ├── references/            # Sample .bib for citations
-│   └── Dockerfile             # Ubuntu 22.04, Node 18, Pandoc, texlive-xetex
+│   └── Dockerfile             # Ubuntu 22.04, Node 18, Pandoc, texlive-xetex (deployed via Coolify)
 │
 ├── CLAUDE.md                  # This file
 ├── README.md
@@ -78,8 +90,10 @@ PagePerfect/
 | Backend language | JavaScript (CommonJS) |
 | PDF engine | Pandoc + XeLaTeX |
 | Containerization | Docker (Ubuntu 22.04) |
+| Auth & database | Supabase (self-hosted via Coolify) |
+| Infrastructure | Digital Ocean droplet + Coolify |
 | Frontend hosting | Vercel |
-| Backend hosting | Railway |
+| Backend hosting | Coolify (Docker on Digital Ocean) |
 
 ## Common Commands
 
@@ -113,7 +127,7 @@ cd backend && npm install && npm run dev
 cd frontend && npm install && npm run dev
 ```
 
-The frontend proxies `/api/*` to the backend via Next.js rewrites (configured in `next.config.ts`). Set `RAILWAY_API_BASE` env var to override the backend URL (defaults to `http://localhost:4000`).
+The frontend proxies `/api/*` to the backend via Next.js rewrites (configured in `next.config.ts`). Set `RAILWAY_API_BASE` env var to override the backend URL (defaults to `http://localhost:4000`). The env var name is a legacy holdover — it now points to the Coolify-hosted backend on Digital Ocean.
 
 ## Architecture & Data Flow
 
@@ -146,6 +160,10 @@ User edits Markdown in browser
 | `/docs` | `app/docs/page.tsx` | Author guide, citation help, troubleshooting, requirements check |
 | `/pricing` | `app/pricing/page.tsx` | 3-tier pricing (Drafter / Publisher / Studio) with FAQ |
 | `/status` | `app/status/page.tsx` | API connectivity diagnostics and server capabilities |
+| `/auth/login` | `app/auth/login/page.tsx` | Sign in / sign up (email + GitHub/Google OAuth) |
+| `/auth/forgot-password` | `app/auth/forgot-password/page.tsx` | Request password reset email |
+| `/auth/reset-password` | `app/auth/reset-password/page.tsx` | Set new password (via reset link) |
+| `/auth/callback` | `app/auth/callback/route.ts` | OAuth code exchange (server route) |
 
 ## Design System
 
@@ -307,12 +325,27 @@ Defined in `frontend/src/app/pricing/page.tsx`. Currently informational (no payw
 
 ## Environment Variables
 
+### Frontend (Vercel)
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Kong API gateway URL (`https://supabase.pageperfect.studio`) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key (from Studio → Settings → API) |
+| `RAILWAY_API_BASE` | Backend compile API URL (legacy name, points to Coolify-hosted backend) |
+| `NEXT_PUBLIC_STRIPE_PRICE_PUBLISHER` | Stripe price ID for Publisher tier |
+| `NEXT_PUBLIC_STRIPE_PRICE_STUDIO` | Stripe price ID for Studio tier |
+
+### Backend (Coolify)
+
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `4000` | Backend server port |
 | `MAX_MD_BYTES` | `2097152` (2 MB) | Max Markdown payload size |
 | `COMPILE_TIMEOUT_MS` | `45000` | Pandoc compilation timeout |
-| `RAILWAY_API_BASE` | `http://localhost:4000` | Backend URL for frontend proxy |
+| `SUPABASE_URL` | — | Supabase Kong API gateway URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | — | Supabase service role key (backend only, never expose to client) |
+| `STRIPE_SECRET_KEY` | — | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | — | Stripe webhook signing secret |
 
 ## Testing
 
@@ -320,12 +353,40 @@ No automated test suite is configured. Testing is manual via the frontend UI. He
 
 When adding tests in the future, note that `.gitignore` excludes `test*.pdf` and `*-test.pdf` but preserves `sample*.pdf`.
 
-## Deployment
+## Infrastructure & Deployment
 
-- **Frontend**: Deploys to Vercel from the `frontend/` directory
-- **Backend**: Deploys to Railway from the `backend/` directory via Docker
-- No CI/CD pipeline; deployments are triggered via platform dashboards
-- Environment variables are configured in each platform's dashboard
+### Architecture
+
+```
+Digital Ocean Droplet
+└── Coolify (self-hosted PaaS)
+    ├── Supabase (self-hosted)
+    │   ├── Kong API Gateway → https://supabase.pageperfect.studio
+    │   ├── Auth (GoTrue)    — email/password + GitHub/Google OAuth
+    │   ├── PostgreSQL       — profiles, manuscripts, compile_history
+    │   └── Studio           — admin dashboard
+    └── Backend (Express/Docker)
+        └── PDF compile API  → proxied via Vercel rewrites
+
+Vercel
+└── Frontend (Next.js)     → https://pageperfect.studio
+```
+
+### Supabase (Self-Hosted via Coolify)
+
+- **Kong API gateway URL**: `https://supabase.pageperfect.studio` (port 8000 internally, reverse-proxied via Coolify)
+- **Auth providers**: Email/password, GitHub OAuth, Google OAuth
+- **OAuth callback URL** (set in GitHub/Google OAuth app settings): `https://supabase.pageperfect.studio/auth/v1/callback`
+- **Site URL** (set in Supabase Auth config): `https://pageperfect.studio`
+- **Redirect URLs** (set in Supabase Auth config): `https://pageperfect.studio/auth/callback`
+- **Database tables**: `profiles`, `manuscripts`, `compile_history` (see `frontend/src/lib/database.types.ts`)
+
+### Deployment
+
+- **Frontend**: Deploys to Vercel from the `frontend/` directory. Auto-deploys on push to `main`.
+- **Backend**: Deploys via Coolify on a Digital Ocean droplet from the `backend/` directory via Docker.
+- **Supabase**: Self-hosted on the same Digital Ocean droplet via Coolify. Managed through Supabase Studio.
+- Environment variables are configured in Vercel dashboard (frontend) and Coolify dashboard (backend + Supabase).
 
 ## Important Files for Common Tasks
 
@@ -342,4 +403,7 @@ When adding tests in the future, note that `.gitignore` excludes `test*.pdf` and
 | Nav & Footer / layout | `frontend/src/app/layout.tsx` |
 | API proxy config | `frontend/next.config.ts` |
 | Reusable UI components | `frontend/src/components/` |
+| Auth & user management | `frontend/src/lib/auth-context.tsx`, `frontend/src/lib/supabase.ts` |
+| Auth pages (login, reset) | `frontend/src/app/auth/` |
+| Supabase DB schema types | `frontend/src/lib/database.types.ts` |
 | Status/health diagnostics | `frontend/src/app/status/StatusClient.tsx`, `frontend/src/app/docs/RequirementsCheck.tsx` |
