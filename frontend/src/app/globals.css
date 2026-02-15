@@ -156,6 +156,66 @@ select.input-dark {
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent 100%);
 }
 
+/* Landing page — visual depth layers */
+.glass-card {
+  background: rgba(17, 17, 24, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1.25rem;
+}
+.glass-card-accent {
+  background: rgba(79, 143, 255, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(79, 143, 255, 0.15);
+  border-radius: 1.25rem;
+}
+
+/* Dot grid background — subtle depth texture */
+.bg-dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Animated gradient border */
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+.gradient-border {
+  position: relative;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--angle), transparent 60%, rgba(79, 143, 255, 0.3), transparent 80%);
+  z-index: -1;
+  animation: rotateBorder 6s linear infinite;
+}
+@keyframes rotateBorder {
+  to { --angle: 360deg; }
+}
+
+/* Section glow — reusable background radials */
+.section-glow-top {
+  position: relative;
+}
+.section-glow-top::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(79, 143, 255, 0.2), transparent);
+}
+
 /* Accessibility */
 .skip-link {
   position: absolute; left: -9999px; top: 0; z-index: 1000;
