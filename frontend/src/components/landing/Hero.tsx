@@ -4,47 +4,72 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRef } from 'react'
-import { ArrowRight, ChevronDown } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
-// LAW 1: Spring physics — no linear fades
+// LAW 1: Spring physics everywhere — no linear fades
 const spring = { type: 'spring' as const, stiffness: 100, damping: 20 }
 
-// Stagger-reveal each character
-function StaggerText({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) {
+// ─────────────────────────────────────────────────────
+// STAGGER TEXT — character reveal, fast, NO blur (blur = fog)
+// Clean Y offset only. Inspired by Linear's title reveals.
+// ─────────────────────────────────────────────────────
+function StaggerText({ text, delay = 0 }: { text: string; delay?: number }) {
   return (
-    <span className={className} aria-label={text}>
+    <span aria-label={text}>
       {text.split('').map((char, i) => (
         <motion.span
-          key={`${char}-${i}`}
-          initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          transition={{
-            ...spring,
-            delay: delay + i * 0.03,
-          }}
+          key={`${i}`}
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...spring, delay: delay + i * 0.025 }}
           className="inline-block"
-          style={{ whiteSpace: char === ' ' ? 'pre' : undefined }}
+          style={char === ' ' ? { width: '0.3em' } : undefined}
         >
-          {char}
+          {char === ' ' ? '\u00A0' : char}
         </motion.span>
       ))}
     </span>
   )
 }
 
-// 3D CSS Book — spine, cover, pages — no image files
-function CSSBook() {
+// ─────────────────────────────────────────────────────
+// FLOATING MARKDOWN FRAGMENTS
+// The "input" — raw syntax orbiting the typeset page.
+// Tells the transformation story visually: text → book.
+// ─────────────────────────────────────────────────────
+const FRAGMENTS = [
+  { text: '# Heading',    x: -155, y: -120, rot: -8,  delay: 1.4, op: 0.14 },
+  { text: '**bold**',     x: 125,  y: -145, rot: 11,  delay: 1.6, op: 0.11 },
+  { text: '> blockquote', x: -170, y: 15,   rot: -13, delay: 1.8, op: 0.10 },
+  { text: '---',          x: -135, y: 105,  rot: 4,   delay: 2.0, op: 0.16 },
+  { text: '_italic_',     x: 155,  y: -30,  rot: 9,   delay: 1.7, op: 0.11 },
+  { text: '## Section',   x: 140,  y: 90,   rot: -5,  delay: 1.9, op: 0.10 },
+  { text: '[link]()',     x: -90,  y: 150,  rot: -2,  delay: 2.1, op: 0.12 },
+  { text: '1. list',      x: 105,  y: 155,  rot: 7,   delay: 2.3, op: 0.10 },
+]
+
+// ─────────────────────────────────────────────────────
+// TYPESET PAGE — the hero visual
+//
+// Not a screenshot. Not a closed book. The product's actual
+// output: a beautifully typeset page you can read.
+//
+// Mouse-tracking tilt with spring physics (LAW 1).
+// Blue glow emanates FROM the page — it's the light source.
+// Markdown fragments orbit it — input becoming output.
+// ─────────────────────────────────────────────────────
+function TypesetPage() {
   const ref = useRef<HTMLDivElement>(null)
   const mouseX = useMotionValue(0.5)
   const mouseY = useMotionValue(0.5)
 
   const rotateY = useSpring(
-    useTransform(mouseX, [0, 1], [-30, -15]),
-    { stiffness: 60, damping: 20 }
+    useTransform(mouseX, [0, 1], [-8, 8]),
+    { stiffness: 50, damping: 20 }
   )
   const rotateX = useSpring(
-    useTransform(mouseY, [0, 1], [10, -5]),
-    { stiffness: 60, damping: 20 }
+    useTransform(mouseY, [0, 1], [6, -6]),
+    { stiffness: 50, damping: 20 }
   )
 
   function handleMouseMove(e: React.MouseEvent) {
@@ -64,117 +89,149 @@ function CSSBook() {
       ref={ref}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ ...spring, delay: 1.2 }}
-      className="relative mx-auto"
+      initial={{ opacity: 0, x: 60, scale: 0.94 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ ...spring, delay: 0.7 }}
+      className="relative"
       style={{ perspective: 1200 }}
     >
+      {/* Floating markdown fragments */}
+      {FRAGMENTS.map((f, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0, scale: 0.6 }}
+          animate={{
+            opacity: f.op,
+            scale: 1,
+            y: [0, -7, 0],
+          }}
+          transition={{
+            opacity: { delay: f.delay, duration: 0.6 },
+            scale: { delay: f.delay, duration: 0.5 },
+            y: {
+              delay: f.delay + 0.4,
+              duration: 3.5 + i * 0.4,
+              repeat: Infinity,
+              repeatType: 'reverse' as const,
+              ease: 'easeInOut',
+            },
+          }}
+          className="pointer-events-none absolute whitespace-nowrap font-mono text-[11px] text-accent-glow select-none"
+          style={{
+            left: `calc(50% + ${f.x}px)`,
+            top: `calc(50% + ${f.y}px)`,
+            transform: `rotate(${f.rot}deg)`,
+          }}
+        >
+          {f.text}
+        </motion.span>
+      ))}
+
+      {/* Glow FROM the page — directed light, not ambient fog */}
+      <div className="pointer-events-none absolute -inset-20 -z-10 rounded-full bg-accent/[0.06] blur-[80px]" />
+      <div className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-accent/[0.03] blur-[40px]" />
+
+      {/* The page — mouse-tracking tilt */}
       <motion.div
-        style={{
-          rotateY,
-          rotateX,
-          transformStyle: 'preserve-3d',
-        }}
-        className="relative h-[320px] w-[220px] md:h-[400px] md:w-[280px]"
+        style={{ rotateY, rotateX, transformStyle: 'preserve-3d' }}
+        className="relative"
       >
-        {/* Book cover — front face */}
         <div
-          className="absolute inset-0 rounded-r-md rounded-l-sm border border-white/[0.08] bg-gradient-to-br from-[#0f1628] via-[#0a0f1e] to-[#06080f]"
+          className="relative w-[260px] overflow-hidden bg-[#fafaf5] sm:w-[300px] md:w-[340px]"
           style={{
-            transform: 'translateZ(12px)',
-            boxShadow: '0 20px 60px -15px rgba(59, 130, 246, 0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+            padding: '11% 10%',
+            boxShadow: [
+              '0 30px 100px -20px rgba(59, 130, 246, 0.30)',
+              '0 10px 40px -10px rgba(0, 0, 0, 0.50)',
+              '0 0 0 1px rgba(255, 255, 255, 0.04)',
+            ].join(', '),
           }}
         >
-          {/* Cover content */}
-          <div className="flex h-full flex-col justify-between p-8 md:p-10">
-            {/* Top decoration */}
-            <div>
-              <div className="mb-6 h-[1px] w-16 bg-gradient-to-r from-accent/60 to-transparent" />
-              <div className="font-mono text-[9px] uppercase tracking-[0.25em] text-white/20">
-                A Novel
-              </div>
-            </div>
-
-            {/* Title area */}
-            <div>
-              <h3
-                className="font-display text-2xl font-bold leading-[0.9] tracking-tighter text-white/90 md:text-3xl"
-              >
-                The Art of
-                <br />
-                <span className="gradient-accent-text">Typography</span>
-              </h3>
-              <div className="mt-4 h-[1px] w-full bg-gradient-to-r from-white/10 to-transparent" />
-              <p className="mt-3 font-display text-[11px] tracking-widest text-white/25">
-                Jane Doe
-              </p>
-            </div>
-
-            {/* Bottom branding */}
-            <div className="font-mono text-[8px] uppercase tracking-[0.3em] text-white/10">
-              PagePerfect
-            </div>
-          </div>
-        </div>
-
-        {/* Spine — left edge */}
-        <div
-          className="absolute left-0 top-0 h-full w-6 rounded-l-sm bg-gradient-to-r from-[#080c18] to-[#0a1020]"
-          style={{
-            transform: 'translateX(-12px) rotateY(90deg)',
-            transformOrigin: 'right center',
-          }}
-        >
-          <div className="flex h-full items-center justify-center">
-            <span
-              className="font-display text-[8px] font-bold uppercase tracking-[0.3em] text-white/20"
-              style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          {/* Chapter heading */}
+          <div className="mb-4 text-center sm:mb-5">
+            <p className="font-mono text-[7px] uppercase tracking-[0.35em] text-black/20 sm:text-[8px]">
+              Chapter One
+            </p>
+            <h3
+              className="mt-1 text-[15px] font-normal tracking-wide text-black/65 sm:text-[18px] md:text-[20px]"
+              style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
             >
-              PagePerfect
-            </span>
+              The Beginning
+            </h3>
+            <div className="mx-auto mt-2 h-px w-10 bg-gradient-to-r from-transparent via-black/12 to-transparent" />
           </div>
+
+          {/* Body text with drop cap */}
+          <div
+            className="text-[8.5px] leading-[1.85] text-black/40 sm:text-[9.5px] md:text-[10.5px]"
+            style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+          >
+            <span
+              className="float-left mr-1 mt-[1px] text-[28px] font-normal leading-[0.75] text-black/50 sm:text-[34px] md:text-[38px]"
+              style={{ fontFamily: 'Georgia, serif' }}
+            >
+              T
+            </span>
+            he morning light filtered through the old windows of the library, casting
+            long shadows across the worn wooden desk where she had spent every morning
+            for the past three years.
+
+            <p className="mt-2">
+              She picked up the manuscript&thinsp;&mdash;&thinsp;three hundred pages
+              of her life&rsquo;s work, still unfinished, still demanding more.
+              Everything about it screamed &ldquo;amateur.&rdquo;
+            </p>
+            <p className="mt-2">
+              But today would be different. She had found something that understood
+              what a real book should look like.
+            </p>
+          </div>
+
+          {/* Page number */}
+          <div className="mt-4 text-center font-mono text-[6px] text-black/12 sm:mt-5 md:mt-6">
+            7
+          </div>
+
+          {/* Subtle page edge — right side thickness */}
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-[1px] bg-gradient-to-b from-transparent via-black/[0.03] to-transparent" />
         </div>
 
-        {/* Page edges — visible from the side */}
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="absolute inset-y-1 right-0 left-1 rounded-r-[1px] bg-[#e8e5df]"
-            style={{
-              transform: `translateZ(${10 - i * 2}px)`,
-              opacity: 0.15 + i * 0.05,
-            }}
-          />
-        ))}
-
-        {/* Back cover */}
-        <div
-          className="absolute inset-0 rounded-r-md rounded-l-sm bg-[#06080f]"
-          style={{ transform: 'translateZ(-2px)' }}
-        />
-
-        {/* Ground shadow */}
-        <div
-          className="pointer-events-none absolute -bottom-8 left-4 right-4 h-10 rounded-[50%] bg-accent/20 blur-2xl"
-          style={{ transform: 'translateZ(-10px)' }}
-        />
+        {/* Ground shadow — anchors page to 3D space */}
+        <div className="pointer-events-none absolute -bottom-5 left-6 right-6 h-6 rounded-[50%] bg-black/25 blur-xl" />
       </motion.div>
     </motion.div>
   )
 }
 
+// ─────────────────────────────────────────────────────
+// HERO SECTION
+//
+// Layout: Asymmetric two-column on lg+.
+//   Left  — headline, subline, CTA (left-aligned = confident)
+//   Right — floating typeset page with markdown fragments
+//
+// Mobile: centered single-column, page below CTAs.
+//
+// FIXES vs previous version:
+//   1. "Get a book." now uses gradient-hero-text (vivid, not invisible)
+//   2. No text-glow, no headline-glow (no fog machine)
+//   3. Asymmetric layout (not generic centered SaaS)
+//   4. Visual is IN the viewport, not 800px below
+//   5. Solid white CTA button (not invisible glass pill)
+// ─────────────────────────────────────────────────────
 export function Hero() {
   return (
-    <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6">
-      {/* LAW 2: Radial gradient glow — light bleed behind the void */}
+    <section className="relative flex min-h-[100dvh] items-center overflow-hidden">
+      {/* Background: subtle dot grid texture */}
+      <div className="pointer-events-none absolute inset-0 bg-dot-grid-subtle opacity-30" />
+
+      {/* Background: single radial glow — shifted right toward the page */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-[20%] h-[1000px] w-[1000px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.07)_0%,transparent_60%)]" />
-        <div className="absolute left-[30%] top-[60%] h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.04)_0%,transparent_60%)]" />
+        <div className="absolute right-[5%] top-[25%] h-[900px] w-[900px] rounded-full bg-[radial-gradient(circle,rgba(59,130,246,0.05)_0%,transparent_60%)] lg:right-[15%]" />
       </div>
 
-      {/* Atmospheric hero image — faded into the void */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.04]">
+      {/* Background: atmospheric bookshelf — barely there */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03]">
         <Image
           src="/images/bookshelf-panorama.webp"
           alt=""
@@ -182,108 +239,88 @@ export function Hero() {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-void via-void/80 to-void" />
+        <div className="absolute inset-0 bg-gradient-to-r from-void via-void/80 to-void/60" />
       </div>
 
-      {/* CENTER STAGE */}
-      <div className="relative z-10 flex max-w-6xl flex-col items-center text-center">
+      {/* ═══ CONTENT ═══ */}
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-6 py-24 md:px-8 md:py-0">
+        <div className="grid items-center gap-16 lg:grid-cols-[1fr_auto] lg:gap-20 xl:gap-28">
 
-        {/* Status pill */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={spring}
-          className="mb-12 inline-flex items-center gap-2.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-5 py-2 backdrop-blur-sm"
-        >
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          </span>
-          <span className="font-mono text-xs tracking-wide text-white/30">
-            Free to use &mdash; no account needed
-          </span>
-        </motion.div>
+          {/* ─── LEFT: The Message ─── */}
+          <div className="max-w-2xl text-center lg:text-left">
 
-        {/* THE HEADLINE — LAW 3: Typography IS the image */}
-        <h1 className="text-glow headline-glow font-display text-hero font-bold leading-[0.9] tracking-tighter">
-          {/* Line 1 */}
-          <span className="block text-white">
-            <StaggerText text="Paste Text." delay={0.15} />
-          </span>
-          {/* Line 2 — metallic gradient */}
-          <span className="block gradient-metallic-text pb-3">
-            <StaggerText text="Get a Book." delay={0.55} />
-          </span>
-        </h1>
+            {/* Tag — product-focused, minimal */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring, delay: 0.05 }}
+              className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.02] px-4 py-1.5 lg:mb-10"
+            >
+              <span className="font-mono text-[11px] tracking-wide text-white/25">
+                Markdown → print-ready PDF
+              </span>
+            </motion.div>
 
-        {/* Subhead */}
-        <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...spring, delay: 1.0 }}
-          className="mx-auto mt-10 max-w-xl font-body text-xl font-light leading-relaxed text-white/35 md:text-[1.35rem] md:leading-[1.8]"
-        >
-          Turn plain text into professionally typeset, print-ready PDFs.
-          <br className="hidden md:block" />
-          In your browser. In seconds.
-        </motion.p>
+            {/* THE HEADLINE — clean, no glow, no fog */}
+            <h1 className="font-display text-[clamp(3.2rem,9vw,7.5rem)] font-bold leading-[0.88] tracking-tighter">
+              <span className="block text-white">
+                <StaggerText text="Paste text." delay={0.15} />
+              </span>
+              <span className="block gradient-hero-text mt-2">
+                <StaggerText text="Get a book." delay={0.45} />
+              </span>
+            </h1>
 
-        {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...spring, delay: 1.15 }}
-          className="mt-16 flex flex-col items-center gap-8 sm:flex-row"
-        >
-          <Link
-            href="/app"
-            className="group glass-pill inline-flex h-14 items-center gap-3 px-9 text-[17px] font-semibold text-white"
-          >
-            <span>Open Editor</span>
-            <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-          </Link>
+            {/* Subline — one line, confident */}
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring, delay: 0.85 }}
+              className="mt-7 max-w-md text-lg text-white/35 lg:text-xl"
+            >
+              Professional typesetting in your browser. Free, no account.
+            </motion.p>
 
-          <Link
-            href="#how-it-works"
-            className="group flex items-center gap-2 text-sm font-medium text-white/30 transition-all duration-300 hover:text-white"
-          >
-            <span className="border-b border-white/15 pb-0.5 transition-colors group-hover:border-white/40">
-              See how it works
-            </span>
-            <ChevronDown className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-y-0.5" />
-          </Link>
-        </motion.div>
+            {/* CTAs — solid white primary (visible!), text secondary */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...spring, delay: 1.0 }}
+              className="mt-10 flex flex-col items-center gap-5 sm:flex-row lg:items-start"
+            >
+              <Link
+                href="/app"
+                className="group inline-flex h-14 items-center gap-3 rounded-full bg-white px-10 text-[17px] font-semibold text-void shadow-cta transition-all duration-300 hover:scale-[1.02] hover:shadow-cta-hover"
+              >
+                Open Editor
+                <ArrowRight className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
+              </Link>
 
-        {/* 3D CSS Book — LAW 1: it floats, it has mass */}
-        <div className="mt-20 md:mt-24">
-          <CSSBook />
+              <Link
+                href="/pricing"
+                className="inline-flex h-14 items-center text-[15px] text-white/25 transition-colors duration-200 hover:text-white/50"
+              >
+                View pricing →
+              </Link>
+            </motion.div>
+
+            {/* Platform line */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.4, duration: 0.5 }}
+              className="mt-12 font-mono text-[11px] text-white/[0.08]"
+            >
+              Amazon KDP · IngramSpark · Lulu · Any browser
+            </motion.p>
+          </div>
+
+          {/* ─── RIGHT: The Visual ─── */}
+          <div className="flex justify-center lg:justify-end">
+            <TypesetPage />
+          </div>
         </div>
-
-        {/* Platform line */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.8, duration: 0.6 }}
-          className="mt-16 font-mono text-[13px] text-white/10"
-        >
-          Amazon KDP &middot; IngramSpark &middot; Lulu &middot; Any browser
-        </motion.p>
       </div>
-
-      {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2.2, duration: 0.8 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
-      >
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-        >
-          <div className="h-10 w-[1px] bg-gradient-to-b from-transparent via-white/15 to-white/5" />
-        </motion.div>
-      </motion.div>
     </section>
   )
 }
