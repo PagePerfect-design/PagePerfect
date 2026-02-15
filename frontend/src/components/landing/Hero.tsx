@@ -34,12 +34,12 @@ export function Hero() {
         <div className="relative h-full w-full will-change-transform">
 
           {/* A. The Image (Scaled 120% & Pushed off edges) */}
-          <div className="absolute right-[-10%] top-[-10%] bottom-[-10%] h-[120%] w-[120%]">
+          <div className="absolute left-[35%] top-[-10%] bottom-[-10%] right-[-10%] h-[120%]">
             <Image
               src="/images/hero-book-laptop.webp"
               alt="Background Texture"
               fill
-              className="object-cover opacity-60 object-right"
+              className="object-cover opacity-60 object-center"
               style={{
                 filter: 'grayscale(100%) contrast(1.2) brightness(0.6)',
               }}
