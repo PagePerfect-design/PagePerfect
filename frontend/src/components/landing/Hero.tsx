@@ -1,25 +1,45 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRef } from 'react'
 import { ArrowRight } from 'lucide-react'
 
+const ease = [0.25, 0.4, 0.25, 1] as const
+
 export function Hero() {
+  const sectionRef = useRef(null)
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start start', 'end start'],
+  })
+
+  // Scroll-driven: image parallax + text fade
+  const imageY = useTransform(scrollYProgress, [0, 1], [0, 80])
+  const textOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0])
+  const textY = useTransform(scrollYProgress, [0, 0.4], [0, 40])
+
   return (
-    <section className="relative flex min-h-screen w-full items-center overflow-hidden bg-[#050507] pt-20 lg:pt-0">
+    <section
+      ref={sectionRef}
+      className="relative flex min-h-screen w-full items-center overflow-hidden bg-[#050507] pt-20 lg:pt-0"
+    >
 
       {/* 1. THE IMAGE (Positioned Absolutely to Break the Grid) */}
-      <div className="absolute right-0 top-0 bottom-0 w-full lg:w-[65%] z-0">
-        <div className="relative h-full w-full">
+      <motion.div
+        style={{ y: imageY }}
+        className="absolute right-0 top-0 bottom-0 z-0 hidden w-full lg:block lg:w-[65%]"
+      >
+        <div className="relative h-full w-full will-change-transform">
 
           {/* A. The Image (Scaled & Pushed) */}
-          <div className="absolute right-[-10%] top-[-10%] bottom-[-10%] w-[120%] h-[120%]">
+          <div className="absolute right-[-10%] top-[-10%] bottom-[-10%] h-[120%] w-[120%]">
             <Image
               src="/images/hero-book-laptop.webp"
               alt="Background Texture"
               fill
-              className="object-cover object-left lg:object-center opacity-60"
+              className="object-cover object-left opacity-60 lg:object-center"
               style={{
                 filter: 'grayscale(100%) contrast(1.2) brightness(0.6)',
               }}
@@ -34,17 +54,23 @@ export function Hero() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#050507] via-[#050507]/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-transparent to-transparent" />
         </div>
-      </div>
+      </motion.div>
 
       {/* 2. THE TYPOGRAPHY (Raised above the image) */}
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pointer-events-none">
+      <motion.div
+        style={{ opacity: textOpacity, y: textY }}
+        className="relative z-10 mx-auto w-full max-w-7xl px-6 pointer-events-none"
+      >
+        {/* Ambient glow orb behind typography */}
+        <div className="pointer-events-none absolute -left-20 top-1/2 h-[600px] w-[600px] -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.08)_0%,transparent_70%)]" />
+
         <div className="max-w-3xl pointer-events-auto">
 
-          {/* Badge */}
+          {/* Badge — entrance: slide from left */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.6, ease }}
             className="mb-8 inline-flex items-center gap-3 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 backdrop-blur-md"
           >
             <span className="relative flex h-2 w-2">
@@ -56,39 +82,63 @@ export function Hero() {
             </span>
           </motion.div>
 
-          {/* H1 - Massive & Overlapping */}
-          <h1 className="font-display text-7xl font-bold tracking-tighter text-white sm:text-8xl lg:text-[8rem] leading-[0.85] mb-8">
+          {/* H1 — entrance: blur-to-sharp rack focus */}
+          <motion.h1
+            initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.7, delay: 0.15, ease }}
+            className="headline-glow font-display mb-8 text-7xl font-bold leading-[0.85] tracking-tighter text-white sm:text-8xl lg:text-[8rem]"
+          >
             <span className="block text-white">Paste text.</span>
-            <span className="block bg-gradient-to-r from-blue-400 to-white/50 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-blue-400 via-blue-200 to-purple-300 bg-clip-text text-transparent">
               Get a book.
             </span>
-          </h1>
+          </motion.h1>
 
-          <p className="mb-10 max-w-xl border-l-2 border-blue-500/50 pl-6 text-xl font-light leading-relaxed text-gray-400">
+          {/* Subhead — entrance: staggered fade up */}
+          <motion.p
+            initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.7, delay: 0.35, ease }}
+            className="mb-10 max-w-xl border-l-2 border-blue-500/50 pl-6 font-body text-xl font-light leading-relaxed tracking-tight text-gray-400"
+          >
             Stop fighting Word. We turn your raw manuscript into{' '}
             <span className="font-medium text-white">precision typography</span>{' '}
             and print-ready PDFs.
-          </p>
+          </motion.p>
 
-          <div className="flex flex-wrap gap-4">
-            <Link
-              href="/app"
-              className="group relative flex h-16 items-center gap-4 bg-white px-10 text-lg font-bold text-black transition-all hover:bg-blue-50"
-            >
-              <span>Start Formatting</span>
-              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </Link>
+          {/* CTA — entrance: staggered, upgraded to pill with glow */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.55, ease }}
+            className="flex flex-col items-start gap-6"
+          >
+            <div className="flex flex-wrap items-center gap-4">
+              <Link
+                href="/app"
+                className="group relative inline-flex h-14 items-center gap-3 rounded-full bg-white px-10 text-[17px] font-semibold text-[#030305] shadow-cta transition-all duration-300 hover:scale-[1.03] hover:shadow-cta-hover"
+              >
+                <span className="pointer-events-none absolute inset-0 -z-10 animate-glow-breathe rounded-full bg-white/20 blur-xl" />
+                <span>Start Formatting</span>
+                <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1.5" />
+              </Link>
 
-            <Link
-              href="#how-it-works"
-              className="flex h-16 items-center px-8 text-sm font-medium uppercase tracking-widest text-gray-400 transition-colors hover:text-white"
-            >
-              How it works
-            </Link>
-          </div>
+              <Link
+                href="#how-it-works"
+                className="flex h-14 items-center px-8 text-sm font-medium uppercase tracking-widest text-gray-400 transition-colors hover:text-white"
+              >
+                How it works
+              </Link>
+            </div>
+
+            <p className="font-mono text-[13px] text-white/15">
+              No account required &middot; Works in any browser
+            </p>
+          </motion.div>
 
         </div>
-      </div>
+      </motion.div>
     </section>
   )
 }
