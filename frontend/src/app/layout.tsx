@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { Space_Grotesk, Source_Serif_4, IBM_Plex_Mono } from 'next/font/google'
+import { Inter_Tight, Source_Serif_4, IBM_Plex_Mono } from 'next/font/google'
 import Link from 'next/link'
 import Image from 'next/image'
 import Providers from '@/components/Providers'
 import NavAuth from '@/components/NavAuth'
 
-const display = Space_Grotesk({ subsets: ['latin'], variable: '--font-display' })
+const display = Inter_Tight({ subsets: ['latin'], variable: '--font-display', weight: ['400','500','600','700'] })
 const body = Source_Serif_4({ subsets: ['latin'], variable: '--font-body' })
 const mono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-mono', weight: ['400','600'] })
 
@@ -65,7 +65,8 @@ function Footer() {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
-      <body className="flex min-h-dvh flex-col">
+      <body className="flex min-h-dvh flex-col bg-surface text-white antialiased">
+        <div className="bg-noise" />
         <Providers>
           <a href="#main" className="skip-link">Skip to content</a>
           <Nav />
