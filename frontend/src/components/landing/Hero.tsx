@@ -2,18 +2,17 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import Image from 'next/image'
+import { HeroImage } from './HeroImage'
 
-/* ---------- Main Hero ---------- */
 export function Hero() {
   return (
     <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-24 md:pb-28">
       {/* ===== ATMOSPHERIC BACKGROUND ===== */}
 
-      {/* God-Tier Dot Grid — fades to void via mask-image */}
+      {/* God-Tier Dot Grid */}
       <div className="pointer-events-none absolute inset-0 bg-dot-grid" />
 
-      {/* Primary glow — massive, bright, unmistakable light source */}
+      {/* Primary glow */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-[18%] h-[800px] w-[1000px] -translate-x-1/2 bg-glow-radial" />
         <div className="absolute right-[5%] top-[8%] h-[600px] w-[600px] bg-glow-radial-violet" />
@@ -113,31 +112,8 @@ export function Hero() {
         </motion.p>
       </div>
 
-      {/* ===== HERO IMAGE — Laptop merging with book pages ===== */}
-      <motion.div
-        initial={{ opacity: 0, y: 60 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.0, duration: 1.2, ease: [0.25, 0.4, 0.25, 1] }}
-        className="relative z-10 mx-auto mt-20 w-full max-w-4xl"
-      >
-        {/* Glow behind the image */}
-        <div className="absolute -inset-16 rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.1)_0%,transparent_70%)]" />
-
-        <div className="relative overflow-hidden rounded-2xl">
-          {/* Dark gradient overlay — blends edges into void */}
-          <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-[#030305] via-transparent to-[#030305]/30" />
-          <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-r from-[#030305]/40 via-transparent to-[#030305]/40" />
-
-          <Image
-            src="/images/hero-book-laptop.webp"
-            alt="A laptop transforming into an open book — digital meets print"
-            width={1920}
-            height={1280}
-            priority
-            className="w-full object-cover"
-          />
-        </div>
-      </motion.div>
+      {/* ===== LEVITATING HERO IMAGE ===== */}
+      <HeroImage />
 
       {/* Scroll indicator */}
       <motion.div

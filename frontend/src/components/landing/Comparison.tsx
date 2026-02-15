@@ -176,6 +176,9 @@ export function Comparison() {
             <div className="pointer-events-none absolute right-6 top-14 rounded-full border border-white/10 bg-black/80 px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm backdrop-blur-md">
               PagePerfect PDF
             </div>
+
+            {/* Vignette overlay — bleeds edges into the void */}
+            <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-white/10 shadow-[inset_0_0_100px_rgba(0,0,0,0.8)]" />
           </div>
         </Reveal>
       </div>
