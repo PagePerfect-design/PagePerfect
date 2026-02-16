@@ -54,6 +54,10 @@ function templateCode(t) {
     case 'matrix': return 'matrix';
     case 'avantgarde': return 'avantgarde';
     case 'paperback': return 'paperback';
+    case 'international': return 'international';
+    case 'cinema': return 'cinema';
+    case 'heirloom': return 'heirloom';
+    case 'operator': return 'operator';
     case 'chicago':
     default: return 'chicago';
   }
@@ -264,81 +268,166 @@ app.get('/api/templates', (_req, res) => {
 });
 
 // ================================================================
+// KDP Publishing Utilities
+// ================================================================
+
+/**
+ * Amazon KDP dynamic gutter — minimum inside margin based on page count.
+ * Source: KDP Print Submission Guidelines
+ */
+function kdpGutter(pageCount) {
+  if (pageCount <= 150) return 0.375;
+  if (pageCount <= 300) return 0.5;
+  if (pageCount <= 500) return 0.625;
+  return 0.75;
+}
+
+/**
+ * Spine width calculator.
+ * White paper: pageCount × 0.002252 inches
+ * Cream paper: pageCount × 0.0025 inches
+ */
+function spineWidth(pageCount, paperStock = 'white') {
+  const factor = paperStock === 'cream' ? 0.0025 : 0.002252;
+  return +(pageCount * factor).toFixed(4);
+}
+
+app.get('/api/kdp/spine', (req, res) => {
+  const pageCount = parseInt(req.query.pages, 10);
+  if (!pageCount || pageCount < 24 || pageCount > 828) {
+    return res.status(400).json({
+      error: 'invalid_pages',
+      message: 'Page count must be between 24 and 828 (KDP limits).',
+    });
+  }
+  res.json({
+    pageCount,
+    white: { spineInches: spineWidth(pageCount, 'white'), spineMm: +(spineWidth(pageCount, 'white') * 25.4).toFixed(2) },
+    cream: { spineInches: spineWidth(pageCount, 'cream'), spineMm: +(spineWidth(pageCount, 'cream') * 25.4).toFixed(2) },
+    gutterInches: kdpGutter(pageCount),
+  });
+});
+
+app.get('/api/kdp/gutter', (req, res) => {
+  const pageCount = parseInt(req.query.pages, 10);
+  if (!pageCount || pageCount < 1) {
+    return res.status(400).json({ error: 'invalid_pages', message: 'Page count is required.' });
+  }
+  res.json({ pageCount, gutterInches: kdpGutter(pageCount) });
+});
+
+// ================================================================
 // Design Template Registry
 // ================================================================
 
 const DESIGN_TEMPLATES = {
-  minimal: {
-    name: 'Minimal Layout',
-    description: 'Simple, clean template compatible with BasicTeX.',
-    category: 'Minimal',
-    templatePath: path.resolve(__dirname, 'templates/minimal.latex'),
-    mainfont: 'DejaVu Serif',
-    gridType: 'basic',
-    characteristics: ['Basic typography', 'Simple formatting', 'Maximum compatibility', 'No external packages'],
-  },
   symphony: {
-    name: 'Symphony Layout',
-    description: 'Classic academic design with harmonious typography.',
+    name: 'Symphony',
+    description: 'Van de Graaf Canon, EB Garamond, ornamental openings — the academic monograph perfected.',
     category: 'Academic',
     templatePath: path.resolve(__dirname, 'templates/symphony.latex'),
-    mainfont: 'DejaVu Serif',
+    mainfont: 'EB Garamond',
     gridType: 'academic',
-    characteristics: ['Serif typography', 'Indented paragraphs', 'Classic hierarchy', 'Formal spacing'],
-  },
-  chronicle: {
-    name: 'Chronicle Grid',
-    description: 'Editorial-style layout with multi-column grid system.',
-    category: 'Editorial',
-    templatePath: path.resolve(__dirname, 'templates/chronicle.latex'),
-    mainfont: 'DejaVu Sans',
-    gridType: 'editorial',
-    characteristics: ['Sans-serif typography', 'Block paragraphs', 'Editorial hierarchy', 'Professional spacing'],
-  },
-  exhibit: {
-    name: 'Exhibit Frame',
-    description: 'Modern trade design with clean lines and generous white space.',
-    category: 'Trade',
-    templatePath: path.resolve(__dirname, 'templates/exhibit.latex'),
-    mainfont: 'Lato',
-    gridType: 'trade',
-    characteristics: ['Modern sans-serif', 'Block paragraphs', 'Clean hierarchy', 'Generous spacing'],
-  },
-  matrix: {
-    name: 'Corporate Matrix',
-    description: 'Structured business layout with systematic organization.',
-    category: 'Corporate',
-    templatePath: path.resolve(__dirname, 'templates/matrix.latex'),
-    mainfont: 'Inter',
-    gridType: 'corporate',
-    characteristics: ['Professional typography', 'Systematic layout', 'Business hierarchy', 'Structured spacing'],
-  },
-  avantgarde: {
-    name: 'Avant-Garde Canvas',
-    description: 'Experimental design with creative freedom.',
-    category: 'Creative',
-    templatePath: path.resolve(__dirname, 'templates/avantgarde.latex'),
-    mainfont: 'Source Sans Pro',
-    gridType: 'creative',
-    characteristics: ['Creative typography', 'Flexible layout', 'Experimental hierarchy', 'Dynamic spacing'],
+    characteristics: ['EB Garamond + Libertinus Sans', 'Van de Graaf Canon', 'Ornamental headings', 'Hanging footnotes'],
   },
   chicago: {
-    name: 'Classic Academic (Chicago)',
-    description: 'Traditional academic style with Chicago conventions.',
-    category: 'Legacy',
+    name: 'Chicago',
+    description: 'University press monograph — ETbb (Bembo), true footnotes, CMOS running heads.',
+    category: 'Academic',
     templatePath: path.resolve(__dirname, 'templates/chicago.latex'),
-    mainfont: 'DejaVu Serif',
+    mainfont: 'ETbb',
     gridType: 'academic',
-    characteristics: ['Serif typography', 'Indented paragraphs', 'Classic hierarchy', 'Traditional spacing'],
+    characteristics: ['ETbb (Bembo)', '2em paragraph indent', 'True footnotes', 'Centered running heads'],
   },
   paperback: {
-    name: 'Modern Trade Paperback',
-    description: 'Contemporary trade book design.',
-    category: 'Legacy',
+    name: 'Paperback',
+    description: 'Cinematic page-turner — Alegreya Sans, scene breaks, filmic chapter openings.',
+    category: 'Fiction',
     templatePath: path.resolve(__dirname, 'templates/paperback.latex'),
-    mainfont: 'Lato',
+    mainfont: 'Alegreya Sans',
     gridType: 'trade',
-    characteristics: ['Sans-serif typography', 'Block paragraphs', 'Modern hierarchy', 'Contemporary spacing'],
+    characteristics: ['Alegreya Sans', 'Cinematic chapter numbers', 'Scene break ornaments', '1.5em fiction indent'],
+  },
+  chronicle: {
+    name: 'Chronicle',
+    description: 'Swiss journalism — TeX Gyre Heros, heavy rules, pull-quote blocks, flush-left ragged-right.',
+    category: 'Editorial',
+    templatePath: path.resolve(__dirname, 'templates/chronicle.latex'),
+    mainfont: 'TeX Gyre Heros',
+    gridType: 'editorial',
+    characteristics: ['TeX Gyre Heros', 'Flush left / ragged right', '3pt section rules', 'Pull-quote blockquotes'],
+  },
+  exhibit: {
+    name: 'Exhibit',
+    description: 'White Cube gallery — Fira Sans, extreme whitespace, ghost-number chapter openings.',
+    category: 'Trade',
+    templatePath: path.resolve(__dirname, 'templates/exhibit.latex'),
+    mainfont: 'Fira Sans',
+    gridType: 'trade',
+    characteristics: ['Fira Sans + TeX Gyre Adventor', '80pt ghost chapter numbers', 'Ragged right', 'Generous whitespace'],
+  },
+  matrix: {
+    name: 'Matrix',
+    description: 'Swiss corporate annual report — Fira Sans with lining figures, MidnightBlue accents, booktabs.',
+    category: 'Business',
+    templatePath: path.resolve(__dirname, 'templates/matrix.latex'),
+    mainfont: 'Fira Sans',
+    gridType: 'corporate',
+    characteristics: ['Fira Sans (lining figures)', 'Corporate blue palette', 'Executive summary blocks', 'booktabs tables'],
+  },
+  avantgarde: {
+    name: 'Avant-Garde',
+    description: 'Deconstructed manifesto — Source Sans 3, 120pt ghost numbers, brutalist blockquotes.',
+    category: 'Creative',
+    templatePath: path.resolve(__dirname, 'templates/avantgarde.latex'),
+    mainfont: 'Source Sans 3',
+    gridType: 'creative',
+    characteristics: ['Source Sans 3', '120pt ghost chapter numbers', 'Brutalist blockquotes', 'Ragged right'],
+  },
+  minimal: {
+    name: 'Minimal',
+    description: 'Radical compatibility — compiles anywhere, zero extra dependencies. Latin Modern on pdflatex.',
+    category: 'Basic',
+    templatePath: path.resolve(__dirname, 'templates/minimal.latex'),
+    mainfont: 'Latin Modern Roman',
+    gridType: 'basic',
+    characteristics: ['Zero dependencies', 'pdflatex compatible', 'Latin Modern', 'Maximum portability'],
+  },
+  international: {
+    name: 'International',
+    description: 'Müller-Brockmann Swiss Standard — one font, no italics, visible structure, modular grid.',
+    category: 'Design',
+    templatePath: path.resolve(__dirname, 'templates/international.latex'),
+    mainfont: 'TeX Gyre Heros',
+    gridType: 'editorial',
+    characteristics: ['TeX Gyre Heros only', 'No italics', 'Flush left / ragged right', 'Rule-separated sections'],
+  },
+  cinema: {
+    name: 'Cinema',
+    description: 'Hollywood Standard screenplay — Courier 12pt, strict margins, 1 page = 1 minute rule.',
+    category: 'Screenplay',
+    templatePath: path.resolve(__dirname, 'templates/cinema.latex'),
+    mainfont: 'TeX Gyre Cursor',
+    gridType: 'basic',
+    characteristics: ['TeX Gyre Cursor (Courier)', 'Industry-standard margins', 'Single-spaced', 'Dialogue blocks'],
+  },
+  heirloom: {
+    name: 'Heirloom',
+    description: 'Modern gastronomy cookbook — recipe cards, ingredient blocks, warm saddlebrown palette.',
+    category: 'Cookbook',
+    templatePath: path.resolve(__dirname, 'templates/heirloom.latex'),
+    mainfont: 'Fira Sans',
+    gridType: 'trade',
+    characteristics: ['Fira Sans + DejaVu Serif headers', 'Ingredient colorboxes', 'Bold numbered steps', 'Warm earth tones'],
+  },
+  operator: {
+    name: 'Operator',
+    description: 'Engineering manual — Fira Sans/Mono, admonition boxes (warning/info/code), structured hierarchy.',
+    category: 'Technical',
+    templatePath: path.resolve(__dirname, 'templates/operator.latex'),
+    mainfont: 'Fira Sans',
+    gridType: 'editorial',
+    characteristics: ['Fira Sans + Fira Mono', 'Warning/Info/Code admonition boxes', 'Navy blue headings', 'Technical hierarchy'],
   },
 };
 
