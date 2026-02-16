@@ -2,64 +2,21 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
-import Image from 'next/image'
 
 const ease = [0.25, 0.4, 0.25, 1] as const
-const spring = { type: 'spring' as const, stiffness: 100, damping: 20 }
 
 const VIRTUAL_W = 1600
 const VIRTUAL_H = 1000
 
-const CALLOUTS = [
-  {
-    label: 'Margins',
-    desc: 'Golden-ratio proportions replace cramped Word defaults',
-    icon: (
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <rect x="7" y="7" width="10" height="10" rx="1" strokeDasharray="2 2" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Typography',
-    desc: 'Baseline grid locks every line to a consistent rhythm',
-    icon: (
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <line x1="4" y1="6" x2="20" y2="6" />
-        <line x1="4" y1="10" x2="20" y2="10" />
-        <line x1="4" y1="14" x2="20" y2="14" />
-        <line x1="4" y1="18" x2="14" y2="18" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Structure',
-    desc: 'Drop caps, em-dashes, and proper chapter openings',
-    icon: (
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path d="M4 6h6v6H4z" />
-        <line x1="14" y1="6" x2="20" y2="6" />
-        <line x1="14" y1="10" x2="20" y2="10" />
-        <line x1="4" y1="16" x2="20" y2="16" />
-        <line x1="4" y1="20" x2="16" y2="20" />
-      </svg>
-    ),
-  },
-]
-
 export function Comparison() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const headerRef = useRef<HTMLDivElement>(null)
-  const frameRef = useRef<HTMLDivElement>(null)
-  const headerInView = useInView(headerRef, { once: true, margin: '-60px' })
-  const frameInView = useInView(frameRef, { once: true, margin: '-60px' })
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const inView = useInView(sectionRef, { once: true, margin: '-60px' })
 
   const [sliderPos, setSliderPos] = useState(40)
   const [isDragging, setIsDragging] = useState(false)
   const [frameWidth, setFrameWidth] = useState(0)
 
-  // Measure container for hybrid scaling
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -100,227 +57,146 @@ export function Comparison() {
   }, [])
 
   return (
-    <section className="section-separator relative py-32 md:py-44">
-      {/* === ATMOSPHERIC DEPTH LAYERS === */}
-
-      {/* Layer 1: Background image */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.025]">
-        <Image src="/images/bookshelf-panorama.webp" alt="" fill className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#050507] via-transparent to-[#050507]" />
-      </div>
-
-      {/* Layer 2: Primary glow orb */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/2 h-[700px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.06)_0%,transparent_70%)]" />
-      </div>
-
-      {/* Layer 3: Secondary glow orb */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute bottom-[20%] right-[15%] h-[350px] w-[350px] rounded-full bg-[radial-gradient(ellipse,rgba(168,85,247,0.04)_0%,transparent_70%)]" />
-      </div>
-
-      {/* Layer 4: Dot grid */}
-      <div className="pointer-events-none absolute inset-0 bg-dot-grid-subtle" />
-
-      {/* === CONTENT === */}
+    <section ref={sectionRef} className="relative py-32 md:py-44">
       <div className="relative mx-auto max-w-7xl px-6 md:px-8">
 
-        {/* === HEADER — staggered entrance === */}
-        <div ref={headerRef} className="mb-16 text-center md:mb-20">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={headerInView ? { opacity: 1, x: 0 } : {}}
-            transition={{ ...spring, delay: 0 }}
-            className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/50"
+        {/* ── HEADER — editorial, left-aligned ── */}
+        <div className="mb-16 max-w-2xl md:mb-20">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.5, ease }}
+            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/25"
           >
-            Before &amp; After
-          </motion.div>
+            Fig. 1 &mdash; Before &amp; After
+          </motion.p>
 
           <motion.h2
-            initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
-            animate={headerInView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
-            transition={{ duration: 0.7, delay: 0.12, ease }}
-            className="text-glow headline-glow font-display text-4xl font-bold leading-[0.9] tracking-tighter text-white md:text-6xl lg:text-7xl"
+            initial={{ opacity: 0, y: 24 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.1, ease }}
+            className="font-display text-display-lg font-extrabold leading-[0.9] tracking-tighter text-white"
           >
-            Same words.{' '}
-            <span className="gradient-hero-text">Different book.</span>
+            Same words.<br />
+            Different book.
           </motion.h2>
 
           <motion.p
-            initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
-            animate={headerInView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
-            transition={{ duration: 0.7, delay: 0.27, ease }}
-            className="mx-auto mt-6 max-w-xl border-l-2 border-accent/30 pl-6 text-left text-lg font-light leading-relaxed text-white/30 md:text-xl"
+            initial={{ opacity: 0, y: 16 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.2, ease }}
+            className="mt-6 max-w-lg font-body text-lg leading-relaxed text-white/35"
           >
             On the left, a manuscript trapped in Word. On the right,{' '}
-            <span className="font-medium text-white/60">the same text, typeset.</span>
+            <em className="text-white/60">the same text, typeset.</em>
           </motion.p>
         </div>
 
-        {/* === COMPARISON FRAME === */}
-        <div ref={frameRef}>
-          <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.95 }}
-            animate={frameInView ? { opacity: 1, y: 0, scale: 1 } : {}}
-            transition={{ ...spring, delay: 0.35 }}
+        {/* ── COMPARISON FRAME — crop marks, not glass ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.3, ease }}
+        >
+          <div
+            ref={containerRef}
+            className="relative mx-auto aspect-[16/10] max-w-5xl cursor-ew-resize select-none overflow-hidden border border-white/[0.08]"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
           >
-            <div
-              ref={containerRef}
-              className="relative mx-auto aspect-[16/10] max-w-5xl cursor-ew-resize select-none overflow-hidden rounded-t-xl border border-b-0 transition-colors duration-300"
-              style={{
-                borderColor: isDragging ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.08)',
-                boxShadow: isDragging
-                  ? '0 8px 32px 0 rgba(0,0,0,0.3), 0 0 60px -20px rgba(59,130,246,0.25)'
-                  : '0 8px 32px 0 rgba(0,0,0,0.3)',
-              }}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-            >
-              {/* LEFT: Word Doc */}
-              <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}>
-                <div style={{ width: VIRTUAL_W, height: VIRTUAL_H, transformOrigin: 'top left', transform: `scale(${scale})` }}>
-                  <WordDocPanel />
-                </div>
+            {/* LEFT: Word Doc */}
+            <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}>
+              <div style={{ width: VIRTUAL_W, height: VIRTUAL_H, transformOrigin: 'top left', transform: `scale(${scale})` }}>
+                <WordDocPanel />
               </div>
-
-              {/* RIGHT: PagePerfect */}
-              <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }}>
-                <div style={{ width: VIRTUAL_W, height: VIRTUAL_H, transformOrigin: 'top left', transform: `scale(${scale})` }}>
-                  <TypesetPanel />
-                </div>
-              </div>
-
-              {/* === DIVIDER LINE — always glowing blue === */}
-              <div
-                className="absolute top-0 bottom-0 z-10 w-[2px]"
-                style={{
-                  left: `${sliderPos}%`,
-                  background: 'linear-gradient(to bottom, transparent, #3b82f6 10%, #3b82f6 90%, transparent)',
-                  boxShadow: isDragging
-                    ? '0 0 20px 4px rgba(59,130,246,0.8), 0 0 60px 8px rgba(59,130,246,0.3)'
-                    : '0 0 12px 2px rgba(59,130,246,0.4)',
-                  transition: isDragging ? 'none' : 'box-shadow 0.3s ease',
-                }}
-              />
-
-              {/* === DRAG HANDLE — rounded, always blue, breathing pulse === */}
-              <div
-                role="slider"
-                tabIndex={0}
-                aria-label="Comparison slider"
-                aria-valuenow={Math.round(sliderPos)}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                onKeyDown={handleKeyDown}
-                className="group absolute top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 outline-none"
-                style={{ left: `${sliderPos}%` }}
-              >
-                {/* Breathing pulse ring */}
-                <div
-                  className="absolute inset-[-8px] animate-pulse-soft rounded-full bg-accent/10 blur-md transition-opacity duration-300"
-                  style={{ opacity: isDragging ? 0 : 1 }}
-                />
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur-md transition-all duration-200"
-                  style={{
-                    borderColor: isDragging ? 'rgba(59,130,246,0.8)' : 'rgba(255,255,255,0.2)',
-                    background: isDragging ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.8)',
-                    boxShadow: isDragging
-                      ? '0 0 30px rgba(59,130,246,0.5), 0 0 60px rgba(59,130,246,0.2)'
-                      : '0 4px 20px rgba(0,0,0,0.4), 0 0 20px rgba(59,130,246,0.3)',
-                  }}
-                >
-                  <svg className="h-5 w-5 text-white transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12H16M8 12L5 9M8 12L5 15M16 12L19 9M16 12L19 15" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* === GLASS PILL LABELS === */}
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={frameInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ ...spring, delay: 0.6 }}
-                className="pointer-events-none absolute left-4 top-4 z-10 rounded-full border border-black/10 bg-white/90 px-4 py-1.5 shadow-sm backdrop-blur-md md:left-6 md:top-6"
-              >
-                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-black/70">.docx</span>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={frameInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ ...spring, delay: 0.7 }}
-                className="pointer-events-none absolute right-4 top-4 z-10 rounded-full border border-accent/20 bg-black/70 px-4 py-1.5 shadow-sm backdrop-blur-md md:right-6 md:top-6"
-              >
-                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-accent/80">PagePerfect</span>
-              </motion.div>
             </div>
-          </motion.div>
 
-          {/* === ANNOTATION BAR — attached to frame bottom === */}
-          <div className="mx-auto max-w-5xl overflow-hidden rounded-b-xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-sm">
-            {/* Accent gradient top edge */}
-            <div className="h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+            {/* RIGHT: PagePerfect */}
+            <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }}>
+              <div style={{ width: VIRTUAL_W, height: VIRTUAL_H, transformOrigin: 'top left', transform: `scale(${scale})` }}>
+                <TypesetPanel />
+              </div>
+            </div>
 
-            <div className="grid grid-cols-1 divide-y divide-white/[0.06] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-              {CALLOUTS.map((item, i) => (
-                <motion.div
-                  key={item.label}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={frameInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ ...spring, delay: 0.7 + i * 0.1 }}
-                  className="flex flex-col items-center gap-2.5 px-8 py-6 text-center"
-                >
-                  {/* Icon with glow backdrop */}
-                  <div className="relative">
-                    <div className="absolute inset-[-4px] rounded-full bg-accent/10 blur-sm" />
-                    <div className="relative text-accent">
-                      {item.icon}
-                    </div>
-                  </div>
-                  {/* Label */}
-                  <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
-                    {item.label}
-                  </div>
-                  {/* Description */}
-                  <p className="max-w-[220px] text-[13px] leading-relaxed text-white/40">
-                    {item.desc}
-                  </p>
-                </motion.div>
-              ))}
+            {/* ── DIVIDER — solid line, registration blue ── */}
+            <div
+              className="absolute top-0 bottom-0 z-10 w-px bg-[#0033ff]"
+              style={{ left: `${sliderPos}%` }}
+            />
+
+            {/* ── DRAG HANDLE ── */}
+            <div
+              role="slider"
+              tabIndex={0}
+              aria-label="Comparison slider"
+              aria-valuenow={Math.round(sliderPos)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              onKeyDown={handleKeyDown}
+              className="absolute top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 outline-none"
+              style={{ left: `${sliderPos}%` }}
+            >
+              <div className="flex h-10 w-10 items-center justify-center border border-[#0033ff] bg-[#050505] transition-colors hover:bg-[#0033ff]/10">
+                <svg className="h-4 w-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12H16M8 12L5 9M8 12L5 15M16 12L19 9M16 12L19 15" />
+                </svg>
+              </div>
             </div>
           </div>
+
+          {/* ── FIGURE CAPTIONS — outside the frame, textbook style ── */}
+          <div className="mx-auto flex max-w-5xl justify-between px-0 pt-3">
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/25">
+              .docx — Microsoft Word
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/25">
+              .pdf — PagePerfect
+            </span>
+          </div>
+        </motion.div>
+
+        {/* ── ANNOTATION — clean grid, no glass ── */}
+        <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-8 sm:grid-cols-3">
+          {[
+            { label: 'Margins', desc: 'Golden-ratio proportions replace cramped Word defaults' },
+            { label: 'Typography', desc: 'Baseline grid locks every line to a consistent rhythm' },
+            { label: 'Structure', desc: 'Drop caps, em-dashes, and proper chapter openings' },
+          ].map((item, i) => (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5, delay: 0.5 + i * 0.1, ease }}
+            >
+              <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40">
+                {item.label}
+              </p>
+              <p className="font-body text-sm leading-relaxed text-white/25">
+                {item.desc}
+              </p>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>
   )
 }
 
-/* ===== Left panel: ugly Word document (fixed 1600×1000) ===== */
+/* ===== Left panel: Word document ===== */
 function WordDocPanel() {
   return (
     <div className="flex h-[1000px] w-[1600px] flex-col bg-[#f5f5f5]">
-      {/* Compact window chrome — single row */}
       <div className="flex items-center gap-2 border-b border-black/10 bg-[#e8e8e8] px-6 py-2">
         <div className="h-[8px] w-[8px] rounded-full bg-[#ff5f57]" />
         <div className="h-[8px] w-[8px] rounded-full bg-[#febc2e]" />
         <div className="h-[8px] w-[8px] rounded-full bg-[#28c840]" />
         <span className="ml-3 font-mono text-[14px] text-black/30">manuscript-final-FINAL-v3.docx</span>
-        <div className="flex-1" />
-        {/* Inline toolbar skeleton */}
-        <div className="flex items-center gap-3">
-          <div className="h-[4px] w-[30px] rounded-sm bg-black/[0.07]" />
-          <div className="h-[4px] w-[24px] rounded-sm bg-black/[0.07]" />
-          <div className="h-[4px] w-[36px] rounded-sm bg-black/[0.07]" />
-        </div>
       </div>
 
-      {/* Page content */}
       <div className="flex flex-1 items-start justify-center overflow-hidden bg-[#dcdcdc] px-16 py-12">
         <div className="w-full max-w-[720px] bg-white p-16 shadow-md">
-          {/* Ruler bar */}
           <div className="mb-6 flex items-center gap-px">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="flex-1 border-b border-black/[0.06]">
@@ -351,7 +227,6 @@ function WordDocPanel() {
               <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>But today would be different.&nbsp;&nbsp;Today she&apos;d found something that could change everything — a tool that understood what a real book should look like.
             </p>
           </div>
-          {/* Page break artifact */}
           <div className="my-6 border-t border-dashed border-black/10" />
           <div className="space-y-3">
             <div className="h-[3px] w-[70%] bg-black/5" />
@@ -364,12 +239,11 @@ function WordDocPanel() {
   )
 }
 
-/* ===== Right panel: beautifully typeset PagePerfect PDF (fixed 1600×1000) ===== */
+/* ===== Right panel: typeset PDF ===== */
 function TypesetPanel() {
   return (
-    <div className="flex h-[1000px] w-[1600px] flex-col bg-[#1e1e24]">
-      {/* PDF viewer bar */}
-      <div className="flex items-center gap-3 border-b border-white/10 bg-[#161619] px-8 py-3">
+    <div className="flex h-[1000px] w-[1600px] flex-col bg-[#1a1a1a]">
+      <div className="flex items-center gap-3 border-b border-white/10 bg-[#111111] px-8 py-3">
         <svg className="h-5 w-5 text-red-400" viewBox="0 0 24 24" fill="currentColor">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
         </svg>
@@ -378,18 +252,15 @@ function TypesetPanel() {
         <span className="font-mono text-[12px] text-white/20">100%</span>
       </div>
 
-      {/* Typeset page */}
       <div className="flex flex-1 items-start justify-center overflow-hidden px-16 py-12">
         <div
           className="w-full max-w-[720px] bg-[#fafaf5] px-[12%] py-[8%]"
-          style={{ boxShadow: '0 4px 30px rgba(0,0,0,0.3), inset 0 1px 4px rgba(0,0,0,0.06)' }}
+          style={{ boxShadow: '0 4px 30px rgba(0,0,0,0.3)' }}
         >
-          {/* Running header */}
           <p className="mb-8 text-center font-mono text-[8px] uppercase tracking-[0.4em] text-black/15">
             The Morning Light
           </p>
 
-          {/* Chapter heading */}
           <div className="mb-10 text-center">
             <p className="font-mono text-[12px] uppercase tracking-[0.35em] text-black/25">
               Chapter One
@@ -397,10 +268,9 @@ function TypesetPanel() {
             <h3 className="mt-2 text-[30px] font-normal tracking-wide text-black/70" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
               The Beginning
             </h3>
-            <div className="mx-auto mt-3 h-px w-16 bg-gradient-to-r from-transparent via-black/15 to-transparent" />
+            <div className="mx-auto mt-3 h-px w-16 bg-black/10" />
           </div>
 
-          {/* Body with drop cap */}
           <div className="text-[16px] leading-[1.9] text-black/50" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
             <span className="float-left mr-2 mt-[2px] text-[56px] font-normal leading-[0.8] text-black/60" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
               T
@@ -418,11 +288,10 @@ function TypesetPanel() {
             </p>
           </div>
 
-          {/* Refined folio */}
           <div className="mt-8 flex items-center justify-center gap-3">
-            <div className="h-px w-8 bg-gradient-to-r from-transparent to-black/10" />
+            <div className="h-px w-8 bg-black/8" />
             <span className="font-mono text-[10px] tracking-[0.3em] text-black/20">7</span>
-            <div className="h-px w-8 bg-gradient-to-l from-transparent to-black/10" />
+            <div className="h-px w-8 bg-black/8" />
           </div>
         </div>
       </div>

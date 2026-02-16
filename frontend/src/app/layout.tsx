@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Providers from '@/components/Providers'
 import NavAuth from '@/components/NavAuth'
 
-const display = Inter_Tight({ subsets: ['latin'], variable: '--font-display', weight: ['400','500','600','700'] })
+const display = Inter_Tight({ subsets: ['latin'], variable: '--font-display', weight: ['400','500','600','700','800'] })
 const body = Source_Serif_4({ subsets: ['latin'], variable: '--font-body' })
 const mono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-mono', weight: ['400','600'] })
 
@@ -23,23 +23,25 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
   },
   manifest: '/site.webmanifest',
-  themeColor: '#030305',
+  themeColor: '#050505',
 }
 
 function Nav() {
   return (
-    <nav className="sticky top-0 z-40 border-b border-white/[0.06] bg-void/80 backdrop-blur-xl">
+    <nav className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#050505]/90 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">
-            <Image src="/PagePerfect_1_Icon.png" alt="PagePerfect" width={28} height={28} className="h-7 w-7" priority />
-            <span className="font-display text-lg font-bold tracking-tighter text-white">PagePerfect</span>
+        <div className="flex h-14 items-center justify-between">
+          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-70">
+            <Image src="/PagePerfect_1_Icon.png" alt="PagePerfect" width={24} height={24} className="h-6 w-6" priority />
+            <span className="font-display text-[15px] font-bold tracking-tight text-white">PagePerfect</span>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/pricing" className="text-sm text-white/50 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">Pricing</Link>
-            <Link href="/docs" className="text-sm text-white/50 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">Docs</Link>
+          <div className="flex items-center gap-8">
+            <Link href="/pricing" className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/40 transition-colors hover:text-white">Pricing</Link>
+            <Link href="/docs" className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/40 transition-colors hover:text-white">Docs</Link>
             <NavAuth />
-            <Link href="/app" className="glass-pill px-5 py-2 text-sm font-semibold text-white">Open Editor</Link>
+            <Link href="/app" className="border border-white/[0.15] px-5 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-colors hover:border-white/30 hover:bg-white/[0.04]">
+              Open Editor
+            </Link>
           </div>
         </div>
       </div>
@@ -49,19 +51,53 @@ function Nav() {
 
 function Footer() {
   return (
-    <footer className="border-t border-white/[0.06] bg-void py-12">
+    <footer className="border-t border-white/[0.06] bg-[#050505] py-16">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
-        <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
-          <div className="flex items-center gap-3">
-            <Image src="/PagePerfect_1_Icon.png" alt="PagePerfect" width={20} height={20} className="h-5 w-5 opacity-60" />
-            <span className="text-sm text-white/30">PagePerfect</span>
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-[1fr_auto_auto_auto] md:gap-20">
+          {/* Brand */}
+          <div>
+            <div className="flex items-center gap-2.5">
+              <Image src="/PagePerfect_1_Icon.png" alt="PagePerfect" width={18} height={18} className="h-[18px] w-[18px] opacity-50" />
+              <span className="font-display text-sm font-semibold tracking-tight text-white/40">PagePerfect</span>
+            </div>
+            <p className="mt-4 max-w-xs font-body text-sm leading-relaxed text-white/20">
+              Professional typesetting in your browser. Built on XeLaTeX. Inspired by Muller-Brockmann.
+            </p>
           </div>
-          <div className="flex items-center gap-6 text-sm text-white/30">
-            <Link href="/pricing" className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-accent">Pricing</Link>
-            <Link href="/docs" className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-accent">Docs</Link>
-            <Link href="/status" className="transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-accent">Status</Link>
+
+          {/* Links */}
+          <div>
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-white/25">Product</p>
+            <div className="flex flex-col gap-2.5">
+              <Link href="/app" className="font-body text-sm text-white/30 transition-colors hover:text-white">Editor</Link>
+              <Link href="/pricing" className="font-body text-sm text-white/30 transition-colors hover:text-white">Pricing</Link>
+              <Link href="/docs" className="font-body text-sm text-white/30 transition-colors hover:text-white">Documentation</Link>
+            </div>
           </div>
-          <p className="text-xs text-white/15">Built on XeLaTeX. Inspired by Muller-Brockmann.</p>
+
+          <div>
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-white/25">System</p>
+            <div className="flex flex-col gap-2.5">
+              <Link href="/status" className="font-body text-sm text-white/30 transition-colors hover:text-white">Status</Link>
+            </div>
+          </div>
+
+          {/* Colophon */}
+          <div>
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-white/25">Colophon</p>
+            <div className="space-y-1.5 font-mono text-[10px] text-white/20">
+              <p>Inter Tight / Source Serif 4</p>
+              <p>IBM Plex Mono</p>
+              <p>XeLaTeX + Pandoc</p>
+              <p>EST. 2024</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-12 border-t border-white/[0.04] pt-6">
+          <p className="font-mono text-[10px] text-white/10">
+            &copy; {new Date().getFullYear()} PagePerfect. Typography is the foundation of graphic design.
+          </p>
         </div>
       </div>
     </footer>
@@ -71,7 +107,7 @@ function Footer() {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
-      <body className="flex min-h-dvh flex-col bg-void text-white antialiased">
+      <body className="flex min-h-dvh flex-col bg-[#050505] text-white antialiased">
         <div className="bg-noise" />
         <Providers>
           <a href="#main" className="skip-link">Skip to content</a>
