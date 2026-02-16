@@ -298,12 +298,10 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
         <div className={`relative grid grid-cols-1 lg:grid-cols-2 lg:min-h-[340px] ${reversed ? 'lg:[grid-template-columns:55%_45%]' : 'lg:[grid-template-columns:45%_55%]'}`}>
           {/* ── Text column ── */}
           <div className={`flex flex-col justify-center p-7 md:p-8 lg:p-10 ${reversed ? 'lg:order-2' : ''}`}>
-            {/* Step badge + rule */}
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-accent/20 bg-accent/[0.06]">
-                <span className="font-mono text-[11px] font-bold text-accent/70">{step.num}</span>
-              </div>
-              <div className="h-px flex-1 bg-gradient-to-r from-accent/15 to-transparent" />
+            {/* Step number + title */}
+            <div className="mb-3 flex items-end gap-4">
+              <span className="font-display text-[3.5rem] font-bold leading-none tracking-tighter text-white/[0.07] md:text-[4.5rem]">{step.num}</span>
+              <div className="mb-1.5 h-px flex-1 bg-gradient-to-r from-accent/15 to-transparent" />
             </div>
 
             {/* Title */}
