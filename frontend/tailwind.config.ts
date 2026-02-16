@@ -8,45 +8,60 @@ export default {
   theme: {
     extend: {
       colors: {
-        // LAW 2: The Void — ban pure black
-        void: '#050507',
+        // ── Semantic tokens (resolve via CSS variables) ──────────────
+        // Dark values in :root, light overrides in [data-theme="light"]
+
+        // The Void — deepest surface
+        void: 'rgb(var(--void-rgb) / <alpha-value>)',
         // Surfaces — elevated planes above the void
         surface: {
-          DEFAULT: '#0f0f16',
-          raised: '#14141e',
-          overlay: '#1a1a24',
-          subtle: '#22222e',
-          glass: 'rgba(255, 255, 255, 0.03)',
+          DEFAULT: 'var(--surface)',
+          raised: 'var(--surface-raised)',
+          overlay: 'var(--surface-overlay)',
+          subtle: 'var(--surface-subtle)',
+          glass: 'var(--surface-glass)',
         },
-        // Accent — electric blue spectrum
+        // Accent — electric blue spectrum (RGB for opacity support)
         accent: {
-          DEFAULT: '#3b82f6',
-          hover: '#60a5fa',
-          muted: '#1e3a5f',
-          glow: 'rgba(59, 130, 246, 0.15)',
-          soft: 'rgba(59, 130, 246, 0.08)',
+          DEFAULT: 'rgb(var(--accent-rgb) / <alpha-value>)',
+          hover: 'rgb(var(--accent-hover-rgb) / <alpha-value>)',
+          muted: 'var(--accent-muted)',
+          glow: 'var(--accent-glow)',
+          soft: 'var(--accent-soft)',
         },
-        // Named accent shortcuts for direct use
-        'accent-glare': '#3b82f6',
-        'accent-glow': '#60a5fa',
+        // Named accent shortcuts
+        'accent-glare': 'rgb(var(--accent-rgb) / <alpha-value>)',
+        'accent-glow': 'rgb(var(--accent-hover-rgb) / <alpha-value>)',
         // Text hierarchy
         text: {
-          primary: '#f0f0f5',
-          secondary: '#a0a0b8',
-          tertiary: '#7a7a8e',
-          ghost: '#5a5a6e',
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          tertiary: 'var(--text-tertiary)',
+          ghost: 'var(--text-ghost)',
         },
-        // Status
-        success: { DEFAULT: '#34d399', muted: 'rgba(52, 211, 153, 0.12)' },
-        warning: { DEFAULT: '#fbbf24', muted: 'rgba(251, 191, 36, 0.12)' },
-        danger:  { DEFAULT: '#f87171', muted: 'rgba(248, 113, 113, 0.12)' },
+        // Status (RGB for opacity support)
+        success: {
+          DEFAULT: 'rgb(var(--success-rgb) / <alpha-value>)',
+          muted: 'var(--success-muted)',
+        },
+        warning: {
+          DEFAULT: 'rgb(var(--warning-rgb) / <alpha-value>)',
+          muted: 'var(--warning-muted)',
+        },
+        danger: {
+          DEFAULT: 'rgb(var(--danger-rgb) / <alpha-value>)',
+          muted: 'var(--danger-muted)',
+        },
         // Borders
         border: {
-          DEFAULT: 'rgba(255, 255, 255, 0.08)',
-          subtle: 'rgba(255, 255, 255, 0.04)',
-          visible: 'rgba(255, 255, 255, 0.14)',
-          accent: 'rgba(59, 130, 246, 0.25)',
+          DEFAULT: 'var(--border)',
+          subtle: 'var(--border-subtle)',
+          visible: 'var(--border-visible)',
+          accent: 'var(--border-accent)',
         },
+        // Foreground — the semantic white/black for opacity patterns
+        // Use text-fg/40 instead of text-white/40
+        fg: 'rgb(var(--fg) / <alpha-value>)',
       },
       borderRadius: {
         xl: '1.25rem',
@@ -70,9 +85,9 @@ export default {
         'glass-surface': 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 100%)',
       },
       boxShadow: {
-        'card': '0 1px 3px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.2)',
-        'card-hover': '0 2px 8px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3)',
-        'elevated': '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)',
+        'card': 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-card-hover)',
+        'elevated': 'var(--shadow-elevated)',
         'pill': '0 4px 16px rgba(59, 130, 246, 0.25)',
         'pill-hover': '0 6px 24px rgba(59, 130, 246, 0.35)',
         'paper': '0 2px 8px rgba(0,0,0,0.15), 0 20px 50px -12px rgba(0,0,0,0.35)',

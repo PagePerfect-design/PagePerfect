@@ -9,16 +9,105 @@
    LAW 3: Typography is the image (Structure)
    ======================================================================== */
 
+/* ── Dark theme (default) ───────────────────────────────────────────
+   Apple-style semantic tokens: components reference these variables,
+   [data-theme="light"] overrides them → automatic light/dark sections.
+   ─────────────────────────────────────────────────────────────────── */
 :root {
+  /* Surfaces */
   --void: #050507;
+  --void-rgb: 5 5 7;
   --surface: #0f0f16;
   --surface-raised: #14141e;
   --surface-overlay: #1a1a24;
   --surface-subtle: #22222e;
+  --surface-glass: rgba(255, 255, 255, 0.03);
+
+  /* Text hierarchy */
+  --text-primary: #f0f0f5;
+  --text-secondary: #a0a0b8;
+  --text-tertiary: #7a7a8e;
+  --text-ghost: #5a5a6e;
+
+  /* Accent — RGB triplets enable opacity modifiers (bg-accent/50) */
   --accent: #3b82f6;
   --accent-hover: #60a5fa;
   --accent-muted: #1e3a5f;
-  --accent-rgb: 59, 130, 246;
+  --accent-rgb: 59 130 246;
+  --accent-hover-rgb: 96 165 250;
+  --accent-glow: rgba(59, 130, 246, 0.15);
+  --accent-soft: rgba(59, 130, 246, 0.08);
+
+  /* Status — RGB triplets */
+  --success-rgb: 52 211 153;
+  --success-muted: rgba(52, 211, 153, 0.12);
+  --warning-rgb: 251 191 36;
+  --warning-muted: rgba(251, 191, 36, 0.12);
+  --danger-rgb: 248 113 113;
+  --danger-muted: rgba(248, 113, 113, 0.12);
+
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-visible: rgba(255, 255, 255, 0.14);
+  --border-accent: rgba(59, 130, 246, 0.25);
+
+  /* Foreground triplet — the Apple trick for opacity patterns.
+     Replaces hardcoded text-white/40 with text-fg/40 */
+  --fg: 255 255 255;
+
+  /* Shadows — dark mode uses luminance for elevation, shadows are heavy */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.2);
+  --shadow-card-hover: 0 2px 8px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3);
+  --shadow-elevated: 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* ── Light theme ───────────────────────────────────────────────────
+   Applied via data-theme="light" on any ancestor element.
+   Warm paper tone (#f7f6f3) — echoes the color of quality book stock.
+   ─────────────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --void: #f7f6f3;
+  --void-rgb: 247 246 243;
+  --surface: #f7f6f3;
+  --surface-raised: #ffffff;
+  --surface-overlay: #efeee9;
+  --surface-subtle: #e5e4df;
+  --surface-glass: rgba(0, 0, 0, 0.02);
+
+  --text-primary: #1a1a22;
+  --text-secondary: #5c5c6b;
+  --text-tertiary: #9898a5;
+  --text-ghost: #c0c0c8;
+
+  --accent: #2563eb;
+  --accent-hover: #3b82f6;
+  --accent-muted: #dbeafe;
+  --accent-rgb: 37 99 235;
+  --accent-hover-rgb: 59 130 246;
+  --accent-glow: rgba(37, 99, 235, 0.10);
+  --accent-soft: rgba(37, 99, 235, 0.06);
+
+  --success-rgb: 22 163 74;
+  --success-muted: rgba(22, 163, 74, 0.10);
+  --warning-rgb: 202 138 4;
+  --warning-muted: rgba(202, 138, 4, 0.10);
+  --danger-rgb: 220 38 38;
+  --danger-muted: rgba(220, 38, 38, 0.10);
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --border-visible: rgba(0, 0, 0, 0.12);
+  --border-accent: rgba(37, 99, 235, 0.20);
+
+  --fg: 0 0 0;
+
+  /* Light mode: elevation via drop shadows (Apple principle) */
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-card-hover: 0 2px 6px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-elevated: 0 4px 12px rgba(0,0,0,0.06), 0 16px 40px rgba(0,0,0,0.1);
 }
 
 /* ===== Global Resets ===== */
@@ -26,7 +115,7 @@ html, body { height: 100%; }
 
 body {
   background: var(--void);
-  color: #f0f0f5;
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -78,13 +167,13 @@ html::-webkit-scrollbar {
 }
 .btn-secondary {
   background: var(--surface-overlay);
-  color: #f0f0f5;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text-primary);
+  border: 1px solid var(--border-visible);
   box-shadow: none;
 }
 .btn-secondary:hover {
   background: var(--surface-subtle);
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: var(--border-visible);
 }
 .btn-secondary:focus-visible {
   outline: 2px solid var(--accent);
@@ -92,12 +181,12 @@ html::-webkit-scrollbar {
 }
 .btn-ghost {
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   box-shadow: none;
 }
 .btn-ghost:hover {
-  color: #f0f0f5;
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  background: var(--surface-glass);
 }
 .btn-ghost:focus-visible {
   outline: 2px solid var(--accent);
@@ -124,18 +213,18 @@ html::-webkit-scrollbar {
 /* ===== Cards ===== */
 .card {
   background: var(--surface);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.2);
+  box-shadow: var(--shadow-card);
 }
-.section-dark { background: var(--void); color: #f0f0f5; }
+.section-dark { background: var(--void); color: var(--text-primary); }
 
 /* ===== LAW 3: Typography — Inter Tight, tracking-tighter, leading-[0.9] ===== */
-.h1 { @apply font-display text-h1 tracking-tighter; color: #f0f0f5; line-height: 0.9; }
-.h2 { @apply font-display text-h2 tracking-tighter; color: #f0f0f5; line-height: 0.9; }
-.h3 { @apply font-display text-h3 tracking-tighter; color: #f0f0f5; line-height: 0.95; }
-.p  { @apply font-body text-base leading-7; color: rgba(255, 255, 255, 0.6); }
-.small-mono { @apply font-mono text-sm; color: rgba(255, 255, 255, 0.4); }
+.h1 { @apply font-display text-h1 tracking-tighter; color: var(--text-primary); line-height: 0.9; }
+.h2 { @apply font-display text-h2 tracking-tighter; color: var(--text-primary); line-height: 0.9; }
+.h3 { @apply font-display text-h3 tracking-tighter; color: var(--text-primary); line-height: 0.95; }
+.p  { @apply font-body text-base leading-7; color: var(--text-secondary); }
+.small-mono { @apply font-mono text-sm; color: var(--text-tertiary); }
 
 /* ===== Gradient text — subtle white to silver ===== */
 .gradient-text {
@@ -238,7 +327,7 @@ select.input-dark {
 /* ===== Divider ===== */
 .divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, var(--border) 20%, var(--border) 80%, transparent 100%);
 }
 
 /* ===== Glass cards ===== */
