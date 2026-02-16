@@ -38,9 +38,9 @@ const STEPS = [
 /* Step 1: Markdown editor with syntax highlighting */
 function EditorVisual() {
   return (
-    <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a12] shadow-elevated">
+    <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a12] shadow-elevated">
       {/* Window chrome */}
-      <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
+      <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2">
         <div className="flex items-center gap-1.5">
           <div className="h-2.5 w-2.5 rounded-full bg-white/[0.08]" />
           <div className="h-2.5 w-2.5 rounded-full bg-white/[0.08]" />
@@ -56,7 +56,7 @@ function EditorVisual() {
       </div>
 
       {/* Code area with line gutter */}
-      <div className="relative p-5">
+      <div className="relative flex-1 overflow-hidden p-4">
         {/* Line numbers */}
         <div className="absolute left-0 top-5 flex flex-col items-end gap-[7px] pr-2 font-mono text-[10px] text-white/[0.08]" style={{ width: 40 }}>
           {Array.from({ length: 13 }, (_, i) => (
@@ -117,9 +117,9 @@ function TemplateVisual() {
   ]
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a12] shadow-elevated">
+    <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a12] shadow-elevated">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2">
         <span className="font-mono text-[10px] text-white/25">Design system</span>
         <div className="flex items-center gap-2">
           <span className="font-mono text-[9px] text-white/20">8 templates</span>
@@ -130,8 +130,8 @@ function TemplateVisual() {
       </div>
 
       {/* Template cards */}
-      <div className="p-5">
-        <div className="grid grid-cols-4 gap-3">
+      <div className="flex flex-1 flex-col justify-center p-4">
+        <div className="grid grid-cols-4 gap-2.5">
           {templates.map((t) => (
             <div key={t.name}>
               <div
@@ -189,9 +189,9 @@ function TemplateVisual() {
 /* Step 3: Export / download view */
 function ExportVisual() {
   return (
-    <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a12] shadow-elevated">
+    <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a12] shadow-elevated">
       {/* Header with compiled status */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2">
         <span className="font-mono text-[10px] text-white/25">Export</span>
         <div className="flex items-center gap-1.5 rounded-full border border-success/20 bg-success/[0.06] px-2.5 py-0.5">
           <div className="relative h-1.5 w-1.5">
@@ -202,8 +202,8 @@ function ExportVisual() {
         </div>
       </div>
 
-      <div className="p-5">
-        <div className="flex items-start gap-6">
+      <div className="flex flex-1 flex-col justify-center p-4">
+        <div className="flex items-start gap-5">
           {/* PDF page thumbnail */}
           <div className="flex-shrink-0">
             <div className="w-24 overflow-hidden rounded-sm bg-[#fafaf5] shadow-paper">
@@ -295,24 +295,22 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
           <div className="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-accent/[0.06] blur-3xl" />
         </div>
 
-        <div className={`relative grid grid-cols-1 lg:grid-cols-2 ${reversed ? 'lg:[grid-template-columns:55%_45%]' : 'lg:[grid-template-columns:45%_55%]'}`}>
+        <div className={`relative grid grid-cols-1 lg:grid-cols-2 lg:min-h-[340px] ${reversed ? 'lg:[grid-template-columns:55%_45%]' : 'lg:[grid-template-columns:45%_55%]'}`}>
           {/* ── Text column ── */}
-          <div className={`flex flex-col justify-center p-8 md:p-10 lg:p-12 ${reversed ? 'lg:order-2' : ''}`}>
-            {/* Step badge + rule */}
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-accent/20 bg-accent/[0.06]">
-                <span className="font-mono text-[11px] font-bold text-accent/70">{step.num}</span>
-              </div>
-              <div className="h-px flex-1 bg-gradient-to-r from-accent/15 to-transparent" />
+          <div className={`flex flex-col justify-center p-7 md:p-8 lg:p-10 ${reversed ? 'lg:order-2' : ''}`}>
+            {/* Step number + title */}
+            <div className="mb-3 flex items-end gap-4">
+              <span className="font-display text-[3.5rem] font-bold leading-none tracking-tighter text-white/[0.07] md:text-[4.5rem]">{step.num}</span>
+              <div className="mb-1.5 h-px flex-1 bg-gradient-to-r from-accent/15 to-transparent" />
             </div>
 
             {/* Title */}
-            <h3 className="font-display text-2xl font-bold leading-[1.1] tracking-tight text-white md:text-3xl lg:text-[2rem]">
+            <h3 className="font-display text-xl font-bold leading-[1.1] tracking-tight text-white md:text-2xl lg:text-[1.75rem]">
               {step.title}
             </h3>
 
             {/* Description */}
-            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/40 md:text-base">
+            <p className="mt-3 max-w-md text-[13px] leading-relaxed text-white/40 md:text-sm">
               {step.desc}
             </p>
 
@@ -321,7 +319,7 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
               initial={{ opacity: 0 }}
               animate={inView ? { opacity: 1 } : {}}
               transition={{ duration: 0.6, delay: 0.3, ease }}
-              className="mt-5 flex flex-wrap gap-2"
+              className="mt-4 flex flex-wrap gap-1.5"
             >
               {step.tags.map((tag, i) => (
                 <motion.span
@@ -337,7 +335,7 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
             </motion.div>
 
             {/* Supporting detail kicker */}
-            <p className="mt-5 border-l-2 border-accent/20 pl-4 text-[13px] leading-relaxed text-white/25 italic">
+            <p className="mt-4 border-l-2 border-accent/20 pl-3 text-[12px] leading-relaxed text-white/25 italic">
               {step.detail}
             </p>
           </div>
@@ -347,9 +345,11 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
             initial={{ opacity: 0, scale: 0.96 }}
             animate={inView ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 0.8, ease, delay: 0.15 }}
-            className={`relative p-5 md:p-8 ${reversed ? 'lg:order-1' : ''}`}
+            className={`relative flex p-5 md:p-6 ${reversed ? 'lg:order-1' : ''}`}
           >
-            <Visual />
+            <div className="flex w-full flex-col">
+              <Visual />
+            </div>
           </motion.div>
         </div>
       </div>
