@@ -282,6 +282,12 @@ function ExportVisual() {
 const VISUALS = [EditorVisual, TemplateVisual, ExportVisual]
 
 // ── Step Card ──────────────────────────────────────────────────────
+const STEP_ACCENTS = [
+  'rgba(59,130,246,0.15)', // blue
+  'rgba(99,102,241,0.15)', // indigo
+  'rgba(16,185,129,0.15)', // emerald
+]
+
 function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }) {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
@@ -310,10 +316,23 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
         <div className={`relative grid grid-cols-1 lg:grid-cols-2 lg:min-h-[340px] ${reversed ? 'lg:[grid-template-columns:55%_45%]' : 'lg:[grid-template-columns:45%_55%]'}`}>
           {/* ── Text column ── */}
           <div className={`flex flex-col justify-center p-7 md:p-8 lg:p-10 ${reversed ? 'lg:order-2' : ''}`}>
-            {/* Step number + rule */}
+            {/* Step number + rule — animated scale entrance */}
             <div className="mb-3 flex items-end gap-4">
-              <span className="font-display text-[3.5rem] font-bold leading-none tracking-tighter text-white/[0.06] md:text-[4.5rem]">{step.num}</span>
-              <div className="mb-1.5 h-px flex-1 bg-gradient-to-r from-accent/15 to-transparent" />
+              <motion.span
+                initial={{ opacity: 0, scale: 0.3 }}
+                animate={inView ? { opacity: 1, scale: 1 } : {}}
+                transition={{ ...spring, delay: 0.1 }}
+                className="font-display text-[3.5rem] font-bold leading-none tracking-tighter md:text-[4.5rem]"
+                style={{ color: STEP_ACCENTS[index] }}
+              >
+                {step.num}
+              </motion.span>
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={inView ? { scaleX: 1 } : {}}
+                transition={{ ...spring, delay: 0.25 }}
+                className="mb-1.5 h-px flex-1 origin-left bg-gradient-to-r from-accent/15 to-transparent"
+              />
             </div>
 
             {/* Title */}
@@ -369,15 +388,33 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
   )
 }
 
-// ── Connector between cards ────────────────────────────────────────
+// ── Connector between cards — glows when scrolled into view ─────────
 function Connector() {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-20px' })
+
   return (
-    <div className="flex justify-center py-1">
-      <div className="flex h-10 flex-col items-center justify-center">
-        <div className="h-3.5 w-px bg-gradient-to-b from-accent/10 to-accent/5" />
-        <div className="h-1 w-1 rounded-full bg-accent/15" />
-        <div className="h-3.5 w-px bg-gradient-to-b from-accent/5 to-transparent" />
-      </div>
+    <div ref={ref} className="flex justify-center py-1">
+      <motion.div
+        initial={{ opacity: 0, scaleY: 0 }}
+        animate={inView ? { opacity: 1, scaleY: 1 } : {}}
+        transition={{ ...spring, delay: 0.1 }}
+        className="flex h-10 origin-top flex-col items-center justify-center"
+      >
+        <div className="h-3.5 w-px bg-gradient-to-b from-accent/20 to-accent/10" />
+        <div className="relative h-1.5 w-1.5">
+          {inView && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: [0, 2, 1], opacity: [0, 0.6, 0.3] }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="absolute inset-0 rounded-full bg-accent/40 blur-sm"
+            />
+          )}
+          <div className="relative h-1.5 w-1.5 rounded-full bg-accent/25" />
+        </div>
+        <div className="h-3.5 w-px bg-gradient-to-b from-accent/10 to-transparent" />
+      </motion.div>
     </div>
   )
 }
