@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import { ArrowRight } from 'lucide-react'
@@ -19,6 +20,19 @@ export function FinalCTA() {
 
   return (
     <section className="relative overflow-hidden py-40 text-center md:py-56">
+      {/* Background image — book with floating letters */}
+      <div className="absolute inset-0">
+        <Image
+          src="/images/book-magic-letters.webp"
+          alt=""
+          fill
+          className="object-cover"
+          sizes="100vw"
+          style={{ filter: 'grayscale(30%) brightness(0.15)' }}
+        />
+        <div className="absolute inset-0 bg-[#050505]/75" />
+      </div>
+
       <div ref={ref} className="relative mx-auto max-w-3xl px-6 md:px-8">
 
         {/* Decorative rule */}
@@ -26,14 +40,14 @@ export function FinalCTA() {
           initial={{ scaleX: 0, opacity: 0 }}
           animate={inView ? { scaleX: 1, opacity: 1 } : {}}
           transition={{ duration: 0.6, ease }}
-          className="mx-auto mb-20 h-px w-20 origin-center bg-white/[0.1]"
+          className="mx-auto mb-20 h-px w-20 origin-center bg-white/[0.15]"
         />
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={inView ? { opacity: 1 } : {}}
           transition={{ duration: 0.5, delay: 0.1, ease }}
-          className="mb-6 font-mono text-[11px] uppercase tracking-[0.15em] text-white/20"
+          className="mb-6 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40"
         >
           Try it now
         </motion.p>
@@ -55,7 +69,7 @@ export function FinalCTA() {
           initial={{ opacity: 0, y: 16 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, delay: 0.3, ease }}
-          className="mx-auto mt-8 max-w-md font-body text-xl leading-relaxed text-white/30"
+          className="mx-auto mt-8 max-w-md font-body text-xl leading-relaxed text-white/55"
         >
           Open the editor. Paste your text. See what professional typesetting actually looks like.
         </motion.p>
@@ -74,7 +88,7 @@ export function FinalCTA() {
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
 
-          <p className="font-mono text-[11px] text-white/15">
+          <p className="font-mono text-[11px] text-white/30">
             No account required &middot; Free forever
           </p>
         </motion.div>

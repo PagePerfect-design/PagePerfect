@@ -40,10 +40,10 @@ export function SocialProof() {
               transition={{ duration: 0.5, delay: i * 0.06, ease }}
               className="flex items-center gap-3"
             >
-              <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">
+              <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/35">
                 {item.label}
               </span>
-              <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/50">
+              <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/65">
                 {item.value}
               </span>
             </motion.div>

@@ -38,7 +38,7 @@ function StatementRow({ s, index }: { s: (typeof STATEMENTS)[number]; index: num
     >
       <div className="grid grid-cols-1 gap-3 py-12 md:grid-cols-[5rem_1fr] md:items-baseline md:gap-8 md:py-16">
         {/* Number */}
-        <span className="font-display text-[3.5rem] font-extrabold leading-none tracking-tighter text-white/[0.04] transition-colors duration-500 group-hover:text-[#0033ff]/[0.1] md:text-6xl">
+        <span className="font-display text-[3.5rem] font-extrabold leading-none tracking-tighter text-white/[0.07] transition-colors duration-500 group-hover:text-[#0033ff]/[0.15] md:text-6xl">
           {s.num}
         </span>
 
@@ -46,7 +46,7 @@ function StatementRow({ s, index }: { s: (typeof STATEMENTS)[number]; index: num
           <h3 className="font-display text-2xl font-bold leading-[1.05] tracking-tight text-white/90 md:text-3xl lg:text-[2.5rem]">
             {s.headline}
           </h3>
-          <p className="mt-4 max-w-xl font-body text-[15px] leading-relaxed text-white/30 md:text-base lg:text-lg">
+          <p className="mt-4 max-w-xl font-body text-[15px] leading-relaxed text-white/55 md:text-base lg:text-lg">
             {s.body}
           </p>
         </div>
@@ -102,7 +102,7 @@ export function WhyDifferent() {
               initial={{ opacity: 0 }}
               animate={headerInView ? { opacity: 1 } : {}}
               transition={{ duration: 0.5, ease }}
-              className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/25"
+              className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40"
             >
               Philosophy
             </motion.p>
@@ -123,11 +123,11 @@ export function WhyDifferent() {
           <div>
             {STATEMENTS.map((s, i) => (
               <div key={i}>
-                <div className="h-px bg-white/[0.06]" />
+                <div className="h-px bg-white/[0.08]" />
                 <StatementRow s={s} index={i} />
               </div>
             ))}
-            <div className="h-px bg-white/[0.06]" />
+            <div className="h-px bg-white/[0.08]" />
           </div>
         </div>
       </div>

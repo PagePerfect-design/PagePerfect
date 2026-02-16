@@ -66,7 +66,7 @@ export function Comparison() {
             initial={{ opacity: 0 }}
             animate={inView ? { opacity: 1 } : {}}
             transition={{ duration: 0.5, ease }}
-            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/25"
+            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40"
           >
             Fig. 1 &mdash; Before &amp; After
           </motion.p>
@@ -85,10 +85,10 @@ export function Comparison() {
             initial={{ opacity: 0, y: 16 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.2, ease }}
-            className="mt-6 max-w-lg font-body text-lg leading-relaxed text-white/35"
+            className="mt-6 max-w-lg font-body text-lg leading-relaxed text-white/55"
           >
             On the left, a manuscript trapped in Word. On the right,{' '}
-            <em className="text-white/60">the same text, typeset.</em>
+            <em className="text-white/75">the same text, typeset.</em>
           </motion.p>
         </div>
 
@@ -148,10 +148,10 @@ export function Comparison() {
 
           {/* ── FIGURE CAPTIONS — outside the frame, textbook style ── */}
           <div className="mx-auto flex max-w-5xl justify-between px-0 pt-3">
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/25">
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/40">
               .docx — Microsoft Word
             </span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/25">
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/40">
               .pdf — PagePerfect
             </span>
           </div>
@@ -170,10 +170,10 @@ export function Comparison() {
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.5 + i * 0.1, ease }}
             >
-              <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40">
+              <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.15em] text-white/50">
                 {item.label}
               </p>
-              <p className="font-body text-sm leading-relaxed text-white/25">
+              <p className="font-body text-sm leading-relaxed text-white/45">
                 {item.desc}
               </p>
             </motion.div>

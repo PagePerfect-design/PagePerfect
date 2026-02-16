@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useRef } from 'react'
+import Image from 'next/image'
 import { motion, useInView } from 'framer-motion'
 
 const ease = [0.25, 0.4, 0.25, 1] as const
@@ -40,7 +41,7 @@ function StepRow({ step, index }: { step: typeof STEPS[number]; index: number })
     >
       <div className="grid grid-cols-1 gap-4 py-12 md:grid-cols-[6rem_1fr_1fr] md:items-baseline md:gap-12 md:py-16">
         {/* Step number — large, ghosted */}
-        <span className="font-display text-[4rem] font-extrabold leading-none tracking-tighter text-white/[0.05] transition-colors duration-500 group-hover:text-[#0033ff]/[0.12] md:text-[5rem]">
+        <span className="font-display text-[4rem] font-extrabold leading-none tracking-tighter text-white/[0.08] transition-colors duration-500 group-hover:text-[#0033ff]/[0.15] md:text-[5rem]">
           {step.num}
         </span>
 
@@ -49,13 +50,13 @@ function StepRow({ step, index }: { step: typeof STEPS[number]; index: number })
           <h3 className="font-display text-xl font-bold leading-[1.1] tracking-tight text-white md:text-2xl lg:text-[1.75rem]">
             {step.title}
           </h3>
-          <p className="mt-4 font-body text-[15px] leading-relaxed text-white/35 md:text-base">
+          <p className="mt-4 font-body text-[15px] leading-relaxed text-white/55 md:text-base">
             {step.body}
           </p>
         </div>
 
         {/* Detail — italic aside */}
-        <p className="border-l border-white/[0.06] pl-6 font-body text-[14px] leading-relaxed text-white/20 italic md:text-[15px]">
+        <p className="border-l border-white/[0.08] pl-6 font-body text-[14px] leading-relaxed text-white/40 italic md:text-[15px]">
           {step.detail}
         </p>
       </div>
@@ -68,7 +69,20 @@ export function HowItWorks() {
   const headerInView = useInView(headerRef, { once: true, margin: '-60px' })
 
   return (
-    <section id="how-it-works" className="relative py-32 md:py-44">
+    <section id="how-it-works" className="relative py-32 md:py-44 overflow-hidden">
+      {/* Background image — scattered open books */}
+      <div className="absolute inset-0">
+        <Image
+          src="/images/books-scattered.webp"
+          alt=""
+          fill
+          className="object-cover"
+          sizes="100vw"
+          style={{ filter: 'grayscale(40%) brightness(0.15)' }}
+        />
+        <div className="absolute inset-0 bg-[#050505]/80" />
+      </div>
+
       <div className="relative mx-auto max-w-6xl px-6 md:px-8">
 
         {/* ── HEADER — editorial, left-aligned ── */}
@@ -77,7 +91,7 @@ export function HowItWorks() {
             initial={{ opacity: 0 }}
             animate={headerInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.5, ease }}
-            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/25"
+            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40"
           >
             Process
           </motion.p>
@@ -97,7 +111,7 @@ export function HowItWorks() {
             initial={{ opacity: 0, y: 16 }}
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.2, ease }}
-            className="mt-6 font-body text-lg leading-relaxed text-white/30"
+            className="mt-6 font-body text-lg leading-relaxed text-white/50"
           >
             From raw manuscript to print-ready PDF in under a minute.
           </motion.p>
