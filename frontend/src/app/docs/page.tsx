@@ -328,6 +328,135 @@ export default function DocsPage() {
         </Section>
 
         {/* ══════════════════════════════════════════════════════
+            PUBLISHING AUTOMATION
+            ══════════════════════════════════════════════════════ */}
+        <Section className="pt-0">
+          <div className="mb-10">
+            <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary mb-3">Automation</p>
+            <h2 className="font-display text-h2 font-bold tracking-tight text-text-primary">Publishing Automation</h2>
+            <p className="p mt-3 max-w-2xl">
+              PagePerfect automates the entire path from Markdown to printed book. Pre-flight validation
+              catches rejection-causing errors before submission, while platform-specific exports ensure compliance.
+            </p>
+          </div>
+
+          <div className="grid gap-6">
+            {/* Pre-flight Validator */}
+            <div className="card p-6">
+              <div className="flex items-baseline gap-3 mb-4">
+                <h3 className="font-display text-lg font-bold text-text-primary">Pre-flight Validator</h3>
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Live</span>
+              </div>
+              <p className="p text-sm mb-4">
+                The Press stage runs real-time pre-flight checks against your target platform&apos;s requirements.
+                Select Amazon KDP, IngramSpark, or Lulu to validate margins, page count, gutter, trim size, and font embedding.
+              </p>
+              <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
+                <code className="text-accent text-sm font-mono">POST /api/preflight</code>
+                <p className="text-xs text-text-tertiary mt-1">Body: &#123; pageSize, marginPreset, template, wordCount, platform: &quot;kdp&quot; | &quot;ingram&quot; | &quot;lulu&quot; &#125;</p>
+              </div>
+            </div>
+
+            {/* Cover Dimensions */}
+            <div className="card p-6">
+              <div className="flex items-baseline gap-3 mb-4">
+                <h3 className="font-display text-lg font-bold text-text-primary">Cover Dimensions Calculator</h3>
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Live</span>
+              </div>
+              <p className="p text-sm mb-4">
+                Calculates exact cover template dimensions including spine width, bleed zones, and safety margins.
+                Displayed automatically in the Press stage based on your page count and paper stock.
+              </p>
+              <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
+                <code className="text-accent text-sm font-mono">GET /api/cover-dimensions?width=6&amp;height=9&amp;pages=300&amp;paper=white</code>
+                <p className="text-xs text-text-tertiary mt-1">Returns full cover width/height, spine, bleed, safety margins, and breakdown</p>
+              </div>
+            </div>
+
+            {/* PDF/X-1a */}
+            <div className="card p-6">
+              <div className="flex items-baseline gap-3 mb-4">
+                <h3 className="font-display text-lg font-bold text-text-primary">PDF/X-1a Export</h3>
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded">IngramSpark</span>
+              </div>
+              <p className="p text-sm mb-4">
+                IngramSpark requires PDF/X-1a:2001 compliance — CMYK color space, all fonts embedded, no transparency, PDF 1.3.
+                PagePerfect converts XeLaTeX output to PDF/X-1a via Ghostscript post-processing with US Web Coated (SWOP) v2 output intent.
+              </p>
+              <p className="p text-sm">
+                Select &quot;IngramSpark&quot; as your platform in the Press stage, then click &quot;Export PDF/X-1a&quot; to generate a compliant file.
+                The standard interior PDF download remains available for KDP (which accepts regular PDFs).
+              </p>
+            </div>
+
+            {/* Lulu Integration */}
+            <div className="card p-6">
+              <div className="flex items-baseline gap-3 mb-4">
+                <h3 className="font-display text-lg font-bold text-text-primary">Lulu xPress API</h3>
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">Requires API Keys</span>
+              </div>
+              <p className="p text-sm mb-4">
+                Lulu is the only major print-on-demand platform with a full REST API. PagePerfect integrates with Lulu xPress
+                for cost estimation, print job creation, and order status tracking via webhooks.
+              </p>
+              <div className="space-y-3 mt-4">
+                <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary mb-2">Configuration</p>
+                  <div className="space-y-1 text-sm text-text-secondary">
+                    <p><code className="text-accent">LULU_CLIENT_KEY</code> — API key from developers.lulu.com</p>
+                    <p><code className="text-accent">LULU_CLIENT_SECRET</code> — API secret</p>
+                    <p><code className="text-accent">LULU_SANDBOX=true</code> — Use sandbox for testing (no real charges)</p>
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
+                    <code className="text-accent text-sm font-mono">POST /api/lulu/cost-estimate</code>
+                    <p className="text-xs text-text-tertiary mt-1">Calculate print + shipping cost without ordering</p>
+                  </div>
+                  <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
+                    <code className="text-accent text-sm font-mono">POST /api/lulu/print-job</code>
+                    <p className="text-xs text-text-tertiary mt-1">Create a print job (actual order)</p>
+                  </div>
+                  <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
+                    <code className="text-accent text-sm font-mono">GET /api/lulu/print-job/:id</code>
+                    <p className="text-xs text-text-tertiary mt-1">Check print job status</p>
+                  </div>
+                  <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
+                    <code className="text-accent text-sm font-mono">GET /api/lulu/status</code>
+                    <p className="text-xs text-text-tertiary mt-1">Check if Lulu API is configured</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Platform Comparison */}
+            <div className="card p-6">
+              <h3 className="font-display text-lg font-bold text-text-primary mb-4">Platform Comparison</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-2 pr-4 font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary">Feature</th>
+                      <th className="text-center py-2 px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary">KDP</th>
+                      <th className="text-center py-2 px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary">IngramSpark</th>
+                      <th className="text-center py-2 px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary">Lulu</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-text-secondary">
+                    <tr className="border-b border-border-subtle"><td className="py-2 pr-4">PDF format</td><td className="py-2 px-4 text-center">Standard</td><td className="py-2 px-4 text-center">PDF/X-1a</td><td className="py-2 px-4 text-center">Standard</td></tr>
+                    <tr className="border-b border-border-subtle"><td className="py-2 pr-4">API upload</td><td className="py-2 px-4 text-center text-text-tertiary">No</td><td className="py-2 px-4 text-center text-text-tertiary">FTP only</td><td className="py-2 px-4 text-center text-accent">REST API</td></tr>
+                    <tr className="border-b border-border-subtle"><td className="py-2 pr-4">Cost API</td><td className="py-2 px-4 text-center text-text-tertiary">No</td><td className="py-2 px-4 text-center text-text-tertiary">No</td><td className="py-2 px-4 text-center text-accent">Yes</td></tr>
+                    <tr className="border-b border-border-subtle"><td className="py-2 pr-4">Distribution</td><td className="py-2 px-4 text-center">Amazon</td><td className="py-2 px-4 text-center">40,000+ retailers</td><td className="py-2 px-4 text-center">Direct + retail</td></tr>
+                    <tr className="border-b border-border-subtle"><td className="py-2 pr-4">Page range</td><td className="py-2 px-4 text-center">24–828</td><td className="py-2 px-4 text-center">18–1200</td><td className="py-2 px-4 text-center">2–800</td></tr>
+                    <tr><td className="py-2 pr-4">Sandbox</td><td className="py-2 px-4 text-center text-text-tertiary">No</td><td className="py-2 px-4 text-center text-text-tertiary">No</td><td className="py-2 px-4 text-center text-accent">Yes</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </Section>
+
+        {/* ══════════════════════════════════════════════════════
             TROUBLESHOOTING
             ══════════════════════════════════════════════════════ */}
         <Section className="pt-0">

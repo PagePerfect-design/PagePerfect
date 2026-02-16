@@ -8,6 +8,8 @@ const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
 const GridSystem = require('./grid-system');
+const publishing = require('./publishing');
+const lulu = require('./lulu');
 
 // ---- limits (env overridable) ----
 const MAX_MD_BYTES = Number(process.env.MAX_MD_BYTES || 2_000_000); // ~2 MB
@@ -317,6 +319,123 @@ app.get('/api/kdp/gutter', (req, res) => {
 });
 
 // ================================================================
+// Pre-flight Validation
+// ================================================================
+
+app.post('/api/preflight', (req, res) => {
+  const { pageSize, marginPreset, template, wordCount, pageCount, platform, paperStock } = req.body || {};
+  if (!wordCount && !pageCount) {
+    return res.status(400).json({ error: 'invalid_request', message: 'wordCount or pageCount is required.' });
+  }
+  const templateType = (DESIGN_TEMPLATES[template] || {}).gridType || 'academic';
+  const result = publishing.preflight({
+    pageSize: pageSize || 'sixByNine',
+    marginPreset: marginPreset || 'normal',
+    template: templateType,
+    wordCount: wordCount || 0,
+    pageCount,
+    platform: platform || 'generic',
+    paperStock: paperStock || 'white',
+  }, gridSystem);
+  res.json(result);
+});
+
+// ================================================================
+// Cover Dimensions Calculator
+// ================================================================
+
+app.get('/api/cover-dimensions', (req, res) => {
+  const trimWidth = parseFloat(req.query.width);
+  const trimHeight = parseFloat(req.query.height);
+  const pageCount = parseInt(req.query.pages, 10);
+  if (!trimWidth || !trimHeight || !pageCount) {
+    return res.status(400).json({
+      error: 'invalid_request',
+      message: 'width, height (inches), and pages are required query parameters.',
+    });
+  }
+  const result = publishing.coverDimensions({
+    trimWidth,
+    trimHeight,
+    pageCount,
+    paperStock: req.query.paper || 'white',
+    binding: req.query.binding || 'paperback',
+    platform: req.query.platform || 'generic',
+  });
+  res.json(result);
+});
+
+// ================================================================
+// Lulu Print API Integration
+// ================================================================
+
+app.get('/api/lulu/status', (_req, res) => {
+  res.json({
+    configured: lulu.isConfigured(),
+    baseUrl: lulu.getBaseUrl(),
+    sandbox: process.env.LULU_SANDBOX === 'true',
+  });
+});
+
+app.post('/api/lulu/cost-estimate', async (req, res) => {
+  if (!lulu.isConfigured()) {
+    return res.status(501).json({ error: 'Lulu API not configured. Set LULU_CLIENT_KEY and LULU_CLIENT_SECRET.' });
+  }
+  try {
+    const { trimSize, color, binding, paper, finish, pageCount, quantity, shippingAddress, shippingLevel } = req.body;
+    const podPackageId = lulu.buildPodPackageId({ trimSize, color, binding, paper, finish });
+    const result = await lulu.calculateCost({
+      podPackageId,
+      pageCount,
+      quantity: quantity || 1,
+      shippingAddress,
+      shippingLevel: shippingLevel || 'MAIL',
+    });
+    res.json({ podPackageId, ...result });
+  } catch (err) {
+    console.error('[lulu/cost-estimate]', err.message);
+    res.status(err.status || 500).json({ error: 'lulu_error', message: err.message, detail: err.body });
+  }
+});
+
+app.post('/api/lulu/print-job', async (req, res) => {
+  if (!lulu.isConfigured()) {
+    return res.status(501).json({ error: 'Lulu API not configured.' });
+  }
+  try {
+    const result = await lulu.createPrintJob(req.body);
+    res.json(result);
+  } catch (err) {
+    console.error('[lulu/print-job]', err.message);
+    res.status(err.status || 500).json({ error: 'lulu_error', message: err.message, detail: err.body });
+  }
+});
+
+app.get('/api/lulu/print-job/:id', async (req, res) => {
+  if (!lulu.isConfigured()) {
+    return res.status(501).json({ error: 'Lulu API not configured.' });
+  }
+  try {
+    const result = await lulu.getPrintJob(req.params.id);
+    res.json(result);
+  } catch (err) {
+    console.error('[lulu/print-job]', err.message);
+    res.status(err.status || 500).json({ error: 'lulu_error', message: err.message, detail: err.body });
+  }
+});
+
+app.post('/api/lulu/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['lulu-hmac-sha256'];
+  if (!lulu.verifyWebhook(req.body, signature)) {
+    return res.status(401).json({ error: 'Invalid webhook signature' });
+  }
+  const event = JSON.parse(req.body.toString());
+  console.log(`[lulu/webhook] Print job ${event.id} status: ${event.status?.name || 'unknown'}`);
+  // TODO: Update order status in database
+  res.json({ received: true });
+});
+
+// ================================================================
 // Design Template Registry
 // ================================================================
 
@@ -486,9 +605,10 @@ const ALL_MARGINS = new Set(['normal','narrow','wide','minimal','academic','gene
 // ================================================================
 
 app.post('/api/compile', compileLimiter, async (req, res) => {
-  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode } = req.body || {};
+  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat } = req.body || {};
   safeMode = Boolean(safeMode);
   compileMode = (compileMode === 'full') ? 'full' : 'fast';
+  const wantPdfX = outputFormat === 'pdfx1a';
 
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
@@ -580,6 +700,29 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     }
 
     if (code === 0 && fs.existsSync(pdfPath)) {
+      // Optional PDF/X-1a conversion for IngramSpark compliance
+      if (wantPdfX) {
+        const pdfxPath = path.join(tmpBase, 'output-pdfx1a.pdf');
+        const conv = await publishing.convertToPdfX1a(pdfPath, pdfxPath, title);
+        if (!conv.success) {
+          try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+          return res.status(500).json({
+            error: 'pdfx_conversion_failed',
+            message: conv.error,
+          });
+        }
+        const filename = buildFilename(title, tplKey, pageSize).replace('.pdf', '-pdfx1a.pdf');
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.setHeader('X-PP-Filename', filename);
+        res.setHeader('X-PP-Format', 'PDF/X-1a:2001');
+        const stream = fs.createReadStream(pdfxPath);
+        stream.on('close', () => {
+          try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+        });
+        return stream.pipe(res);
+      }
+
       const filename = buildFilename(title, tplKey, pageSize);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
@@ -626,5 +769,7 @@ app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);
   console.log(`  CORS: ${process.env.NODE_ENV === 'production' ? ALLOWED_ORIGINS.join(', ') : 'permissive (dev)'}`);
   console.log(`  Stripe: ${stripe ? 'configured' : 'not configured'}`);
+  console.log(`  Lulu: ${lulu.isConfigured() ? `configured (${lulu.getBaseUrl()})` : 'not configured'}`);
+  console.log(`  Templates: ${Object.keys(DESIGN_TEMPLATES).length}`);
   console.log(`  Rate limit: 20 compiles/min, 120 requests/min`);
 });

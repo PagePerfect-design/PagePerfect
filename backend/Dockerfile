@@ -19,7 +19,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
 # Install Pandoc and pandoc-citeproc
 RUN apt-get update && apt-get install -y pandoc pandoc-citeproc
 
-# Install LaTeX with XeLaTeX support
+# Install LaTeX with XeLaTeX support + Ghostscript for PDF/X-1a conversion
 RUN apt-get update && apt-get install -y \
     texlive-latex-base \
     texlive-latex-extra \
@@ -27,6 +27,8 @@ RUN apt-get update && apt-get install -y \
     texlive-fonts-extra \
     texlive-xetex \
     texlive-latex-recommended \
+    ghostscript \
+    icc-profiles-free \
     && rm -rf /var/lib/apt/lists/*
 
 # App dir
