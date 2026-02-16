@@ -73,10 +73,10 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.35, ease }}
-            className="mt-8 max-w-lg font-body text-xl leading-relaxed text-white/50 md:text-[22px] md:leading-[1.6]"
+            className="mt-8 max-w-lg font-body text-xl leading-relaxed text-white/65 md:text-[22px] md:leading-[1.6]"
           >
             Stop fighting Word. We turn your raw manuscript into{' '}
-            <em className="text-white/80">precision typography</em>{' '}
+            <em className="text-white/90">precision typography</em>{' '}
             and print-ready PDFs.
           </motion.p>
 
@@ -98,13 +98,13 @@ export function Hero() {
 
               <Link
                 href="#how-it-works"
-                className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/30 transition-colors hover:text-white/60"
+                className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/45 transition-colors hover:text-white/70"
               >
                 How it works
               </Link>
             </div>
 
-            <p className="font-mono text-[11px] text-white/15">
+            <p className="font-mono text-[11px] text-white/30">
               No account required &middot; Works in any browser
             </p>
           </motion.div>

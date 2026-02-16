@@ -2,6 +2,7 @@
 
 import { useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, useInView } from 'framer-motion'
 
 const ease = [0.25, 0.4, 0.25, 1] as const
@@ -87,11 +88,11 @@ function PlateContent({ t }: { t: typeof TEMPLATES[number] }) {
           <p className={`font-display text-sm font-semibold tracking-tight transition-colors ${isComing ? 'text-white/40' : 'text-white group-hover:text-white'}`}>
             {t.name}
           </p>
-          <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white/20">
+          <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white/35">
             {t.tag}
           </p>
         </div>
-        <p className="font-mono text-[10px] text-white/15">
+        <p className="font-mono text-[10px] text-white/30">
           {t.font} &middot; {t.baseline}
         </p>
       </div>
@@ -128,7 +129,20 @@ export function TemplateGrid() {
   const gridInView = useInView(sectionRef, { once: true, margin: '-80px' })
 
   return (
-    <section ref={sectionRef} className="relative py-24 md:py-32">
+    <section ref={sectionRef} className="relative py-24 md:py-32 overflow-hidden">
+      {/* Background image — fanned books from above */}
+      <div className="absolute inset-0">
+        <Image
+          src="/images/books-fanned.webp"
+          alt=""
+          fill
+          className="object-cover"
+          sizes="100vw"
+          style={{ filter: 'grayscale(50%) brightness(0.1)' }}
+        />
+        <div className="absolute inset-0 bg-[#050505]/85" />
+      </div>
+
       <div className="relative mx-auto max-w-7xl px-6 md:px-8">
 
         {/* ── HEADER — editorial ── */}
@@ -137,7 +151,7 @@ export function TemplateGrid() {
             initial={{ opacity: 0 }}
             animate={headerInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.5, ease }}
-            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/25"
+            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40"
           >
             Plates 1&ndash;11
           </motion.p>
@@ -157,7 +171,7 @@ export function TemplateGrid() {
             initial={{ opacity: 0, y: 16 }}
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.2, ease }}
-            className="mt-6 max-w-xl font-body text-lg leading-relaxed text-white/30"
+            className="mt-6 max-w-xl font-body text-lg leading-relaxed text-white/50"
           >
             Every template is a complete typographic system &mdash; not a theme.
             Baseline grids, golden-ratio scales, calculated margins.
