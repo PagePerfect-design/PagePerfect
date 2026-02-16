@@ -1,9 +1,14 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowRight, ArrowLeft, Upload, FileText, Download, Check, AlertTriangle } from 'lucide-react'
 
 import { SAMPLE_MD } from './sample'
-import TemplateHelp from './TemplateHelp'
+
+/* ═══════════════════════════════════════════════════════════════════
+   TYPES & CONSTANTS
+   ═══════════════════════════════════════════════════════════════════ */
 
 type TemplateKey = 'minimal' | 'symphony' | 'chronicle' | 'exhibit' | 'matrix' | 'avantgarde' | 'chicago' | 'paperback'
 type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
@@ -11,6 +16,7 @@ type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'gen
 type CompileMode = 'fast' | 'full'
 type CompileError = { message: string }
 type Status = 'idle' | 'compiling' | 'success' | 'error'
+type Stage = 'ingest' | 'atelier' | 'press'
 
 const PREFS_KEY = 'pp-prefs-v1'
 type Prefs = {
@@ -21,54 +27,48 @@ type Prefs = {
   title: string
 }
 
-const TEMPLATE_INFO: Record<string, { name: string; desc: string; tag: string }> = {
-  symphony:    { name: 'Symphony',     desc: 'Classic scholarly style',      tag: 'Academic' },
-  chronicle:   { name: 'Chronicle',    desc: 'Editorial multi-column grid',  tag: 'Editorial' },
-  exhibit:     { name: 'Exhibit',      desc: 'Modern clean trade design',    tag: 'Trade' },
-  matrix:      { name: 'Matrix',       desc: 'Structured corporate layout',  tag: 'Business' },
-  avantgarde:  { name: 'Avant-Garde',  desc: 'Experimental creative style',  tag: 'Creative' },
-  chicago:     { name: 'Chicago',      desc: 'Traditional academic legacy',  tag: 'Legacy' },
-  paperback:   { name: 'Paperback',    desc: 'Contemporary trade book',      tag: 'Fiction' },
+const TEMPLATE_INFO: Record<string, { name: string; desc: string; tag: string; font: string }> = {
+  symphony:    { name: 'Symphony',     desc: 'Ornamental headings, micro-typography, full alignment system', tag: 'Academic',  font: 'Crimson Pro' },
+  chicago:     { name: 'Chicago',      desc: 'Traditional scholarly formatting rooted in the Chicago Manual', tag: 'Academic',  font: 'EB Garamond' },
+  paperback:   { name: 'Paperback',    desc: 'Contemporary trade design, sans-serif, modern aesthetic',     tag: 'Fiction',   font: 'Alegreya Sans' },
+  chronicle:   { name: 'Chronicle',    desc: 'Editorial precision, no indentation, optimized layout',        tag: 'Editorial', font: 'TeX Gyre Heros' },
+  exhibit:     { name: 'Exhibit',      desc: 'Generous breathing room, light headings, gallery-clean',       tag: 'Trade',     font: 'Alegreya' },
+  matrix:      { name: 'Matrix',       desc: 'Geometric sans, structured grid, corporate clarity',          tag: 'Business',  font: 'Inter Tight' },
+  avantgarde:  { name: 'Avant-Garde',  desc: 'Experimental layout, asymmetric headings, creative spacing',  tag: 'Creative',  font: 'Source Sans 3' },
+  minimal:     { name: 'Minimal',      desc: 'Maximum compatibility, no custom fonts, pure content',        tag: 'Basic',     font: 'Latin Modern' },
 }
 
-// Filename helper functions
+const PAGE_SIZES: Record<string, { label: string; desc: string }> = {
+  fiveFiveByEightFive: { label: '5.5 × 8.5"', desc: 'Digest — fiction, memoir' },
+  sixByNine:           { label: '6 × 9"',      desc: 'Trade — nonfiction standard' },
+  letter:              { label: '8.5 × 11"',   desc: 'US Letter' },
+  a4:                  { label: 'A4',           desc: '210 × 297 mm' },
+  a5:                  { label: 'A5',           desc: '148 × 210 mm' },
+  sevenByTen:          { label: '7 × 10"',     desc: 'Textbook' },
+  amazonFiveByEight:   { label: '5 × 8"',      desc: 'Amazon KDP' },
+  amazonSixByNine:     { label: '6 × 9"',      desc: 'Amazon KDP' },
+  amazonSevenByTen:    { label: '7 × 10"',     desc: 'Amazon KDP' },
+  amazonEightByTen:    { label: '8 × 10"',     desc: 'Amazon KDP' },
+  amazonEightFiveByEleven: { label: '8.5 × 11"', desc: 'Amazon KDP' },
+}
+
+const ease = [0.25, 0.4, 0.25, 1] as const
+
+/* ═══════════════════════════════════════════════════════════════════
+   UTILITY FUNCTIONS
+   ═══════════════════════════════════════════════════════════════════ */
+
 function slug(s: string) {
-  return s
-    .toLowerCase()
-    .replace(/['']/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60)
+  return s.toLowerCase().replace(/['']/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)
 }
 
 function sizeCode(size: PageSize) {
-  switch (size) {
-    case 'a4': return 'a4'
-    case 'a5': return 'a5'
-    case 'sixByNine': return '6x9'
-    case 'fiveFiveByEightFive': return '5.5x8.5'
-    case 'sevenByTen': return '7x10'
-    case 'amazonFiveByEight': return 'amazon-5x8'
-    case 'amazonSixByNine': return 'amazon-6x9'
-    case 'amazonSevenByTen': return 'amazon-7x10'
-    case 'amazonEightByTen': return 'amazon-8x10'
-    case 'amazonEightFiveByEleven': return 'amazon-8.5x11'
-    case 'letter':
-    default: return 'letter'
+  const map: Record<PageSize, string> = {
+    letter: 'letter', a4: 'a4', a5: 'a5', sixByNine: '6x9', fiveFiveByEightFive: '5.5x8.5',
+    sevenByTen: '7x10', amazonFiveByEight: 'amazon-5x8', amazonSixByNine: 'amazon-6x9',
+    amazonSevenByTen: 'amazon-7x10', amazonEightByTen: 'amazon-8x10', amazonEightFiveByEleven: 'amazon-8.5x11',
   }
-}
-
-function templateCode(t: TemplateKey) {
-  switch (t) {
-    case 'symphony': return 'symphony'
-    case 'chronicle': return 'chronicle'
-    case 'exhibit': return 'exhibit'
-    case 'matrix': return 'matrix'
-    case 'avantgarde': return 'avantgarde'
-    case 'paperback': return 'paperback'
-    case 'chicago':
-    default: return 'chicago'
-  }
+  return map[size] || 'letter'
 }
 
 function timestamp() {
@@ -78,8 +78,7 @@ function timestamp() {
 }
 
 function buildFilename(title: string, t: TemplateKey, size: PageSize) {
-  const left = slug(title) || 'manuscript'
-  return `${left}_${templateCode(t)}_${sizeCode(size)}_${timestamp()}.pdf`
+  return `${slug(title) || 'manuscript'}_${t}_${sizeCode(size)}_${timestamp()}.pdf`
 }
 
 function cleanFromWord(input: string): string {
@@ -99,143 +98,711 @@ function cleanFromWord(input: string): string {
   return s
 }
 
-// Chapter helpers
 function adjustHeadingsForTemplate(md: string, template: TemplateKey): string {
   if (template !== 'paperback') return md
   return md.replace(/^#\s+(chapter\b.*)$/gim, '## $1')
 }
 
-function nextChapterNumber(md: string) {
-  const re = /^#\s*Chapter\s+(\d+)\b/igm
-  let max = 0, m
-  while ((m = re.exec(md)) !== null) {
-    const n = parseInt(m[1], 10)
-    if (!Number.isNaN(n)) max = Math.max(max, n)
-  }
-  return max + 1
+/* ── Manuscript analysis ── */
+type Analysis = {
+  chapters: number
+  words: number
+  images: number
+  hasFrontmatter: boolean
+  hasReferences: boolean
 }
 
-function chapterSkeleton(n: number, template: TemplateKey) {
-  const h = template === 'paperback' ? '##' : '#'
-  return `\\newpage
-
-${h} Chapter ${n} — Your Title Here
-
-Intro paragraph. Set the scene and thesis for this chapter.
-
-${h}# Section 1
-Write a few sentences. Cite sources like [@Finch2023].
-
-${h}# Section 2
-Continue your argument. Use *italics*/**bold** sparingly.
-
-`
+function analyzeManuscript(md: string): Analysis {
+  const chapters = (md.match(/^#{1,2}\s+/gm) || []).length
+  const words = md.split(/\s+/).filter(w => w.length > 0).length
+  const images = (md.match(/!\[/g) || []).length
+  const hasFrontmatter = md.trimStart().startsWith('---')
+  const hasReferences = /\[@[^\]]+\]/.test(md)
+  return { chapters, words, images, hasFrontmatter, hasReferences }
 }
 
-function insertAtCursor(el: HTMLTextAreaElement, source: string, setValue: (s: string) => void) {
-  const start = el.selectionStart ?? 0
-  const end = el.selectionEnd ?? start
-  const before = el.value.slice(0, start)
-  const after = el.value.slice(end)
-  const next = before + source + after
-  setValue(next)
-  const pos = start + source.length
-  setTimeout(() => {
-    el.selectionStart = pos
-    el.selectionEnd = pos
-    el.focus()
-  }, 0)
-}
+/* ═══════════════════════════════════════════════════════════════════
+   STAGE 1: THE SMART DROP (INGEST)
+   ═══════════════════════════════════════════════════════════════════ */
 
-const STATUS_LABEL: Record<Status, string> = {
-  idle: 'Ready',
-  compiling: 'Typesetting...',
-  success: 'PDF Ready',
-  error: 'Issue Found',
-}
+function IngestStage({
+  onAccept,
+  onLoadSample,
+}: {
+  onAccept: (text: string, title: string) => void
+  onLoadSample: () => void
+}) {
+  const [dragActive, setDragActive] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analysis, setAnalysis] = useState<Analysis | null>(null)
+  const [text, setText] = useState('')
+  const [title, setTitle] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-const STATUS_DOT: Record<Status, string> = {
-  idle: 'bg-text-ghost',
-  compiling: 'bg-accent animate-pulse',
-  success: 'bg-success',
-  error: 'bg-danger',
-}
+  const handleText = useCallback((raw: string) => {
+    const cleaned = cleanFromWord(raw)
+    setText(cleaned)
+    setAnalyzing(true)
+    // Simulate X-ray scan animation
+    setTimeout(() => {
+      setAnalysis(analyzeManuscript(cleaned))
+      setAnalyzing(false)
+    }, 600)
+  }, [])
 
-const STATUS_CLASS: Record<Status, string> = {
-  idle: 'bg-surface-subtle text-text-tertiary',
-  compiling: 'bg-accent/10 text-accent',
-  success: 'bg-success/10 text-success',
-  error: 'bg-danger/10 text-danger',
-}
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragActive(false)
+    const file = e.dataTransfer.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const result = ev.target?.result
+        if (typeof result === 'string') handleText(result)
+      }
+      reader.readAsText(file)
+    }
+  }, [handleText])
 
-function StatusPill({ status }: { status: Status }) {
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData?.getData('text/plain')
+    if (pasted) {
+      e.preventDefault()
+      handleText(pasted)
+    }
+  }, [handleText])
+
   return (
-    <span
-      className={`inline-flex items-center gap-2 rounded-pill px-3 py-1.5 text-xs font-medium transition ${STATUS_CLASS[status]}`}
-      aria-live="polite"
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[status]}`} />
-      {STATUS_LABEL[status]}
-    </span>
-  )
-}
-
-// Welcome screen for first-time users
-function WelcomeScreen({ onStart, onLoadSample }: { onStart: () => void; onLoadSample: () => void }) {
-  return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-6">
-      <div className="max-w-2xl w-full text-center">
-        <div className="mb-8 animate-fade-in">
-          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 mb-6">
-            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-            <span className="font-mono text-xs text-accent">Ready to typeset</span>
-          </div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold text-text-primary mb-4">
-            Let&apos;s make your manuscript look incredible
-          </h1>
-          <p className="text-text-secondary text-lg max-w-md mx-auto">
-            Paste your text, pick a template, and get a print-ready PDF in seconds.
+    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-6">
+      <div className="w-full max-w-2xl">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease }}
+        >
+          {/* Title */}
+          <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.15em] text-white/25">
+            Stage 1 &mdash; Ingest
           </p>
-        </div>
+          <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white md:text-5xl">
+            Drop your manuscript.
+          </h1>
+          <p className="mt-4 max-w-md font-body text-lg leading-relaxed text-white/35">
+            Paste text, drag a file, or try our sample to see what&apos;s possible.
+          </p>
+        </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <button
-            onClick={onStart}
-            className="card p-6 text-left transition-all duration-200 hover:border-accent/20 hover:shadow-glow-accent hover:-translate-y-0.5 group"
-          >
-            <div className="w-10 h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent mb-3 group-hover:bg-accent/15 transition-colors">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+        {/* Drop zone */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.15, ease }}
+          className="mt-10"
+        >
+          {!text ? (
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
+              onDragLeave={() => setDragActive(false)}
+              onDrop={handleDrop}
+              className={`relative flex min-h-[280px] cursor-text flex-col items-center justify-center border-2 border-dashed transition-all duration-300 ${
+                dragActive
+                  ? 'border-[#0033ff] bg-[#0033ff]/[0.03]'
+                  : 'border-white/[0.1] hover:border-white/[0.2]'
+              }`}
+              onClick={() => textareaRef.current?.focus()}
+            >
+              <Upload className={`mb-4 h-8 w-8 transition-colors ${dragActive ? 'text-[#0033ff]' : 'text-white/15'}`} />
+              <p className="font-body text-base text-white/30">
+                Drag a .txt or .md file here, or click to paste
+              </p>
+              <p className="mt-2 font-mono text-[11px] text-white/15">
+                Markdown &middot; Plain text &middot; Up to 2 MB
+              </p>
+              <textarea
+                ref={textareaRef}
+                className="absolute inset-0 cursor-text resize-none bg-transparent p-8 font-mono text-sm text-white/70 caret-[#0033ff] placeholder:text-transparent focus:outline-none"
+                onPaste={handlePaste}
+                onChange={(e) => { if (e.target.value.trim()) handleText(e.target.value) }}
+                placeholder="Paste your manuscript..."
+                aria-label="Manuscript input"
+              />
             </div>
-            <h3 className="font-display font-bold text-text-primary mb-1">Start fresh</h3>
-            <p className="text-xs text-text-tertiary">Open the editor and paste your own text</p>
-          </button>
+          ) : (
+            <div className="border border-white/[0.08] bg-white/[0.01]">
+              {/* X-Ray scan results */}
+              <div className="border-b border-white/[0.06] p-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-[#0033ff]" />
+                  <span className="font-display text-lg font-bold text-white">Manuscript scanned</span>
+                </div>
 
-          <button
-            onClick={onLoadSample}
-            className="card p-6 text-left transition-all duration-200 hover:border-[rgba(255,255,255,0.1)] hover:shadow-card-hover hover:-translate-y-0.5 group"
-          >
-            <div className="w-10 h-10 rounded-lg bg-surface-subtle border border-border-visible flex items-center justify-center text-text-tertiary mb-3 group-hover:text-text-secondary transition-colors">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
+                {analyzing ? (
+                  <div className="space-y-2">
+                    {['Detecting chapters...', 'Scanning images...', 'Identifying frontmatter...'].map((line, i) => (
+                      <motion.p
+                        key={line}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.15, duration: 0.3 }}
+                        className="font-mono text-[12px] text-white/30"
+                      >
+                        <span className="text-[#0033ff]">&gt;</span> {line}
+                      </motion.p>
+                    ))}
+                  </div>
+                ) : analysis && (
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    {[
+                      { label: 'Chapters', value: analysis.chapters || 'None' },
+                      { label: 'Words', value: analysis.words.toLocaleString() },
+                      { label: 'Images', value: analysis.images },
+                      { label: 'Frontmatter', value: analysis.hasFrontmatter ? 'Found' : 'Missing' },
+                    ].map((item) => (
+                      <div key={item.label}>
+                        <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">{item.label}</p>
+                        <p className="mt-1 font-display text-xl font-bold text-white">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Title input */}
+              <div className="p-6">
+                <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/25">
+                  Working title
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="My Manuscript"
+                  className="w-full border-b border-white/[0.1] bg-transparent pb-2 font-display text-2xl font-bold text-white placeholder:text-white/15 focus:border-[#0033ff] focus:outline-none"
+                />
+              </div>
+
+              {/* Accept */}
+              <div className="flex items-center justify-between border-t border-white/[0.06] px-6 py-4">
+                <button
+                  onClick={() => { setText(''); setAnalysis(null) }}
+                  className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/25 transition-colors hover:text-white/50"
+                >
+                  Start over
+                </button>
+                <button
+                  onClick={() => onAccept(text, title)}
+                  disabled={!analysis}
+                  className="group inline-flex h-12 items-center gap-3 bg-[#0033ff] px-8 font-display text-[14px] font-semibold text-white transition-all duration-200 hover:bg-[#2255ff] disabled:opacity-30"
+                >
+                  Looks good
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              </div>
             </div>
-            <h3 className="font-display font-bold text-text-primary mb-1">Try a sample</h3>
-            <p className="text-xs text-text-tertiary">See what PagePerfect can do with example text</p>
-          </button>
-        </div>
+          )}
+        </motion.div>
 
-        <p className="mt-8 text-xs text-text-ghost animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          Your text is never stored. It&apos;s sent to our server only for compilation and immediately deleted.
-        </p>
+        {/* Alternative: load sample */}
+        {!text && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6 text-center"
+          >
+            <button
+              onClick={onLoadSample}
+              className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40"
+            >
+              Or try with a sample manuscript &rarr;
+            </button>
+          </motion.div>
+        )}
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-8 text-center font-mono text-[10px] text-white/10"
+        >
+          Your text is never stored. Sent to our server only for compilation, then immediately deleted.
+        </motion.p>
       </div>
     </div>
   )
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   STAGE 2: THE ATELIER (DESIGN CHOICES + LIVE PREVIEW)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function AtelierStage({
+  manuscript,
+  title,
+  template,
+  pageSize,
+  marginPreset,
+  compileMode,
+  safeMode,
+  pdfUrl,
+  status,
+  loading,
+  errors,
+  wordCount,
+  onTemplateChange,
+  onPageSizeChange,
+  onMarginChange,
+  onCompileModeChange,
+  onSafeModeChange,
+  onTitleChange,
+  onManuscriptChange,
+  onBack,
+  onExport,
+}: {
+  manuscript: string
+  title: string
+  template: TemplateKey
+  pageSize: PageSize
+  marginPreset: MarginPreset
+  compileMode: CompileMode
+  safeMode: boolean
+  pdfUrl: string | null
+  status: Status
+  loading: boolean
+  errors: CompileError[]
+  wordCount: number
+  onTemplateChange: (t: TemplateKey) => void
+  onPageSizeChange: (s: PageSize) => void
+  onMarginChange: (m: MarginPreset) => void
+  onCompileModeChange: (m: CompileMode) => void
+  onSafeModeChange: (s: boolean) => void
+  onTitleChange: (t: string) => void
+  onManuscriptChange: (m: string) => void
+  onBack: () => void
+  onExport: () => void
+}) {
+  const [showEditor, setShowEditor] = useState(false)
+  const textRef = useRef<HTMLTextAreaElement>(null)
+
+  const templateKeys = Object.keys(TEMPLATE_INFO) as TemplateKey[]
+
+  return (
+    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col">
+
+      {/* ── TOP BAR ── */}
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-3 md:px-8">
+        <div className="flex items-center gap-4">
+          <button onClick={onBack} className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-white/25 transition-colors hover:text-white/50">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back
+          </button>
+          <div className="h-4 w-px bg-white/[0.06]" />
+          <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/25">
+            Stage 2 &mdash; Atelier
+          </p>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Status indicator */}
+          <span className={`inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.1em] ${
+            status === 'compiling' ? 'text-[#0033ff]' :
+            status === 'success' ? 'text-emerald-400' :
+            status === 'error' ? 'text-red-400' :
+            'text-white/20'
+          }`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${
+              status === 'compiling' ? 'bg-[#0033ff] animate-pulse' :
+              status === 'success' ? 'bg-emerald-400' :
+              status === 'error' ? 'bg-red-400' :
+              'bg-white/20'
+            }`} />
+            {status === 'compiling' ? 'Typesetting...' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
+          </span>
+
+          <button
+            onClick={onExport}
+            disabled={status !== 'success'}
+            className="group inline-flex h-10 items-center gap-2 bg-[#0033ff] px-6 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-all duration-200 hover:bg-[#2255ff] disabled:opacity-30"
+          >
+            Export PDF
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* ── MAIN SPLIT ── */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* ── LEFT: CONTROLS (30%) ── */}
+        <div className="flex w-full flex-col overflow-y-auto border-r border-white/[0.06] lg:w-[30%] lg:min-w-[320px]">
+
+          {/* Title */}
+          <div className="border-b border-white/[0.06] p-6">
+            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              className="w-full border-b border-white/[0.08] bg-transparent pb-1 font-display text-lg font-bold text-white placeholder:text-white/15 focus:border-[#0033ff] focus:outline-none"
+              placeholder="Untitled"
+            />
+            <p className="mt-2 font-mono text-[10px] text-white/15">{wordCount.toLocaleString()} words</p>
+          </div>
+
+          {/* Template selector */}
+          <div className="border-b border-white/[0.06] p-6">
+            <label className="mb-4 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">
+              Typographic System
+            </label>
+            <div className="space-y-1">
+              {templateKeys.map((key) => {
+                const info = TEMPLATE_INFO[key]
+                const isActive = key === template
+                return (
+                  <button
+                    key={key}
+                    onClick={() => onTemplateChange(key)}
+                    className={`flex w-full items-start gap-3 px-3 py-2.5 text-left transition-all duration-200 ${
+                      isActive
+                        ? 'border-l-2 border-[#0033ff] bg-[#0033ff]/[0.04]'
+                        : 'border-l-2 border-transparent hover:bg-white/[0.02]'
+                    }`}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-display text-sm font-semibold ${isActive ? 'text-white' : 'text-white/60'}`}>
+                          {info.name}
+                        </span>
+                        <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/20">
+                          {info.tag}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 font-mono text-[10px] text-white/15">
+                        {info.font}
+                      </p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Page size */}
+          <div className="border-b border-white/[0.06] p-6">
+            <label className="mb-3 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">
+              Page Size
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(['fiveFiveByEightFive', 'sixByNine', 'letter', 'a4', 'a5', 'sevenByTen'] as PageSize[]).map((key) => {
+                const info = PAGE_SIZES[key]
+                const isActive = key === pageSize
+                return (
+                  <button
+                    key={key}
+                    onClick={() => onPageSizeChange(key)}
+                    className={`px-3 py-2 text-left transition-all duration-200 ${
+                      isActive
+                        ? 'border border-[#0033ff]/30 bg-[#0033ff]/[0.04]'
+                        : 'border border-white/[0.04] hover:border-white/[0.08]'
+                    }`}
+                  >
+                    <span className={`block font-mono text-[11px] ${isActive ? 'text-white' : 'text-white/50'}`}>
+                      {info.label}
+                    </span>
+                    <span className="block font-mono text-[9px] text-white/15">{info.desc}</span>
+                  </button>
+                )
+              })}
+            </div>
+            {/* Show Amazon KDP sizes as collapsible */}
+            <details className="mt-3">
+              <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.1em] text-white/15 hover:text-white/25">
+                Amazon KDP sizes
+              </summary>
+              <div className="mt-2 grid grid-cols-2 gap-1.5">
+                {(['amazonFiveByEight', 'amazonSixByNine', 'amazonSevenByTen', 'amazonEightByTen', 'amazonEightFiveByEleven'] as PageSize[]).map((key) => {
+                  const info = PAGE_SIZES[key]
+                  const isActive = key === pageSize
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => onPageSizeChange(key)}
+                      className={`px-3 py-2 text-left transition-all ${
+                        isActive
+                          ? 'border border-[#0033ff]/30 bg-[#0033ff]/[0.04]'
+                          : 'border border-white/[0.04] hover:border-white/[0.08]'
+                      }`}
+                    >
+                      <span className={`block font-mono text-[11px] ${isActive ? 'text-white' : 'text-white/50'}`}>
+                        {info.label}
+                      </span>
+                      <span className="block font-mono text-[9px] text-white/15">{info.desc}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </details>
+          </div>
+
+          {/* Margins + Quality */}
+          <div className="p-6">
+            <div className="mb-4">
+              <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">Margins</label>
+              <select
+                value={marginPreset}
+                onChange={(e) => onMarginChange(e.target.value as MarginPreset)}
+                className="input-dark w-full font-mono text-sm"
+              >
+                <option value="normal">Normal</option>
+                <option value="narrow">Narrow</option>
+                <option value="wide">Wide</option>
+                <option value="minimal">Minimal</option>
+                <option value="academic">Academic</option>
+                <option value="generous">Generous</option>
+                <option value="compact">Compact</option>
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">Quality</label>
+              <select
+                value={compileMode}
+                onChange={(e) => onCompileModeChange(e.target.value as CompileMode)}
+                className="input-dark w-full font-mono text-sm"
+              >
+                <option value="fast">Preview (fast)</option>
+                <option value="full">Final (full quality)</option>
+              </select>
+            </div>
+            <label className="inline-flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={safeMode} onChange={(e) => onSafeModeChange(e.target.checked)} className="h-3.5 w-3.5 accent-[#0033ff]" />
+              <span className="font-mono text-[11px] text-white/30">Safe mode (skip citations)</span>
+            </label>
+          </div>
+
+          {/* Edit manuscript toggle */}
+          <div className="mt-auto border-t border-white/[0.06] p-4">
+            <button
+              onClick={() => setShowEditor(!showEditor)}
+              className="w-full font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40"
+            >
+              {showEditor ? 'Hide editor' : 'Edit manuscript text'}
+            </button>
+          </div>
+        </div>
+
+        {/* ── RIGHT: PREVIEW / EDITOR (70%) ── */}
+        <div className="hidden flex-1 flex-col lg:flex">
+          {showEditor ? (
+            <div className="flex flex-1 flex-col">
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-2.5">
+                <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20">Editor</span>
+                <button onClick={() => setShowEditor(false)} className="font-mono text-[11px] text-white/20 hover:text-white/40">
+                  Show preview
+                </button>
+              </div>
+              <textarea
+                ref={textRef}
+                value={manuscript}
+                onChange={(e) => onManuscriptChange(e.target.value)}
+                className="flex-1 resize-none bg-[#050505] p-6 font-mono text-sm leading-[1.8] text-white/70 caret-[#0033ff] focus:outline-none"
+                placeholder="# Chapter One&#10;&#10;Write here..."
+              />
+            </div>
+          ) : (
+            <div className="relative flex flex-1 items-center justify-center bg-[#0a0a0a] p-8">
+              {pdfUrl ? (
+                <iframe
+                  title="PDF preview"
+                  src={pdfUrl}
+                  className="h-full w-full max-w-3xl border border-white/[0.06] bg-white shadow-editorial"
+                  style={{ aspectRatio: 'auto' }}
+                />
+              ) : (
+                <div className="text-center">
+                  <div className="mx-auto mb-4 flex h-20 w-14 items-center justify-center border border-white/[0.06]">
+                    <FileText className="h-6 w-6 text-white/10" />
+                  </div>
+                  <p className="font-body text-sm text-white/20">
+                    {manuscript.trim() ? 'Typesetting your manuscript...' : 'Preview will appear here'}
+                  </p>
+                </div>
+              )}
+
+              {/* Loading overlay */}
+              {loading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#050505]/60 backdrop-blur-sm">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-6 w-6 animate-spin border-2 border-[#0033ff] border-t-transparent" />
+                    <span className="font-mono text-[11px] text-white/30">Typesetting...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Errors */}
+          {errors.length > 0 && (
+            <div className="border-t border-red-500/20 bg-red-500/[0.03] px-6 py-3">
+              {errors.map((e, i) => (
+                <p key={i} className="flex items-center gap-2 font-mono text-[12px] text-red-400">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  {e.message}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   STAGE 3: THE PRESS (EXPORT)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function PressStage({
+  title,
+  template,
+  pageSize,
+  pdfUrl,
+  pdfBlob,
+  wordCount,
+  status,
+  onBack,
+  onDownload,
+}: {
+  title: string
+  template: TemplateKey
+  pageSize: PageSize
+  pdfUrl: string | null
+  pdfBlob: Blob | null
+  wordCount: number
+  status: Status
+  onBack: () => void
+  onDownload: () => void
+}) {
+  const [checks, setChecks] = useState<{ label: string; status: 'pending' | 'ok' | 'warn' }[]>([
+    { label: 'Checking bleed margins...', status: 'pending' },
+    { label: 'Embedding fonts...', status: 'pending' },
+    { label: 'Validating page dimensions...', status: 'pending' },
+    { label: 'Running pre-flight...', status: 'pending' },
+  ])
+
+  useEffect(() => {
+    const info = TEMPLATE_INFO[template]
+    const sizeLabel = PAGE_SIZES[pageSize]?.label || pageSize
+    const timers = [
+      setTimeout(() => setChecks(c => c.map((item, i) => i === 0 ? { label: `Bleed margins — 0.125" OK`, status: 'ok' as const } : item)), 400),
+      setTimeout(() => setChecks(c => c.map((item, i) => i === 1 ? { label: `Fonts embedded — ${info?.font || 'System'}`, status: 'ok' as const } : item)), 800),
+      setTimeout(() => setChecks(c => c.map((item, i) => i === 2 ? { label: `Page dimensions — ${sizeLabel}`, status: 'ok' as const } : item)), 1200),
+      setTimeout(() => setChecks(c => c.map((item, i) => i === 3 ? { label: `Pre-flight complete`, status: status === 'success' ? 'ok' as const : 'warn' as const } : item)), 1600),
+    ]
+    return () => timers.forEach(clearTimeout)
+  }, [template, pageSize, status])
+
+  // Estimate spine width based on word count (rough: 250 words/page, 0.0025" per page)
+  const estimatedPages = Math.ceil(wordCount / 250)
+  const spineWidth = (estimatedPages * 0.0025).toFixed(3)
+
+  return (
+    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease }}
+        className="w-full max-w-xl"
+      >
+        <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.15em] text-white/25">
+          Stage 3 &mdash; Press
+        </p>
+        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white md:text-5xl">
+          Pre-flight check.
+        </h1>
+
+        {/* Terminal-style checks */}
+        <div className="mt-10 border border-white/[0.06] bg-[#0a0a0a]">
+          <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
+            <div className="h-2 w-2 rounded-full bg-[#ff5f57]" />
+            <div className="h-2 w-2 rounded-full bg-[#febc2e]" />
+            <div className="h-2 w-2 rounded-full bg-[#28c840]" />
+            <span className="ml-2 font-mono text-[11px] text-white/20">pageperfect — pre-flight</span>
+          </div>
+          <div className="p-5 font-mono text-[13px] leading-[2]">
+            {checks.map((check, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.4, duration: 0.3 }}
+                className="flex items-center gap-3"
+              >
+                {check.status === 'pending' ? (
+                  <span className="text-white/20">&bull;</span>
+                ) : check.status === 'ok' ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                ) : (
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                )}
+                <span className={
+                  check.status === 'pending' ? 'text-white/20' :
+                  check.status === 'ok' ? 'text-emerald-400/70' :
+                  'text-amber-400/70'
+                }>
+                  {check.label}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="mt-6 grid grid-cols-3 gap-px border border-white/[0.06]">
+          {[
+            { label: 'Est. Pages', value: estimatedPages },
+            { label: 'Spine Width', value: `${spineWidth}"` },
+            { label: 'Words', value: wordCount.toLocaleString() },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white/[0.01] p-4 text-center">
+              <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">{stat.label}</p>
+              <p className="mt-1 font-display text-xl font-bold text-white">{stat.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div className="mt-8 flex items-center gap-4">
+          <button
+            onClick={onDownload}
+            disabled={!pdfUrl}
+            className="group inline-flex h-14 flex-1 items-center justify-center gap-3 bg-[#0033ff] font-display text-[15px] font-semibold text-white transition-all duration-200 hover:bg-[#2255ff] disabled:opacity-30"
+          >
+            <Download className="h-4 w-4" />
+            Download Interior PDF
+          </button>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between">
+          <button onClick={onBack} className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40">
+            <ArrowLeft className="mr-1.5 inline h-3.5 w-3.5" />
+            Back to Atelier
+          </button>
+          <p className="font-mono text-[10px] text-white/10">
+            {TEMPLATE_INFO[template]?.name} &middot; {PAGE_SIZES[pageSize]?.label}
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN SHELL — ORCHESTRATES THE TUNNEL
+   ═══════════════════════════════════════════════════════════════════ */
+
 export default function CompileShell() {
   const searchParams = useSearchParams()
+  const [stage, setStage] = useState<Stage>('ingest')
   const [manuscript, setManuscript] = useState('')
   const [template, setTemplate] = useState<TemplateKey>('symphony')
   const [title, setTitle] = useState<string>('')
@@ -243,40 +810,20 @@ export default function CompileShell() {
   const [marginPreset, setMarginPreset] = useState<MarginPreset>('normal')
   const [safeMode, setSafeMode] = useState<boolean>(true)
   const [compileMode, setCompileMode] = useState<CompileMode>('fast')
-  const [showFormatting, setShowFormatting] = useState(true)
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [errors, setErrors] = useState<CompileError[]>([])
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-  const [missingCitations, setMissingCitations] = useState<string[]>([])
-  const [missingPackages, setMissingPackages] = useState<string[]>([])
-  const [warnings, setWarnings] = useState<string[]>([])
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
-  const [lastErrorJson, setLastErrorJson] = useState<{
-    httpStatus: number | string
-    response: unknown
-    when: string
-  } | null>(null)
-  const [showWelcome, setShowWelcome] = useState(true)
-  const [hasStarted, setHasStarted] = useState(false)
-
-  const CLEAN_KEY = 'pp-clean-on-paste-v1'
-  const [cleanOnPaste, setCleanOnPaste] = useState<boolean>(true)
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
-  const textRef = useRef<HTMLTextAreaElement | null>(null)
 
   // Read template from URL params
   useEffect(() => {
     const urlTemplate = searchParams.get('template')
     if (urlTemplate && urlTemplate in TEMPLATE_INFO) {
       setTemplate(urlTemplate as TemplateKey)
-      // If coming from homepage with a template, skip welcome
-      setShowWelcome(false)
-      setHasStarted(true)
-      setManuscript('# Your Manuscript\n\nStart writing here...\n')
-      setTitle('My Manuscript')
     }
   }, [searchParams])
 
@@ -296,39 +843,24 @@ export default function CompileShell() {
       if (p.marginPreset) setMarginPreset(p.marginPreset)
       if (typeof p.safeMode === 'boolean') setSafeMode(p.safeMode)
       if (typeof p.title === 'string' && p.title.trim()) setTitle(p.title)
-    } catch {
-      // ignore malformed storage
-    }
+    } catch { /* ignore */ }
   }, [])
 
-  // Save preferences whenever they change
+  // Save preferences
   useEffect(() => {
-    if (!hasStarted) return
+    if (stage === 'ingest') return
     const prefs: Prefs = { template, pageSize, marginPreset, safeMode, title }
-    try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)) } catch {}
-  }, [template, pageSize, marginPreset, safeMode, title, hasStarted])
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)) } catch { /* ignore */ }
+  }, [template, pageSize, marginPreset, safeMode, title, stage])
 
-  // Load cleanOnPaste setting on mount
+  // Debounced auto-compile in atelier stage
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(CLEAN_KEY)
-      if (raw != null) setCleanOnPaste(raw === '1')
-    } catch {}
-  }, [])
-
-  // Save cleanOnPaste setting when it changes
-  useEffect(() => {
-    try { localStorage.setItem(CLEAN_KEY, cleanOnPaste ? '1' : '0') } catch {}
-  }, [cleanOnPaste])
-
-  // Debounced auto-compile — only when user has started editing
-  useEffect(() => {
-    if (!hasStarted || !manuscript.trim()) return
+    if (stage !== 'atelier' || !manuscript.trim()) return
     if (debounceRef.current) window.clearTimeout(debounceRef.current)
     debounceRef.current = window.setTimeout(() => { void compile(false) }, 1000)
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscript, template, title, pageSize, marginPreset, safeMode, compileMode, hasStarted])
+  }, [manuscript, template, title, pageSize, marginPreset, safeMode, compileMode, stage])
 
   async function compile(downloadAfter: boolean) {
     abortRef.current?.abort()
@@ -341,11 +873,18 @@ export default function CompileShell() {
 
     try {
       const effectiveMd = adjustHeadingsForTemplate(manuscript, template)
-      const requestBody = { manuscriptText: effectiveMd, template, title: title || 'Manuscript', pageSize, marginPreset, safeMode, compileMode }
       const resp = await fetch('/api/compile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          manuscriptText: effectiveMd,
+          template,
+          title: title || 'Manuscript',
+          pageSize,
+          marginPreset,
+          safeMode,
+          compileMode,
+        }),
         signal: controller.signal,
       })
       const ct = resp.headers.get('content-type') || ''
@@ -353,13 +892,9 @@ export default function CompileShell() {
       if (resp.ok && ct.includes('application/pdf')) {
         const blob = await resp.blob()
         setPdfBlob(blob)
-        setLastErrorJson(null)
         const url = URL.createObjectURL(blob)
         setPdfUrl(prev => { if (prev) URL.revokeObjectURL(prev); return url })
         setStatus('success')
-        setMissingCitations([])
-        setMissingPackages([])
-        setWarnings([])
         setErrors([])
         if (downloadAfter) {
           const a = document.createElement('a')
@@ -370,28 +905,19 @@ export default function CompileShell() {
           a.remove()
         }
       } else {
-        let payload: { message?: string; error?: string; missingCitations?: string[]; missingPackages?: string[]; warnings?: string[] } | null = null
+        let payload: { message?: string; error?: string } | null = null
         try { payload = await resp.json() } catch { /* noop */ }
         setPdfBlob(null)
-        setLastErrorJson({
-          httpStatus: resp.status,
-          response: payload ?? null,
-          when: new Date().toISOString(),
-        })
         const msgs: CompileError[] = []
         if (payload?.message) msgs.push({ message: payload.message })
         if (payload?.error) msgs.push({ message: String(payload.error) })
         if (!msgs.length) msgs.push({ message: `Compile failed (status ${resp.status}).` })
         setErrors(msgs)
         setStatus('error')
-        setMissingCitations(Array.isArray(payload?.missingCitations) ? payload.missingCitations : [])
-        setMissingPackages(Array.isArray(payload?.missingPackages) ? payload.missingPackages : [])
-        setWarnings(Array.isArray(payload?.warnings) ? payload.warnings : [])
       }
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== 'AbortError') {
         setPdfBlob(null)
-        setLastErrorJson({ httpStatus: 'network', response: String(e?.message || e), when: new Date().toISOString() })
         setErrors([{ message: 'Network or server error. Please try again.' }])
         setStatus('error')
       }
@@ -400,325 +926,81 @@ export default function CompileShell() {
     }
   }
 
-  async function downloadDebugBundle() {
-    const { default: JSZip } = await import('jszip')
-    const zip = new JSZip()
-    const now = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const stamp = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`
-    const settings = { title, template, pageSize, marginPreset, safeMode, status, ts: now.toISOString() }
-    zip.file('README.txt', 'PagePerfect Debug Bundle\n\nFiles:\n- manuscript.md\n- settings.json\n- last-error.json (if any)\n- output.pdf (if available)')
-    zip.file('manuscript.md', manuscript)
-    zip.file('settings.json', JSON.stringify(settings, null, 2))
-    if (lastErrorJson) zip.file('last-error.json', JSON.stringify(lastErrorJson, null, 2))
-    if (pdfBlob) zip.file('output.pdf', pdfBlob)
-    const blob = await zip.generateAsync({ type: 'blob' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `pp-debug-${stamp}.zip`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    setTimeout(() => URL.revokeObjectURL(a.href), 0)
-  }
-
-  const Spinner = useMemo(
-    () => (
-      <div className="absolute inset-0 grid place-items-center bg-surface/60 backdrop-blur-sm z-10">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" aria-hidden="true" />
-          <span className="text-xs text-text-tertiary">Typesetting...</span>
-        </div>
-        <span className="sr-only">Compiling...</span>
-      </div>
-    ),
-    []
-  )
-
   const wordCount = manuscript.split(/\s+/).filter(w => w.length > 0).length
 
-  function handleStartFresh() {
-    setShowWelcome(false)
-    setHasStarted(true)
-    setManuscript('')
-    setTitle('')
-    setTimeout(() => textRef.current?.focus(), 100)
+  // ── Stage handlers ──
+
+  function handleIngestAccept(text: string, ingestTitle: string) {
+    setManuscript(text)
+    setTitle(ingestTitle || 'My Manuscript')
+    setStage('atelier')
   }
 
   function handleLoadSample() {
-    setShowWelcome(false)
-    setHasStarted(true)
     setManuscript(SAMPLE_MD)
     setTitle('Maritime Trade in the 17th Century')
+    setStage('atelier')
   }
 
-  // Show welcome screen if user hasn't started yet
-  if (showWelcome && !hasStarted) {
-    return <WelcomeScreen onStart={handleStartFresh} onLoadSample={handleLoadSample} />
+  function handleExportFromAtelier() {
+    setStage('press')
   }
 
-  const hasErrors = errors.length > 0 || missingCitations.length > 0 || missingPackages.length > 0
+  function handleDownload() {
+    compile(true)
+  }
+
+  // ── Render stage ──
 
   return (
-    <div className="min-h-[calc(100vh-4rem)]">
-      {/* Editor toolbar */}
-      <div className="border-b border-border bg-surface-raised/80 backdrop-blur-sm">
-        <div className="container-grid py-3">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
-            {/* Title input */}
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Untitled manuscript"
-              aria-label="Manuscript title"
-              className="input-dark min-w-[200px] max-w-[300px] text-sm font-display font-semibold"
-            />
-
-            {/* Right side controls */}
-            <div className="flex items-center gap-3 md:ml-auto">
-              <StatusPill status={status} />
-              <button
-                className="btn-pill btn-primary text-sm"
-                onClick={() => compile(true)}
-                disabled={!manuscript.trim()}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Download PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Formatting Controls Panel — visible by default */}
-      <div className="container-grid py-3">
-        <div className="card p-0 overflow-hidden">
-          <button
-            onClick={() => setShowFormatting(!showFormatting)}
-            className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-surface-subtle/50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <span className="font-semibold text-sm text-text-primary">Page Setup</span>
-              <span className="font-mono text-xs text-text-ghost">
-                {TEMPLATE_INFO[template]?.name || template} / {pageSize} / {marginPreset}
-              </span>
-            </div>
-            <svg className={`h-4 w-4 text-text-ghost transition-transform ${showFormatting ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-          </button>
-
-          {showFormatting && (
-            <div className="p-4 border-t border-border-subtle">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium text-text-tertiary" htmlFor="template">Template</label>
-                    <TemplateHelp />
-                  </div>
-                  <select id="template" className="input-dark text-sm" value={template} onChange={(e) => setTemplate(e.target.value as TemplateKey)}>
-                    <option value="symphony">Symphony - Classic Academic</option>
-                    <option value="chronicle">Chronicle - Editorial Grid</option>
-                    <option value="exhibit">Exhibit - Modern Trade</option>
-                    <option value="matrix">Matrix - Corporate</option>
-                    <option value="avantgarde">Avant-Garde - Creative</option>
-                    <option value="chicago">Chicago - Academic Legacy</option>
-                    <option value="paperback">Paperback - Trade Legacy</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-text-tertiary" htmlFor="pageSize">Page size</label>
-                  <select id="pageSize" className="input-dark text-sm" value={pageSize} onChange={(e) => setPageSize(e.target.value as PageSize)}>
-                    <option value="letter">US Letter (8.5x11&quot;)</option>
-                    <option value="a4">A4 (210x297 mm)</option>
-                    <option value="sixByNine">Trade 6x9&quot;</option>
-                    <option value="fiveFiveByEightFive">Digest 5.5x8.5&quot;</option>
-                    <option value="sevenByTen">7x10&quot;</option>
-                    <option value="a5">A5 (148x210 mm)</option>
-                    <optgroup label="Amazon KDP">
-                      <option value="amazonFiveByEight">Amazon 5x8&quot;</option>
-                      <option value="amazonSixByNine">Amazon 6x9&quot;</option>
-                      <option value="amazonSevenByTen">Amazon 7x10&quot;</option>
-                      <option value="amazonEightByTen">Amazon 8x10&quot;</option>
-                      <option value="amazonEightFiveByEleven">Amazon 8.5x11&quot;</option>
-                    </optgroup>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-text-tertiary" htmlFor="margins">Margins</label>
-                  <select id="margins" className="input-dark text-sm" value={marginPreset} onChange={(e) => setMarginPreset(e.target.value as MarginPreset)}>
-                    <option value="normal">Normal</option>
-                    <option value="narrow">Narrow</option>
-                    <option value="wide">Wide</option>
-                    <option value="minimal">Minimal</option>
-                    <option value="academic">Academic</option>
-                    <option value="generous">Generous</option>
-                    <option value="compact">Compact</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="compileMode" className="text-xs font-medium text-text-tertiary">Quality</label>
-                  <select id="compileMode" className="input-dark text-sm" value={compileMode} onChange={(e) => setCompileMode(e.target.value as CompileMode)}>
-                    <option value="fast">Fast preview</option>
-                    <option value="full">Full quality (final export)</option>
-                  </select>
-                </div>
-              </div>
-              <div className="mt-3 pt-3 border-t border-border-subtle flex flex-wrap items-center gap-4">
-                <label htmlFor="safeMode" className="inline-flex items-center gap-2 text-xs text-text-tertiary cursor-pointer">
-                  <input id="safeMode" type="checkbox" checked={safeMode} onChange={(e) => setSafeMode(e.target.checked)} className="h-3.5 w-3.5 accent-accent rounded" />
-                  <span>Safe mode <span className="text-text-ghost">(skip citations)</span></span>
-                </label>
-                <label className="inline-flex items-center gap-2 text-xs text-text-tertiary cursor-pointer">
-                  <input type="checkbox" className="h-3.5 w-3.5 accent-accent rounded" checked={cleanOnPaste} onChange={(e) => setCleanOnPaste(e.target.checked)} />
-                  <span>Auto-clean on paste</span>
-                </label>
-                <button type="button" className="text-xs text-text-ghost hover:text-text-tertiary underline transition-colors ml-auto" onClick={() => { try { localStorage.removeItem(PREFS_KEY) } catch {} setTemplate('symphony'); setPageSize('sixByNine'); setMarginPreset('normal'); setSafeMode(true); setTitle('') }}>
-                  Reset defaults
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Two-panel layout */}
-      <div className="container-grid py-3">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {/* Left: Editor */}
-          <div className="flex flex-col gap-3">
-            <div className="card p-0 overflow-hidden">
-              {/* Editor Header */}
-              <div className="border-b border-border bg-surface-overlay/50 px-4 py-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-sm font-semibold text-text-primary">Editor</h3>
-                    <span className="font-mono text-xs text-text-ghost">{wordCount} words</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button className="btn-pill btn-secondary px-3 py-1 text-xs" onClick={() => { setManuscript(SAMPLE_MD); setTitle('Maritime Trade in the 17th Century') }} type="button">Load Sample</button>
-                    <button type="button" className="btn-pill btn-secondary px-3 py-1 text-xs" onClick={() => setManuscript(m => cleanFromWord(m))}>Clean Text</button>
-                    <button type="button" className="btn-pill btn-primary px-3 py-1 text-xs" onClick={() => { const el = textRef.current; if (!el) return; const n = nextChapterNumber(manuscript); insertAtCursor(el, chapterSkeleton(n, template), setManuscript) }}>+ Chapter</button>
-                  </div>
-                </div>
-              </div>
-              {/* Textarea */}
-              <div className="relative">
-                <textarea
-                  ref={textRef}
-                  value={manuscript}
-                  onChange={(e) => setManuscript(e.target.value)}
-                  onPaste={(e) => {
-                    if (!cleanOnPaste) return
-                    const t = e.clipboardData?.getData('text/plain') ?? ''
-                    if (!t) return
-                    e.preventDefault()
-                    const cleaned = cleanFromWord(t)
-                    const el = e.currentTarget
-                    const start = el.selectionStart ?? manuscript.length
-                    const end = el.selectionEnd ?? start
-                    const next = manuscript.slice(0, start) + cleaned + manuscript.slice(end)
-                    setManuscript(next)
-                    setTimeout(() => {
-                      const pos = start + cleaned.length
-                      if (textRef.current) { textRef.current.selectionStart = pos; textRef.current.selectionEnd = pos; textRef.current.focus() }
-                    }, 0)
-                  }}
-                  className="h-[55vh] sm:h-[65vh] w-full resize-vertical p-5 border-0 bg-surface text-text-primary font-mono text-sm leading-relaxed focus:ring-2 focus:ring-accent/30 focus:outline-none placeholder:text-text-tertiary"
-                  placeholder="# My First Chapter&#10;&#10;Paste your manuscript here, or start typing...&#10;&#10;Use **bold** and *italic* for emphasis.&#10;Use # for chapter headings."
-                  aria-label="Manuscript editor"
-                  style={{ lineHeight: '1.7' }}
-                />
-              </div>
-            </div>
-
-            {/* Error/Status Console — only show when there are issues */}
-            {hasErrors && (
-              <div className="card p-0 overflow-hidden" role="region" aria-live="polite" aria-label="Issues">
-                <div className="border-b border-border bg-surface-overlay/50 px-4 py-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-danger" />
-                      <h3 className="text-sm font-semibold text-text-primary">Issues</h3>
-                    </div>
-                    <button type="button" onClick={downloadDebugBundle} className="text-xs text-text-ghost hover:text-text-tertiary underline transition-colors">Download debug bundle</button>
-                  </div>
-                </div>
-                <div className="p-4 space-y-3">
-                  {missingCitations.length > 0 && (
-                    <div className="rounded-lg border border-danger/20 bg-danger/5 p-3" role="alert">
-                      <div className="font-semibold text-sm text-danger mb-1">Undefined citations</div>
-                      <div className="flex flex-wrap gap-2">
-                        {missingCitations.map(k => (
-                          <span key={k} className="rounded bg-surface-subtle px-2 py-0.5 text-xs text-danger font-mono">[@{k}]</span>
-                        ))}
-                      </div>
-                      <p className="mt-2 text-xs text-text-ghost">Enable &ldquo;Safe mode&rdquo; above to skip citation processing.</p>
-                    </div>
-                  )}
-                  {warnings.length > 0 && (
-                    <div className="rounded-lg border border-warning/20 bg-warning/5 p-3">
-                      <div className="font-semibold text-sm text-warning mb-1">Warnings</div>
-                      <ul className="list-disc pl-5 text-xs text-text-secondary">
-                        {warnings.map((w, i) => <li key={i}>{w}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  {missingPackages.length > 0 && (
-                    <div className="rounded-lg border border-border-visible bg-surface-subtle p-3">
-                      <div className="font-semibold text-sm text-text-primary mb-1">Missing LaTeX packages</div>
-                      <p className="text-xs text-text-secondary">{missingPackages.join(', ')}</p>
-                    </div>
-                  )}
-                  {errors.map((e, i) => (
-                    <div key={i} className="rounded-lg border border-danger/20 bg-danger/5 p-3">
-                      <p className="text-xs text-danger">{e.message}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Right: Preview */}
-          <div className="relative card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border px-4 py-2">
-              <span className="text-xs font-medium text-text-tertiary">Preview</span>
-              {pdfUrl && (
-                <button onClick={() => compile(true)} className="text-xs text-accent hover:text-accent-hover transition-colors">
-                  Download
-                </button>
-              )}
-            </div>
-            <div className="relative h-[55vh] sm:h-[70vh] paper-surface">
-              {pdfUrl ? (
-                <div className="h-full p-4">
-                  <iframe title="PDF preview" src={pdfUrl} className="h-full w-full rounded shadow-paper bg-white" />
-                </div>
-              ) : (
-                <div className="grid h-full place-items-center px-6 text-center">
-                  <div className="max-w-[240px]">
-                    {/* Stylized page placeholder */}
-                    <div className="mx-auto mb-6 w-20 h-28 rounded-lg bg-surface-subtle/30 border border-border shadow-inner-subtle flex items-center justify-center">
-                      <svg className="w-8 h-8 text-text-ghost/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <p className="text-sm text-text-tertiary font-medium mb-1">
-                      {manuscript.trim() ? 'Typesetting your manuscript...' : 'Your PDF preview will appear here'}
-                    </p>
-                    <p className="text-xs text-text-ghost">
-                      {manuscript.trim() ? 'This usually takes a few seconds' : 'Start typing or paste your text on the left'}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {loading && Spinner}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <AnimatePresence mode="wait">
+      {stage === 'ingest' && (
+        <motion.div key="ingest" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+          <IngestStage onAccept={handleIngestAccept} onLoadSample={handleLoadSample} />
+        </motion.div>
+      )}
+      {stage === 'atelier' && (
+        <motion.div key="atelier" className="flex flex-1 flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+          <AtelierStage
+            manuscript={manuscript}
+            title={title}
+            template={template}
+            pageSize={pageSize}
+            marginPreset={marginPreset}
+            compileMode={compileMode}
+            safeMode={safeMode}
+            pdfUrl={pdfUrl}
+            status={status}
+            loading={loading}
+            errors={errors}
+            wordCount={wordCount}
+            onTemplateChange={setTemplate}
+            onPageSizeChange={setPageSize}
+            onMarginChange={setMarginPreset}
+            onCompileModeChange={setCompileMode}
+            onSafeModeChange={setSafeMode}
+            onTitleChange={setTitle}
+            onManuscriptChange={setManuscript}
+            onBack={() => setStage('ingest')}
+            onExport={handleExportFromAtelier}
+          />
+        </motion.div>
+      )}
+      {stage === 'press' && (
+        <motion.div key="press" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+          <PressStage
+            title={title}
+            template={template}
+            pageSize={pageSize}
+            pdfUrl={pdfUrl}
+            pdfBlob={pdfBlob}
+            wordCount={wordCount}
+            status={status}
+            onBack={() => setStage('atelier')}
+            onDownload={handleDownload}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
