@@ -3,42 +3,41 @@
 @tailwind utilities;
 
 /* ========================================================================
-   PagePerfect Design System — Cinematic Utility
-   LAW 1: Everything has mass (Physics)
-   LAW 2: The void has texture (Atmosphere)
-   LAW 3: Typography is the image (Structure)
+   PagePerfect Design System — Editorial / Atelier
+   PRINCIPLE 1: Typography IS the design
+   PRINCIPLE 2: Restraint is confidence
+   PRINCIPLE 3: The product makes books; the site IS a book
    ======================================================================== */
 
 /* ── Dark theme (default) ───────────────────────────────────────────
-   Apple-style semantic tokens: components reference these variables,
-   [data-theme="light"] overrides them → automatic light/dark sections.
+   Rich black — not void, but heavy cardstock.
    ─────────────────────────────────────────────────────────────────── */
 :root {
-  /* Surfaces */
-  --void: #050507;
-  --void-rgb: 5 5 7;
-  --surface: #0f0f16;
-  --surface-raised: #14141e;
-  --surface-overlay: #1a1a24;
-  --surface-subtle: #22222e;
-  --surface-glass: rgba(255, 255, 255, 0.03);
+  /* Surfaces — rich, not dead */
+  --void: #050505;
+  --void-rgb: 5 5 5;
+  --surface: #0a0a0a;
+  --surface-raised: #111111;
+  --surface-overlay: #1a1a1a;
+  --surface-subtle: #222222;
+  --surface-glass: rgba(255, 255, 255, 0.02);
 
-  /* Text hierarchy */
-  --text-primary: #f0f0f5;
-  --text-secondary: #a0a0b8;
-  --text-tertiary: #7a7a8e;
-  --text-ghost: #5a5a6e;
+  /* Text hierarchy — high contrast, warm whites */
+  --text-primary: #f2f2f0;
+  --text-secondary: #a8a8a0;
+  --text-tertiary: #6a6a64;
+  --text-ghost: #3a3a36;
 
-  /* Accent — RGB triplets enable opacity modifiers (bg-accent/50) */
-  --accent: #3b82f6;
-  --accent-hover: #60a5fa;
-  --accent-muted: #1e3a5f;
-  --accent-rgb: 59 130 246;
-  --accent-hover-rgb: 96 165 250;
-  --accent-glow: rgba(59, 130, 246, 0.15);
-  --accent-soft: rgba(59, 130, 246, 0.08);
+  /* Accent — Registration Blue. Solid. Sharp. Never glowing. */
+  --accent: #0033ff;
+  --accent-hover: #2255ff;
+  --accent-muted: #0a1a40;
+  --accent-rgb: 0 51 255;
+  --accent-hover-rgb: 34 85 255;
+  --accent-glow: rgba(0, 51, 255, 0.12);
+  --accent-soft: rgba(0, 51, 255, 0.06);
 
-  /* Status — RGB triplets */
+  /* Status */
   --success-rgb: 52 211 153;
   --success-muted: rgba(52, 211, 153, 0.12);
   --warning-rgb: 251 191 36;
@@ -46,49 +45,44 @@
   --danger-rgb: 248 113 113;
   --danger-muted: rgba(248, 113, 113, 0.12);
 
-  /* Borders */
+  /* Borders — hairline, structural */
   --border: rgba(255, 255, 255, 0.08);
   --border-subtle: rgba(255, 255, 255, 0.04);
   --border-visible: rgba(255, 255, 255, 0.14);
-  --border-accent: rgba(59, 130, 246, 0.25);
+  --border-accent: rgba(0, 51, 255, 0.25);
 
-  /* Foreground triplet — the Apple trick for opacity patterns.
-     Replaces hardcoded text-white/40 with text-fg/40 */
   --fg: 255 255 255;
 
-  /* Shadows — dark mode uses luminance for elevation, shadows are heavy */
+  /* Shadows — elevation through darkness, not color */
   --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.2);
   --shadow-card-hover: 0 2px 8px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3);
   --shadow-elevated: 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
 }
 
-/* ── Light theme ───────────────────────────────────────────────────
-   Applied via data-theme="light" on any ancestor element.
-   Warm paper tone (#f7f6f3) — echoes the color of quality book stock.
-   ─────────────────────────────────────────────────────────────────── */
+/* ── Light theme ─────────────────────────────────────────────────── */
 [data-theme="light"] {
   color-scheme: light;
 
-  --void: #f7f6f3;
-  --void-rgb: 247 246 243;
-  --surface: #f7f6f3;
+  --void: #f5f5f0;
+  --void-rgb: 245 245 240;
+  --surface: #f5f5f0;
   --surface-raised: #ffffff;
-  --surface-overlay: #efeee9;
-  --surface-subtle: #e5e4df;
+  --surface-overlay: #eae8e1;
+  --surface-subtle: #e0dfd8;
   --surface-glass: rgba(0, 0, 0, 0.02);
 
-  --text-primary: #1a1a22;
-  --text-secondary: #5c5c6b;
-  --text-tertiary: #9898a5;
-  --text-ghost: #c0c0c8;
+  --text-primary: #1a1a1a;
+  --text-secondary: #5c5c5c;
+  --text-tertiary: #999999;
+  --text-ghost: #c0c0c0;
 
-  --accent: #2563eb;
-  --accent-hover: #3b82f6;
-  --accent-muted: #dbeafe;
-  --accent-rgb: 37 99 235;
-  --accent-hover-rgb: 59 130 246;
-  --accent-glow: rgba(37, 99, 235, 0.10);
-  --accent-soft: rgba(37, 99, 235, 0.06);
+  --accent: #0033ff;
+  --accent-hover: #0022cc;
+  --accent-muted: #dde4ff;
+  --accent-rgb: 0 51 255;
+  --accent-hover-rgb: 0 34 204;
+  --accent-glow: rgba(0, 51, 255, 0.08);
+  --accent-soft: rgba(0, 51, 255, 0.04);
 
   --success-rgb: 22 163 74;
   --success-muted: rgba(22, 163, 74, 0.10);
@@ -100,11 +94,10 @@
   --border: rgba(0, 0, 0, 0.08);
   --border-subtle: rgba(0, 0, 0, 0.04);
   --border-visible: rgba(0, 0, 0, 0.12);
-  --border-accent: rgba(37, 99, 235, 0.20);
+  --border-accent: rgba(0, 51, 255, 0.20);
 
   --fg: 0 0 0;
 
-  /* Light mode: elevation via drop shadows (Apple principle) */
   --shadow-card: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
   --shadow-card-hover: 0 2px 6px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08);
   --shadow-elevated: 0 4px 12px rgba(0,0,0,0.06), 0 16px 40px rgba(0,0,0,0.1);
@@ -120,19 +113,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ===== Scrollbar: Hidden — this is an app, not a page ===== */
+/* Scrollbar: thin, unobtrusive */
 html {
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
-html::-webkit-scrollbar {
-  display: none;
-}
+html::-webkit-scrollbar { width: 6px; }
+html::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
 
-/* ===== Selection — electric blue ===== */
+/* ===== Selection — registration blue ===== */
 ::selection {
-  background: #3b82f6;
+  background: #0033ff;
   color: white;
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
 }
 
 /* ===== Layout ===== */
@@ -146,30 +139,25 @@ html::-webkit-scrollbar {
 .btn-primary {
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
 }
 .btn-primary:hover {
   background: var(--accent-hover);
-  box-shadow: 0 6px 24px rgba(59, 130, 246, 0.35);
   transform: translateY(-1px);
 }
 .btn-primary:active { transform: translateY(0); }
 .btn-primary:focus-visible {
   outline: 2px solid var(--accent-hover);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
 }
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
 }
 .btn-secondary {
   background: var(--surface-overlay);
   color: var(--text-primary);
   border: 1px solid var(--border-visible);
-  box-shadow: none;
 }
 .btn-secondary:hover {
   background: var(--surface-subtle);
@@ -182,7 +170,6 @@ html::-webkit-scrollbar {
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
-  box-shadow: none;
 }
 .btn-ghost:hover {
   color: var(--text-primary);
@@ -193,103 +180,64 @@ html::-webkit-scrollbar {
   outline-offset: 2px;
 }
 
-/* ===== Glass Pill — the CTA that breathes ===== */
-.glass-pill {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 9999px;
-  transition: all 0.4s cubic-bezier(0.25, 0.4, 0.25, 1);
-}
-.glass-pill:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(59, 130, 246, 0.3);
-  box-shadow:
-    0 0 40px rgba(59, 130, 246, 0.25),
-    0 0 80px -20px rgba(59, 130, 246, 0.15);
-}
-
 /* ===== Cards ===== */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 1rem;
   box-shadow: var(--shadow-card);
 }
-.section-dark { background: var(--void); color: var(--text-primary); }
 
-/* ===== LAW 3: Typography — Inter Tight, tracking-tighter, leading-[0.9] ===== */
+/* ===== Typography — Editorial ===== */
+/* Headlines: massive, tight, solid white. Like book covers. */
 .h1 { @apply font-display text-h1 tracking-tighter; color: var(--text-primary); line-height: 0.9; }
 .h2 { @apply font-display text-h2 tracking-tighter; color: var(--text-primary); line-height: 0.9; }
 .h3 { @apply font-display text-h3 tracking-tighter; color: var(--text-primary); line-height: 0.95; }
-.p  { @apply font-body text-base leading-7; color: var(--text-secondary); }
-.small-mono { @apply font-mono text-sm; color: var(--text-tertiary); }
 
-/* ===== Gradient text — subtle white to silver ===== */
-.gradient-text {
-  background: linear-gradient(135deg, #f0f0f5 0%, rgba(255, 255, 255, 0.5) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Body copy: Serif. It should look like a novel, not a dashboard. */
+.p  { @apply font-body text-lg leading-8; color: var(--text-secondary); }
+
+/* Monospace labels: catalog card metadata only */
+.label-mono {
+  @apply font-mono text-[11px] uppercase tracking-[0.15em];
+  color: var(--text-tertiary);
 }
 
-/* ===== Gradient accent text — electric blue to purple ===== */
-.gradient-accent-text {
-  background: linear-gradient(135deg, #38bdf8, #3b82f6 40%, #a855f7 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Figure captions — textbook style */
+.caption {
+  @apply font-mono text-[11px] uppercase tracking-[0.12em];
+  color: var(--text-ghost);
 }
 
-/* ===== Hero gradient text — hotter, wider spectrum ===== */
-.gradient-hero-text {
-  background: linear-gradient(135deg, #67e8f9, #60a5fa 30%, #c084fc 65%, #f472b6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* ===== Crop marks — print registration aesthetic ===== */
+.crop-mark {
+  position: relative;
+}
+.crop-mark::before,
+.crop-mark::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.12);
+}
+/* Top-left corner */
+.crop-mark-tl::before {
+  top: -1px; left: -12px;
+  width: 12px; height: 1px;
+}
+.crop-mark-tl::after {
+  top: -12px; left: -1px;
+  width: 1px; height: 12px;
 }
 
-/* ===== Metallic text — white to transparent white, like backlit film ===== */
-.gradient-metallic-text {
-  background: linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0.4));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* ===== Divider — simple hairline ===== */
+.divider {
+  height: 1px;
+  background: var(--border);
 }
 
-/* ===== GLOW TEXT — LAW 2: backlit film typography ===== */
-.glow-text {
-  text-shadow:
-    0 0 20px rgba(255, 255, 255, 0.15),
-    0 0 40px rgba(255, 255, 255, 0.05),
-    0 0 80px rgba(255, 255, 255, 0.02);
-}
-
-/* ===== TEXT GLOW — LAW 2: H1 white text-shadow halo ===== */
-.text-glow {
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-}
-
-/* ===== Text shimmer — light passing across ===== */
-.text-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.6) 0%,
-    rgba(255, 255, 255, 1) 40%,
-    rgba(255, 255, 255, 1) 60%,
-    rgba(255, 255, 255, 0.6) 100%
-  );
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: textShimmer 4s linear infinite;
-}
-
-@keyframes textShimmer {
-  0% { background-position: -100% 0; }
-  100% { background-position: 200% 0; }
+/* ===== Colophon — library catalog card strip ===== */
+.colophon {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 /* ===== Form controls (dark) ===== */
@@ -298,8 +246,8 @@ html::-webkit-scrollbar {
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
-  color: #f0f0f5;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  color: #f2f2f0;
+  transition: border-color 0.15s ease;
 }
 .input-dark:hover {
   border-color: rgba(255, 255, 255, 0.22);
@@ -307,12 +255,11 @@ html::-webkit-scrollbar {
 .input-dark:focus {
   border-color: var(--accent);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
-.input-dark::placeholder { color: rgba(255, 255, 255, 0.25); }
+.input-dark::placeholder { color: rgba(255, 255, 255, 0.2); }
 select.input-dark {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a7a8e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236a6a64' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   padding-right: 2rem;
@@ -321,111 +268,9 @@ select.input-dark {
 /* ===== Paper preview surface ===== */
 .paper-surface {
   background: var(--surface);
-  background-image: radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.04) 0%, transparent 60%);
 }
 
-/* ===== Divider ===== */
-.divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, var(--border) 20%, var(--border) 80%, transparent 100%);
-}
-
-/* ===== Glass cards ===== */
-.glass-card {
-  background: rgba(15, 15, 22, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 1.25rem;
-}
-.glass-card-accent {
-  background: rgba(59, 130, 246, 0.04);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(59, 130, 246, 0.15);
-  border-radius: 1.25rem;
-}
-
-/* ===== Dot grids — visible texture that fades to void ===== */
-.bg-dot-grid {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(to bottom, black 30%, transparent 80%);
-  -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 80%);
-}
-.bg-dot-grid-subtle {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 24px 24px;
-  mask-image: linear-gradient(to bottom, black 20%, transparent 70%);
-  -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 70%);
-}
-
-/* ===== Animated gradient border ===== */
-@property --angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-.gradient-border {
-  position: relative;
-  border: 1px solid transparent;
-  background-clip: padding-box;
-}
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background: conic-gradient(from var(--angle), transparent 60%, rgba(59, 130, 246, 0.3), transparent 80%);
-  z-index: -1;
-  animation: rotateBorder 6s linear infinite;
-}
-@keyframes rotateBorder {
-  to { --angle: 360deg; }
-}
-
-/* ===== Section glow — reusable background radials ===== */
-.section-glow-top {
-  position: relative;
-}
-.section-glow-top::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
-}
-
-/* ===== Section separator ===== */
-.section-separator {
-  position: relative;
-}
-.section-separator::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 50%;
-  transform: translateX(-50%);
-  width: 60%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.15), rgba(168, 85, 247, 0.1), transparent);
-}
-
-/* ===== Accessibility ===== */
-.skip-link {
-  position: absolute; left: -9999px; top: 0; z-index: 1000;
-  background: var(--accent); color: #fff;
-  padding: 0.5rem 0.75rem; border-radius: 0.5rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,.3);
-}
-.skip-link:focus { left: 1rem; top: 1rem; outline: 2px solid var(--accent-hover); }
-*:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-/* ========================================================================
-   LAW 2: SVG NOISE OVERLAY — the atmosphere, non-negotiable
-   Fixed z-50 pointer-events-none noise layer (opacity: 0.04)
-   ======================================================================== */
+/* ===== SVG NOISE OVERLAY — subtle paper grain ===== */
 .bg-noise {
   position: fixed;
   top: 0;
@@ -434,72 +279,21 @@ select.input-dark {
   height: 100vh;
   pointer-events: none;
   z-index: 50;
-  opacity: 0.04;
+  opacity: 0.03;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* ===== LAW 2: Radial Gradient Glow — light bleed behind headlines ===== */
-.headline-glow {
-  position: relative;
+/* ===== Accessibility ===== */
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 1000;
+  background: var(--accent); color: #fff;
+  padding: 0.5rem 0.75rem; border-radius: 0.5rem;
 }
-.headline-glow::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 120%;
-  height: 200%;
-  background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.08) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: -1;
-}
+.skip-link:focus { left: 1rem; top: 1rem; outline: 2px solid var(--accent-hover); }
+*:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* ===== 3D Perspective ===== */
-.perspective-1000 { perspective: 1000px; }
-.perspective-1200 { perspective: 1200px; }
-.preserve-3d { transform-style: preserve-3d; }
-
-/* ===== Editorial image treatment ===== */
-.img-editorial {
-  @apply rounded-lg border border-white/10 shadow-2xl transition-all duration-500 hover:scale-105 hover:shadow-glow-blue;
-  transform: perspective(1000px) rotateX(2deg);
-}
-
-/* ===== LAW 1: Scroll velocity skew simulation ===== */
-.skew-on-scroll {
-  will-change: transform;
-  transition: transform 0.15s ease-out;
-}
-
-/* ===== 3D Book — pure CSS, no images ===== */
-.book-3d {
-  transform-style: preserve-3d;
-  transform: rotateY(-25deg) rotateX(5deg);
-}
-.book-3d-cover {
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-}
-.book-3d-spine {
-  transform-origin: left center;
-  transform: rotateY(90deg);
-}
-.book-3d-pages {
-  transform: translateZ(-2px);
-}
-
-/* ===== Horizontal snap scroll — LAW 1 ===== */
-.snap-x-mandatory {
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-}
-.snap-center {
-  scroll-snap-align: center;
-}
-
-/* ===== Reduced motion — accessibility ===== */
+/* ===== Reduced motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
