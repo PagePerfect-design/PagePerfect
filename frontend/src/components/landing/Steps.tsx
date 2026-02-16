@@ -16,6 +16,8 @@ const STEPS = [
     desc: 'Drop in Markdown or paste from Word. YAML frontmatter sets title, author, and metadata. Smart quotes, em-dashes, and encoding artifacts are cleaned automatically.',
     tags: ['Markdown', '.docx paste', 'YAML frontmatter', 'Auto-format'],
     detail: 'Real-time preview updates as you type. No export steps, no file converters — just paste and write.',
+    accent: 'rgba(59,130,246,0.06)',
+    accentBorder: 'rgba(59,130,246,0.12)',
   },
   {
     num: '02',
@@ -23,6 +25,8 @@ const STEPS = [
     desc: 'Eight typographic systems — from academic Chicago to experimental Avantgarde. Each uses Müller-Brockmann grid principles with calculated baselines and golden-ratio heading scales.',
     tags: ['8 templates', 'Baseline grid', 'Golden ratio', '7 margin presets', '11 page sizes'],
     detail: 'Not themes — mathematical typographic systems where every line locks to a baseline grid.',
+    accent: 'rgba(99,102,241,0.06)',
+    accentBorder: 'rgba(99,102,241,0.12)',
   },
   {
     num: '03',
@@ -30,10 +34,12 @@ const STEPS = [
     desc: 'Professional output with embedded fonts, correct bleed, and proper trim. Upload directly to Amazon KDP, IngramSpark, Lulu, or any print-on-demand service.',
     tags: ['Embedded fonts', 'Correct bleed', 'Citations & bib', 'KDP · Ingram · Lulu'],
     detail: 'Compiles in seconds via XeLaTeX. Download, upload to your distributor — done.',
+    accent: 'rgba(16,185,129,0.06)',
+    accentBorder: 'rgba(16,185,129,0.12)',
   },
 ]
 
-// ── Visual Mocks ───────────────────────────────────────────────────
+// ── Visual Mocks ──────────────────────────────────────────────────
 
 /* Step 1: Markdown editor with syntax highlighting */
 function EditorVisual() {
@@ -276,6 +282,12 @@ function ExportVisual() {
 const VISUALS = [EditorVisual, TemplateVisual, ExportVisual]
 
 // ── Step Card ──────────────────────────────────────────────────────
+const STEP_ACCENTS = [
+  'rgba(59,130,246,0.15)', // blue
+  'rgba(99,102,241,0.15)', // indigo
+  'rgba(16,185,129,0.15)', // emerald
+]
+
 function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }) {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
@@ -289,7 +301,13 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
       animate={inView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
       transition={{ duration: 0.8, ease }}
     >
-      <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.015] backdrop-blur-sm transition-all duration-500 hover:border-white/[0.1] hover:bg-white/[0.025]">
+      <div
+        className="group relative overflow-hidden rounded-2xl border border-white/[0.06] transition-all duration-500 hover:border-white/[0.12]"
+        style={{
+          background: `linear-gradient(135deg, ${step.accent} 0%, rgba(15,15,22,0.8) 50%, rgba(10,10,16,1) 100%)`,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.2)',
+        }}
+      >
         {/* Hover glow */}
         <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
           <div className="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-accent/[0.06] blur-3xl" />
@@ -298,10 +316,23 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
         <div className={`relative grid grid-cols-1 lg:grid-cols-2 lg:min-h-[340px] ${reversed ? 'lg:[grid-template-columns:55%_45%]' : 'lg:[grid-template-columns:45%_55%]'}`}>
           {/* ── Text column ── */}
           <div className={`flex flex-col justify-center p-7 md:p-8 lg:p-10 ${reversed ? 'lg:order-2' : ''}`}>
-            {/* Step number + title */}
+            {/* Step number + rule — animated scale entrance */}
             <div className="mb-3 flex items-end gap-4">
-              <span className="font-display text-[3.5rem] font-bold leading-none tracking-tighter text-white/[0.07] md:text-[4.5rem]">{step.num}</span>
-              <div className="mb-1.5 h-px flex-1 bg-gradient-to-r from-accent/15 to-transparent" />
+              <motion.span
+                initial={{ opacity: 0, scale: 0.3 }}
+                animate={inView ? { opacity: 1, scale: 1 } : {}}
+                transition={{ ...spring, delay: 0.1 }}
+                className="font-display text-[3.5rem] font-bold leading-none tracking-tighter md:text-[4.5rem]"
+                style={{ color: STEP_ACCENTS[index] }}
+              >
+                {step.num}
+              </motion.span>
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={inView ? { scaleX: 1 } : {}}
+                transition={{ ...spring, delay: 0.25 }}
+                className="mb-1.5 h-px flex-1 origin-left bg-gradient-to-r from-accent/15 to-transparent"
+              />
             </div>
 
             {/* Title */}
@@ -310,7 +341,7 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
             </h3>
 
             {/* Description */}
-            <p className="mt-3 max-w-md text-[13px] leading-relaxed text-white/40 md:text-sm">
+            <p className="mt-3 max-w-md text-[13px] leading-relaxed text-white/50 md:text-sm">
               {step.desc}
             </p>
 
@@ -327,7 +358,7 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={inView ? { opacity: 1, scale: 1 } : {}}
                   transition={{ ...spring, delay: 0.4 + i * 0.06 }}
-                  className="rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 font-mono text-[10px] text-white/35 transition-colors duration-300 group-hover:border-accent/15 group-hover:text-white/50"
+                  className="rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 font-mono text-[10px] text-white/40 transition-colors duration-300 group-hover:border-accent/15 group-hover:text-white/60"
                 >
                   {tag}
                 </motion.span>
@@ -357,45 +388,54 @@ function StepCard({ step, index }: { step: typeof STEPS[number]; index: number }
   )
 }
 
-// ── Connector between cards ────────────────────────────────────────
+// ── Connector between cards — glows when scrolled into view ─────────
 function Connector() {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-20px' })
+
   return (
-    <div className="flex justify-center py-1">
-      <div className="flex h-10 flex-col items-center justify-center">
-        <div className="h-3.5 w-px bg-gradient-to-b from-accent/10 to-accent/5" />
-        <div className="h-1 w-1 rounded-full bg-accent/15" />
-        <div className="h-3.5 w-px bg-gradient-to-b from-accent/5 to-transparent" />
-      </div>
+    <div ref={ref} className="flex justify-center py-1">
+      <motion.div
+        initial={{ opacity: 0, scaleY: 0 }}
+        animate={inView ? { opacity: 1, scaleY: 1 } : {}}
+        transition={{ ...spring, delay: 0.1 }}
+        className="flex h-10 origin-top flex-col items-center justify-center"
+      >
+        <div className="h-3.5 w-px bg-gradient-to-b from-accent/20 to-accent/10" />
+        <div className="relative h-1.5 w-1.5">
+          {inView && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: [0, 2, 1], opacity: [0, 0.6, 0.3] }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="absolute inset-0 rounded-full bg-accent/40 blur-sm"
+            />
+          )}
+          <div className="relative h-1.5 w-1.5 rounded-full bg-accent/25" />
+        </div>
+        <div className="h-3.5 w-px bg-gradient-to-b from-accent/10 to-transparent" />
+      </motion.div>
     </div>
   )
 }
 
-// ── Main section ───────────────────────────────────────────────────
+// ── Main section ──────────────────────────────────────────────────
 export function HowItWorks() {
   const headerRef = useRef(null)
   const headerInView = useInView(headerRef, { once: true, margin: '-60px' })
 
   return (
-    <section id="how-it-works" className="section-separator relative bg-surface py-32 md:py-44">
-      {/* === ATMOSPHERIC DEPTH LAYERS === */}
-
-      {/* Layer 1: Background image */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.03]">
-        <Image src="/images/book-tunnel.webp" alt="" fill className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-surface via-surface/80 to-surface" />
+    <section id="how-it-works" className="section-separator relative py-32 md:py-44">
+      {/* Atmospheric layers */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
+        <Image src="/images/bookshelf-panorama.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#050507] via-transparent to-[#050507]" />
       </div>
 
-      {/* Layer 2: Primary glow orb */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-[30%] h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.05)_0%,transparent_70%)]" />
+        <div className="absolute left-1/2 top-[30%] h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(59,130,246,0.04)_0%,transparent_70%)]" />
       </div>
 
-      {/* Layer 3: Secondary glow orb */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute bottom-[15%] left-[10%] h-[300px] w-[300px] rounded-full bg-[radial-gradient(ellipse,rgba(168,85,247,0.035)_0%,transparent_70%)]" />
-      </div>
-
-      {/* Layer 4: Dot grid */}
       <div className="pointer-events-none absolute inset-0 bg-dot-grid-subtle" />
 
       {/* === CONTENT === */}

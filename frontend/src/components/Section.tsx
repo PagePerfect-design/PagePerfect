@@ -6,8 +6,16 @@ export default function Section({ children, variant='default', className='', id 
   const bg: Record<string, string> = {
     default: '',
     raised: 'bg-surface-raised',
-    light: '',
+    light: 'bg-surface',
     dark: 'section-dark',
   }
-  return <section id={id} className={`py-16 md:py-24 ${bg[variant]} ${className}`}>{children}</section>
+  return (
+    <section
+      id={id}
+      data-theme={variant === 'light' ? 'light' : undefined}
+      className={`py-16 md:py-24 ${bg[variant]} ${className}`}
+    >
+      {children}
+    </section>
+  )
 }
