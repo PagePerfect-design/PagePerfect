@@ -293,6 +293,10 @@ select.input-dark {
 .skip-link:focus { left: 1rem; top: 1rem; outline: 2px solid var(--accent-hover); }
 *:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* ===== Editor mode — hide footer, lock scroll ===== */
+body[data-editor] { overflow: hidden !important; height: 100dvh !important; }
+body[data-editor] > * > footer { display: none !important; }
+
 /* ===== Reduced motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
