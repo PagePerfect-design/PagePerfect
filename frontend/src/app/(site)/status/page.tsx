@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function StatusPage() {
   // Next rewrites send /api/* to this base; show it for ops clarity
-  const apiBase = process.env.RAILWAY_API_BASE || 'http://localhost:4000'
+  const apiBase = process.env.API_BASE_URL || 'http://localhost:4000'
   return (
     <main id="main" className="min-h-screen">
       <div className="container mx-auto px-6 py-12">
