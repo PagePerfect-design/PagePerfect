@@ -23,7 +23,7 @@ import { SAMPLE_MD } from './sample'
    TYPES & CONSTANTS
    ═══════════════════════════════════════════════════════════════════ */
 
-type TemplateKey = 'minimal' | 'symphony' | 'chronicle' | 'exhibit' | 'matrix' | 'avantgarde' | 'chicago' | 'paperback'
+type TemplateKey = 'minimal' | 'symphony' | 'chronicle' | 'exhibit' | 'matrix' | 'avantgarde' | 'chicago' | 'paperback' | 'international' | 'cinema' | 'heirloom' | 'operator'
 type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
 type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'generous' | 'compact'
 type CompileMode = 'fast' | 'full'
@@ -42,14 +42,18 @@ type Prefs = {
 }
 
 const TEMPLATE_INFO: Record<TemplateKey, { name: string; desc: string; tag: string; font: string }> = {
-  symphony:    { name: 'Symphony',     desc: 'Ornamental headings, micro-typography, full alignment system', tag: 'Academic',  font: 'Crimson Pro' },
-  chicago:     { name: 'Chicago',      desc: 'Traditional scholarly formatting rooted in the Chicago Manual', tag: 'Academic',  font: 'EB Garamond' },
-  paperback:   { name: 'Paperback',    desc: 'Contemporary trade design, sans-serif, modern aesthetic',     tag: 'Fiction',   font: 'Alegreya Sans' },
-  chronicle:   { name: 'Chronicle',    desc: 'Editorial precision, no indentation, optimized layout',        tag: 'Editorial', font: 'TeX Gyre Heros' },
-  exhibit:     { name: 'Exhibit',      desc: 'Generous breathing room, light headings, gallery-clean',       tag: 'Trade',     font: 'Alegreya' },
-  matrix:      { name: 'Matrix',       desc: 'Geometric sans, structured grid, corporate clarity',          tag: 'Business',  font: 'Inter Tight' },
-  avantgarde:  { name: 'Avant-Garde',  desc: 'Experimental layout, asymmetric headings, creative spacing',  tag: 'Creative',  font: 'Source Sans 3' },
-  minimal:     { name: 'Minimal',      desc: 'Maximum compatibility, no custom fonts, pure content',        tag: 'Basic',     font: 'Latin Modern' },
+  symphony:      { name: 'Symphony',       desc: 'Van de Graaf Canon, ornamental openings, hanging footnotes',      tag: 'Academic',   font: 'EB Garamond' },
+  chicago:       { name: 'Chicago',        desc: 'University press monograph, true footnotes, CMOS running heads',  tag: 'Academic',   font: 'ETbb (Bembo)' },
+  paperback:     { name: 'Paperback',      desc: 'Cinematic chapter openings, scene breaks, page-turner pacing',    tag: 'Fiction',    font: 'Alegreya Sans' },
+  chronicle:     { name: 'Chronicle',      desc: 'Heavy rules, pull-quote blocks, flush-left ragged-right',         tag: 'Editorial',  font: 'TeX Gyre Heros' },
+  exhibit:       { name: 'Exhibit',        desc: 'White Cube gallery, ghost-number chapters, extreme whitespace',   tag: 'Trade',      font: 'Fira Sans' },
+  matrix:        { name: 'Matrix',         desc: 'Corporate annual report, lining figures, executive summaries',    tag: 'Business',   font: 'Fira Sans' },
+  avantgarde:    { name: 'Avant-Garde',    desc: '120pt ghost numbers, brutalist blockquotes, deconstructed grid',  tag: 'Creative',   font: 'Source Sans 3' },
+  minimal:       { name: 'Minimal',        desc: 'Zero dependencies, compiles anywhere, pure content focus',        tag: 'Basic',      font: 'Latin Modern' },
+  international: { name: 'International',  desc: 'Müller-Brockmann Swiss Standard, one font, no italics',           tag: 'Swiss',      font: 'TeX Gyre Heros' },
+  cinema:        { name: 'Cinema',         desc: 'Hollywood Standard screenplay, 1 page = 1 minute rule',           tag: 'Screenplay', font: 'TeX Gyre Cursor' },
+  heirloom:      { name: 'Heirloom',       desc: 'Cookbook format, ingredient blocks, bold numbered steps',          tag: 'Cookbook',    font: 'Fira Sans' },
+  operator:      { name: 'Operator',       desc: 'Engineering manual, warning/info/code admonition boxes',          tag: 'Technical',  font: 'Fira Sans' },
 }
 
 const TEMPLATE_KEYS = Object.keys(TEMPLATE_INFO) as TemplateKey[]
@@ -616,7 +620,7 @@ function FloatingHUD({
             transition={{ duration: 0.2, ease }}
             className="mb-3 rounded-2xl border border-white/[0.08] bg-[#111111]/95 p-2 shadow-elevated backdrop-blur-xl"
           >
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-4 gap-1.5 max-h-[60vh] overflow-y-auto">
               {TEMPLATE_KEYS.map((key) => {
                 const info = TEMPLATE_INFO[key]
                 const isActive = key === template
