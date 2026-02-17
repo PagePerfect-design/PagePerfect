@@ -556,6 +556,23 @@ function PortalStage({
             </motion.div>
           )}
 
+          {/* Conversion error feedback */}
+          {convertError && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-8 mx-auto max-w-sm rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-left"
+            >
+              <p className="font-mono text-[11px] text-red-400">{convertError}</p>
+              <button
+                onClick={() => setConvertError(null)}
+                className="mt-1 font-mono text-[10px] text-white/20 hover:text-white/40"
+              >
+                Dismiss
+              </button>
+            </motion.div>
+          )}
+
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
