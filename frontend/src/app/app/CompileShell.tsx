@@ -15,9 +15,11 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  BarChart3,
 } from 'lucide-react'
 
 import { SAMPLE_MD } from './sample'
+import PublishingSystems from './PublishingSystems'
 
 /* ═══════════════════════════════════════════════════════════════════
    TYPES & CONSTANTS
@@ -1043,20 +1045,24 @@ function TopBar({
   status,
   errors,
   showEditor,
+  showSystems,
   onTitleChange,
   onBack,
   onPublish,
   onToggleEditor,
+  onToggleSystems,
 }: {
   title: string
   wordCount: number
   status: Status
   errors: CompileError[]
   showEditor: boolean
+  showSystems: boolean
   onTitleChange: (t: string) => void
   onBack: () => void
   onPublish: () => void
   onToggleEditor: () => void
+  onToggleSystems: () => void
 }) {
   return (
     <div className="fixed left-0 right-0 top-[3.5rem] z-30">
@@ -1101,6 +1107,18 @@ function TopBar({
           >
             <FileText className="h-3 w-3" />
             {showEditor ? 'Preview' : 'Edit'}
+          </button>
+
+          <button
+            onClick={onToggleSystems}
+            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-all ${
+              showSystems
+                ? 'bg-[#0033ff]/10 text-[#0033ff] ring-1 ring-[#0033ff]/30'
+                : 'text-white/25 hover:bg-white/[0.04] hover:text-white/40'
+            }`}
+          >
+            <BarChart3 className="h-3 w-3" />
+            Systems
           </button>
 
           <button
@@ -1294,6 +1312,7 @@ function ShortcutLegend({ visible, onClose }: { visible: boolean; onClose: () =>
           ['Left / Right', 'Cycle templates'],
           ['Space', 'Recompile'],
           ['E', 'Toggle editor'],
+          ['S', 'Publishing systems'],
           ['P', 'Export / publish'],
           ['?', 'Toggle shortcuts'],
           ['Esc', 'Close panel'],
@@ -1372,6 +1391,7 @@ export default function CompileShell() {
   const [hudTab, setHudTab] = useState<HudTab>(null)
   const [showEditor, setShowEditor] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showSystems, setShowSystems] = useState(false)
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -1458,6 +1478,11 @@ export default function CompileShell() {
           if (status === 'success') setStage('launch')
           break
         }
+        case 's':
+        case 'S': {
+          setShowSystems(prev => !prev)
+          break
+        }
         case '?': {
           setShowShortcuts(prev => !prev)
           break
@@ -1466,6 +1491,7 @@ export default function CompileShell() {
           setHudTab(null)
           setShowShortcuts(false)
           setShowEditor(false)
+          setShowSystems(false)
           break
         }
       }
@@ -1608,10 +1634,12 @@ export default function CompileShell() {
                 status={status}
                 errors={errors}
                 showEditor={showEditor}
+                showSystems={showSystems}
                 onTitleChange={setTitle}
                 onBack={() => setStage('portal')}
                 onPublish={() => setStage('launch')}
                 onToggleEditor={() => setShowEditor(prev => !prev)}
+                onToggleSystems={() => setShowSystems(prev => !prev)}
               />
             </div>
 
@@ -1654,6 +1682,20 @@ export default function CompileShell() {
                   manuscript={manuscript}
                   onChange={setManuscript}
                   onClose={() => setShowEditor(false)}
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Publishing Systems panel */}
+            <AnimatePresence>
+              {showSystems && (
+                <PublishingSystems
+                  manuscript={manuscript}
+                  template={template}
+                  pageSize={pageSize}
+                  marginPreset={marginPreset}
+                  visible={showSystems}
+                  onClose={() => setShowSystems(false)}
                 />
               )}
             </AnimatePresence>
