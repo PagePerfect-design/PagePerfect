@@ -310,7 +310,7 @@ function BookSkeleton() {
             ))}
           </div>
         </div>
-        <p className="absolute bottom-[8%] left-0 right-0 text-center font-mono text-[10px] text-white/10">
+        <p className="absolute bottom-[8%] left-0 right-0 text-center font-mono text-[10px] text-white/25">
           Typesetting...
         </p>
       </div>
@@ -336,7 +336,9 @@ function PortalStage({
   const [text, setText] = useState('')
   const [title, setTitle] = useState('')
   const [convertError, setConvertError] = useState<string | null>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [pasteMode, setPasteMode] = useState(false)
+  const [pasteText, setPasteText] = useState('')
+  const pasteAreaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleText = useCallback((raw: string) => {
@@ -406,14 +408,6 @@ function PortalStage({
     if (file) handleFile(file)
   }, [handleFile])
 
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    const pasted = e.clipboardData?.getData('text/plain')
-    if (pasted) {
-      e.preventDefault()
-      handleText(pasted)
-    }
-  }, [handleText])
-
   // The idle/drop state — entire screen is the dropzone
   if (phase === 'idle') {
     return (
@@ -447,22 +441,15 @@ function PortalStage({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease }}
           >
-            <h1 className="font-display text-[clamp(2.5rem,6vw,5rem)] font-extrabold leading-[0.9] tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/40">
+            <h1 className="font-display text-[clamp(2.5rem,6vw,5rem)] font-extrabold leading-[0.9] tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60">
               Drop your manuscript.
             </h1>
-            <p className="mt-6 font-body text-lg text-white/25">
+            <p className="mt-6 font-body text-lg text-white/45">
               .md, .txt, or .docx
             </p>
           </motion.div>
 
-          {/* Hidden textarea for paste, hidden file input for click */}
-          <textarea
-            ref={textareaRef}
-            className="sr-only"
-            onPaste={handlePaste}
-            onChange={(e) => { if (e.target.value.trim()) handleText(e.target.value) }}
-            aria-label="Manuscript input"
-          />
+          {/* Hidden file input for browse */}
           <input
             ref={fileInputRef}
             type="file"
@@ -471,33 +458,86 @@ function PortalStage({
             className="sr-only"
           />
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
-            className="mt-12 flex items-center justify-center gap-6"
-          >
-            <button
-              onClick={() => textareaRef.current?.focus()}
-              className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40"
+          {/* Paste textarea panel — shown when Paste Text is clicked */}
+          <AnimatePresence>
+            {pasteMode && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                transition={{ duration: 0.25 }}
+                className="mt-8 w-full"
+              >
+                <textarea
+                  ref={pasteAreaRef}
+                  value={pasteText}
+                  onChange={(e) => setPasteText(e.target.value)}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData?.getData('text/plain')
+                    if (pasted) {
+                      e.preventDefault()
+                      setPasteText(pasted)
+                    }
+                  }}
+                  placeholder="Paste or type your manuscript here..."
+                  className="w-full h-48 resize-none rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 font-mono text-sm text-white/80 placeholder:text-white/25 focus:border-[#4f8fff]/50 focus:outline-none focus:ring-1 focus:ring-[#4f8fff]/30"
+                  autoFocus
+                />
+                <div className="mt-3 flex items-center justify-between">
+                  <button
+                    onClick={() => { setPasteMode(false); setPasteText('') }}
+                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/40 transition-colors hover:text-white/70"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (pasteText.trim()) {
+                        handleText(pasteText)
+                        setPasteMode(false)
+                      }
+                    }}
+                    disabled={!pasteText.trim()}
+                    className="inline-flex h-9 items-center gap-2 rounded-full bg-[#4f8fff] px-5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-white transition-all hover:bg-[#6ba1ff] disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Continue
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Action buttons — hide when paste panel is open */}
+          {!pasteMode && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+              className="mt-12 flex items-center justify-center gap-6"
             >
-              Paste text
-            </button>
-            <span className="text-white/10">|</span>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40"
-            >
-              Browse files
-            </button>
-            <span className="text-white/10">|</span>
-            <button
-              onClick={onLoadSample}
-              className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40"
-            >
-              Try sample
-            </button>
-          </motion.div>
+              <button
+                onClick={() => { setPasteMode(true); setPasteText('') }}
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/50 transition-colors hover:text-white/80"
+              >
+                Paste text
+              </button>
+              <span className="text-white/20">|</span>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/50 transition-colors hover:text-white/80"
+              >
+                Browse files
+              </button>
+              <span className="text-white/20">|</span>
+              <button
+                onClick={onLoadSample}
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/50 transition-colors hover:text-white/80"
+              >
+                Try sample
+              </button>
+            </motion.div>
+          )}
 
           {/* Conversion error feedback */}
           {convertError && (
@@ -509,7 +549,7 @@ function PortalStage({
               <p className="font-mono text-[11px] text-red-400">{convertError}</p>
               <button
                 onClick={() => setConvertError(null)}
-                className="mt-1 font-mono text-[10px] text-white/20 hover:text-white/40"
+                className="mt-1 font-mono text-[10px] text-white/40 hover:text-white/70"
               >
                 Dismiss
               </button>
@@ -520,7 +560,7 @@ function PortalStage({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="mt-16 font-mono text-[10px] text-white/8"
+            className="mt-16 font-mono text-[10px] text-white/25"
           >
             Your text is never stored. Sent for compilation only, then immediately deleted.
           </motion.p>
@@ -551,7 +591,7 @@ function PortalStage({
           ))}
           <div className="relative z-10">
             <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2 border-[#0033ff] border-t-transparent" />
-            <p className="font-mono text-[12px] text-white/30">Analyzing manuscript...</p>
+            <p className="font-mono text-[12px] text-white/50">Analyzing manuscript...</p>
           </div>
         </motion.div>
       </div>
@@ -578,7 +618,7 @@ function PortalStage({
                 <p className="font-display text-base font-semibold text-white">
                   Manuscript analyzed
                 </p>
-                <p className="font-mono text-[10px] text-white/20">
+                <p className="font-mono text-[10px] text-white/40">
                   {analysis && wordCategory(analysis.words)}
                 </p>
               </div>
@@ -594,7 +634,7 @@ function PortalStage({
                 { label: 'Citations', value: analysis.hasReferences ? 'Found' : '—' },
               ].map((item) => (
                 <div key={item.label} className="bg-[#0a0a0a] px-4 py-3">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/15">{item.label}</p>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/40">{item.label}</p>
                   <p className="mt-1 font-display text-lg font-bold text-white">{item.value}</p>
                 </div>
               ))}
@@ -609,7 +649,7 @@ function PortalStage({
                 <p className="text-[12px] font-medium text-white/70">
                   {analysis.detected.message}
                 </p>
-                <p className="mt-0.5 font-mono text-[10px] text-white/20">
+                <p className="mt-0.5 font-mono text-[10px] text-white/40">
                   {analysis.detected.confidence === 'high' ? 'High confidence' : 'You can change this in the Style menu.'}
                 </p>
               </div>
@@ -618,7 +658,7 @@ function PortalStage({
 
           {/* Title input */}
           <div className="border-t border-white/[0.06] px-6 py-5">
-            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">
+            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/40">
               Working title
             </label>
             <input
@@ -627,7 +667,7 @@ function PortalStage({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="My Manuscript"
               autoFocus
-              className="w-full border-b border-white/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-white placeholder:text-white/15 focus:border-[#0033ff] focus:outline-none"
+              className="w-full border-b border-white/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-white placeholder:text-white/30 focus:border-[#0033ff] focus:outline-none"
             />
           </div>
 
@@ -635,7 +675,7 @@ function PortalStage({
           <div className="flex items-center justify-between border-t border-white/[0.06] px-6 py-4">
             <button
               onClick={() => { setText(''); setAnalysis(null); setPhase('idle') }}
-              className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40"
+              className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/40 transition-colors hover:text-white/70"
             >
               Start over
             </button>
@@ -701,9 +741,9 @@ function LevitatingBook({
               <div className="flex h-full w-full items-center justify-center bg-[#0a0a0a]">
                 <div className="text-center">
                   <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-white/[0.06]">
-                    <FileText className="h-5 w-5 text-white/10" />
+                    <FileText className="h-5 w-5 text-white/25" />
                   </div>
-                  <p className="font-mono text-[11px] text-white/15">Preview appears here</p>
+                  <p className="font-mono text-[11px] text-white/30">Preview appears here</p>
                 </div>
               </div>
             )}
@@ -892,7 +932,7 @@ function FloatingHUD({
 
             {/* Amazon KDP */}
             <details className="mt-3">
-              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-white/15 hover:text-white/25">
+              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-white/35 hover:text-white/50">
                 Amazon KDP sizes
               </summary>
               <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-5">
@@ -1023,7 +1063,7 @@ function FloatingHUD({
             status === 'compiling' ? 'text-[#0033ff]' :
             status === 'success' ? 'text-emerald-400/70' :
             status === 'error' ? 'text-red-400/70' :
-            'text-white/15'
+            'text-white/35'
           }`}>
             {status === 'compiling' ? 'Setting' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
           </span>
@@ -1106,7 +1146,7 @@ function TopBar({
             className="bg-transparent font-display text-sm font-semibold text-white/60 placeholder:text-white/20 focus:text-white focus:outline-none"
             placeholder="Untitled"
           />
-          <span className="font-mono text-[10px] text-white/15">
+          <span className="font-mono text-[10px] text-white/35">
             {wordCount.toLocaleString()} words
           </span>
         </div>
@@ -1368,7 +1408,7 @@ function LaunchOverlay({
                         }>
                           {check.name}
                         </span>
-                        <p className="text-[10px] text-white/15">{check.detail}</p>
+                        <p className="text-[10px] text-white/35">{check.detail}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -1380,15 +1420,15 @@ function LaunchOverlay({
             {!checking && preflight && (
               <div className="grid grid-cols-3 gap-px border-t border-white/[0.06] bg-white/[0.03]">
                 <div className="bg-[#0a0a0a] p-2.5 text-center">
-                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/15">Pages</p>
+                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/35">Pages</p>
                   <p className="font-display text-sm font-bold text-white">~{preflight.stats.estimatedPages}</p>
                 </div>
                 <div className="bg-[#0a0a0a] p-2.5 text-center">
-                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/15">Spine</p>
+                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/35">Spine</p>
                   <p className="font-display text-sm font-bold text-white">{preflight.stats.spineInches}&quot;</p>
                 </div>
                 <div className="bg-[#0a0a0a] p-2.5 text-center">
-                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/15">Trim</p>
+                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/35">Trim</p>
                   <p className="font-display text-sm font-bold text-white">{preflight.stats.trimWidth}&times;{preflight.stats.trimHeight}&quot;</p>
                 </div>
               </div>
@@ -1415,7 +1455,7 @@ function LaunchOverlay({
           </p>
         )}
 
-        <p className="mt-3 text-center font-mono text-[10px] text-white/10">
+        <p className="mt-3 text-center font-mono text-[10px] text-white/25">
           {TEMPLATE_INFO[template]?.name} / {PAGE_SIZES[pageSize]?.label} / {title || 'Untitled'}
         </p>
       </motion.div>
@@ -1805,7 +1845,7 @@ export default function CompileShell() {
             <div className="fixed bottom-8 right-6 z-30">
               <button
                 onClick={() => setShowShortcuts(prev => !prev)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.04] text-white/15 transition-colors hover:bg-white/[0.08] hover:text-white/30"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-white/30 transition-colors hover:bg-white/[0.10] hover:text-white/50"
               >
                 <Keyboard className="h-3 w-3" />
               </button>
@@ -1846,11 +1886,11 @@ export default function CompileShell() {
                   const idx = TEMPLATE_KEYS.indexOf(template)
                   setTemplate(TEMPLATE_KEYS[(idx - 1 + TEMPLATE_KEYS.length) % TEMPLATE_KEYS.length])
                 }}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.04] text-white/20 transition-colors hover:bg-white/[0.08] hover:text-white/40"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-white/30 transition-colors hover:bg-white/[0.10] hover:text-white/50"
               >
                 <ChevronLeft className="h-3 w-3" />
               </button>
-              <span className="font-mono text-[10px] text-white/15">
+              <span className="font-mono text-[10px] text-white/35">
                 {TEMPLATE_INFO[template].subtitle}
               </span>
               <button
@@ -1858,7 +1898,7 @@ export default function CompileShell() {
                   const idx = TEMPLATE_KEYS.indexOf(template)
                   setTemplate(TEMPLATE_KEYS[(idx + 1) % TEMPLATE_KEYS.length])
                 }}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.04] text-white/20 transition-colors hover:bg-white/[0.08] hover:text-white/40"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-white/30 transition-colors hover:bg-white/[0.10] hover:text-white/50"
               >
                 <ChevronRight className="h-3 w-3" />
               </button>
