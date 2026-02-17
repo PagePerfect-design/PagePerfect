@@ -729,7 +729,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     try { pandoc.kill('SIGKILL'); } catch {}
   }, COMPILE_TIMEOUT_MS);
 
-  pandoc.on('close', (code) => {
+  pandoc.on('close', async (code) => {
     clearTimeout(killer);
     const elapsed = Date.now() - startTs;
     res.setHeader('X-PP-Compile-Time', String(elapsed));
