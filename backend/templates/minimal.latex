@@ -1,44 +1,52 @@
-% Minimal LaTeX Template - BasicTeX Compatible
+% Minimal — "This is The Source Code"
+% Radical Compatibility — compiles anywhere, zero extra dependencies
+% Latin Modern (Knuthian Ideal), wide margins, pure content focus
+% Target: Drafts, screenplays, documentation, submissions, BasicTeX systems
+
 \documentclass[12pt]{article}
-\usepackage{geometry} % margin & size come from Pandoc -V geometry:...
+\usepackage{geometry}
 \usepackage{setspace}
-\usepackage{parskip}
 \usepackage{hyperref}
+\usepackage{lmodern}
 
-% Basic Typography
+% ── TYPOGRAPHY — Latin Modern (Computer Modern perfected) ───
+% No fontspec required — works on pdflatex, xelatex, lualatex
 \setstretch{1.5}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\hyphenpenalty=500
 
-% Simple heading styles
+% ── HEADINGS — Standard LaTeX, tightened ────────────────────
 \makeatletter
 \renewcommand{\section}{\@startsection{section}{1}{\z@}%
-  {-3.5ex \@plus -1ex \@minus -.2ex}%
-  {2.3ex \@plus.2ex}%
-  {\normalfont\Large\bfseries}}
-
+  {-2.5ex \@plus -1ex \@minus -.2ex}%
+  {1.5ex \@plus.2ex}%
+  {\normalfont\Large\bfseries\sffamily}}
 \renewcommand{\subsection}{\@startsection{subsection}{2}{\z@}%
-  {-3.25ex\@plus -1ex \@minus -.2ex}%
-  {1.5ex \@plus .2ex}%
-  {\normalfont\large\bfseries}}
+  {-2ex\@plus -1ex \@minus -.2ex}%
+  {1ex \@plus .2ex}%
+  {\normalfont\large\bfseries\sffamily}}
+\renewcommand{\subsubsection}{\@startsection{subsubsection}{3}{\z@}%
+  {-1.5ex\@plus -0.5ex \@minus -.2ex}%
+  {0.5ex \@plus .2ex}%
+  {\normalfont\normalsize\bfseries}}
 \makeatother
 
-% Basic formatting
-\renewcommand{\textbf}[1]{\textbf{#1}}
-\renewcommand{\textit}[1]{\textit{#1}}
-
-% Page setup
+% ── NAVIGATION — Empty header, centered page number ────────
 \pagestyle{plain}
 
-% Hyperref setup
+% ── HYPERLINKS ──────────────────────────────────────────────
 \hypersetup{
   colorlinks=true,
-  linkcolor=blue,
-  urlcolor=blue,
-  citecolor=blue
+  linkcolor=blue!70!black,
+  urlcolor=blue!70!black,
+  citecolor=blue!70!black
 }
 
 $if(title)$
 \title{$title$}
-\date{}
+$if(author)$\author{$author$}$endif$
+\date{$if(date)$$date$$else$$endif$}
 $endif$
 
 \begin{document}
@@ -48,5 +56,11 @@ $if(title)$
 $endif$
 
 $body$
+
+$if(bibliography)$
+\newpage
+\section*{References}
+$bibliography$
+$endif$
 
 \end{document}

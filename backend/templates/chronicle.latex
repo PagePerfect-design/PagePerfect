@@ -1,127 +1,92 @@
-% Chronicle Grid - Editorial-Style Layout
-% Müller-Brockmann Grid System Implementation
-% Based on principles of clarity, objectivity, and systematic organization
-%
-% 📚 REFERENCE: Josef Müller-Brockmann's "Grid Systems in Graphic Design"
-% https://ia902309.us.archive.org/4/items/GridSystemsInGraphicDesignJosefMullerBrockmann/Grid%20systems%20in%20graphic%20design%20-%20Josef%20Muller-Brockmann.pdf
-%
-% This template embodies Müller-Brockmann's principles of:
-% - Multi-column grid system for editorial content
-% - Professional typography and spacing
-% - Clear hierarchy and readability
-% - Systematic organization of information
+% Chronicle — "This is Journalism"
+% Swiss International Style editorial system — Neue Grafik / Vignelli
+% TeX Gyre Heros (Helvetica) body, heavy rules, lede blocks, ragged right
+% Target: Non-fiction, journalism, technical manuals, reports
 
 \documentclass[11pt]{article}
-\usepackage{geometry} % margin & size come from Pandoc -V geometry:...
-\usepackage{setspace}
-\usepackage{parskip}
+\usepackage{geometry}
 \usepackage{fontspec}
-\setmainfont{DejaVu Sans}
 \usepackage{microtype}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
 \usepackage{xcolor}
 \usepackage{hyperref}
-\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{ragged2e}
 
-% Grid System Typography (Editorial - 11pt baseline)
-\usepackage{setspace}
+% ── TYPOGRAPHY — Swiss International Style ──────────────────
+% Body: TeX Gyre Heros (Helvetica clone) — neutral, dense, authoritative
+\setmainfont{TeX Gyre Heros}[Scale=0.92,Ligatures=TeX]
+\setmonofont{Fira Mono}[Scale=MatchLowercase]
+
+% Ragged right — prevents river-gaps in sans-serif justified text
+\RaggedRight
+\hyphenpenalty=200
+
+% ── SPACING — Block paragraphs ──────────────────────────────
 \setstretch{1.4}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.15in}
 
-% Enhanced Typographic Scale based on Golden Ratio
-\newcommand{\gridDisplay}{\fontsize{33pt}{37.95pt}\selectfont}
-\newcommand{\gridHOne}{\fontsize{24.75pt}{30.9375pt}\selectfont}
-\newcommand{\gridHTwo}{\fontsize{19.25pt}{24.0625pt}\selectfont}
-\newcommand{\gridHThree}{\fontsize{15.125pt}{19.65625pt}\selectfont}
-\newcommand{\gridHFour}{\fontsize{12.375pt}{16.09375pt}\selectfont}
-\newcommand{\gridSubhead}{\fontsize{16.5pt}{21.45pt}\selectfont}
-\newcommand{\gridBody}{\fontsize{11pt}{15.4pt}\selectfont}
-\newcommand{\gridSmall}{\fontsize{9.625pt}{12.99375pt}\selectfont}
-\newcommand{\gridCaption}{\fontsize{8.25pt}{11.55pt}\selectfont}
-\newcommand{\gridFootnote}{\fontsize{7.7pt}{9.625pt}\selectfont}
+% ── COLORS ──────────────────────────────────────────────────
+\definecolor{rulegrey}{gray}{0.35}
+\definecolor{numgrey}{gray}{0.65}
 
-% Enhanced Grid-based Spacing (multiples of 11pt baseline)
-\newcommand{\gridSpaceXs}{\vspace{2.75pt}}
-\newcommand{\gridSpaceSm}{\vspace{5.5pt}}
-\newcommand{\gridSpaceMd}{\vspace{11pt}}
-\newcommand{\gridSpaceLg}{\vspace{16.5pt}}
-\newcommand{\gridSpaceXl}{\vspace{22pt}}
-\newcommand{\gridSpaceXxl}{\vspace{33pt}}
-\newcommand{\gridSpaceXxxl}{\vspace{44pt}}
-\newcommand{\gridSpaceXxxxl}{\vspace{66pt}}
+% ── SECTION HEADINGS — Newsroom Style ───────────────────────
+\titleformat{\section}[block]
+  {\vspace{8pt}{\color{black}\rule{\textwidth}{3pt}}\vspace{6pt}\filright\sffamily\bfseries\fontsize{24pt}{28pt}\selectfont}
+  {}{0em}{}
 
-% Strategic White Space System
-% Micro White Space
-\newcommand{\gridLineSpace}{\setlength{\baselineskip}{11pt}}
-\newcommand{\gridWordSpace}{\setlength{\spaceskip}{2.75pt}}
-\newcommand{\gridCharSpace}{\setlength{\fontdimen2\font}{2.75pt}}
-\newcommand{\gridListItemSpace}{\setlength{\itemsep}{5.5pt}}
-\newcommand{\gridTableCellSpace}{\setlength{\tabcolsep}{5.5pt}}
-\newcommand{\gridCodeBlockSpace}{\setlength{\fboxsep}{5.5pt}}
+\titleformat{\subsection}[block]
+  {\vspace{4pt}{\color{rulegrey}\rule{\textwidth}{0.5pt}}\vspace{4pt}\sffamily\bfseries\fontsize{14pt}{17pt}\selectfont\addfontfeature{LetterSpace=5}\MakeUppercase}
+  {}{0em}{}
 
-% Macro White Space
-\newcommand{\gridSectionSpace}{\vspace{33pt}}
-\newcommand{\gridSubsectionSpace}{\vspace{22pt}}
-\newcommand{\gridParagraphSpace}{\vspace{16.5pt}}
-\newcommand{\gridBlockSpace}{\vspace{16.5pt}}
-\newcommand{\gridFigureSpace}{\vspace{22pt}}
-\newcommand{\gridTableSpace}{\vspace{22pt}}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries\sffamily}{}{0em}{}
+\titlespacing*{\section}{0pt}{20pt}{10pt}
+\titlespacing*{\subsection}{0pt}{16pt}{6pt}
+\titlespacing*{\subsubsection}{0pt}{10pt}{4pt}
 
-% Vertical Rhythm
-\newcommand{\gridBaselineSpace}{\setlength{\baselineskip}{11pt}}
-\newcommand{\gridHeadingSpace}{\vspace{16.5pt}}
-\newcommand{\gridBodySpace}{\setlength{\parskip}{11pt}}
-\newcommand{\gridCaptionSpace}{\vspace{5.5pt}}
-\newcommand{\gridFootnoteSpace}{\vspace{2.75pt}}
-
-% Horizontal Rhythm
-\newcommand{\gridMarginSpace}{\setlength{\textwidth}{22pt}}
-\newcommand{\gridColumnSpace}{\setlength{\columnsep}{16.5pt}}
-\newcommand{\gridGutterSpace}{\setlength{\columnseprule}{11pt}}
-\newcommand{\gridIndentSpace}{\setlength{\parindent}{11pt}}
-\newcommand{\gridListIndentSpace}{\setlength{\leftmargin}{11pt}}
-
-% Modular Design Elements
-\newcommand{\gridParagraph}{\setlength{\parindent}{0pt}\setlength{\parskip}{16.5pt}}
-\newcommand{\gridList}{\setlength{\itemsep}{5.5pt}\setlength{\parsep}{5.5pt}}
-\newcommand{\gridBlockquote}{\setlength{\leftmargin}{16.5pt}\setlength{\rightmargin}{16.5pt}}
-\newcommand{\gridCode}{\setlength{\fboxsep}{5.5pt}\setlength{\fboxrule}{0.5pt}}
-
-% Alignment System
-\newcommand{\gridCenter}{\centering}
-\newcommand{\gridLeft}{\raggedright}
-\newcommand{\gridRight}{\raggedleft}
-\newcommand{\gridJustify}{\justifying}
-
-% Grid-aligned heading formats (Editorial Style)
-\titleformat{\section}{\gridHTwo\bfseries}{\thesection}{0.5em}{}
-\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{0.5em}{}
-\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{0.5em}{}
-\usepackage{sectsty}
-\allsectionsfont{\raggedright}
-
-% Apply grid system spacing
-\gridBaselineSpace
-\gridBodySpace
-\gridParagraph
-
-\usepackage{fancyhdr}
+% ── HEADERS & FOOTERS ──────────────────────────────────────
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{\thepage}
+\fancyhead[L]{\footnotesize\sffamily\addfontfeature{LetterSpace=3}\MakeUppercase{$if(title)$$title$$endif$}}
+\fancyhead[R]{\footnotesize\sffamily\thepage}
+\renewcommand{\headrulewidth}{2pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\footnotesize\sffamily\thepage}\renewcommand{\headrulewidth}{0pt}}
 
+% ── BLOCK QUOTES — Pull Quote Style ────────────────────────
+\renewenvironment{quote}
+  {\list{}{\leftmargin=0pt\rightmargin=0pt}\item\relax
+   \leavevmode\llap{\color{black}\vrule width 3pt\hspace{1em}}%
+   \sffamily\bfseries\large\setstretch{1.2}}
+  {\endlist}
+
+\setlist{nosep,leftmargin=1.2em}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=black!60,citecolor=black}
+
+% ── DOCUMENT ────────────────────────────────────────────────
 \begin{document}
 
-% Title with grid spacing
 $if(title)$
-\begin{center}
-{\gridHOne $title$}
-\end{center}
-\gridSpaceMd
+\noindent{\color{black}\rule{\textwidth}{4pt}}
+\vspace{8pt}
+\begin{flushleft}
+{\fontsize{36pt}{40pt}\selectfont\sffamily\bfseries $title$\par}
+$if(author)$\vspace{6pt}{\large\sffamily\color{rulegrey} $author$\par}$endif$
+$if(date)$\vspace{2pt}{\footnotesize\sffamily\addfontfeature{LetterSpace=3}\MakeUppercase{\color{numgrey} $date$}\par}$endif$
+\end{flushleft}
+\vspace{4pt}
+\noindent{\color{black}\rule{\textwidth}{1pt}}
+\vspace{12pt}
 $endif$
 
 $body$
 
 $if(bibliography)$
-\newpage
+\vspace{20pt}
+\noindent{\color{black}\rule{\textwidth}{2pt}}
+\vspace{8pt}
 \section*{References}
 $bibliography$
 $endif$
