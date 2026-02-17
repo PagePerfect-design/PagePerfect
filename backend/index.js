@@ -11,6 +11,18 @@ const GridSystem = require('./grid-system');
 const publishing = require('./publishing');
 const lulu = require('./lulu');
 
+// ── Publishing Systems ──
+const manuscriptStructure = require('./manuscript-structure');
+const referencesSystem = require('./references-system');
+const figuresSystem = require('./figures-system');
+const bookEngineering = require('./book-engineering');
+const platformCompliance = require('./platform-compliance');
+const provenance = require('./provenance');
+const templateExtensions = require('./template-extensions');
+const typographyAssurance = require('./typography-assurance');
+const multilingual = require('./multilingual');
+const printQA = require('./print-qa');
+
 // ---- limits (env overridable) ----
 const MAX_MD_BYTES = Number(process.env.MAX_MD_BYTES || 2_000_000); // ~2 MB
 const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000); // 45s
@@ -254,6 +266,19 @@ app.get('/api/health/details', (_req, res) => {
     safeModeAvailable: true,
     auth: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
     payments: !!stripe,
+    systems: {
+      manuscriptStructure: true,
+      references: true,
+      figuresAndAssets: true,
+      bookEngineering: true,
+      platformCompliance: true,
+      provenance: true,
+      templateExtensions: true,
+      typographyAssurance: true,
+      multilingual: true,
+      printQA: true,
+    },
+    platforms: Object.keys(platformCompliance.PLATFORMS),
   });
 });
 
@@ -594,6 +619,323 @@ function parseMissingPackages(stderr) {
 }
 
 // ================================================================
+// Convert Endpoint — .docx → Markdown via Pandoc
+// Accepts raw binary .docx, returns extracted Markdown text.
+// ================================================================
+
+const convertLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { error: 'rate_limit', message: 'Too many conversion requests. Try again in a minute.' } });
+const MAX_DOCX_BYTES = Number(process.env.MAX_DOCX_BYTES || 10_000_000); // 10 MB
+
+app.post('/api/convert', convertLimiter, express.raw({ type: '*/*', limit: '10mb' }), (req, res) => {
+  const buf = req.body;
+  if (!Buffer.isBuffer(buf) || buf.length < 100) {
+    return res.status(400).json({ error: 'invalid_request', message: 'No file received. Send the .docx as the raw request body.' });
+  }
+  if (buf.length > MAX_DOCX_BYTES) {
+    return res.status(413).json({ error: 'payload_too_large', message: `File exceeds ${MAX_DOCX_BYTES} byte limit.` });
+  }
+
+  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-conv-'));
+  const docxPath = path.join(tmpBase, 'input.docx');
+  fs.writeFileSync(docxPath, buf);
+
+  const pandoc = spawn('pandoc', [docxPath, '-t', 'markdown', '--wrap=none'], { cwd: tmpBase });
+
+  let stdout = '';
+  let stderr = '';
+  pandoc.stdout.on('data', (d) => { stdout += d.toString(); });
+  pandoc.stderr.on('data', (d) => { stderr += d.toString(); });
+
+  const killer = setTimeout(() => {
+    try { pandoc.kill('SIGKILL'); } catch {}
+  }, 30_000);
+
+  pandoc.on('close', (code) => {
+    clearTimeout(killer);
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+
+    if (code === 0 && stdout.length > 0) {
+      return res.json({ markdown: stdout });
+    }
+    console.error(`[convert] pandoc exit ${code}: ${stderr.slice(0, 500)}`);
+    return res.status(500).json({ error: 'conversion_failed', message: 'Failed to convert .docx to Markdown.', detail: stderr.slice(0, 300) });
+  });
+});
+
+// ================================================================
+// Manuscript Structure System
+// ================================================================
+
+app.post('/api/analyze/structure', (req, res) => {
+  const { manuscriptText } = req.body || {};
+  if (!manuscriptText || typeof manuscriptText !== 'string') {
+    return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required.' });
+  }
+  const result = manuscriptStructure.analyzeStructure(manuscriptText);
+  res.json(result);
+});
+
+// ================================================================
+// References and Citations System
+// ================================================================
+
+app.post('/api/analyze/references', (req, res) => {
+  const { manuscriptText, bibliography } = req.body || {};
+  if (!manuscriptText || typeof manuscriptText !== 'string') {
+    return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required.' });
+  }
+
+  const citations = referencesSystem.extractCitations(manuscriptText);
+  const bibContent = bibliography || fs.readFileSync(BIB_PATH, 'utf8');
+  const validation = referencesSystem.validateBibliography(bibContent);
+  const crossRef = referencesSystem.crossReference(manuscriptText, bibContent);
+
+  res.json({
+    citations,
+    validation,
+    crossReference: crossRef,
+  });
+});
+
+app.post('/api/validate/bibliography', (req, res) => {
+  const { bibliography } = req.body || {};
+  if (!bibliography || typeof bibliography !== 'string') {
+    return res.status(400).json({ error: 'invalid_request', message: 'bibliography (BibTeX content) is required.' });
+  }
+  const result = referencesSystem.validateBibliography(bibliography);
+  res.json(result);
+});
+
+// ================================================================
+// Figures, Tables, and Assets System
+// ================================================================
+
+app.post('/api/analyze/assets', (req, res) => {
+  const { manuscriptText, trimSize, bleedType, context } = req.body || {};
+  if (!manuscriptText || typeof manuscriptText !== 'string') {
+    return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required.' });
+  }
+  const result = figuresSystem.validateAssets(manuscriptText, { trimSize, bleedType, context });
+  res.json(result);
+});
+
+// ================================================================
+// Book Engineering System
+// ================================================================
+
+app.post('/api/analyze/lint', (req, res) => {
+  const { manuscriptText, template } = req.body || {};
+  if (!manuscriptText || typeof manuscriptText !== 'string') {
+    return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required.' });
+  }
+  const templateType = (DESIGN_TEMPLATES[template] || {}).gridType || 'academic';
+  const result = bookEngineering.lintManuscript(manuscriptText, templateType);
+  res.json(result);
+});
+
+// ================================================================
+// Platform Compliance System
+// ================================================================
+
+app.post('/api/analyze/platform', (req, res) => {
+  const { platform, pageSize, pageCount, wordCount, marginPreset, template, hasImages, hasCitations, colorMode } = req.body || {};
+  if (!platform) {
+    return res.status(400).json({ error: 'invalid_request', message: 'platform is required.' });
+  }
+  const templateType = (DESIGN_TEMPLATES[template] || {}).gridType || 'academic';
+  const result = platformCompliance.validatePlatform({
+    platform,
+    pageSize: pageSize || 'sixByNine',
+    pageCount,
+    wordCount: wordCount || 0,
+    marginPreset: marginPreset || 'normal',
+    template: templateType,
+    hasImages: hasImages || false,
+    hasCitations: hasCitations || false,
+    colorMode: colorMode || 'bw',
+  }, gridSystem);
+  res.json(result);
+});
+
+app.get('/api/platforms', (_req, res) => {
+  const platforms = Object.entries(platformCompliance.PLATFORMS).map(([key, spec]) => ({
+    key,
+    name: spec.name,
+    type: spec.type,
+    trimSizes: spec.trimSizes,
+    pageRange: spec.pageRange,
+    notes: spec.notes,
+  }));
+  res.json({ platforms });
+});
+
+app.get('/api/platforms/:key/pipeline', (req, res) => {
+  const pipeline = platformCompliance.getExportPipeline(req.params.key);
+  res.json(pipeline);
+});
+
+// ================================================================
+// Template Extension System
+// ================================================================
+
+app.get('/api/template-tokens/:template', (req, res) => {
+  const templateType = (DESIGN_TEMPLATES[req.params.template] || {}).gridType || 'academic';
+  const schema = templateExtensions.getTokenSchemaForTemplate(templateType);
+  res.json({ template: req.params.template, gridType: templateType, tokens: schema });
+});
+
+app.post('/api/validate/extensions', (req, res) => {
+  const { template, extensions } = req.body || {};
+  if (!extensions || typeof extensions !== 'object') {
+    return res.status(400).json({ error: 'invalid_request', message: 'extensions object is required.' });
+  }
+  const templateType = (DESIGN_TEMPLATES[template] || {}).gridType || 'academic';
+  const result = templateExtensions.validateExtensions(extensions, templateType);
+  res.json(result);
+});
+
+// ================================================================
+// Typography Assurance System
+// ================================================================
+
+app.post('/api/analyze/typography', (req, res) => {
+  const { template, pageSize, marginPreset, extensions } = req.body || {};
+  const templateType = (DESIGN_TEMPLATES[template] || {}).gridType || 'academic';
+  const result = typographyAssurance.analyzeTypography({
+    template: templateType,
+    pageSize: pageSize || 'sixByNine',
+    marginPreset: marginPreset || 'normal',
+    extensions: extensions || {},
+  });
+  res.json(result);
+});
+
+// ================================================================
+// Multilingual System
+// ================================================================
+
+app.post('/api/analyze/multilingual', (req, res) => {
+  const { manuscriptText } = req.body || {};
+  if (!manuscriptText || typeof manuscriptText !== 'string') {
+    return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required.' });
+  }
+  const result = multilingual.analyzeMultilingual(manuscriptText);
+  res.json(result);
+});
+
+// ================================================================
+// Print QA System
+// ================================================================
+
+app.post('/api/analyze/print-qa', (req, res) => {
+  const { template, wordCount, figureCount, hasFootnotes, hasTables, hasImages, colorMode, paperStock, extensions } = req.body || {};
+  const templateType = (DESIGN_TEMPLATES[template] || {}).gridType || 'academic';
+  const result = printQA.runPrintQA({
+    templateType,
+    wordCount: wordCount || 0,
+    figureCount: figureCount || 0,
+    hasFootnotes: hasFootnotes || false,
+    hasTables: hasTables || false,
+    hasImages: hasImages || false,
+    colorMode: colorMode || 'bw',
+    paperStock: paperStock || 'white',
+    extensions: extensions || {},
+  });
+  res.json(result);
+});
+
+// ================================================================
+// Comprehensive Manuscript Analysis (all systems)
+// ================================================================
+
+app.post('/api/analyze/full', (req, res) => {
+  const { manuscriptText, template, pageSize, marginPreset, platform, paperStock, colorMode, extensions } = req.body || {};
+  if (!manuscriptText || typeof manuscriptText !== 'string') {
+    return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required.' });
+  }
+
+  const tplKey = DESIGN_TEMPLATES[String(template)] ? String(template) : 'symphony';
+  const templateType = DESIGN_TEMPLATES[tplKey].gridType || 'academic';
+  const wordCount = manuscriptText.split(/\s+/).filter(w => w.length > 0).length;
+  const hasFootnotes = /\[\^[^\]]+\]/.test(manuscriptText);
+  const hasCitations = /\[@[^\]]+\]/.test(manuscriptText);
+
+  const structure = manuscriptStructure.analyzeStructure(manuscriptText);
+  const assets = figuresSystem.validateAssets(manuscriptText, { trimSize: pageSize });
+  const lint = bookEngineering.lintManuscript(manuscriptText, templateType);
+  const typography = typographyAssurance.analyzeTypography({
+    template: templateType,
+    pageSize: pageSize || 'sixByNine',
+    marginPreset: marginPreset || 'normal',
+    extensions: extensions || {},
+  });
+  const multilingualAnalysis = multilingual.analyzeMultilingual(manuscriptText);
+  const qa = printQA.runPrintQA({
+    templateType,
+    wordCount,
+    figureCount: assets.stats.figureCount,
+    hasFootnotes,
+    hasTables: assets.stats.tableCount > 0,
+    hasImages: assets.stats.figureCount > 0,
+    colorMode: colorMode || 'bw',
+    paperStock: paperStock || 'white',
+    extensions: extensions || {},
+  });
+
+  // Platform validation if specified
+  let platformResult = null;
+  if (platform) {
+    platformResult = platformCompliance.validatePlatform({
+      platform,
+      pageSize: pageSize || 'sixByNine',
+      wordCount,
+      marginPreset: marginPreset || 'normal',
+      template: templateType,
+      hasImages: assets.stats.figureCount > 0,
+      hasCitations,
+      colorMode: colorMode || 'bw',
+    }, gridSystem);
+  }
+
+  // Build metadata
+  const buildMeta = provenance.generateBuildMetadata({
+    manuscriptText,
+    template: tplKey,
+    pageSize: pageSize || 'sixByNine',
+    marginPreset: marginPreset || 'normal',
+    safeMode: false,
+    compileMode: 'full',
+    title: structure.structure.metadata.title || 'Untitled',
+  });
+
+  res.json({
+    buildId: buildMeta.buildId,
+    structure,
+    assets,
+    lint,
+    typography,
+    multilingual: multilingualAnalysis,
+    printQA: qa,
+    platform: platformResult,
+    provenance: buildMeta,
+    summary: {
+      wordCount,
+      chapterCount: structure.structure.chapterCount,
+      figureCount: assets.stats.figureCount,
+      tableCount: assets.stats.tableCount,
+      lintIssues: lint.stats.totalIssues,
+      typographyScore: typography.score,
+      typographyGrade: typography.grade,
+      printQAScore: qa.score,
+      printQAGrade: qa.grade,
+      hasRTL: multilingualAnalysis.scriptAnalysis.hasRTL,
+      isMultiscript: multilingualAnalysis.scriptAnalysis.isMultiscript,
+      platformPassed: platformResult?.passed ?? null,
+    },
+  });
+});
+
+// ================================================================
 // Free tier page size restrictions
 // ================================================================
 const FREE_TIER_SIZES = new Set(['letter', 'a4', 'sixByNine']);
@@ -685,7 +1027,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     try { pandoc.kill('SIGKILL'); } catch {}
   }, COMPILE_TIMEOUT_MS);
 
-  pandoc.on('close', (code) => {
+  pandoc.on('close', async (code) => {
     clearTimeout(killer);
     const elapsed = Date.now() - startTs;
     res.setHeader('X-PP-Compile-Time', String(elapsed));
@@ -700,6 +1042,13 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     }
 
     if (code === 0 && fs.existsSync(pdfPath)) {
+      // Generate provenance metadata
+      const buildMeta = provenance.generateBuildMetadata({
+        manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
+      });
+      res.setHeader('X-PP-Build-Id', buildMeta.buildId);
+      res.setHeader('X-PP-Content-Hash', buildMeta.contentHash);
+
       // Optional PDF/X-1a conversion for IngramSpark compliance
       if (wantPdfX) {
         const pdfxPath = path.join(tmpBase, 'output-pdfx1a.pdf');

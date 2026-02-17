@@ -15,9 +15,11 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  BarChart3,
 } from 'lucide-react'
 
 import { SAMPLE_MD } from './sample'
+import PublishingSystems from './PublishingSystems'
 
 /* ═══════════════════════════════════════════════════════════════════
    TYPES & CONSTANTS
@@ -309,6 +311,7 @@ function PortalStage({
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [text, setText] = useState('')
   const [title, setTitle] = useState('')
+  const [convertError, setConvertError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -322,31 +325,62 @@ function PortalStage({
     }, 800)
   }, [])
 
+  /** Send .docx binary to backend for Pandoc conversion, then feed the resulting markdown into handleText */
+  const convertDocx = useCallback(async (file: File) => {
+    setConvertError(null)
+    setPhase('analyzing')
+    try {
+      const buf = await file.arrayBuffer()
+      const resp = await fetch('/api/convert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: buf,
+      })
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ message: 'Conversion failed.' }))
+        setConvertError(err.message || 'Failed to convert .docx')
+        setPhase('idle')
+        return
+      }
+      const { markdown } = await resp.json()
+      if (!markdown || typeof markdown !== 'string') {
+        setConvertError('Conversion returned empty result.')
+        setPhase('idle')
+        return
+      }
+      handleText(markdown)
+    } catch {
+      setConvertError('Network error during .docx conversion.')
+      setPhase('idle')
+    }
+  }, [handleText])
+
+  /** Route file to the right handler based on extension */
+  const handleFile = useCallback((file: File) => {
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext === 'docx') {
+      convertDocx(file)
+    } else {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const result = ev.target?.result
+        if (typeof result === 'string') handleText(result)
+      }
+      reader.readAsText(file)
+    }
+  }, [handleText, convertDocx])
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setDragActive(false)
     const file = e.dataTransfer.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const result = ev.target?.result
-        if (typeof result === 'string') handleText(result)
-      }
-      reader.readAsText(file)
-    }
-  }, [handleText])
+    if (file) handleFile(file)
+  }, [handleFile])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const result = ev.target?.result
-        if (typeof result === 'string') handleText(result)
-      }
-      reader.readAsText(file)
-    }
-  }, [handleText])
+    if (file) handleFile(file)
+  }, [handleFile])
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     const pasted = e.clipboardData?.getData('text/plain')
@@ -393,7 +427,7 @@ function PortalStage({
               Drop your manuscript.
             </h1>
             <p className="mt-6 font-body text-lg text-white/25">
-              .md or .txt
+              .md, .txt, or .docx
             </p>
           </motion.div>
 
@@ -408,7 +442,7 @@ function PortalStage({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".md,.txt,.markdown,text/plain,text/markdown"
+            accept=".md,.txt,.markdown,.docx,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             onChange={handleFileSelect}
             className="sr-only"
           />
@@ -440,6 +474,23 @@ function PortalStage({
               Try sample
             </button>
           </motion.div>
+
+          {/* Conversion error feedback */}
+          {convertError && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-8 mx-auto max-w-sm rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-left"
+            >
+              <p className="font-mono text-[11px] text-red-400">{convertError}</p>
+              <button
+                onClick={() => setConvertError(null)}
+                className="mt-1 font-mono text-[10px] text-white/20 hover:text-white/40"
+              >
+                Dismiss
+              </button>
+            </motion.div>
+          )}
 
           <motion.p
             initial={{ opacity: 0 }}
@@ -994,20 +1045,24 @@ function TopBar({
   status,
   errors,
   showEditor,
+  showSystems,
   onTitleChange,
   onBack,
   onPublish,
   onToggleEditor,
+  onToggleSystems,
 }: {
   title: string
   wordCount: number
   status: Status
   errors: CompileError[]
   showEditor: boolean
+  showSystems: boolean
   onTitleChange: (t: string) => void
   onBack: () => void
   onPublish: () => void
   onToggleEditor: () => void
+  onToggleSystems: () => void
 }) {
   return (
     <div className="fixed left-0 right-0 top-[3.5rem] z-30">
@@ -1052,6 +1107,18 @@ function TopBar({
           >
             <FileText className="h-3 w-3" />
             {showEditor ? 'Preview' : 'Edit'}
+          </button>
+
+          <button
+            onClick={onToggleSystems}
+            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-all ${
+              showSystems
+                ? 'bg-[#0033ff]/10 text-[#0033ff] ring-1 ring-[#0033ff]/30'
+                : 'text-white/25 hover:bg-white/[0.04] hover:text-white/40'
+            }`}
+          >
+            <BarChart3 className="h-3 w-3" />
+            Systems
           </button>
 
           <button
@@ -1245,6 +1312,7 @@ function ShortcutLegend({ visible, onClose }: { visible: boolean; onClose: () =>
           ['Left / Right', 'Cycle templates'],
           ['Space', 'Recompile'],
           ['E', 'Toggle editor'],
+          ['S', 'Publishing systems'],
           ['P', 'Export / publish'],
           ['?', 'Toggle shortcuts'],
           ['Esc', 'Close panel'],
@@ -1323,6 +1391,7 @@ export default function CompileShell() {
   const [hudTab, setHudTab] = useState<HudTab>(null)
   const [showEditor, setShowEditor] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showSystems, setShowSystems] = useState(false)
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -1409,6 +1478,11 @@ export default function CompileShell() {
           if (status === 'success') setStage('launch')
           break
         }
+        case 's':
+        case 'S': {
+          setShowSystems(prev => !prev)
+          break
+        }
         case '?': {
           setShowShortcuts(prev => !prev)
           break
@@ -1417,6 +1491,7 @@ export default function CompileShell() {
           setHudTab(null)
           setShowShortcuts(false)
           setShowEditor(false)
+          setShowSystems(false)
           break
         }
       }
@@ -1559,10 +1634,12 @@ export default function CompileShell() {
                 status={status}
                 errors={errors}
                 showEditor={showEditor}
+                showSystems={showSystems}
                 onTitleChange={setTitle}
                 onBack={() => setStage('portal')}
                 onPublish={() => setStage('launch')}
                 onToggleEditor={() => setShowEditor(prev => !prev)}
+                onToggleSystems={() => setShowSystems(prev => !prev)}
               />
             </div>
 
@@ -1605,6 +1682,20 @@ export default function CompileShell() {
                   manuscript={manuscript}
                   onChange={setManuscript}
                   onClose={() => setShowEditor(false)}
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Publishing Systems panel */}
+            <AnimatePresence>
+              {showSystems && (
+                <PublishingSystems
+                  manuscript={manuscript}
+                  template={template}
+                  pageSize={pageSize}
+                  marginPreset={marginPreset}
+                  visible={showSystems}
+                  onClose={() => setShowSystems(false)}
                 />
               )}
             </AnimatePresence>
