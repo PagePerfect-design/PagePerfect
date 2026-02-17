@@ -32,7 +32,7 @@ const TEMPLATES = [
  */
 
 function PlateContent({ t }: { t: typeof TEMPLATES[number] }) {
-  const isComing = 'coming' in t && t.coming
+  const isComing = 'coming' in t && Boolean((t as Record<string, unknown>).coming)
   return (
     <>
       {/* Page mockup */}
@@ -102,7 +102,7 @@ function PlateContent({ t }: { t: typeof TEMPLATES[number] }) {
 }
 
 function TemplatePlate({ t, index, inView }: { t: typeof TEMPLATES[number]; index: number; inView: boolean }) {
-  const isComing = 'coming' in t && t.coming
+  const isComing = 'coming' in t && Boolean((t as Record<string, unknown>).coming)
 
   return (
     <motion.div
