@@ -309,6 +309,7 @@ function PortalStage({
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [text, setText] = useState('')
   const [title, setTitle] = useState('')
+  const [convertError, setConvertError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -322,31 +323,62 @@ function PortalStage({
     }, 800)
   }, [])
 
+  /** Send .docx binary to backend for Pandoc conversion, then feed the resulting markdown into handleText */
+  const convertDocx = useCallback(async (file: File) => {
+    setConvertError(null)
+    setPhase('analyzing')
+    try {
+      const buf = await file.arrayBuffer()
+      const resp = await fetch('/api/convert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: buf,
+      })
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ message: 'Conversion failed.' }))
+        setConvertError(err.message || 'Failed to convert .docx')
+        setPhase('idle')
+        return
+      }
+      const { markdown } = await resp.json()
+      if (!markdown || typeof markdown !== 'string') {
+        setConvertError('Conversion returned empty result.')
+        setPhase('idle')
+        return
+      }
+      handleText(markdown)
+    } catch {
+      setConvertError('Network error during .docx conversion.')
+      setPhase('idle')
+    }
+  }, [handleText])
+
+  /** Route file to the right handler based on extension */
+  const handleFile = useCallback((file: File) => {
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext === 'docx') {
+      convertDocx(file)
+    } else {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const result = ev.target?.result
+        if (typeof result === 'string') handleText(result)
+      }
+      reader.readAsText(file)
+    }
+  }, [handleText, convertDocx])
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setDragActive(false)
     const file = e.dataTransfer.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const result = ev.target?.result
-        if (typeof result === 'string') handleText(result)
-      }
-      reader.readAsText(file)
-    }
-  }, [handleText])
+    if (file) handleFile(file)
+  }, [handleFile])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const result = ev.target?.result
-        if (typeof result === 'string') handleText(result)
-      }
-      reader.readAsText(file)
-    }
-  }, [handleText])
+    if (file) handleFile(file)
+  }, [handleFile])
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     const pasted = e.clipboardData?.getData('text/plain')
@@ -393,7 +425,7 @@ function PortalStage({
               Drop your manuscript.
             </h1>
             <p className="mt-6 font-body text-lg text-white/25">
-              .md or .txt
+              .md, .txt, or .docx
             </p>
           </motion.div>
 
@@ -408,7 +440,7 @@ function PortalStage({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".md,.txt,.markdown,text/plain,text/markdown"
+            accept=".md,.txt,.markdown,.docx,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             onChange={handleFileSelect}
             className="sr-only"
           />
@@ -440,6 +472,23 @@ function PortalStage({
               Try sample
             </button>
           </motion.div>
+
+          {/* Conversion error feedback */}
+          {convertError && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-8 mx-auto max-w-sm rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-left"
+            >
+              <p className="font-mono text-[11px] text-red-400">{convertError}</p>
+              <button
+                onClick={() => setConvertError(null)}
+                className="mt-1 font-mono text-[10px] text-white/20 hover:text-white/40"
+              >
+                Dismiss
+              </button>
+            </motion.div>
+          )}
 
           <motion.p
             initial={{ opacity: 0 }}

@@ -594,6 +594,50 @@ function parseMissingPackages(stderr) {
 }
 
 // ================================================================
+// Convert Endpoint — .docx → Markdown via Pandoc
+// Accepts raw binary .docx, returns extracted Markdown text.
+// ================================================================
+
+const convertLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { error: 'rate_limit', message: 'Too many conversion requests. Try again in a minute.' } });
+const MAX_DOCX_BYTES = Number(process.env.MAX_DOCX_BYTES || 10_000_000); // 10 MB
+
+app.post('/api/convert', convertLimiter, express.raw({ type: '*/*', limit: '10mb' }), (req, res) => {
+  const buf = req.body;
+  if (!Buffer.isBuffer(buf) || buf.length < 100) {
+    return res.status(400).json({ error: 'invalid_request', message: 'No file received. Send the .docx as the raw request body.' });
+  }
+  if (buf.length > MAX_DOCX_BYTES) {
+    return res.status(413).json({ error: 'payload_too_large', message: `File exceeds ${MAX_DOCX_BYTES} byte limit.` });
+  }
+
+  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-conv-'));
+  const docxPath = path.join(tmpBase, 'input.docx');
+  fs.writeFileSync(docxPath, buf);
+
+  const pandoc = spawn('pandoc', [docxPath, '-t', 'markdown', '--wrap=none'], { cwd: tmpBase });
+
+  let stdout = '';
+  let stderr = '';
+  pandoc.stdout.on('data', (d) => { stdout += d.toString(); });
+  pandoc.stderr.on('data', (d) => { stderr += d.toString(); });
+
+  const killer = setTimeout(() => {
+    try { pandoc.kill('SIGKILL'); } catch {}
+  }, 30_000);
+
+  pandoc.on('close', (code) => {
+    clearTimeout(killer);
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+
+    if (code === 0 && stdout.length > 0) {
+      return res.json({ markdown: stdout });
+    }
+    console.error(`[convert] pandoc exit ${code}: ${stderr.slice(0, 500)}`);
+    return res.status(500).json({ error: 'conversion_failed', message: 'Failed to convert .docx to Markdown.', detail: stderr.slice(0, 300) });
+  });
+});
+
+// ================================================================
 // Free tier page size restrictions
 // ================================================================
 const FREE_TIER_SIZES = new Set(['letter', 'a4', 'sixByNine']);
