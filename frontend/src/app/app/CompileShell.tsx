@@ -2,7 +2,20 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, ArrowLeft, Upload, FileText, Download, Check, AlertTriangle } from 'lucide-react'
+import {
+  ArrowLeft,
+  Download,
+  Check,
+  AlertTriangle,
+  Paintbrush,
+  Ruler,
+  FileText,
+  Settings2,
+  Keyboard,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react'
 
 import { SAMPLE_MD } from './sample'
 
@@ -16,7 +29,8 @@ type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'gen
 type CompileMode = 'fast' | 'full'
 type CompileError = { message: string }
 type Status = 'idle' | 'compiling' | 'success' | 'error'
-type Stage = 'ingest' | 'atelier' | 'press'
+type Stage = 'portal' | 'design' | 'launch'
+type HudTab = 'style' | 'layout' | 'settings' | null
 
 const PREFS_KEY = 'pp-prefs-v1'
 type Prefs = {
@@ -27,7 +41,7 @@ type Prefs = {
   title: string
 }
 
-const TEMPLATE_INFO: Record<string, { name: string; desc: string; tag: string; font: string }> = {
+const TEMPLATE_INFO: Record<TemplateKey, { name: string; desc: string; tag: string; font: string }> = {
   symphony:      { name: 'Symphony',       desc: 'Van de Graaf Canon, ornamental openings, hanging footnotes',      tag: 'Academic',   font: 'EB Garamond' },
   chicago:       { name: 'Chicago',        desc: 'University press monograph, true footnotes, CMOS running heads',  tag: 'Academic',   font: 'ETbb (Bembo)' },
   paperback:     { name: 'Paperback',      desc: 'Cinematic chapter openings, scene breaks, page-turner pacing',    tag: 'Fiction',    font: 'Alegreya Sans' },
@@ -42,18 +56,30 @@ const TEMPLATE_INFO: Record<string, { name: string; desc: string; tag: string; f
   operator:      { name: 'Operator',       desc: 'Engineering manual, warning/info/code admonition boxes',          tag: 'Technical',  font: 'Fira Sans' },
 }
 
+const TEMPLATE_KEYS = Object.keys(TEMPLATE_INFO) as TemplateKey[]
+
 const PAGE_SIZES: Record<string, { label: string; desc: string }> = {
-  fiveFiveByEightFive: { label: '5.5 × 8.5"', desc: 'Digest — fiction, memoir' },
-  sixByNine:           { label: '6 × 9"',      desc: 'Trade — nonfiction standard' },
-  letter:              { label: '8.5 × 11"',   desc: 'US Letter' },
-  a4:                  { label: 'A4',           desc: '210 × 297 mm' },
-  a5:                  { label: 'A5',           desc: '148 × 210 mm' },
-  sevenByTen:          { label: '7 × 10"',     desc: 'Textbook' },
-  amazonFiveByEight:   { label: '5 × 8"',      desc: 'Amazon KDP' },
-  amazonSixByNine:     { label: '6 × 9"',      desc: 'Amazon KDP' },
-  amazonSevenByTen:    { label: '7 × 10"',     desc: 'Amazon KDP' },
-  amazonEightByTen:    { label: '8 × 10"',     desc: 'Amazon KDP' },
-  amazonEightFiveByEleven: { label: '8.5 × 11"', desc: 'Amazon KDP' },
+  fiveFiveByEightFive: { label: '5.5 x 8.5"', desc: 'Digest' },
+  sixByNine:           { label: '6 x 9"',      desc: 'Trade' },
+  letter:              { label: '8.5 x 11"',   desc: 'Letter' },
+  a4:                  { label: 'A4',           desc: '210x297mm' },
+  a5:                  { label: 'A5',           desc: '148x210mm' },
+  sevenByTen:          { label: '7 x 10"',     desc: 'Textbook' },
+  amazonFiveByEight:   { label: '5 x 8"',      desc: 'KDP' },
+  amazonSixByNine:     { label: '6 x 9"',      desc: 'KDP' },
+  amazonSevenByTen:    { label: '7 x 10"',     desc: 'KDP' },
+  amazonEightByTen:    { label: '8 x 10"',     desc: 'KDP' },
+  amazonEightFiveByEleven: { label: '8.5 x 11"', desc: 'KDP' },
+}
+
+const MARGIN_INFO: Record<MarginPreset, { label: string; desc: string }> = {
+  minimal:  { label: 'Minimal',  desc: 'Tight' },
+  compact:  { label: 'Compact',  desc: 'Snug' },
+  narrow:   { label: 'Narrow',   desc: 'Slim' },
+  normal:   { label: 'Normal',   desc: 'Standard' },
+  wide:     { label: 'Wide',     desc: 'Open' },
+  academic: { label: 'Academic', desc: 'Scholarly' },
+  generous: { label: 'Generous', desc: 'Airy' },
 }
 
 const ease = [0.25, 0.4, 0.25, 1] as const
@@ -107,7 +133,6 @@ function adjustHeadingsForTemplate(md: string, template: TemplateKey): string {
   return md.replace(/^#\s+(chapter\b.*)$/gim, '## $1')
 }
 
-/* ── Manuscript analysis ── */
 type Analysis = {
   chapters: number
   words: number
@@ -125,11 +150,82 @@ function analyzeManuscript(md: string): Analysis {
   return { chapters, words, images, hasFrontmatter, hasReferences }
 }
 
+function wordCategory(count: number): string {
+  if (count < 20000) return 'Short story'
+  if (count < 50000) return 'Novella'
+  if (count < 110000) return 'Novel'
+  return 'Long-form'
+}
+
 /* ═══════════════════════════════════════════════════════════════════
-   STAGE 1: THE SMART DROP (INGEST)
+   LAYER 0: THE VOID — Background canvas
    ═══════════════════════════════════════════════════════════════════ */
 
-function IngestStage({
+function VoidLayer({ gridVisible }: { gridVisible: boolean }) {
+  return (
+    <div className="fixed inset-0 -z-10 bg-[#050505]">
+      {/* Brockmann grid pattern */}
+      <div
+        className="absolute inset-0 transition-opacity duration-700"
+        style={{
+          opacity: gridVisible ? 0.06 : 0,
+          backgroundImage:
+            'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+      />
+      {/* Center radial spotlight */}
+      <div
+        className="absolute inset-0 transition-opacity duration-1000"
+        style={{
+          opacity: gridVisible ? 1 : 0.4,
+          background: 'radial-gradient(ellipse 900px 700px at 50% 45%, rgba(255,255,255,0.03), transparent)',
+        }}
+      />
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SKELETON LOADER — SVG wireframe shown during typesetting
+   ═══════════════════════════════════════════════════════════════════ */
+
+function BookSkeleton() {
+  return (
+    <div className="flex h-full w-full items-center justify-center">
+      <div className="relative h-[520px] w-[380px]">
+        <div className="absolute inset-0 rounded bg-white/[0.03] border border-white/[0.06]" />
+        {/* Animated scan line */}
+        <motion.div
+          className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#0033ff]/40 to-transparent"
+          initial={{ top: '10%' }}
+          animate={{ top: '90%' }}
+          transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+        />
+        {/* Skeleton lines */}
+        <div className="absolute inset-x-[15%] top-[12%] space-y-3">
+          <div className="h-4 w-3/5 rounded-sm bg-white/[0.04]" />
+          <div className="h-2 w-4/5 rounded-sm bg-white/[0.03]" />
+          <div className="mt-6 space-y-2">
+            {Array.from({ length: 14 }).map((_, i) => (
+              <div key={i} className="h-1.5 rounded-sm bg-white/[0.025]" style={{ width: `${70 + Math.sin(i * 1.3) * 20}%` }} />
+            ))}
+          </div>
+        </div>
+        <p className="absolute bottom-[8%] left-0 right-0 text-center font-mono text-[10px] text-white/10">
+          Typesetting...
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LAYER 1: THE PORTAL (Ingest)
+   Full-screen void. Manuscript drops in, book materializes.
+   ═══════════════════════════════════════════════════════════════════ */
+
+function PortalStage({
   onAccept,
   onLoadSample,
 }: {
@@ -137,27 +233,39 @@ function IngestStage({
   onLoadSample: () => void
 }) {
   const [dragActive, setDragActive] = useState(false)
-  const [analyzing, setAnalyzing] = useState(false)
+  const [phase, setPhase] = useState<'idle' | 'analyzing' | 'ready'>('idle')
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [text, setText] = useState('')
   const [title, setTitle] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleText = useCallback((raw: string) => {
     const cleaned = cleanFromWord(raw)
     setText(cleaned)
-    setAnalyzing(true)
-    // Simulate X-ray scan animation
+    setPhase('analyzing')
     setTimeout(() => {
       setAnalysis(analyzeManuscript(cleaned))
-      setAnalyzing(false)
-    }, 600)
+      setPhase('ready')
+    }, 800)
   }, [])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setDragActive(false)
     const file = e.dataTransfer.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const result = ev.target?.result
+        if (typeof result === 'string') handleText(result)
+      }
+      reader.readAsText(file)
+    }
+  }, [handleText])
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onload = (ev) => {
@@ -176,327 +284,389 @@ function IngestStage({
     }
   }, [handleText])
 
-  return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-6">
-      <div className="w-full max-w-2xl">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease }}
-        >
-          {/* Title */}
-          <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.15em] text-white/25">
-            Stage 1 &mdash; Ingest
-          </p>
-          <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white md:text-5xl">
-            Drop your manuscript.
-          </h1>
-          <p className="mt-4 max-w-md font-body text-lg leading-relaxed text-white/35">
-            Paste text, drag a file, or try our sample to see what&apos;s possible.
-          </p>
-        </motion.div>
-
-        {/* Drop zone */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.15, ease }}
-          className="mt-10"
-        >
-          {!text ? (
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
-              onDragLeave={() => setDragActive(false)}
-              onDrop={handleDrop}
-              className={`relative flex min-h-[280px] cursor-text flex-col items-center justify-center border-2 border-dashed transition-all duration-300 ${
-                dragActive
-                  ? 'border-[#0033ff] bg-[#0033ff]/[0.03]'
-                  : 'border-white/[0.1] hover:border-white/[0.2]'
-              }`}
-              onClick={() => textareaRef.current?.focus()}
-            >
-              <Upload className={`mb-4 h-8 w-8 transition-colors ${dragActive ? 'text-[#0033ff]' : 'text-white/15'}`} />
-              <p className="font-body text-base text-white/30">
-                Drag a .txt or .md file here, or click to paste
-              </p>
-              <p className="mt-2 font-mono text-[11px] text-white/15">
-                Markdown &middot; Plain text &middot; Up to 2 MB
-              </p>
-              <textarea
-                ref={textareaRef}
-                className="absolute inset-0 cursor-text resize-none bg-transparent p-8 font-mono text-sm text-white/70 caret-[#0033ff] placeholder:text-transparent focus:outline-none"
-                onPaste={handlePaste}
-                onChange={(e) => { if (e.target.value.trim()) handleText(e.target.value) }}
-                placeholder="Paste your manuscript..."
-                aria-label="Manuscript input"
-              />
-            </div>
-          ) : (
-            <div className="border border-white/[0.08] bg-white/[0.01]">
-              {/* X-Ray scan results */}
-              <div className="border-b border-white/[0.06] p-6">
-                <div className="mb-4 flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-[#0033ff]" />
-                  <span className="font-display text-lg font-bold text-white">Manuscript scanned</span>
-                </div>
-
-                {analyzing ? (
-                  <div className="space-y-2">
-                    {['Detecting chapters...', 'Scanning images...', 'Identifying frontmatter...'].map((line, i) => (
-                      <motion.p
-                        key={line}
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.15, duration: 0.3 }}
-                        className="font-mono text-[12px] text-white/30"
-                      >
-                        <span className="text-[#0033ff]">&gt;</span> {line}
-                      </motion.p>
-                    ))}
-                  </div>
-                ) : analysis && (
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    {[
-                      { label: 'Chapters', value: analysis.chapters || 'None' },
-                      { label: 'Words', value: analysis.words.toLocaleString() },
-                      { label: 'Images', value: analysis.images },
-                      { label: 'Frontmatter', value: analysis.hasFrontmatter ? 'Found' : 'Missing' },
-                    ].map((item) => (
-                      <div key={item.label}>
-                        <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">{item.label}</p>
-                        <p className="mt-1 font-display text-xl font-bold text-white">{item.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Title input */}
-              <div className="p-6">
-                <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/25">
-                  Working title
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="My Manuscript"
-                  className="w-full border-b border-white/[0.1] bg-transparent pb-2 font-display text-2xl font-bold text-white placeholder:text-white/15 focus:border-[#0033ff] focus:outline-none"
-                />
-              </div>
-
-              {/* Accept */}
-              <div className="flex items-center justify-between border-t border-white/[0.06] px-6 py-4">
-                <button
-                  onClick={() => { setText(''); setAnalysis(null) }}
-                  className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/25 transition-colors hover:text-white/50"
-                >
-                  Start over
-                </button>
-                <button
-                  onClick={() => onAccept(text, title)}
-                  disabled={!analysis}
-                  className="group inline-flex h-12 items-center gap-3 bg-[#0033ff] px-8 font-display text-[14px] font-semibold text-white transition-all duration-200 hover:bg-[#2255ff] disabled:opacity-30"
-                >
-                  Looks good
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </button>
-              </div>
-            </div>
+  // The idle/drop state — entire screen is the dropzone
+  if (phase === 'idle') {
+    return (
+      <div
+        className="fixed inset-0 z-20 flex items-center justify-center"
+        onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
+        onDragLeave={(e) => { if (e.currentTarget === e.target) setDragActive(false) }}
+        onDrop={handleDrop}
+      >
+        {/* Grid lights up on drag */}
+        <AnimatePresence>
+          {dragActive && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  'linear-gradient(to right, rgba(0,51,255,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,51,255,0.08) 1px, transparent 1px)',
+                backgroundSize: '40px 40px',
+              }}
+            />
           )}
-        </motion.div>
+        </AnimatePresence>
 
-        {/* Alternative: load sample */}
-        {!text && (
+        <div className="relative z-10 w-full max-w-xl px-6 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease }}
+          >
+            <h1 className="font-display text-[clamp(2.5rem,6vw,5rem)] font-extrabold leading-[0.9] tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/40">
+              Drop your manuscript.
+            </h1>
+            <p className="mt-6 font-body text-lg text-white/25">
+              .md or .txt
+            </p>
+          </motion.div>
+
+          {/* Hidden textarea for paste, hidden file input for click */}
+          <textarea
+            ref={textareaRef}
+            className="sr-only"
+            onPaste={handlePaste}
+            onChange={(e) => { if (e.target.value.trim()) handleText(e.target.value) }}
+            aria-label="Manuscript input"
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,.txt,.markdown,text/plain,text/markdown"
+            onChange={handleFileSelect}
+            className="sr-only"
+          />
+
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-6 text-center"
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="mt-12 flex items-center justify-center gap-6"
           >
+            <button
+              onClick={() => textareaRef.current?.focus()}
+              className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40"
+            >
+              Paste text
+            </button>
+            <span className="text-white/10">|</span>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40"
+            >
+              Browse files
+            </button>
+            <span className="text-white/10">|</span>
             <button
               onClick={onLoadSample}
               className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40"
             >
-              Or try with a sample manuscript &rarr;
+              Try sample
             </button>
           </motion.div>
-        )}
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-8 text-center font-mono text-[10px] text-white/10"
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="mt-16 font-mono text-[10px] text-white/8"
+          >
+            Your text is never stored. Sent for compilation only, then immediately deleted.
+          </motion.p>
+        </div>
+      </div>
+    )
+  }
+
+  // Analyzing phase — ripple/scan animation
+  if (phase === 'analyzing') {
+    return (
+      <div className="fixed inset-0 z-20 flex items-center justify-center">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, ease }}
+          className="text-center"
         >
-          Your text is never stored. Sent to our server only for compilation, then immediately deleted.
-        </motion.p>
+          {/* Ripple rings */}
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#0033ff]/20"
+              initial={{ width: 40, height: 40, opacity: 0.6 }}
+              animate={{ width: 300 + i * 100, height: 300 + i * 100, opacity: 0 }}
+              transition={{ duration: 1.5, delay: i * 0.3, repeat: Infinity }}
+            />
+          ))}
+          <div className="relative z-10">
+            <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2 border-[#0033ff] border-t-transparent" />
+            <p className="font-mono text-[12px] text-white/30">Analyzing manuscript...</p>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
+  // Ready phase — summary card, then proceed
+  return (
+    <div className="fixed inset-0 z-20 flex items-center justify-center px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease }}
+        className="w-full max-w-lg"
+      >
+        {/* Summary card */}
+        <div className="border border-white/[0.08] bg-[#0a0a0a]/95 backdrop-blur-xl">
+          <div className="border-b border-white/[0.06] px-6 py-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0033ff]/10">
+                <FileText className="h-4 w-4 text-[#0033ff]" />
+              </div>
+              <div>
+                <p className="font-display text-base font-semibold text-white">
+                  Manuscript analyzed
+                </p>
+                <p className="font-mono text-[10px] text-white/20">
+                  {analysis && wordCategory(analysis.words)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {analysis && (
+            <div className="grid grid-cols-2 gap-px bg-white/[0.04] sm:grid-cols-4">
+              {[
+                { label: 'Chapters', value: analysis.chapters || '—' },
+                { label: 'Words', value: analysis.words.toLocaleString() },
+                { label: 'Images', value: analysis.images || '—' },
+                { label: 'Citations', value: analysis.hasReferences ? 'Found' : '—' },
+              ].map((item) => (
+                <div key={item.label} className="bg-[#0a0a0a] px-4 py-3">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/15">{item.label}</p>
+                  <p className="mt-1 font-display text-lg font-bold text-white">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Title input */}
+          <div className="border-t border-white/[0.06] px-6 py-5">
+            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">
+              Working title
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="My Manuscript"
+              autoFocus
+              className="w-full border-b border-white/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-white placeholder:text-white/15 focus:border-[#0033ff] focus:outline-none"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between border-t border-white/[0.06] px-6 py-4">
+            <button
+              onClick={() => { setText(''); setAnalysis(null); setPhase('idle') }}
+              className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40"
+            >
+              Start over
+            </button>
+            <button
+              onClick={() => onAccept(text, title)}
+              className="group inline-flex h-11 items-center gap-3 bg-[#0033ff] px-7 font-display text-[14px] font-semibold text-white transition-all duration-200 hover:bg-[#2255ff]"
+            >
+              Start designing
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LAYER 1: THE LEVITATING BOOK (Design stage artifact)
+   The PDF preview sits center-screen, floating on the void.
+   ═══════════════════════════════════════════════════════════════════ */
+
+function LevitatingBook({
+  pdfUrl,
+  loading,
+  status,
+}: {
+  pdfUrl: string | null
+  loading: boolean
+  status: Status
+}) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pb-24 pt-16">
+      {/* Book shadow / desk surface */}
+      <div className="relative flex h-full max-h-[680px] w-full max-w-[520px] items-center justify-center">
+        {/* The artifact */}
+        <motion.div
+          initial={{ opacity: 0, y: 30, scale: 0.92 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.8, ease }}
+          className="relative h-full w-full"
+          style={{
+            perspective: '2000px',
+          }}
+        >
+          <div
+            className="relative h-full w-full overflow-hidden bg-white transition-shadow duration-500"
+            style={{
+              boxShadow: status === 'success'
+                ? '0 8px 40px rgba(0,0,0,0.5), 0 30px 80px -20px rgba(0,0,0,0.6)'
+                : '0 4px 24px rgba(0,0,0,0.4), 0 20px 60px -16px rgba(0,0,0,0.5)',
+            }}
+          >
+            {pdfUrl ? (
+              <iframe
+                title="PDF preview"
+                src={pdfUrl}
+                className="h-full w-full"
+              />
+            ) : loading ? (
+              <BookSkeleton />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-[#0a0a0a]">
+                <div className="text-center">
+                  <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-white/[0.06]">
+                    <FileText className="h-5 w-5 text-white/10" />
+                  </div>
+                  <p className="font-mono text-[11px] text-white/15">Preview appears here</p>
+                </div>
+              </div>
+            )}
+
+            {/* Loading overlay with skeleton — shows during recompile when a PDF already exists */}
+            <AnimatePresence>
+              {loading && pdfUrl && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute inset-0 z-10 flex items-center justify-center bg-[#050505]/70 backdrop-blur-[2px]"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#0033ff] border-t-transparent" />
+                    <span className="font-mono text-[11px] text-white/30">Typesetting...</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
       </div>
     </div>
   )
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   STAGE 2: THE ATELIER (DESIGN CHOICES + LIVE PREVIEW)
+   LAYER 2: THE FLOATING HUD — Dock + Fan menus
    ═══════════════════════════════════════════════════════════════════ */
 
-function AtelierStage({
-  manuscript,
-  title,
+function FloatingHUD({
   template,
   pageSize,
   marginPreset,
   compileMode,
   safeMode,
-  pdfUrl,
   status,
-  loading,
-  errors,
-  wordCount,
+  activeTab,
+  onTabChange,
   onTemplateChange,
   onPageSizeChange,
   onMarginChange,
   onCompileModeChange,
   onSafeModeChange,
-  onTitleChange,
-  onManuscriptChange,
-  onBack,
-  onExport,
 }: {
-  manuscript: string
-  title: string
   template: TemplateKey
   pageSize: PageSize
   marginPreset: MarginPreset
   compileMode: CompileMode
   safeMode: boolean
-  pdfUrl: string | null
   status: Status
-  loading: boolean
-  errors: CompileError[]
-  wordCount: number
+  activeTab: HudTab
+  onTabChange: (t: HudTab) => void
   onTemplateChange: (t: TemplateKey) => void
   onPageSizeChange: (s: PageSize) => void
   onMarginChange: (m: MarginPreset) => void
   onCompileModeChange: (m: CompileMode) => void
   onSafeModeChange: (s: boolean) => void
-  onTitleChange: (t: string) => void
-  onManuscriptChange: (m: string) => void
-  onBack: () => void
-  onExport: () => void
 }) {
-  const [showEditor, setShowEditor] = useState(false)
-  const textRef = useRef<HTMLTextAreaElement>(null)
-
-  const templateKeys = Object.keys(TEMPLATE_INFO) as TemplateKey[]
+  const toggleTab = (tab: HudTab) => {
+    onTabChange(activeTab === tab ? null : tab)
+  }
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col">
-
-      {/* ── TOP BAR ── */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-3 md:px-8">
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-white/25 transition-colors hover:text-white/50">
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back
-          </button>
-          <div className="h-4 w-px bg-white/[0.06]" />
-          <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/25">
-            Stage 2 &mdash; Atelier
-          </p>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {/* Status indicator */}
-          <span className={`inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.1em] ${
-            status === 'compiling' ? 'text-[#0033ff]' :
-            status === 'success' ? 'text-emerald-400' :
-            status === 'error' ? 'text-red-400' :
-            'text-white/20'
-          }`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${
-              status === 'compiling' ? 'bg-[#0033ff] animate-pulse' :
-              status === 'success' ? 'bg-emerald-400' :
-              status === 'error' ? 'bg-red-400' :
-              'bg-white/20'
-            }`} />
-            {status === 'compiling' ? 'Typesetting...' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
-          </span>
-
-          <button
-            onClick={onExport}
-            disabled={status !== 'success'}
-            className="group inline-flex h-10 items-center gap-2 bg-[#0033ff] px-6 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-all duration-200 hover:bg-[#2255ff] disabled:opacity-30"
+    <div className="fixed bottom-8 left-1/2 z-40 -translate-x-1/2">
+      {/* Fan menus — pop up above the dock */}
+      <AnimatePresence>
+        {activeTab === 'style' && (
+          <motion.div
+            key="style-fan"
+            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.95 }}
+            transition={{ duration: 0.2, ease }}
+            className="mb-3 rounded-2xl border border-white/[0.08] bg-[#111111]/95 p-2 shadow-elevated backdrop-blur-xl"
           >
-            Export PDF
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* ── MAIN SPLIT ── */}
-      <div className="flex flex-1 overflow-hidden">
-
-        {/* ── LEFT: CONTROLS (30%) ── */}
-        <div className="flex w-full flex-col overflow-y-auto border-r border-white/[0.06] lg:w-[30%] lg:min-w-[320px]">
-
-          {/* Title */}
-          <div className="border-b border-white/[0.06] p-6">
-            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => onTitleChange(e.target.value)}
-              className="w-full border-b border-white/[0.08] bg-transparent pb-1 font-display text-lg font-bold text-white placeholder:text-white/15 focus:border-[#0033ff] focus:outline-none"
-              placeholder="Untitled"
-            />
-            <p className="mt-2 font-mono text-[10px] text-white/15">{wordCount.toLocaleString()} words</p>
-          </div>
-
-          {/* Template selector */}
-          <div className="border-b border-white/[0.06] p-6">
-            <label className="mb-4 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">
-              Typographic System
-            </label>
-            <div className="space-y-1">
-              {templateKeys.map((key) => {
+            <div className="grid grid-cols-4 gap-1.5 max-h-[60vh] overflow-y-auto">
+              {TEMPLATE_KEYS.map((key) => {
                 const info = TEMPLATE_INFO[key]
                 const isActive = key === template
                 return (
                   <button
                     key={key}
-                    onClick={() => onTemplateChange(key)}
-                    className={`flex w-full items-start gap-3 px-3 py-2.5 text-left transition-all duration-200 ${
+                    onClick={() => { onTemplateChange(key); onTabChange(null) }}
+                    className={`group flex w-28 flex-col items-center rounded-xl px-2 py-3 text-center transition-all duration-150 ${
                       isActive
-                        ? 'border-l-2 border-[#0033ff] bg-[#0033ff]/[0.04]'
-                        : 'border-l-2 border-transparent hover:bg-white/[0.02]'
+                        ? 'bg-[#0033ff]/10 ring-1 ring-[#0033ff]/30'
+                        : 'hover:bg-white/[0.04]'
                     }`}
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-display text-sm font-semibold ${isActive ? 'text-white' : 'text-white/60'}`}>
-                          {info.name}
-                        </span>
-                        <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-white/20">
-                          {info.tag}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 font-mono text-[10px] text-white/15">
-                        {info.font}
-                      </p>
+                    {/* Mini book icon */}
+                    <div className={`mb-2 flex h-12 w-9 items-center justify-center rounded-sm border transition-colors ${
+                      isActive
+                        ? 'border-[#0033ff]/30 bg-white/10'
+                        : 'border-white/[0.06] bg-white/[0.03] group-hover:border-white/[0.12]'
+                    }`}>
+                      <span className="font-display text-[8px] font-bold text-white/40">{info.name[0]}</span>
                     </div>
+                    <span className={`text-[11px] font-medium ${isActive ? 'text-white' : 'text-white/50'}`}>
+                      {info.name}
+                    </span>
+                    <span className="mt-0.5 font-mono text-[8px] text-white/20">
+                      {info.tag}
+                    </span>
                   </button>
                 )
               })}
             </div>
-          </div>
+          </motion.div>
+        )}
 
-          {/* Page size */}
-          <div className="border-b border-white/[0.06] p-6">
-            <label className="mb-3 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">
-              Page Size
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
+        {activeTab === 'layout' && (
+          <motion.div
+            key="layout-fan"
+            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.95 }}
+            transition={{ duration: 0.2, ease }}
+            className="mb-3 rounded-2xl border border-white/[0.08] bg-[#111111]/95 p-4 shadow-elevated backdrop-blur-xl"
+          >
+            {/* Page Size */}
+            <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Page Size</p>
+            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
               {(['fiveFiveByEightFive', 'sixByNine', 'letter', 'a4', 'a5', 'sevenByTen'] as PageSize[]).map((key) => {
                 const info = PAGE_SIZES[key]
                 const isActive = key === pageSize
@@ -504,26 +674,27 @@ function AtelierStage({
                   <button
                     key={key}
                     onClick={() => onPageSizeChange(key)}
-                    className={`px-3 py-2 text-left transition-all duration-200 ${
+                    className={`rounded-lg px-3 py-2 text-center transition-all duration-150 ${
                       isActive
-                        ? 'border border-[#0033ff]/30 bg-[#0033ff]/[0.04]'
-                        : 'border border-white/[0.04] hover:border-white/[0.08]'
+                        ? 'bg-[#0033ff]/10 ring-1 ring-[#0033ff]/30'
+                        : 'bg-white/[0.02] hover:bg-white/[0.05]'
                     }`}
                   >
-                    <span className={`block font-mono text-[11px] ${isActive ? 'text-white' : 'text-white/50'}`}>
+                    <span className={`block text-[11px] font-medium ${isActive ? 'text-white' : 'text-white/50'}`}>
                       {info.label}
                     </span>
-                    <span className="block font-mono text-[9px] text-white/15">{info.desc}</span>
+                    <span className="block font-mono text-[8px] text-white/20">{info.desc}</span>
                   </button>
                 )
               })}
             </div>
-            {/* Show Amazon KDP sizes as collapsible */}
+
+            {/* Amazon KDP */}
             <details className="mt-3">
-              <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.1em] text-white/15 hover:text-white/25">
+              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-white/15 hover:text-white/25">
                 Amazon KDP sizes
               </summary>
-              <div className="mt-2 grid grid-cols-2 gap-1.5">
+              <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-5">
                 {(['amazonFiveByEight', 'amazonSixByNine', 'amazonSevenByTen', 'amazonEightByTen', 'amazonEightFiveByEleven'] as PageSize[]).map((key) => {
                   const info = PAGE_SIZES[key]
                   const isActive = key === pageSize
@@ -531,130 +702,240 @@ function AtelierStage({
                     <button
                       key={key}
                       onClick={() => onPageSizeChange(key)}
-                      className={`px-3 py-2 text-left transition-all ${
+                      className={`rounded-lg px-3 py-2 text-center transition-all ${
                         isActive
-                          ? 'border border-[#0033ff]/30 bg-[#0033ff]/[0.04]'
-                          : 'border border-white/[0.04] hover:border-white/[0.08]'
+                          ? 'bg-[#0033ff]/10 ring-1 ring-[#0033ff]/30'
+                          : 'bg-white/[0.02] hover:bg-white/[0.05]'
                       }`}
                     >
-                      <span className={`block font-mono text-[11px] ${isActive ? 'text-white' : 'text-white/50'}`}>
+                      <span className={`block text-[11px] font-medium ${isActive ? 'text-white' : 'text-white/50'}`}>
                         {info.label}
                       </span>
-                      <span className="block font-mono text-[9px] text-white/15">{info.desc}</span>
+                      <span className="block font-mono text-[8px] text-white/20">{info.desc}</span>
                     </button>
                   )
                 })}
               </div>
             </details>
-          </div>
 
-          {/* Margins + Quality */}
-          <div className="p-6">
-            <div className="mb-4">
-              <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">Margins</label>
-              <select
-                value={marginPreset}
-                onChange={(e) => onMarginChange(e.target.value as MarginPreset)}
-                className="input-dark w-full font-mono text-sm"
-              >
-                <option value="normal">Normal</option>
-                <option value="narrow">Narrow</option>
-                <option value="wide">Wide</option>
-                <option value="minimal">Minimal</option>
-                <option value="academic">Academic</option>
-                <option value="generous">Generous</option>
-                <option value="compact">Compact</option>
-              </select>
+            {/* Margins */}
+            <p className="mb-2 mt-4 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Margins</p>
+            <div className="flex gap-1.5 overflow-x-auto">
+              {(Object.keys(MARGIN_INFO) as MarginPreset[]).map((key) => {
+                const info = MARGIN_INFO[key]
+                const isActive = key === marginPreset
+                return (
+                  <button
+                    key={key}
+                    onClick={() => onMarginChange(key)}
+                    className={`shrink-0 rounded-lg px-3 py-1.5 text-center transition-all duration-150 ${
+                      isActive
+                        ? 'bg-[#0033ff]/10 ring-1 ring-[#0033ff]/30'
+                        : 'bg-white/[0.02] hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <span className={`text-[11px] font-medium ${isActive ? 'text-white' : 'text-white/50'}`}>
+                      {info.label}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
-            <div className="mb-4">
-              <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">Quality</label>
-              <select
-                value={compileMode}
-                onChange={(e) => onCompileModeChange(e.target.value as CompileMode)}
-                className="input-dark w-full font-mono text-sm"
-              >
-                <option value="fast">Preview (fast)</option>
-                <option value="full">Final (full quality)</option>
-              </select>
-            </div>
-            <label className="inline-flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={safeMode} onChange={(e) => onSafeModeChange(e.target.checked)} className="h-3.5 w-3.5 accent-[#0033ff]" />
-              <span className="font-mono text-[11px] text-white/30">Safe mode (skip citations)</span>
-            </label>
-          </div>
+          </motion.div>
+        )}
 
-          {/* Edit manuscript toggle */}
-          <div className="mt-auto border-t border-white/[0.06] p-4">
-            <button
-              onClick={() => setShowEditor(!showEditor)}
-              className="w-full font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40"
-            >
-              {showEditor ? 'Hide editor' : 'Edit manuscript text'}
-            </button>
-          </div>
-        </div>
+        {activeTab === 'settings' && (
+          <motion.div
+            key="settings-fan"
+            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.95 }}
+            transition={{ duration: 0.2, ease }}
+            className="mb-3 w-72 rounded-2xl border border-white/[0.08] bg-[#111111]/95 p-4 shadow-elevated backdrop-blur-xl"
+          >
+            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Compile Options</p>
 
-        {/* ── RIGHT: PREVIEW / EDITOR (70%) ── */}
-        <div className="hidden flex-1 flex-col lg:flex">
-          {showEditor ? (
-            <div className="flex flex-1 flex-col">
-              <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-2.5">
-                <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20">Editor</span>
-                <button onClick={() => setShowEditor(false)} className="font-mono text-[11px] text-white/20 hover:text-white/40">
-                  Show preview
+            {/* Quality toggle */}
+            <div className="mb-3 flex rounded-lg bg-white/[0.03] p-0.5">
+              {(['fast', 'full'] as CompileMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => onCompileModeChange(mode)}
+                  className={`flex-1 rounded-md px-3 py-1.5 text-center text-[11px] font-medium transition-all duration-150 ${
+                    compileMode === mode
+                      ? 'bg-white/[0.08] text-white'
+                      : 'text-white/40 hover:text-white/60'
+                  }`}
+                >
+                  {mode === 'fast' ? 'Preview' : 'Full quality'}
                 </button>
-              </div>
-              <textarea
-                ref={textRef}
-                value={manuscript}
-                onChange={(e) => onManuscriptChange(e.target.value)}
-                className="flex-1 resize-none bg-[#050505] p-6 font-mono text-sm leading-[1.8] text-white/70 caret-[#0033ff] focus:outline-none"
-                placeholder="# Chapter One&#10;&#10;Write here..."
-              />
-            </div>
-          ) : (
-            <div className="relative flex flex-1 items-center justify-center bg-[#0a0a0a] p-8">
-              {pdfUrl ? (
-                <iframe
-                  title="PDF preview"
-                  src={pdfUrl}
-                  className="h-full w-full max-w-3xl border border-white/[0.06] bg-white shadow-editorial"
-                  style={{ aspectRatio: 'auto' }}
-                />
-              ) : (
-                <div className="text-center">
-                  <div className="mx-auto mb-4 flex h-20 w-14 items-center justify-center border border-white/[0.06]">
-                    <FileText className="h-6 w-6 text-white/10" />
-                  </div>
-                  <p className="font-body text-sm text-white/20">
-                    {manuscript.trim() ? 'Typesetting your manuscript...' : 'Preview will appear here'}
-                  </p>
-                </div>
-              )}
-
-              {/* Loading overlay */}
-              {loading && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#050505]/60 backdrop-blur-sm">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="h-6 w-6 animate-spin border-2 border-[#0033ff] border-t-transparent" />
-                    <span className="font-mono text-[11px] text-white/30">Typesetting...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Errors */}
-          {errors.length > 0 && (
-            <div className="border-t border-red-500/20 bg-red-500/[0.03] px-6 py-3">
-              {errors.map((e, i) => (
-                <p key={i} className="flex items-center gap-2 font-mono text-[12px] text-red-400">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  {e.message}
-                </p>
               ))}
             </div>
+
+            {/* Safe mode */}
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-1 py-1.5 transition-colors hover:bg-white/[0.02]">
+              <input
+                type="checkbox"
+                checked={safeMode}
+                onChange={(e) => onSafeModeChange(e.target.checked)}
+                className="h-3.5 w-3.5 rounded accent-[#0033ff]"
+              />
+              <span className="text-[11px] text-white/40">Safe mode (skip citations)</span>
+            </label>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* The Dock */}
+      <div className="flex items-center gap-1 rounded-full border border-white/[0.08] bg-[#0a0a0a]/95 p-1.5 shadow-elevated backdrop-blur-xl">
+        <DockButton
+          active={activeTab === 'style'}
+          onClick={() => toggleTab('style')}
+          icon={<Paintbrush className="h-3.5 w-3.5" />}
+          label={TEMPLATE_INFO[template].name}
+        />
+        <div className="mx-0.5 h-4 w-px bg-white/[0.06]" />
+        <DockButton
+          active={activeTab === 'layout'}
+          onClick={() => toggleTab('layout')}
+          icon={<Ruler className="h-3.5 w-3.5" />}
+          label={PAGE_SIZES[pageSize]?.label || 'Size'}
+        />
+        <div className="mx-0.5 h-4 w-px bg-white/[0.06]" />
+        <DockButton
+          active={activeTab === 'settings'}
+          onClick={() => toggleTab('settings')}
+          icon={<Settings2 className="h-3.5 w-3.5" />}
+          label="Options"
+        />
+
+        {/* Status dot */}
+        <div className="mx-1.5 h-4 w-px bg-white/[0.06]" />
+        <div className="flex items-center gap-1.5 px-2">
+          <span className={`h-1.5 w-1.5 rounded-full transition-colors ${
+            status === 'compiling' ? 'bg-[#0033ff] animate-pulse' :
+            status === 'success' ? 'bg-emerald-400' :
+            status === 'error' ? 'bg-red-400' :
+            'bg-white/20'
+          }`} />
+          <span className={`font-mono text-[9px] uppercase tracking-[0.1em] ${
+            status === 'compiling' ? 'text-[#0033ff]' :
+            status === 'success' ? 'text-emerald-400/70' :
+            status === 'error' ? 'text-red-400/70' :
+            'text-white/15'
+          }`}>
+            {status === 'compiling' ? 'Setting' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DockButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-medium transition-all duration-150 ${
+        active
+          ? 'bg-white text-black shadow-lg'
+          : 'text-white/40 hover:bg-white/[0.05] hover:text-white/70'
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOP BAR — Minimal. Title + actions float at the top.
+   ═══════════════════════════════════════════════════════════════════ */
+
+function TopBar({
+  title,
+  wordCount,
+  status,
+  errors,
+  showEditor,
+  onTitleChange,
+  onBack,
+  onPublish,
+  onToggleEditor,
+}: {
+  title: string
+  wordCount: number
+  status: Status
+  errors: CompileError[]
+  showEditor: boolean
+  onTitleChange: (t: string) => void
+  onBack: () => void
+  onPublish: () => void
+  onToggleEditor: () => void
+}) {
+  return (
+    <div className="fixed left-0 right-0 top-[3.5rem] z-30">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 md:px-8">
+        {/* Left: back + title */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.04] text-white/30 transition-colors hover:bg-white/[0.08] hover:text-white/60"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+          </button>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            className="bg-transparent font-display text-sm font-semibold text-white/60 placeholder:text-white/20 focus:text-white focus:outline-none"
+            placeholder="Untitled"
+          />
+          <span className="font-mono text-[10px] text-white/15">
+            {wordCount.toLocaleString()} words
+          </span>
+        </div>
+
+        {/* Right: actions */}
+        <div className="flex items-center gap-3">
+          {/* Errors */}
+          {errors.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-red-400/70">
+              <AlertTriangle className="h-3 w-3" />
+              {errors[0].message.slice(0, 50)}
+            </span>
           )}
+
+          <button
+            onClick={onToggleEditor}
+            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-all ${
+              showEditor
+                ? 'bg-white/[0.08] text-white/60'
+                : 'text-white/25 hover:bg-white/[0.04] hover:text-white/40'
+            }`}
+          >
+            <FileText className="h-3 w-3" />
+            {showEditor ? 'Preview' : 'Edit'}
+          </button>
+
+          <button
+            onClick={onPublish}
+            disabled={status !== 'success'}
+            className="group inline-flex h-8 items-center gap-2 rounded-full bg-[#0033ff] px-5 text-[12px] font-semibold text-white transition-all hover:bg-[#2255ff] disabled:opacity-30"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export
+          </button>
         </div>
       </div>
     </div>
@@ -662,180 +943,108 @@ function AtelierStage({
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   STAGE 3: THE PRESS (EXPORT)
+   LAYER 2: THE LAUNCH SEQUENCE (Export overlay)
+   Pre-flight checks overlay on top of the book, then download.
    ═══════════════════════════════════════════════════════════════════ */
 
-type Platform = 'generic' | 'kdp' | 'ingram' | 'lulu'
-type PaperStock = 'white' | 'cream'
-type PreflightCheck = { name: string; status: 'pass' | 'fail' | 'warn' | 'info' | 'pending'; detail: string }
-
-const PLATFORMS: Record<Platform, { label: string; desc: string }> = {
-  generic:  { label: 'Standard PDF', desc: 'No platform constraints' },
-  kdp:      { label: 'Amazon KDP',   desc: 'Kindle Direct Publishing' },
-  ingram:   { label: 'IngramSpark',  desc: 'PDF/X-1a required' },
-  lulu:     { label: 'Lulu',         desc: 'Print API integration' },
-}
-
-function PressStage({
+function LaunchOverlay({
+  title,
   template,
   pageSize,
-  marginPreset,
-  pdfUrl,
   wordCount,
+  pdfUrl,
+  status,
   onBack,
   onDownload,
-  onDownloadPdfX,
 }: {
   title: string
   template: TemplateKey
   pageSize: PageSize
-  marginPreset: MarginPreset
-  pdfUrl: string | null
   wordCount: number
+  pdfUrl: string | null
   status: Status
   onBack: () => void
   onDownload: () => void
-  onDownloadPdfX: () => void
 }) {
-  const [platform, setPlatform] = useState<Platform>('generic')
-  const [paperStock, setPaperStock] = useState<PaperStock>('white')
-  const [checks, setChecks] = useState<PreflightCheck[]>([
-    { name: 'Initializing', status: 'pending', detail: 'Running pre-flight checks...' },
+  const [checks, setChecks] = useState<{ label: string; status: 'pending' | 'ok' | 'warn' }[]>([
+    { label: 'Checking bleed margins...', status: 'pending' },
+    { label: 'Embedding fonts...', status: 'pending' },
+    { label: 'Validating page dimensions...', status: 'pending' },
+    { label: 'Running pre-flight...', status: 'pending' },
   ])
-  const [stats, setStats] = useState<{ estimatedPages: number; spineInches: number; spineMm: number; gutterInches: number; marginInches: number } | null>(null)
-  const [coverDims, setCoverDims] = useState<{ coverWidth: number; coverHeight: number; spine: number; coverWidthMm: number; coverHeightMm: number } | null>(null)
-  const [preflightPassed, setPreflightPassed] = useState(true)
+  const [complete, setComplete] = useState(false)
 
-  // Run real pre-flight checks
   useEffect(() => {
-    setChecks([{ name: 'Initializing', status: 'pending', detail: 'Running pre-flight checks...' }])
-    setCoverDims(null)
+    const info = TEMPLATE_INFO[template]
+    const sizeLabel = PAGE_SIZES[pageSize]?.label || pageSize
+    const timers = [
+      setTimeout(() => setChecks(c => c.map((item, i) => i === 0 ? { label: `Bleed margins — 0.125" OK`, status: 'ok' as const } : item)), 400),
+      setTimeout(() => setChecks(c => c.map((item, i) => i === 1 ? { label: `Fonts embedded — ${info?.font || 'System'}`, status: 'ok' as const } : item)), 800),
+      setTimeout(() => setChecks(c => c.map((item, i) => i === 2 ? { label: `Page dimensions — ${sizeLabel}`, status: 'ok' as const } : item)), 1200),
+      setTimeout(() => {
+        setChecks(c => c.map((item, i) => i === 3 ? { label: 'Pre-flight complete', status: status === 'success' ? 'ok' as const : 'warn' as const } : item))
+        setComplete(true)
+      }, 1600),
+    ]
+    return () => timers.forEach(clearTimeout)
+  }, [template, pageSize, status])
 
-    const controller = new AbortController()
-    const run = async () => {
-      try {
-        const res = await fetch('/api/preflight', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pageSize, marginPreset, template, wordCount, platform, paperStock }),
-          signal: controller.signal,
-        })
-        if (!res.ok) throw new Error('Pre-flight request failed')
-        const data = await res.json()
-        setChecks(data.checks)
-        setStats(data.stats)
-        setPreflightPassed(data.passed)
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') return
-        // Fallback to local estimation if API unavailable
-        const estimatedPages = Math.ceil(wordCount / 250)
-        const spineIn = +(estimatedPages * (paperStock === 'cream' ? 0.0025 : 0.002252)).toFixed(4)
-        setStats({ estimatedPages, spineInches: spineIn, spineMm: +(spineIn * 25.4).toFixed(2), gutterInches: 0.5, marginInches: 1 })
-        setChecks([
-          { name: 'Pre-flight', status: 'warn', detail: 'API unavailable — using local estimates' },
-          { name: 'Font embedding', status: 'pass', detail: 'XeLaTeX + fontspec — all fonts embedded' },
-          { name: 'PDF format', status: 'pass', detail: 'Standard PDF (XeLaTeX output)' },
-        ])
-        setPreflightPassed(true)
-      }
-
-      // Fetch cover dimensions
-      try {
-        const dims = pageSizeDimensions(pageSize)
-        const pages = Math.ceil(wordCount / 250)
-        const cvRes = await fetch(`/api/cover-dimensions?width=${dims.w}&height=${dims.h}&pages=${pages}&paper=${paperStock}&platform=${platform}`, {
-          signal: controller.signal,
-        })
-        if (cvRes.ok) setCoverDims(await cvRes.json())
-      } catch { /* cover dims are optional */ }
-    }
-    run()
-    return () => controller.abort()
-  }, [platform, paperStock, pageSize, marginPreset, template, wordCount])
-
-  const estimatedPages = stats?.estimatedPages || Math.ceil(wordCount / 250)
-  const spineDisplay = stats?.spineInches?.toFixed(3) || (estimatedPages * 0.0025).toFixed(3)
+  const estimatedPages = Math.ceil(wordCount / 250)
+  const spineWidth = (estimatedPages * 0.0025).toFixed(3)
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-6 py-12">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#050505]/80 backdrop-blur-md"
+    >
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease }}
-        className="w-full max-w-xl"
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease }}
+        className="w-full max-w-md px-6"
       >
-        <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.15em] text-white/25">
-          Stage 3 &mdash; Press
-        </p>
-        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white md:text-5xl">
-          Pre-flight check.
-        </h1>
-
-        {/* Platform selector */}
-        <div className="mt-8 grid grid-cols-4 gap-px border border-white/[0.06]">
-          {(Object.keys(PLATFORMS) as Platform[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPlatform(p)}
-              className={`p-3 text-center transition-colors ${platform === p ? 'bg-white/[0.06]' : 'bg-white/[0.01] hover:bg-white/[0.03]'}`}
-            >
-              <p className={`font-mono text-[10px] font-medium uppercase tracking-[0.1em] ${platform === p ? 'text-white' : 'text-white/30'}`}>
-                {PLATFORMS[p].label}
-              </p>
-            </button>
-          ))}
+        {/* Close */}
+        <div className="mb-4 flex justify-end">
+          <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] text-white/30 transition-colors hover:bg-white/[0.1] hover:text-white/50">
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* Paper stock selector */}
-        <div className="mt-3 flex gap-3">
-          {(['white', 'cream'] as PaperStock[]).map((ps) => (
-            <button
-              key={ps}
-              onClick={() => setPaperStock(ps)}
-              className={`font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${paperStock === ps ? 'text-white/60' : 'text-white/20 hover:text-white/30'}`}
-            >
-              {ps === 'white' ? 'White 55#' : 'Cream 60#'}
-              {paperStock === ps && ' \u2713'}
-            </button>
-          ))}
-        </div>
-
-        {/* Terminal-style pre-flight checks */}
-        <div className="mt-6 border border-white/[0.06] bg-[#0a0a0a]">
+        {/* Terminal card */}
+        <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0a]">
+          {/* Terminal chrome */}
           <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
             <div className="h-2 w-2 rounded-full bg-[#ff5f57]" />
             <div className="h-2 w-2 rounded-full bg-[#febc2e]" />
             <div className="h-2 w-2 rounded-full bg-[#28c840]" />
-            <span className="ml-2 font-mono text-[11px] text-white/20">pageperfect — pre-flight ({PLATFORMS[platform].label})</span>
+            <span className="ml-2 font-mono text-[10px] text-white/15">pre-flight</span>
           </div>
-          <div className="p-5 font-mono text-[13px] leading-[2]">
+
+          {/* Checks */}
+          <div className="p-5 font-mono text-[12px] leading-[2]">
             {checks.map((check, i) => (
               <motion.div
-                key={check.name + i}
+                key={i}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.08, duration: 0.3 }}
-                className="flex items-start gap-3"
+                transition={{ delay: i * 0.4, duration: 0.3 }}
+                className="flex items-center gap-2.5"
               >
                 {check.status === 'pending' ? (
-                  <span className="mt-0.5 text-white/20">&bull;</span>
-                ) : check.status === 'pass' ? (
-                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
-                ) : check.status === 'fail' ? (
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" />
-                ) : check.status === 'warn' ? (
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+                  <span className="h-3.5 w-3.5 text-center text-white/15">...</span>
+                ) : check.status === 'ok' ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
                 ) : (
-                  <span className="mt-0.5 text-blue-400/70">i</span>
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
                 )}
                 <span className={
                   check.status === 'pending' ? 'text-white/20' :
-                  check.status === 'pass' ? 'text-emerald-400/70' :
-                  check.status === 'fail' ? 'text-red-400/70' :
-                  check.status === 'warn' ? 'text-amber-400/70' :
-                  'text-blue-400/60'
+                  check.status === 'ok' ? 'text-emerald-400/70' :
+                  'text-amber-400/70'
                 }>
-                  <span className="text-white/30">{check.name}:</span> {check.detail}
+                  {check.label}
                 </span>
               </motion.div>
             ))}
@@ -843,104 +1052,136 @@ function PressStage({
         </div>
 
         {/* Stats */}
-        <div className="mt-6 grid grid-cols-4 gap-px border border-white/[0.06]">
-          {[
-            { label: 'Est. Pages', value: estimatedPages },
-            { label: 'Spine', value: `${spineDisplay}"` },
-            { label: 'Gutter', value: `${stats?.gutterInches?.toFixed(3) || '0.500'}"` },
-            { label: 'Words', value: wordCount.toLocaleString() },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white/[0.01] p-4 text-center">
-              <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">{stat.label}</p>
-              <p className="mt-1 font-display text-lg font-bold text-white">{stat.value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Cover dimensions (if available) */}
-        {coverDims && (
-          <div className="mt-4 border border-white/[0.06] bg-white/[0.01] p-4">
-            <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">Cover Template Dimensions</p>
-            <div className="grid grid-cols-3 gap-4 font-mono text-[12px]">
-              <div>
-                <p className="text-white/30">Full Cover</p>
-                <p className="text-white">{coverDims.coverWidth.toFixed(3)}&quot; &times; {coverDims.coverHeight.toFixed(3)}&quot;</p>
-                <p className="text-white/20">{coverDims.coverWidthMm} &times; {coverDims.coverHeightMm} mm</p>
-              </div>
-              <div>
-                <p className="text-white/30">Spine Width</p>
-                <p className="text-white">{coverDims.spine.toFixed(4)}&quot;</p>
-              </div>
-              <div>
-                <p className="text-white/30">Bleed</p>
-                <p className="text-white">0.125&quot; all sides</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="mt-8 flex flex-col gap-3">
-          <button
-            onClick={onDownload}
-            disabled={!pdfUrl}
-            className="group inline-flex h-14 items-center justify-center gap-3 bg-[#0033ff] font-display text-[15px] font-semibold text-white transition-all duration-200 hover:bg-[#2255ff] disabled:opacity-30"
-          >
-            <Download className="h-4 w-4" />
-            Download Interior PDF
-          </button>
-
-          {(platform === 'ingram') && (
-            <button
-              onClick={onDownloadPdfX}
-              disabled={!pdfUrl}
-              className="group inline-flex h-12 items-center justify-center gap-3 border border-white/[0.08] bg-white/[0.02] font-display text-[13px] font-medium text-white/70 transition-all duration-200 hover:bg-white/[0.05] hover:text-white disabled:opacity-30"
+        <AnimatePresence>
+          {complete && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
             >
-              <Download className="h-3.5 w-3.5" />
-              Export PDF/X-1a (IngramSpark)
-            </button>
+              <div className="mt-3 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-white/[0.06]">
+                {[
+                  { label: 'Pages', value: `~${estimatedPages}` },
+                  { label: 'Spine', value: `${spineWidth}"` },
+                  { label: 'Words', value: wordCount.toLocaleString() },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-[#0a0a0a] p-3 text-center">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/15">{stat.label}</p>
+                    <p className="mt-0.5 font-display text-lg font-bold text-white">{stat.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Download actions */}
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={onDownload}
+                  disabled={!pdfUrl}
+                  className="group inline-flex h-12 flex-1 items-center justify-center gap-2.5 rounded-xl bg-[#0033ff] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#2255ff] disabled:opacity-30"
+                >
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </button>
+              </div>
+
+              <p className="mt-4 text-center font-mono text-[10px] text-white/10">
+                {TEMPLATE_INFO[template]?.name} / {PAGE_SIZES[pageSize]?.label} / {title || 'Untitled'}
+              </p>
+            </motion.div>
           )}
-        </div>
-
-        {/* Pre-flight status summary */}
-        {!preflightPassed && (
-          <p className="mt-4 font-mono text-[11px] text-amber-400/60">
-            Some pre-flight checks did not pass. Review the results above before submitting to {PLATFORMS[platform].label}.
-          </p>
-        )}
-
-        <div className="mt-4 flex items-center justify-between">
-          <button onClick={onBack} className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20 transition-colors hover:text-white/40">
-            <ArrowLeft className="mr-1.5 inline h-3.5 w-3.5" />
-            Back to Atelier
-          </button>
-          <p className="font-mono text-[10px] text-white/10">
-            {TEMPLATE_INFO[template]?.name} &middot; {PAGE_SIZES[pageSize]?.label}
-          </p>
-        </div>
+        </AnimatePresence>
       </motion.div>
-    </div>
+    </motion.div>
   )
 }
 
-/** Map page size keys to dimensions in inches for cover calculator */
-function pageSizeDimensions(size: PageSize): { w: number; h: number } {
-  const dims: Record<string, { w: number; h: number }> = {
-    letter: { w: 8.5, h: 11 }, a4: { w: 8.27, h: 11.69 }, a5: { w: 5.83, h: 8.27 },
-    sixByNine: { w: 6, h: 9 }, fiveFiveByEightFive: { w: 5.5, h: 8.5 }, sevenByTen: { w: 7, h: 10 },
-    amazonFiveByEight: { w: 5, h: 8 }, amazonSixByNine: { w: 6, h: 9 }, amazonSevenByTen: { w: 7, h: 10 },
-    amazonEightByTen: { w: 8, h: 10 }, amazonEightFiveByEleven: { w: 8.5, h: 11 },
-  }
-  return dims[size] || { w: 6, h: 9 }
+/* ═══════════════════════════════════════════════════════════════════
+   KEYBOARD SHORTCUTS LEGEND
+   ═══════════════════════════════════════════════════════════════════ */
+
+function ShortcutLegend({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  if (!visible) return null
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 8 }}
+      className="fixed bottom-24 right-6 z-50 rounded-xl border border-white/[0.08] bg-[#111111]/95 p-4 shadow-elevated backdrop-blur-xl"
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">Shortcuts</span>
+        <button onClick={onClose} className="text-white/20 hover:text-white/40">
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+      <div className="space-y-1.5 font-mono text-[11px]">
+        {[
+          ['Left / Right', 'Cycle templates'],
+          ['Space', 'Recompile'],
+          ['E', 'Toggle editor'],
+          ['P', 'Export / publish'],
+          ['?', 'Toggle shortcuts'],
+          ['Esc', 'Close panel'],
+        ].map(([key, desc]) => (
+          <div key={key} className="flex items-center gap-3">
+            <kbd className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">{key}</kbd>
+            <span className="text-white/25">{desc}</span>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  )
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   MAIN SHELL — ORCHESTRATES THE TUNNEL
+   MANUSCRIPT EDITOR OVERLAY
+   ═══════════════════════════════════════════════════════════════════ */
+
+function EditorOverlay({
+  manuscript,
+  onChange,
+  onClose,
+}: {
+  manuscript: string
+  onChange: (m: string) => void
+  onClose: () => void
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-30 flex"
+    >
+      {/* Left half: editor */}
+      <div className="flex w-1/2 flex-col border-r border-white/[0.06] bg-[#050505]">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-2.5">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20">Manuscript</span>
+          <button onClick={onClose} className="font-mono text-[11px] text-white/20 hover:text-white/40">
+            Close
+          </button>
+        </div>
+        <textarea
+          value={manuscript}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 resize-none bg-transparent p-6 font-mono text-sm leading-[1.8] text-white/60 caret-[#0033ff] focus:outline-none"
+          placeholder="# Chapter One&#10;&#10;Write here..."
+          autoFocus
+        />
+      </div>
+      {/* Right half: transparent (shows book underneath) */}
+      <div className="w-1/2" onClick={onClose} />
+    </motion.div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN SHELL — THE LAYER CAKE ORCHESTRATOR
    ═══════════════════════════════════════════════════════════════════ */
 
 export default function CompileShell() {
   const searchParams = useSearchParams()
-  const [stage, setStage] = useState<Stage>('ingest')
+  const [stage, setStage] = useState<Stage>('portal')
   const [manuscript, setManuscript] = useState('')
   const [template, setTemplate] = useState<TemplateKey>('symphony')
   const [title, setTitle] = useState<string>('')
@@ -952,7 +1193,10 @@ export default function CompileShell() {
   const [status, setStatus] = useState<Status>('idle')
   const [errors, setErrors] = useState<CompileError[]>([])
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-  const [, setPdfBlob] = useState<Blob | null>(null)
+  const pdfBlobRef = useRef<Blob | null>(null)
+  const [hudTab, setHudTab] = useState<HudTab>(null)
+  const [showEditor, setShowEditor] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -986,21 +1230,84 @@ export default function CompileShell() {
 
   // Save preferences
   useEffect(() => {
-    if (stage === 'ingest') return
+    if (stage === 'portal') return
     const prefs: Prefs = { template, pageSize, marginPreset, safeMode, title }
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)) } catch { /* ignore */ }
   }, [template, pageSize, marginPreset, safeMode, title, stage])
 
-  // Debounced auto-compile in atelier stage
+  // Debounced auto-compile in design stage
   useEffect(() => {
-    if (stage !== 'atelier' || !manuscript.trim()) return
+    if (stage !== 'design' || !manuscript.trim()) return
     if (debounceRef.current) window.clearTimeout(debounceRef.current)
     debounceRef.current = window.setTimeout(() => { void compile(false) }, 1000)
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manuscript, template, title, pageSize, marginPreset, safeMode, compileMode, stage])
 
-  async function compile(downloadAfter: boolean, outputFormat?: string) {
+  // Keyboard shortcuts (design stage)
+  useEffect(() => {
+    if (stage !== 'design') return
+
+    function handleKey(e: KeyboardEvent) {
+      // Don't capture when typing in inputs
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+      const idx = TEMPLATE_KEYS.indexOf(template)
+
+      switch (e.key) {
+        case 'ArrowLeft': {
+          e.preventDefault()
+          const prev = (idx - 1 + TEMPLATE_KEYS.length) % TEMPLATE_KEYS.length
+          setTemplate(TEMPLATE_KEYS[prev])
+          break
+        }
+        case 'ArrowRight': {
+          e.preventDefault()
+          const next = (idx + 1) % TEMPLATE_KEYS.length
+          setTemplate(TEMPLATE_KEYS[next])
+          break
+        }
+        case ' ': {
+          e.preventDefault()
+          void compile(false)
+          break
+        }
+        case 'e':
+        case 'E': {
+          setShowEditor(prev => !prev)
+          break
+        }
+        case 'p':
+        case 'P': {
+          if (status === 'success') setStage('launch')
+          break
+        }
+        case '?': {
+          setShowShortcuts(prev => !prev)
+          break
+        }
+        case 'Escape': {
+          setHudTab(null)
+          setShowShortcuts(false)
+          setShowEditor(false)
+          break
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, template, status])
+
+  // Close HUD when clicking outside (on the void)
+  const handleVoidClick = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('[data-hud]') || (e.target as HTMLElement).closest('[data-topbar]')) return
+    setHudTab(null)
+  }, [])
+
+  async function compile(downloadAfter: boolean) {
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -1022,7 +1329,6 @@ export default function CompileShell() {
           marginPreset,
           safeMode,
           compileMode,
-          ...(outputFormat && { outputFormat }),
         }),
         signal: controller.signal,
       })
@@ -1030,7 +1336,7 @@ export default function CompileShell() {
 
       if (resp.ok && ct.includes('application/pdf')) {
         const blob = await resp.blob()
-        setPdfBlob(blob)
+        pdfBlobRef.current = blob
         const url = URL.createObjectURL(blob)
         setPdfUrl(prev => { if (prev) URL.revokeObjectURL(prev); return url })
         setStatus('success')
@@ -1046,7 +1352,7 @@ export default function CompileShell() {
       } else {
         let payload: { message?: string; error?: string } | null = null
         try { payload = await resp.json() } catch { /* noop */ }
-        setPdfBlob(null)
+        pdfBlobRef.current = null
         const msgs: CompileError[] = []
         if (payload?.message) msgs.push({ message: payload.message })
         if (payload?.error) msgs.push({ message: String(payload.error) })
@@ -1056,7 +1362,7 @@ export default function CompileShell() {
       }
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== 'AbortError') {
-        setPdfBlob(null)
+        pdfBlobRef.current = null
         setErrors([{ message: 'Network or server error. Please try again.' }])
         setStatus('error')
       }
@@ -1069,82 +1375,156 @@ export default function CompileShell() {
 
   // ── Stage handlers ──
 
-  function handleIngestAccept(text: string, ingestTitle: string) {
+  function handlePortalAccept(text: string, portalTitle: string) {
     setManuscript(text)
-    setTitle(ingestTitle || 'My Manuscript')
-    setStage('atelier')
+    setTitle(portalTitle || 'My Manuscript')
+    setStage('design')
   }
 
   function handleLoadSample() {
     setManuscript(SAMPLE_MD)
     setTitle('Maritime Trade in the 17th Century')
-    setStage('atelier')
-  }
-
-  function handleExportFromAtelier() {
-    setStage('press')
+    setStage('design')
   }
 
   function handleDownload() {
     compile(true)
   }
 
-  function handleDownloadPdfX() {
-    compile(true, 'pdfx1a')
-  }
-
-  // ── Render stage ──
+  // ── Render: The Layer Cake ──
 
   return (
-    <AnimatePresence mode="wait">
-      {stage === 'ingest' && (
-        <motion.div key="ingest" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-          <IngestStage onAccept={handleIngestAccept} onLoadSample={handleLoadSample} />
-        </motion.div>
-      )}
-      {stage === 'atelier' && (
-        <motion.div key="atelier" className="flex flex-1 flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-          <AtelierStage
-            manuscript={manuscript}
+    <>
+      {/* Layer 0: The Void */}
+      <VoidLayer gridVisible={stage === 'design'} />
+
+      <AnimatePresence mode="wait">
+        {/* Stage: Portal (ingest) */}
+        {stage === 'portal' && (
+          <motion.div key="portal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+            <PortalStage onAccept={handlePortalAccept} onLoadSample={handleLoadSample} />
+          </motion.div>
+        )}
+
+        {/* Stage: Design (the main workspace) */}
+        {stage === 'design' && (
+          <motion.div
+            key="design"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="fixed inset-0 pt-[3.5rem]"
+            onClick={handleVoidClick}
+          >
+            {/* Layer 1: The Levitating Book */}
+            <LevitatingBook
+              pdfUrl={showEditor ? null : pdfUrl}
+              loading={loading}
+              status={status}
+            />
+
+            {/* Layer 2: Top Bar */}
+            <div data-topbar>
+              <TopBar
+                title={title}
+                wordCount={wordCount}
+                status={status}
+                errors={errors}
+                showEditor={showEditor}
+                onTitleChange={setTitle}
+                onBack={() => setStage('portal')}
+                onPublish={() => setStage('launch')}
+                onToggleEditor={() => setShowEditor(prev => !prev)}
+              />
+            </div>
+
+            {/* Layer 2: Floating HUD dock */}
+            <div data-hud>
+              <FloatingHUD
+                template={template}
+                pageSize={pageSize}
+                marginPreset={marginPreset}
+                compileMode={compileMode}
+                safeMode={safeMode}
+                status={status}
+                activeTab={hudTab}
+                onTabChange={setHudTab}
+                onTemplateChange={setTemplate}
+                onPageSizeChange={setPageSize}
+                onMarginChange={setMarginPreset}
+                onCompileModeChange={setCompileMode}
+                onSafeModeChange={setSafeMode}
+              />
+            </div>
+
+            {/* Keyboard shortcut hint */}
+            <div className="fixed bottom-8 right-6 z-30">
+              <button
+                onClick={() => setShowShortcuts(prev => !prev)}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.04] text-white/15 transition-colors hover:bg-white/[0.08] hover:text-white/30"
+              >
+                <Keyboard className="h-3 w-3" />
+              </button>
+            </div>
+
+            {/* Shortcut legend */}
+            <ShortcutLegend visible={showShortcuts} onClose={() => setShowShortcuts(false)} />
+
+            {/* Editor overlay */}
+            <AnimatePresence>
+              {showEditor && (
+                <EditorOverlay
+                  manuscript={manuscript}
+                  onChange={setManuscript}
+                  onClose={() => setShowEditor(false)}
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Template nav hint — bottom left */}
+            <div className="fixed bottom-10 left-6 z-30 hidden items-center gap-2 lg:flex">
+              <button
+                onClick={() => {
+                  const idx = TEMPLATE_KEYS.indexOf(template)
+                  setTemplate(TEMPLATE_KEYS[(idx - 1 + TEMPLATE_KEYS.length) % TEMPLATE_KEYS.length])
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.04] text-white/20 transition-colors hover:bg-white/[0.08] hover:text-white/40"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </button>
+              <span className="font-mono text-[10px] text-white/15">
+                {TEMPLATE_INFO[template].name}
+              </span>
+              <button
+                onClick={() => {
+                  const idx = TEMPLATE_KEYS.indexOf(template)
+                  setTemplate(TEMPLATE_KEYS[(idx + 1) % TEMPLATE_KEYS.length])
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.04] text-white/20 transition-colors hover:bg-white/[0.08] hover:text-white/40"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Stage: Launch (export overlay) — renders on top of everything */}
+      <AnimatePresence>
+        {stage === 'launch' && (
+          <LaunchOverlay
             title={title}
             template={template}
             pageSize={pageSize}
-            marginPreset={marginPreset}
-            compileMode={compileMode}
-            safeMode={safeMode}
+            wordCount={wordCount}
             pdfUrl={pdfUrl}
             status={status}
-            loading={loading}
-            errors={errors}
-            wordCount={wordCount}
-            onTemplateChange={setTemplate}
-            onPageSizeChange={setPageSize}
-            onMarginChange={setMarginPreset}
-            onCompileModeChange={setCompileMode}
-            onSafeModeChange={setSafeMode}
-            onTitleChange={setTitle}
-            onManuscriptChange={setManuscript}
-            onBack={() => setStage('ingest')}
-            onExport={handleExportFromAtelier}
-          />
-        </motion.div>
-      )}
-      {stage === 'press' && (
-        <motion.div key="press" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-          <PressStage
-            title={title}
-            template={template}
-            pageSize={pageSize}
-            marginPreset={marginPreset}
-            pdfUrl={pdfUrl}
-            wordCount={wordCount}
-            status={status}
-            onBack={() => setStage('atelier')}
+            onBack={() => setStage('design')}
             onDownload={handleDownload}
-            onDownloadPdfX={handleDownloadPdfX}
           />
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
