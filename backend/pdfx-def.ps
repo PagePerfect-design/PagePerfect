@@ -1,0 +1,53 @@
+%!PS-Adobe-3.0
+% PDF/X-1a:2001 Output Intent definition for Ghostscript
+% Used by PagePerfect for IngramSpark-compliant PDF export.
+%
+% This file defines the PDF/X conformance level and output intent.
+% Ghostscript reads this before processing the input PDF.
+
+% --- PDF/X-1a:2001 conformance ---
+[ /GTS_PDFXVersion (PDF/X-1:2001)
+  /Title (PagePerfect Export)
+  /Trapped /False
+  /DOCINFO pdfmark
+
+% --- Output Intent (US Web Coated SWOP v2) ---
+% If the ICC profile file exists, embed it. Otherwise, use a
+% minimal output intent declaration that still validates.
+
+% Try to load the SWOP ICC profile
+/ICCProfilePath (/usr/share/color/icc/ghostscript/default_cmyk.icc) def
+
+% Check if profile exists and define output intent
+ICCProfilePath (r) { file } stopped
+{
+  % Profile not found — use minimal output intent without embedded profile
+  [ /objdef {OutputIntent_PDFX} /type /dict /OBJ pdfmark
+  [{OutputIntent_PDFX} <<
+    /Type /OutputIntent
+    /S /GTS_PDFX
+    /OutputCondition (Commercial and specialty offset, 300 lpi)
+    /Info (US Web Coated SWOP v2)
+    /OutputConditionIdentifier (CGATS TR 001)
+  >> /PUT pdfmark
+  [{Catalog} <</OutputIntents [ {OutputIntent_PDFX} ]>> /PUT pdfmark
+}
+{
+  % Profile found — embed it as the destination output profile
+  pop % close the file handle from the test
+
+  [/objdef {icc_PDFX} /type /stream /OBJ pdfmark
+  [{icc_PDFX} ICCProfilePath (r) file /PUT pdfmark
+  [{icc_PDFX} << /N 4 >> /PUT pdfmark
+
+  [/objdef {OutputIntent_PDFX} /type /dict /OBJ pdfmark
+  [{OutputIntent_PDFX} <<
+    /Type /OutputIntent
+    /S /GTS_PDFX
+    /OutputCondition (Commercial and specialty offset, 300 lpi)
+    /Info (US Web Coated SWOP v2)
+    /OutputConditionIdentifier (CGATS TR 001)
+    /DestOutputProfile {icc_PDFX}
+  >> /PUT pdfmark
+  [{Catalog} <</OutputIntents [ {OutputIntent_PDFX} ]>> /PUT pdfmark
+} ifelse

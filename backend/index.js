@@ -8,6 +8,8 @@ const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
 const GridSystem = require('./grid-system');
+const publishing = require('./publishing');
+const lulu = require('./lulu');
 
 // ---- limits (env overridable) ----
 const MAX_MD_BYTES = Number(process.env.MAX_MD_BYTES || 2_000_000); // ~2 MB
@@ -54,6 +56,10 @@ function templateCode(t) {
     case 'matrix': return 'matrix';
     case 'avantgarde': return 'avantgarde';
     case 'paperback': return 'paperback';
+    case 'international': return 'international';
+    case 'cinema': return 'cinema';
+    case 'heirloom': return 'heirloom';
+    case 'operator': return 'operator';
     case 'chicago':
     default: return 'chicago';
   }
@@ -264,81 +270,283 @@ app.get('/api/templates', (_req, res) => {
 });
 
 // ================================================================
+// KDP Publishing Utilities
+// ================================================================
+
+/**
+ * Amazon KDP dynamic gutter — minimum inside margin based on page count.
+ * Source: KDP Print Submission Guidelines
+ */
+function kdpGutter(pageCount) {
+  if (pageCount <= 150) return 0.375;
+  if (pageCount <= 300) return 0.5;
+  if (pageCount <= 500) return 0.625;
+  return 0.75;
+}
+
+/**
+ * Spine width calculator.
+ * White paper: pageCount × 0.002252 inches
+ * Cream paper: pageCount × 0.0025 inches
+ */
+function spineWidth(pageCount, paperStock = 'white') {
+  const factor = paperStock === 'cream' ? 0.0025 : 0.002252;
+  return +(pageCount * factor).toFixed(4);
+}
+
+app.get('/api/kdp/spine', (req, res) => {
+  const pageCount = parseInt(req.query.pages, 10);
+  if (!pageCount || pageCount < 24 || pageCount > 828) {
+    return res.status(400).json({
+      error: 'invalid_pages',
+      message: 'Page count must be between 24 and 828 (KDP limits).',
+    });
+  }
+  res.json({
+    pageCount,
+    white: { spineInches: spineWidth(pageCount, 'white'), spineMm: +(spineWidth(pageCount, 'white') * 25.4).toFixed(2) },
+    cream: { spineInches: spineWidth(pageCount, 'cream'), spineMm: +(spineWidth(pageCount, 'cream') * 25.4).toFixed(2) },
+    gutterInches: kdpGutter(pageCount),
+  });
+});
+
+app.get('/api/kdp/gutter', (req, res) => {
+  const pageCount = parseInt(req.query.pages, 10);
+  if (!pageCount || pageCount < 1) {
+    return res.status(400).json({ error: 'invalid_pages', message: 'Page count is required.' });
+  }
+  res.json({ pageCount, gutterInches: kdpGutter(pageCount) });
+});
+
+// ================================================================
+// Pre-flight Validation
+// ================================================================
+
+app.post('/api/preflight', (req, res) => {
+  const { pageSize, marginPreset, template, wordCount, pageCount, platform, paperStock } = req.body || {};
+  if (!wordCount && !pageCount) {
+    return res.status(400).json({ error: 'invalid_request', message: 'wordCount or pageCount is required.' });
+  }
+  const templateType = (DESIGN_TEMPLATES[template] || {}).gridType || 'academic';
+  const result = publishing.preflight({
+    pageSize: pageSize || 'sixByNine',
+    marginPreset: marginPreset || 'normal',
+    template: templateType,
+    wordCount: wordCount || 0,
+    pageCount,
+    platform: platform || 'generic',
+    paperStock: paperStock || 'white',
+  }, gridSystem);
+  res.json(result);
+});
+
+// ================================================================
+// Cover Dimensions Calculator
+// ================================================================
+
+app.get('/api/cover-dimensions', (req, res) => {
+  const trimWidth = parseFloat(req.query.width);
+  const trimHeight = parseFloat(req.query.height);
+  const pageCount = parseInt(req.query.pages, 10);
+  if (!trimWidth || !trimHeight || !pageCount) {
+    return res.status(400).json({
+      error: 'invalid_request',
+      message: 'width, height (inches), and pages are required query parameters.',
+    });
+  }
+  const result = publishing.coverDimensions({
+    trimWidth,
+    trimHeight,
+    pageCount,
+    paperStock: req.query.paper || 'white',
+    binding: req.query.binding || 'paperback',
+    platform: req.query.platform || 'generic',
+  });
+  res.json(result);
+});
+
+// ================================================================
+// Lulu Print API Integration
+// ================================================================
+
+app.get('/api/lulu/status', (_req, res) => {
+  res.json({
+    configured: lulu.isConfigured(),
+    baseUrl: lulu.getBaseUrl(),
+    sandbox: process.env.LULU_SANDBOX === 'true',
+  });
+});
+
+app.post('/api/lulu/cost-estimate', async (req, res) => {
+  if (!lulu.isConfigured()) {
+    return res.status(501).json({ error: 'Lulu API not configured. Set LULU_CLIENT_KEY and LULU_CLIENT_SECRET.' });
+  }
+  try {
+    const { trimSize, color, binding, paper, finish, pageCount, quantity, shippingAddress, shippingLevel } = req.body;
+    const podPackageId = lulu.buildPodPackageId({ trimSize, color, binding, paper, finish });
+    const result = await lulu.calculateCost({
+      podPackageId,
+      pageCount,
+      quantity: quantity || 1,
+      shippingAddress,
+      shippingLevel: shippingLevel || 'MAIL',
+    });
+    res.json({ podPackageId, ...result });
+  } catch (err) {
+    console.error('[lulu/cost-estimate]', err.message);
+    res.status(err.status || 500).json({ error: 'lulu_error', message: err.message, detail: err.body });
+  }
+});
+
+app.post('/api/lulu/print-job', async (req, res) => {
+  if (!lulu.isConfigured()) {
+    return res.status(501).json({ error: 'Lulu API not configured.' });
+  }
+  try {
+    const result = await lulu.createPrintJob(req.body);
+    res.json(result);
+  } catch (err) {
+    console.error('[lulu/print-job]', err.message);
+    res.status(err.status || 500).json({ error: 'lulu_error', message: err.message, detail: err.body });
+  }
+});
+
+app.get('/api/lulu/print-job/:id', async (req, res) => {
+  if (!lulu.isConfigured()) {
+    return res.status(501).json({ error: 'Lulu API not configured.' });
+  }
+  try {
+    const result = await lulu.getPrintJob(req.params.id);
+    res.json(result);
+  } catch (err) {
+    console.error('[lulu/print-job]', err.message);
+    res.status(err.status || 500).json({ error: 'lulu_error', message: err.message, detail: err.body });
+  }
+});
+
+app.post('/api/lulu/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['lulu-hmac-sha256'];
+  if (!lulu.verifyWebhook(req.body, signature)) {
+    return res.status(401).json({ error: 'Invalid webhook signature' });
+  }
+  const event = JSON.parse(req.body.toString());
+  console.log(`[lulu/webhook] Print job ${event.id} status: ${event.status?.name || 'unknown'}`);
+  // TODO: Update order status in database
+  res.json({ received: true });
+});
+
+// ================================================================
 // Design Template Registry
 // ================================================================
 
 const DESIGN_TEMPLATES = {
-  minimal: {
-    name: 'Minimal Layout',
-    description: 'Simple, clean template compatible with BasicTeX.',
-    category: 'Minimal',
-    templatePath: path.resolve(__dirname, 'templates/minimal.latex'),
-    mainfont: 'DejaVu Serif',
-    gridType: 'basic',
-    characteristics: ['Basic typography', 'Simple formatting', 'Maximum compatibility', 'No external packages'],
-  },
   symphony: {
-    name: 'Symphony Layout',
-    description: 'Classic academic design with harmonious typography.',
+    name: 'Symphony',
+    description: 'Van de Graaf Canon, EB Garamond, ornamental openings — the academic monograph perfected.',
     category: 'Academic',
     templatePath: path.resolve(__dirname, 'templates/symphony.latex'),
-    mainfont: 'DejaVu Serif',
+    mainfont: 'EB Garamond',
     gridType: 'academic',
-    characteristics: ['Serif typography', 'Indented paragraphs', 'Classic hierarchy', 'Formal spacing'],
-  },
-  chronicle: {
-    name: 'Chronicle Grid',
-    description: 'Editorial-style layout with multi-column grid system.',
-    category: 'Editorial',
-    templatePath: path.resolve(__dirname, 'templates/chronicle.latex'),
-    mainfont: 'DejaVu Sans',
-    gridType: 'editorial',
-    characteristics: ['Sans-serif typography', 'Block paragraphs', 'Editorial hierarchy', 'Professional spacing'],
-  },
-  exhibit: {
-    name: 'Exhibit Frame',
-    description: 'Modern trade design with clean lines and generous white space.',
-    category: 'Trade',
-    templatePath: path.resolve(__dirname, 'templates/exhibit.latex'),
-    mainfont: 'Lato',
-    gridType: 'trade',
-    characteristics: ['Modern sans-serif', 'Block paragraphs', 'Clean hierarchy', 'Generous spacing'],
-  },
-  matrix: {
-    name: 'Corporate Matrix',
-    description: 'Structured business layout with systematic organization.',
-    category: 'Corporate',
-    templatePath: path.resolve(__dirname, 'templates/matrix.latex'),
-    mainfont: 'Inter',
-    gridType: 'corporate',
-    characteristics: ['Professional typography', 'Systematic layout', 'Business hierarchy', 'Structured spacing'],
-  },
-  avantgarde: {
-    name: 'Avant-Garde Canvas',
-    description: 'Experimental design with creative freedom.',
-    category: 'Creative',
-    templatePath: path.resolve(__dirname, 'templates/avantgarde.latex'),
-    mainfont: 'Source Sans Pro',
-    gridType: 'creative',
-    characteristics: ['Creative typography', 'Flexible layout', 'Experimental hierarchy', 'Dynamic spacing'],
+    characteristics: ['EB Garamond + Libertinus Sans', 'Van de Graaf Canon', 'Ornamental headings', 'Hanging footnotes'],
   },
   chicago: {
-    name: 'Classic Academic (Chicago)',
-    description: 'Traditional academic style with Chicago conventions.',
-    category: 'Legacy',
+    name: 'Chicago',
+    description: 'University press monograph — ETbb (Bembo), true footnotes, CMOS running heads.',
+    category: 'Academic',
     templatePath: path.resolve(__dirname, 'templates/chicago.latex'),
-    mainfont: 'DejaVu Serif',
+    mainfont: 'ETbb',
     gridType: 'academic',
-    characteristics: ['Serif typography', 'Indented paragraphs', 'Classic hierarchy', 'Traditional spacing'],
+    characteristics: ['ETbb (Bembo)', '2em paragraph indent', 'True footnotes', 'Centered running heads'],
   },
   paperback: {
-    name: 'Modern Trade Paperback',
-    description: 'Contemporary trade book design.',
-    category: 'Legacy',
+    name: 'Paperback',
+    description: 'Cinematic page-turner — Alegreya Sans, scene breaks, filmic chapter openings.',
+    category: 'Fiction',
     templatePath: path.resolve(__dirname, 'templates/paperback.latex'),
-    mainfont: 'Lato',
+    mainfont: 'Alegreya Sans',
     gridType: 'trade',
-    characteristics: ['Sans-serif typography', 'Block paragraphs', 'Modern hierarchy', 'Contemporary spacing'],
+    characteristics: ['Alegreya Sans', 'Cinematic chapter numbers', 'Scene break ornaments', '1.5em fiction indent'],
+  },
+  chronicle: {
+    name: 'Chronicle',
+    description: 'Swiss journalism — TeX Gyre Heros, heavy rules, pull-quote blocks, flush-left ragged-right.',
+    category: 'Editorial',
+    templatePath: path.resolve(__dirname, 'templates/chronicle.latex'),
+    mainfont: 'TeX Gyre Heros',
+    gridType: 'editorial',
+    characteristics: ['TeX Gyre Heros', 'Flush left / ragged right', '3pt section rules', 'Pull-quote blockquotes'],
+  },
+  exhibit: {
+    name: 'Exhibit',
+    description: 'White Cube gallery — Fira Sans, extreme whitespace, ghost-number chapter openings.',
+    category: 'Trade',
+    templatePath: path.resolve(__dirname, 'templates/exhibit.latex'),
+    mainfont: 'Fira Sans',
+    gridType: 'trade',
+    characteristics: ['Fira Sans + TeX Gyre Adventor', '80pt ghost chapter numbers', 'Ragged right', 'Generous whitespace'],
+  },
+  matrix: {
+    name: 'Matrix',
+    description: 'Swiss corporate annual report — Fira Sans with lining figures, MidnightBlue accents, booktabs.',
+    category: 'Business',
+    templatePath: path.resolve(__dirname, 'templates/matrix.latex'),
+    mainfont: 'Fira Sans',
+    gridType: 'corporate',
+    characteristics: ['Fira Sans (lining figures)', 'Corporate blue palette', 'Executive summary blocks', 'booktabs tables'],
+  },
+  avantgarde: {
+    name: 'Avant-Garde',
+    description: 'Deconstructed manifesto — Source Sans 3, 120pt ghost numbers, brutalist blockquotes.',
+    category: 'Creative',
+    templatePath: path.resolve(__dirname, 'templates/avantgarde.latex'),
+    mainfont: 'Source Sans 3',
+    gridType: 'creative',
+    characteristics: ['Source Sans 3', '120pt ghost chapter numbers', 'Brutalist blockquotes', 'Ragged right'],
+  },
+  minimal: {
+    name: 'Minimal',
+    description: 'Radical compatibility — compiles anywhere, zero extra dependencies. Latin Modern on pdflatex.',
+    category: 'Basic',
+    templatePath: path.resolve(__dirname, 'templates/minimal.latex'),
+    mainfont: 'Latin Modern Roman',
+    gridType: 'basic',
+    characteristics: ['Zero dependencies', 'pdflatex compatible', 'Latin Modern', 'Maximum portability'],
+  },
+  international: {
+    name: 'International',
+    description: 'Müller-Brockmann Swiss Standard — one font, no italics, visible structure, modular grid.',
+    category: 'Design',
+    templatePath: path.resolve(__dirname, 'templates/international.latex'),
+    mainfont: 'TeX Gyre Heros',
+    gridType: 'editorial',
+    characteristics: ['TeX Gyre Heros only', 'No italics', 'Flush left / ragged right', 'Rule-separated sections'],
+  },
+  cinema: {
+    name: 'Cinema',
+    description: 'Hollywood Standard screenplay — Courier 12pt, strict margins, 1 page = 1 minute rule.',
+    category: 'Screenplay',
+    templatePath: path.resolve(__dirname, 'templates/cinema.latex'),
+    mainfont: 'TeX Gyre Cursor',
+    gridType: 'basic',
+    characteristics: ['TeX Gyre Cursor (Courier)', 'Industry-standard margins', 'Single-spaced', 'Dialogue blocks'],
+  },
+  heirloom: {
+    name: 'Heirloom',
+    description: 'Modern gastronomy cookbook — recipe cards, ingredient blocks, warm saddlebrown palette.',
+    category: 'Cookbook',
+    templatePath: path.resolve(__dirname, 'templates/heirloom.latex'),
+    mainfont: 'Fira Sans',
+    gridType: 'trade',
+    characteristics: ['Fira Sans + DejaVu Serif headers', 'Ingredient colorboxes', 'Bold numbered steps', 'Warm earth tones'],
+  },
+  operator: {
+    name: 'Operator',
+    description: 'Engineering manual — Fira Sans/Mono, admonition boxes (warning/info/code), structured hierarchy.',
+    category: 'Technical',
+    templatePath: path.resolve(__dirname, 'templates/operator.latex'),
+    mainfont: 'Fira Sans',
+    gridType: 'editorial',
+    characteristics: ['Fira Sans + Fira Mono', 'Warning/Info/Code admonition boxes', 'Navy blue headings', 'Technical hierarchy'],
   },
 };
 
@@ -397,9 +605,10 @@ const ALL_MARGINS = new Set(['normal','narrow','wide','minimal','academic','gene
 // ================================================================
 
 app.post('/api/compile', compileLimiter, async (req, res) => {
-  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode } = req.body || {};
+  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat } = req.body || {};
   safeMode = Boolean(safeMode);
   compileMode = (compileMode === 'full') ? 'full' : 'fast';
+  const wantPdfX = outputFormat === 'pdfx1a';
 
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
@@ -491,6 +700,29 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     }
 
     if (code === 0 && fs.existsSync(pdfPath)) {
+      // Optional PDF/X-1a conversion for IngramSpark compliance
+      if (wantPdfX) {
+        const pdfxPath = path.join(tmpBase, 'output-pdfx1a.pdf');
+        const conv = await publishing.convertToPdfX1a(pdfPath, pdfxPath, title);
+        if (!conv.success) {
+          try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+          return res.status(500).json({
+            error: 'pdfx_conversion_failed',
+            message: conv.error,
+          });
+        }
+        const filename = buildFilename(title, tplKey, pageSize).replace('.pdf', '-pdfx1a.pdf');
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.setHeader('X-PP-Filename', filename);
+        res.setHeader('X-PP-Format', 'PDF/X-1a:2001');
+        const stream = fs.createReadStream(pdfxPath);
+        stream.on('close', () => {
+          try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+        });
+        return stream.pipe(res);
+      }
+
       const filename = buildFilename(title, tplKey, pageSize);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
@@ -537,5 +769,7 @@ app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);
   console.log(`  CORS: ${process.env.NODE_ENV === 'production' ? ALLOWED_ORIGINS.join(', ') : 'permissive (dev)'}`);
   console.log(`  Stripe: ${stripe ? 'configured' : 'not configured'}`);
+  console.log(`  Lulu: ${lulu.isConfigured() ? `configured (${lulu.getBaseUrl()})` : 'not configured'}`);
+  console.log(`  Templates: ${Object.keys(DESIGN_TEMPLATES).length}`);
   console.log(`  Rate limit: 20 compiles/min, 120 requests/min`);
 });

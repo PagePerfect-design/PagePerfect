@@ -8,17 +8,18 @@ import { motion, useInView } from 'framer-motion'
 const ease = [0.25, 0.4, 0.25, 1] as const
 
 const TEMPLATES = [
-  { key: 'symphony', name: 'Symphony', tag: 'Academic', font: 'Crimson Pro', baseline: '12pt' },
-  { key: 'chicago', name: 'Chicago', tag: 'Academic', font: 'EB Garamond', baseline: '12pt' },
+  { key: 'symphony', name: 'Symphony', tag: 'Academic', font: 'EB Garamond', baseline: '12pt' },
+  { key: 'chicago', name: 'Chicago', tag: 'Academic', font: 'ETbb (Bembo)', baseline: '11pt' },
   { key: 'paperback', name: 'Paperback', tag: 'Fiction', font: 'Alegreya Sans', baseline: '11pt' },
   { key: 'chronicle', name: 'Chronicle', tag: 'Editorial', font: 'TeX Gyre Heros', baseline: '11pt' },
-  { key: 'exhibit', name: 'Exhibit', tag: 'Trade', font: 'Alegreya', baseline: '11pt' },
-  { key: 'matrix', name: 'Matrix', tag: 'Business', font: 'Inter Tight', baseline: '11pt' },
+  { key: 'exhibit', name: 'Exhibit', tag: 'Trade', font: 'Fira Sans', baseline: '10pt' },
+  { key: 'matrix', name: 'Matrix', tag: 'Business', font: 'Fira Sans', baseline: '10pt' },
   { key: 'avantgarde', name: 'Avant-Garde', tag: 'Creative', font: 'Source Sans 3', baseline: '11pt' },
   { key: 'minimal', name: 'Minimal', tag: 'Basic', font: 'Latin Modern', baseline: '12pt' },
-  { key: 'cinema', name: 'Cinema', tag: 'Screenplay', font: 'Courier Prime', baseline: '12pt', coming: true },
-  { key: 'international', name: 'International', tag: 'Swiss', font: 'Helvetica Neue', baseline: '10pt', coming: true },
-  { key: 'operator', name: 'Operator', tag: 'Technical', font: 'JetBrains Mono', baseline: '10pt', coming: true },
+  { key: 'international', name: 'International', tag: 'Swiss', font: 'TeX Gyre Heros', baseline: '9pt' },
+  { key: 'cinema', name: 'Cinema', tag: 'Screenplay', font: 'TeX Gyre Cursor', baseline: '12pt' },
+  { key: 'heirloom', name: 'Heirloom', tag: 'Cookbook', font: 'Fira Sans', baseline: '11pt' },
+  { key: 'operator', name: 'Operator', tag: 'Technical', font: 'Fira Sans', baseline: '10pt' },
 ]
 
 /**
@@ -153,7 +154,7 @@ export function TemplateGrid() {
             transition={{ duration: 0.5, ease }}
             className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40"
           >
-            Plates 1&ndash;11
+            Plates 1&ndash;12
           </motion.p>
 
           <motion.h2
@@ -162,7 +163,7 @@ export function TemplateGrid() {
             transition={{ duration: 0.7, delay: 0.1, ease }}
             className="font-display text-display-lg font-extrabold leading-[0.9] tracking-tighter text-white"
           >
-            Eleven typographic
+            Twelve typographic
             <br />
             systems.
           </motion.h2>

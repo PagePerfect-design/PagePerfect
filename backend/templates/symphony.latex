@@ -1,120 +1,118 @@
-% Symphony Layout - Classic Academic Design
-% Müller-Brockmann Grid System Implementation
-% Based on principles of clarity, objectivity, and systematic organization
-%
-% 📚 REFERENCE: Josef Müller-Brockmann's "Grid Systems in Graphic Design"
-% https://ia902309.us.archive.org/4/items/GridSystemsInGraphicDesignJosefMullerBrockmann/Grid%20systems%20in%20graphic%20design%20-%20Josef%20Muller-Brockmann.pdf
-%
-% This template embodies Müller-Brockmann's principles of:
-% - Systematic organization and rationalization
-% - Clarity and objectivity in design
-% - Harmonious typography and spacing
-% - Professional academic presentation
+% Symphony Academic — "The Van de Graaf Canon"
+% Classical academic design inspired by Gutenberg/Tschichold proportions
+% EB Garamond body, ornamental chapter openings, microtype protrusion
+% Target: Dissertations, literary criticism, humanities monographs
 
-\documentclass[12pt]{article}
-\usepackage{geometry} % margin & size come from Pandoc -V geometry:...
-\usepackage{setspace}
-\usepackage{parskip}
+\documentclass[12pt]{book}
+\usepackage{geometry}
 \usepackage{fontspec}
-\setmainfont{DejaVu Serif}
 \usepackage{microtype}
-\usepackage{csquotes}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
 \usepackage{xcolor}
 \usepackage{hyperref}
-\usepackage{titlesec}
+\usepackage{enumitem}
 
-% Grid System Typography (Academic - 12pt baseline)
-\usepackage{setspace}
-\setstretch{1.5}
+% ── TYPOGRAPHY ──────────────────────────────────────────────
+% Body: EB Garamond — humanist serif, 16th-century French elegance
+\setmainfont{EB Garamond}[
+  Ligatures=TeX,
+  Numbers=OldStyle
+]
+\setsansfont{Libertinus Sans}[Scale=MatchLowercase]
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
 
-% Enhanced Typographic Scale based on Golden Ratio
-\newcommand{\gridDisplay}{\fontsize{36pt}{43.2pt}\selectfont}
-\newcommand{\gridHOne}{\fontsize{27pt}{35.1pt}\selectfont}
-\newcommand{\gridHTwo}{\fontsize{21pt}{27.3pt}\selectfont}
-\newcommand{\gridHThree}{\fontsize{16.5pt}{21.45pt}\selectfont}
-\newcommand{\gridHFour}{\fontsize{13.5pt}{17.55pt}\selectfont}
-\newcommand{\gridSubhead}{\fontsize{18pt}{23.4pt}\selectfont}
-\newcommand{\gridBody}{\fontsize{12pt}{18pt}\selectfont}
-\newcommand{\gridSmall}{\fontsize{10.5pt}{14.7pt}\selectfont}
-\newcommand{\gridCaption}{\fontsize{9pt}{12.6pt}\selectfont}
-\newcommand{\gridFootnote}{\fontsize{8.4pt}{10.92pt}\selectfont}
+% Microtype — optical margin alignment (protrusion) + font expansion
+\UseMicrotypeSet[protrusion]{basicmath}
 
-% Enhanced Grid-based Spacing (multiples of 12pt baseline)
-\newcommand{\gridSpaceXs}{\vspace{3pt}}
-\newcommand{\gridSpaceSm}{\vspace{6pt}}
-\newcommand{\gridSpaceMd}{\vspace{12pt}}
-\newcommand{\gridSpaceLg}{\vspace{18pt}}
-\newcommand{\gridSpaceXl}{\vspace{24pt}}
-\newcommand{\gridSpaceXxl}{\vspace{36pt}}
-\newcommand{\gridSpaceXxxl}{\vspace{48pt}}
-\newcommand{\gridSpaceXxxxl}{\vspace{72pt}}
+% ── SPACING ─────────────────────────────────────────────────
+% 12pt baseline, 14pt leading (academic standard)
+\setstretch{1.15}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0pt}
 
-% Strategic White Space System
-% Micro White Space
-\newcommand{\gridLineSpace}{\setlength{\baselineskip}{12pt}}
-\newcommand{\gridWordSpace}{\setlength{\spaceskip}{3pt}}
-\newcommand{\gridCharSpace}{\setlength{\fontdimen2\font}{3pt}}
-\newcommand{\gridListItemSpace}{\setlength{\itemsep}{6pt}}
-\newcommand{\gridTableCellSpace}{\setlength{\tabcolsep}{6pt}}
-\newcommand{\gridCodeBlockSpace}{\setlength{\fboxsep}{6pt}}
+% ── COLORS ──────────────────────────────────────────────────
+\definecolor{oxblood}{HTML}{800020}
+\definecolor{chaptergrey}{gray}{0.45}
 
-% Macro White Space
-\newcommand{\gridSectionSpace}{\vspace{36pt}}
-\newcommand{\gridSubsectionSpace}{\vspace{24pt}}
-\newcommand{\gridParagraphSpace}{\vspace{18pt}}
-\newcommand{\gridBlockSpace}{\vspace{18pt}}
-\newcommand{\gridFigureSpace}{\vspace{24pt}}
-\newcommand{\gridTableSpace}{\vspace{24pt}}
+% ── CHAPTER HEADINGS — Ornamental Style ─────────────────────
+\titleformat{\chapter}[display]
+  {\normalfont\centering}
+  {\vspace*{20pt}{\fontsize{11pt}{11pt}\selectfont\scshape\color{chaptergrey}\chaptertitlename\ \thechapter}}
+  {12pt}
+  {\LARGE\bfseries\scshape\color{oxblood}}
+  [\vspace{4pt}{\centering\rule{1cm}{0.4pt}}\vspace{8pt}]
 
-% Vertical Rhythm
-\newcommand{\gridBaselineSpace}{\setlength{\baselineskip}{12pt}}
-\newcommand{\gridHeadingSpace}{\vspace{18pt}}
-\newcommand{\gridBodySpace}{\setlength{\parskip}{12pt}}
-\newcommand{\gridCaptionSpace}{\vspace{6pt}}
-\newcommand{\gridFootnoteSpace}{\vspace{3pt}}
+\titleformat{name=\chapter,numberless}[display]
+  {\normalfont\centering}
+  {\vspace*{20pt}}
+  {0pt}
+  {\LARGE\bfseries\scshape\color{oxblood}}
+  [\vspace{4pt}{\centering\rule{1cm}{0.4pt}}\vspace{8pt}]
 
-% Horizontal Rhythm
-\newcommand{\gridMarginSpace}{\setlength{\textwidth}{24pt}}
-\newcommand{\gridColumnSpace}{\setlength{\columnsep}{18pt}}
-\newcommand{\gridGutterSpace}{\setlength{\columnseprule}{12pt}}
-\newcommand{\gridIndentSpace}{\setlength{\parindent}{12pt}}
-\newcommand{\gridListIndentSpace}{\setlength{\leftmargin}{12pt}}
+\titlespacing*{\chapter}{0pt}{50pt}{30pt}
 
-% Modular Design Elements
-\newcommand{\gridParagraph}{\setlength{\parindent}{12pt}\setlength{\parskip}{18pt}}
-\newcommand{\gridList}{\setlength{\itemsep}{6pt}\setlength{\parsep}{6pt}}
-\newcommand{\gridBlockquote}{\setlength{\leftmargin}{18pt}\setlength{\rightmargin}{18pt}}
-\newcommand{\gridCode}{\setlength{\fboxsep}{6pt}\setlength{\fboxrule}{0.5pt}}
+% Section headings — restrained serif hierarchy
+\titleformat{\section}
+  {\normalfont\Large\bfseries}{}{0em}{}
+\titleformat{\subsection}
+  {\normalfont\large\itshape}{}{0em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\scshape}{}{0em}{}
 
-% Alignment System
-\newcommand{\gridCenter}{\centering}
-\newcommand{\gridLeft}{\raggedright}
-\newcommand{\gridRight}{\raggedleft}
-\newcommand{\gridJustify}{\justifying}
+\titlespacing*{\section}{0pt}{24pt}{12pt}
+\titlespacing*{\subsection}{0pt}{18pt}{8pt}
+\titlespacing*{\subsubsection}{0pt}{14pt}{6pt}
 
-% Grid-aligned heading formats (Academic Style)
-\titleformat{\section}{\gridHTwo\bfseries}{\thesection}{1em}{}
-\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
-\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
-
-% Apply grid system spacing
-\gridBaselineSpace
-\gridBodySpace
-\gridParagraph
-
-\usepackage{fancyhdr}
+% ── HEADERS & FOOTERS ──────────────────────────────────────
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{\thepage}
+\fancyhead[LE]{\footnotesize\thepage\quad\textsc{$if(title)$$title$$endif$}}
+\fancyhead[RO]{\footnotesize\textit{\leftmark}\quad\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\footnotesize\thepage}\renewcommand{\headrulewidth}{0pt}}
 
+% ── BLOCK QUOTES ────────────────────────────────────────────
+\renewenvironment{quote}
+  {\list{}{\leftmargin=2em\rightmargin=2em}\item\relax\small\setstretch{1.05}}
+  {\endlist}
+
+% ── FOOTNOTES ───────────────────────────────────────────────
+\usepackage[hang,flushmargin]{footmisc}
+
+% ── LISTS ───────────────────────────────────────────────────
+\setlist{nosep,leftmargin=1.5em}
+
+% ── HYPERLINKS ──────────────────────────────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=oxblood,
+  urlcolor=oxblood,
+  citecolor=oxblood
+}
+
+% ── DOCUMENT ────────────────────────────────────────────────
 \begin{document}
 
-% Title with grid spacing
 $if(title)$
+\begin{titlepage}
+\vspace*{\fill}
 \begin{center}
-{\gridHOne $title$}
+{\fontsize{28pt}{34pt}\selectfont\scshape\color{oxblood} $title$\par}
+\vspace{16pt}
+{\centering\rule{2cm}{0.4pt}\par}
+$if(author)$
+\vspace{12pt}
+{\large\itshape $author$\par}
+$endif$
+$if(date)$
+\vspace{8pt}
+{\small $date$\par}
+$endif$
 \end{center}
-\gridSpaceLg
+\vspace*{\fill}
+\end{titlepage}
 $endif$
 
 $body$

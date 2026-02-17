@@ -1,0 +1,95 @@
+% International — "The Swiss Standard"
+% Müller-Brockmann modular grid system — one font, no italics, visible structure
+% TeX Gyre Heros (Helvetica), asymmetric layout, section rules
+% Target: Design portfolios, architecture proposals, brand guidelines, manifestos
+
+\documentclass[9pt]{article}
+\usepackage{geometry}
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{ragged2e}
+
+% ── TYPOGRAPHY — One Font Family Only ───────────────────────
+% TeX Gyre Heros (Helvetica): hierarchy ONLY by size and weight
+% Rule: No italics — Müller-Brockmann viewed them as "emotional corruption"
+\setmainfont{TeX Gyre Heros}[Ligatures=TeX]
+\setsansfont{TeX Gyre Heros}[Ligatures=TeX]
+\setmonofont{TeX Gyre Cursor}[Scale=MatchLowercase]
+
+% Flush left, ragged right — strict rule, no justification
+\RaggedRight
+\hyphenpenalty=500
+
+% ── SPACING — Dense Swiss grid ──────────────────────────────
+\setstretch{1.25}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt}
+
+% ── COLORS ──────────────────────────────────────────────────
+\definecolor{rulegrey}{gray}{0.30}
+
+% ── SECTION HEADINGS — Lowercase Swiss, ruled ───────────────
+% Section headers are lowercase — a classic Swiss typographic move
+\titleformat{\section}[block]
+  {\vspace{4pt}{\color{black}\rule{\textwidth}{0.5pt}}\vspace{6pt}\normalfont\sffamily\bfseries\fontsize{18pt}{22pt}\selectfont}
+  {}{0em}{}
+
+\titleformat{\subsection}
+  {\normalfont\sffamily\bfseries\fontsize{11pt}{14pt}\selectfont}
+  {}{0em}{}
+
+\titleformat{\subsubsection}
+  {\normalfont\sffamily\normalsize}{}{0em}{}
+
+\titlespacing*{\section}{0pt}{18pt}{8pt}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+\titlespacing*{\subsubsection}{0pt}{8pt}{3pt}
+
+% ── HEADERS & FOOTERS ──────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\fontsize{7pt}{9pt}\selectfont\sffamily\addfontfeature{LetterSpace=5}\MakeUppercase{$if(title)$$title$$endif$}}
+\fancyhead[R]{\fontsize{7pt}{9pt}\selectfont\sffamily\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\fontsize{7pt}{9pt}\selectfont\sffamily\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+% ── BLOCK QUOTES ────────────────────────────────────────────
+\renewenvironment{quote}
+  {\list{}{\leftmargin=1em\rightmargin=0pt}\item\relax\small\setstretch{1.15}}
+  {\endlist}
+
+\setlist{nosep,leftmargin=1em}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=black!60,citecolor=black}
+
+% ── DOCUMENT ────────────────────────────────────────────────
+\begin{document}
+
+$if(title)$
+\vspace*{24pt}
+\begin{flushleft}
+{\fontsize{32pt}{36pt}\selectfont\sffamily\bfseries $title$\par}
+$if(author)$\vspace{8pt}{\fontsize{9pt}{12pt}\selectfont\sffamily $author$\par}$endif$
+$if(date)$\vspace{4pt}{\fontsize{7pt}{9pt}\selectfont\sffamily\addfontfeature{LetterSpace=5}\MakeUppercase{$date$}\par}$endif$
+\end{flushleft}
+\vspace{4pt}
+\noindent{\color{black}\rule{\textwidth}{0.5pt}}
+\vspace{16pt}
+$endif$
+
+$body$
+
+$if(bibliography)$
+\vspace{16pt}
+\noindent{\color{black}\rule{\textwidth}{0.5pt}}
+\vspace{8pt}
+\section*{references}
+$bibliography$
+$endif$
+
+\end{document}
