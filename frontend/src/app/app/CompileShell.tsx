@@ -229,6 +229,13 @@ function wordCategory(count: number): string {
   return 'Long-form'
 }
 
+function wordCategory(count: number): string {
+  if (count < 20000) return 'Short story'
+  if (count < 50000) return 'Novella'
+  if (count < 110000) return 'Novel'
+  return 'Long-form'
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    LAYER 0: THE VOID — Background canvas
    ═══════════════════════════════════════════════════════════════════ */
