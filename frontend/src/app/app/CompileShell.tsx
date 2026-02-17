@@ -33,6 +33,30 @@ type CompileError = { message: string }
 type Status = 'idle' | 'compiling' | 'success' | 'error'
 type Stage = 'portal' | 'design' | 'launch'
 type HudTab = 'style' | 'layout' | 'settings' | null
+type Platform = 'kdp' | 'ingram'
+type PaperStock = 'white' | 'cream'
+
+type PreflightCheck = {
+  name: string
+  status: 'pass' | 'fail' | 'warn' | 'info'
+  detail: string
+}
+
+type PreflightResult = {
+  passed: boolean
+  platform: string
+  checks: PreflightCheck[]
+  stats: {
+    estimatedPages: number
+    wordCount: number
+    spineInches: number
+    spineMm: number
+    gutterInches: number
+    trimWidth: number
+    trimHeight: number
+    marginInches: number
+  }
+}
 
 const PREFS_KEY = 'pp-prefs-v1'
 type Prefs = {
@@ -1065,7 +1089,7 @@ function TopBar({
   onToggleSystems: () => void
 }) {
   return (
-    <div className="fixed left-0 right-0 top-[3.5rem] z-30">
+    <div className="fixed left-0 right-0 top-0 z-30">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 md:px-8">
         {/* Left: back + title */}
         <div className="flex items-center gap-4">
@@ -1144,46 +1168,78 @@ function LaunchOverlay({
   title,
   template,
   pageSize,
+  marginPreset,
   wordCount,
   pdfUrl,
-  status,
   onBack,
   onDownload,
 }: {
   title: string
   template: TemplateKey
   pageSize: PageSize
+  marginPreset: MarginPreset
   wordCount: number
   pdfUrl: string | null
-  status: Status
   onBack: () => void
-  onDownload: () => void
+  onDownload: (platform: Platform) => void
 }) {
-  const [checks, setChecks] = useState<{ label: string; status: 'pending' | 'ok' | 'warn' }[]>([
-    { label: 'Checking bleed margins...', status: 'pending' },
-    { label: 'Embedding fonts...', status: 'pending' },
-    { label: 'Validating page dimensions...', status: 'pending' },
-    { label: 'Running pre-flight...', status: 'pending' },
-  ])
-  const [complete, setComplete] = useState(false)
+  const [platform, setPlatform] = useState<Platform>('kdp')
+  const [paper, setPaper] = useState<PaperStock>('white')
+  const [preflight, setPreflight] = useState<PreflightResult | null>(null)
+  const [checking, setChecking] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
+  // Run real pre-flight when settings change
   useEffect(() => {
-    const info = TEMPLATE_INFO[template]
-    const sizeLabel = PAGE_SIZES[pageSize]?.label || pageSize
-    const timers = [
-      setTimeout(() => setChecks(c => c.map((item, i) => i === 0 ? { label: `Bleed margins — 0.125" OK`, status: 'ok' as const } : item)), 400),
-      setTimeout(() => setChecks(c => c.map((item, i) => i === 1 ? { label: `Fonts embedded — ${info?.font || 'System'}`, status: 'ok' as const } : item)), 800),
-      setTimeout(() => setChecks(c => c.map((item, i) => i === 2 ? { label: `Page dimensions — ${sizeLabel}`, status: 'ok' as const } : item)), 1200),
-      setTimeout(() => {
-        setChecks(c => c.map((item, i) => i === 3 ? { label: 'Pre-flight complete', status: status === 'success' ? 'ok' as const : 'warn' as const } : item))
-        setComplete(true)
-      }, 1600),
-    ]
-    return () => timers.forEach(clearTimeout)
-  }, [template, pageSize, status])
+    let active = true
+    setChecking(true)
+    setFetchError(null)
+    setPreflight(null)
 
-  const estimatedPages = Math.ceil(wordCount / 250)
-  const spineWidth = (estimatedPages * 0.0025).toFixed(3)
+    async function runPreflight() {
+      try {
+        const res = await fetch('/api/preflight', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pageSize,
+            marginPreset,
+            template,
+            wordCount,
+            platform,
+            paperStock: paper,
+          }),
+        })
+        if (!active) return
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          setFetchError(data?.message || `Pre-flight failed (${res.status})`)
+          setChecking(false)
+          return
+        }
+        const data: PreflightResult = await res.json()
+        setPreflight(data)
+        setChecking(false)
+      } catch {
+        if (active) {
+          setFetchError('Could not reach pre-flight engine.')
+          setChecking(false)
+        }
+      }
+    }
+
+    runPreflight()
+    return () => { active = false }
+  }, [pageSize, marginPreset, template, wordCount, platform, paper])
+
+  const hasFailure = preflight?.checks.some(c => c.status === 'fail')
+  const canDownload = !checking && !hasFailure && !fetchError && pdfUrl
+
+  const statusIcon = (s: PreflightCheck['status']) =>
+    s === 'pass'  ? <Check className="h-3 w-3 shrink-0 text-emerald-400" /> :
+    s === 'fail'  ? <X className="h-3 w-3 shrink-0 text-red-400" /> :
+    s === 'warn'  ? <AlertTriangle className="h-3 w-3 shrink-0 text-amber-400" /> :
+                    <span className="inline-block h-3 w-3 shrink-0 text-center font-mono text-[10px] text-white/25">·</span>
 
   return (
     <motion.div
@@ -1196,93 +1252,172 @@ function LaunchOverlay({
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease }}
-        className="w-full max-w-md px-6"
+        className="w-full max-w-xl px-6"
       >
-        {/* Close */}
-        <div className="mb-4 flex justify-end">
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-display text-xl font-bold text-white">Export &amp; Publish</h2>
           <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] text-white/30 transition-colors hover:bg-white/[0.1] hover:text-white/50">
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Terminal card */}
-        <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0a]">
-          {/* Terminal chrome */}
-          <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
-            <div className="h-2 w-2 rounded-full bg-[#ff5f57]" />
-            <div className="h-2 w-2 rounded-full bg-[#febc2e]" />
-            <div className="h-2 w-2 rounded-full bg-[#28c840]" />
-            <span className="ml-2 font-mono text-[10px] text-white/15">pre-flight</span>
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Left column: export settings */}
+          <div className="space-y-3">
+            {/* Platform selector */}
+            <div className="rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-4">
+              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Target Platform</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPlatform('kdp')}
+                  className={`flex-1 rounded-lg py-2 text-[11px] font-semibold transition-all ${
+                    platform === 'kdp'
+                      ? 'bg-white text-black'
+                      : 'border border-white/[0.08] text-white/40 hover:border-white/20'
+                  }`}
+                >
+                  Amazon KDP
+                </button>
+                <button
+                  onClick={() => setPlatform('ingram')}
+                  className={`flex-1 rounded-lg py-2 text-[11px] font-semibold transition-all ${
+                    platform === 'ingram'
+                      ? 'bg-[#0033ff] text-white'
+                      : 'border border-white/[0.08] text-white/40 hover:border-white/20'
+                  }`}
+                >
+                  IngramSpark
+                </button>
+              </div>
+              <p className="mt-2 font-mono text-[10px] leading-relaxed text-white/20">
+                {platform === 'kdp'
+                  ? 'Standard PDF optimized for Amazon print.'
+                  : 'PDF/X-1a with CMYK color profile.'}
+              </p>
+            </div>
+
+            {/* Paper stock selector */}
+            <div className="rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-4">
+              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Paper Stock</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPaper('white')}
+                  className={`flex-1 rounded-lg py-2 text-[11px] font-medium transition-all ${
+                    paper === 'white'
+                      ? 'bg-white text-black'
+                      : 'border border-white/[0.08] text-white/40 hover:border-white/20'
+                  }`}
+                >
+                  White
+                </button>
+                <button
+                  onClick={() => setPaper('cream')}
+                  className={`flex-1 rounded-lg py-2 text-[11px] font-medium transition-all ${
+                    paper === 'cream'
+                      ? 'bg-[#f5f0d0] text-black'
+                      : 'border border-white/[0.08] text-white/40 hover:border-white/20'
+                  }`}
+                >
+                  Cream
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Checks */}
-          <div className="p-5 font-mono text-[12px] leading-[2]">
-            {checks.map((check, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.4, duration: 0.3 }}
-                className="flex items-center gap-2.5"
-              >
-                {check.status === 'pending' ? (
-                  <span className="h-3.5 w-3.5 text-center text-white/15">...</span>
-                ) : check.status === 'ok' ? (
-                  <Check className="h-3.5 w-3.5 text-emerald-400" />
-                ) : (
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-                )}
-                <span className={
-                  check.status === 'pending' ? 'text-white/20' :
-                  check.status === 'ok' ? 'text-emerald-400/70' :
-                  'text-amber-400/70'
-                }>
-                  {check.label}
-                </span>
-              </motion.div>
-            ))}
+          {/* Right column: pre-flight terminal */}
+          <div className="flex flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0a]">
+            {/* Terminal chrome */}
+            <div className="flex items-center gap-2 border-b border-white/[0.06] bg-white/[0.02] px-4 py-2.5">
+              <div className={`h-2 w-2 rounded-full ${
+                checking ? 'bg-amber-400 animate-pulse'
+                : fetchError || hasFailure ? 'bg-red-500'
+                : 'bg-emerald-400'
+              }`} />
+              <span className="font-mono text-[10px] text-white/20">
+                PRE-FLIGHT // {platform.toUpperCase()}
+              </span>
+            </div>
+
+            {/* Check results */}
+            <div className="flex-1 p-4 font-mono text-[11px] leading-[1.9]">
+              {checking ? (
+                <div className="flex items-center gap-2 text-white/25">
+                  <div className="h-3 w-3 animate-spin rounded-full border border-white/20 border-t-transparent" />
+                  Running pre-flight analysis...
+                </div>
+              ) : fetchError ? (
+                <div className="text-red-400/70">[ERROR] {fetchError}</div>
+              ) : preflight ? (
+                preflight.checks.map((check, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.08, duration: 0.2 }}
+                    className="mb-1.5"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5">{statusIcon(check.status)}</span>
+                      <div>
+                        <span className={
+                          check.status === 'pass' ? 'text-white/40' :
+                          check.status === 'fail' ? 'text-red-400/90' :
+                          check.status === 'warn' ? 'text-amber-400/80' :
+                          'text-white/30'
+                        }>
+                          {check.name}
+                        </span>
+                        <p className="text-[10px] text-white/15">{check.detail}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              ) : null}
+            </div>
+
+            {/* Real stats from backend */}
+            {!checking && preflight && (
+              <div className="grid grid-cols-3 gap-px border-t border-white/[0.06] bg-white/[0.03]">
+                <div className="bg-[#0a0a0a] p-2.5 text-center">
+                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/15">Pages</p>
+                  <p className="font-display text-sm font-bold text-white">~{preflight.stats.estimatedPages}</p>
+                </div>
+                <div className="bg-[#0a0a0a] p-2.5 text-center">
+                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/15">Spine</p>
+                  <p className="font-display text-sm font-bold text-white">{preflight.stats.spineInches}&quot;</p>
+                </div>
+                <div className="bg-[#0a0a0a] p-2.5 text-center">
+                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/15">Trim</p>
+                  <p className="font-display text-sm font-bold text-white">{preflight.stats.trimWidth}&times;{preflight.stats.trimHeight}&quot;</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Stats */}
-        <AnimatePresence>
-          {complete && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="mt-3 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-white/[0.06]">
-                {[
-                  { label: 'Pages', value: `~${estimatedPages}` },
-                  { label: 'Spine', value: `${spineWidth}"` },
-                  { label: 'Words', value: wordCount.toLocaleString() },
-                ].map((stat) => (
-                  <div key={stat.label} className="bg-[#0a0a0a] p-3 text-center">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/15">{stat.label}</p>
-                    <p className="mt-0.5 font-display text-lg font-bold text-white">{stat.value}</p>
-                  </div>
-                ))}
-              </div>
+        {/* Download button */}
+        <div className="mt-4">
+          <button
+            onClick={() => onDownload(platform)}
+            disabled={!canDownload}
+            className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#0033ff] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#2255ff] disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Download className="h-4 w-4" />
+            {platform === 'ingram' ? 'Download PDF/X-1a' : 'Download Print PDF'}
+          </button>
+        </div>
 
-              {/* Download actions */}
-              <div className="mt-4 flex gap-2">
-                <button
-                  onClick={onDownload}
-                  disabled={!pdfUrl}
-                  className="group inline-flex h-12 flex-1 items-center justify-center gap-2.5 rounded-xl bg-[#0033ff] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#2255ff] disabled:opacity-30"
-                >
-                  <Download className="h-4 w-4" />
-                  Download PDF
-                </button>
-              </div>
+        {/* Failure message */}
+        {!checking && hasFailure && (
+          <p className="mt-3 text-center font-mono text-[10px] text-red-400/50">
+            One or more checks failed. Fix the issues above before downloading.
+          </p>
+        )}
 
-              <p className="mt-4 text-center font-mono text-[10px] text-white/10">
-                {TEMPLATE_INFO[template]?.name} / {PAGE_SIZES[pageSize]?.label} / {title || 'Untitled'}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <p className="mt-3 text-center font-mono text-[10px] text-white/10">
+          {TEMPLATE_INFO[template]?.name} / {PAGE_SIZES[pageSize]?.label} / {title || 'Untitled'}
+        </p>
       </motion.div>
     </motion.div>
   )
@@ -1508,7 +1643,7 @@ export default function CompileShell() {
     setHudTab(null)
   }, [])
 
-  async function compile(downloadAfter: boolean) {
+  async function compile(downloadAfter: boolean, exportPlatform?: Platform) {
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -1519,18 +1654,22 @@ export default function CompileShell() {
 
     try {
       const effectiveMd = adjustHeadingsForTemplate(manuscript, template)
+      const body: Record<string, unknown> = {
+        manuscriptText: effectiveMd,
+        template,
+        title: title || 'Manuscript',
+        pageSize,
+        marginPreset,
+        safeMode,
+        compileMode,
+      }
+      if (exportPlatform === 'ingram') {
+        body.outputFormat = 'pdfx1a'
+      }
       const resp = await fetch('/api/compile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          manuscriptText: effectiveMd,
-          template,
-          title: title || 'Manuscript',
-          pageSize,
-          marginPreset,
-          safeMode,
-          compileMode,
-        }),
+        body: JSON.stringify(body),
         signal: controller.signal,
       })
       const ct = resp.headers.get('content-type') || ''
@@ -1589,8 +1728,8 @@ export default function CompileShell() {
     setStage('design')
   }
 
-  function handleDownload() {
-    compile(true)
+  function handleDownload(exportPlatform?: Platform) {
+    compile(true, exportPlatform)
   }
 
   // ── Render: The Layer Cake ──
@@ -1735,9 +1874,9 @@ export default function CompileShell() {
             title={title}
             template={template}
             pageSize={pageSize}
+            marginPreset={marginPreset}
             wordCount={wordCount}
             pdfUrl={pdfUrl}
-            status={status}
             onBack={() => setStage('design')}
             onDownload={handleDownload}
           />
