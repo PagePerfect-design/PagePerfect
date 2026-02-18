@@ -150,17 +150,56 @@ try {
   }
 } catch { /* stripe not configured */ }
 
-// ── Supabase Admin Client (service role — server-side only) ──
-let supabaseAdmin;
-try {
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const { createClient } = require('@supabase/supabase-js');
-    supabaseAdmin = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-    );
+// ── PocketBase Admin Client (server-side only) ──
+const POCKETBASE_URL = (process.env.POCKETBASE_URL || '').replace(/\/+$/, '');
+let pbAdminToken = null;
+let pbTokenExpiry = 0;
+
+async function getPbAdminToken() {
+  if (pbAdminToken && Date.now() < pbTokenExpiry) return pbAdminToken;
+  if (!POCKETBASE_URL || !process.env.POCKETBASE_ADMIN_EMAIL || !process.env.POCKETBASE_ADMIN_PASSWORD) {
+    return null;
   }
-} catch { /* supabase not configured */ }
+  try {
+    const resp = await fetch(`${POCKETBASE_URL}/api/admins/auth-with-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        identity: process.env.POCKETBASE_ADMIN_EMAIL,
+        password: process.env.POCKETBASE_ADMIN_PASSWORD,
+      }),
+    });
+    if (!resp.ok) {
+      console.error('PocketBase admin auth failed:', resp.status);
+      return null;
+    }
+    const data = await resp.json();
+    pbAdminToken = data.token;
+    // Refresh 5 minutes before expiry (PB tokens last ~2 hours)
+    pbTokenExpiry = Date.now() + 115 * 60 * 1000;
+    return pbAdminToken;
+  } catch (err) {
+    console.error('PocketBase admin auth error:', err.message);
+    return null;
+  }
+}
+
+// Helper: fetch from PocketBase with admin auth
+async function pbFetch(path, options = {}) {
+  const token = await getPbAdminToken();
+  if (!token) return null;
+  const resp = await fetch(`${POCKETBASE_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token,
+      ...options.headers,
+    },
+  });
+  return resp;
+}
+
+const isPocketBaseConfigured = !!(POCKETBASE_URL && process.env.POCKETBASE_ADMIN_EMAIL);
 
 // Stripe webhook endpoint — needs raw body
 app.post('/api/stripe/webhook',
@@ -182,28 +221,27 @@ app.post('/api/stripe/webhook',
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
-    // Helper: upgrade a user's tier in Supabase
+    // Helper: upgrade a user's tier in PocketBase
     async function upgradeTier(userId, tier, customerId, subscriptionId) {
-      if (!supabaseAdmin) {
-        console.error('Supabase admin not configured — cannot update user tier');
+      if (!isPocketBaseConfigured) {
+        console.error('PocketBase not configured — cannot update user tier');
         return;
       }
-      const update = {
-        tier,
-        stripe_customer_id: customerId,
-        updated_at: new Date().toISOString(),
-      };
+      const update = { tier, stripe_customer_id: customerId };
       if (subscriptionId) update.stripe_subscription_id = subscriptionId;
 
-      const { error } = await supabaseAdmin
-        .from('profiles')
-        .update(update)
-        .eq('id', userId);
-
-      if (error) {
-        console.error('Failed to update user tier:', error.message);
-      } else {
-        console.log(`User ${userId} upgraded to ${tier}`);
+      try {
+        const resp = await pbFetch(`/api/collections/users/records/${userId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(update),
+        });
+        if (!resp || !resp.ok) {
+          console.error('Failed to update user tier:', resp?.status);
+        } else {
+          console.log(`User ${userId} upgraded to ${tier}`);
+        }
+      } catch (err) {
+        console.error('Failed to update user tier:', err.message);
       }
     }
 
@@ -256,24 +294,34 @@ app.post('/api/stripe/webhook',
         const sub = event.data.object;
         console.log(`Subscription cancelled for customer ${sub.customer}`);
 
-        if (!supabaseAdmin) {
-          console.error('Supabase admin not configured — cannot downgrade user');
+        if (!isPocketBaseConfigured) {
+          console.error('PocketBase not configured — cannot downgrade user');
           break;
         }
 
-        const { error } = await supabaseAdmin
-          .from('profiles')
-          .update({
-            tier: 'drafter',
-            stripe_subscription_id: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_customer_id', sub.customer);
-
-        if (error) {
-          console.error('Failed to downgrade user:', error.message);
-        } else {
-          console.log(`Customer ${sub.customer} downgraded to drafter`);
+        try {
+          // Find the user by stripe_customer_id
+          const filter = encodeURIComponent(`stripe_customer_id='${sub.customer}'`);
+          const listResp = await pbFetch(`/api/collections/users/records?filter=${filter}`);
+          if (!listResp || !listResp.ok) {
+            console.error('Failed to find user for downgrade');
+            break;
+          }
+          const { items } = await listResp.json();
+          if (items && items.length > 0) {
+            const userId = items[0].id;
+            const patchResp = await pbFetch(`/api/collections/users/records/${userId}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ tier: 'drafter', stripe_subscription_id: '' }),
+            });
+            if (patchResp && patchResp.ok) {
+              console.log(`Customer ${sub.customer} downgraded to drafter`);
+            } else {
+              console.error('Failed to downgrade user:', patchResp?.status);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to downgrade user:', err.message);
         }
         break;
       }
@@ -307,13 +355,14 @@ app.post('/api/stripe/create-payment', async (req, res) => {
   try {
     // Find or create a Stripe customer for this user
     let customerId;
-    if (supabaseAdmin) {
-      const { data: profile } = await supabaseAdmin
-        .from('profiles')
-        .select('stripe_customer_id')
-        .eq('id', user_id)
-        .single();
-      customerId = profile?.stripe_customer_id;
+    if (isPocketBaseConfigured) {
+      try {
+        const resp = await pbFetch(`/api/collections/users/records/${user_id}`);
+        if (resp && resp.ok) {
+          const user = await resp.json();
+          customerId = user.stripe_customer_id;
+        }
+      } catch { /* user not found */ }
     }
 
     if (!customerId) {
@@ -323,12 +372,14 @@ app.post('/api/stripe/create-payment', async (req, res) => {
       });
       customerId = customer.id;
 
-      // Store the customer ID in profiles
-      if (supabaseAdmin) {
-        await supabaseAdmin
-          .from('profiles')
-          .update({ stripe_customer_id: customerId })
-          .eq('id', user_id);
+      // Store the customer ID in PocketBase
+      if (isPocketBaseConfigured) {
+        try {
+          await pbFetch(`/api/collections/users/records/${user_id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ stripe_customer_id: customerId }),
+          });
+        } catch { /* non-critical */ }
       }
     }
 
@@ -415,7 +466,7 @@ app.get('/api/health/details', (_req, res) => {
     marginPresets,
     compileModes,
     safeModeAvailable: true,
-    auth: !!supabaseAdmin,
+    auth: isPocketBaseConfigured,
     payments: !!stripe,
     systems: {
       manuscriptStructure: true,

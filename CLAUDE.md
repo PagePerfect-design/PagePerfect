@@ -37,10 +37,9 @@ PagePerfect/
 │   │   │       ├── page.tsx           # Server-rendered status shell
 │   │   │       └── StatusClient.tsx   # Client-side connectivity diagnostics
 │   │   ├── lib/               # Shared utilities
-│   │   │   ├── supabase.ts            # Browser Supabase client factory + isSupabaseConfigured guard
-│   │   │   ├── supabase-server.ts     # Server-side Supabase client (cookie-based)
-│   │   │   ├── auth-context.tsx       # AuthProvider context (user, session, profile, tier)
-│   │   │   └── database.types.ts      # Supabase DB schema types (profiles, manuscripts, compile_history)
+│   │   │   ├── supabase.ts            # PocketBase client factory + isPocketBaseConfigured guard
+│   │   │   ├── auth-context.tsx       # AuthProvider context (user, session, profile, tier) via PocketBase
+│   │   │   └── database.types.ts      # PocketBase collection types (users, manuscripts, compile_history)
 │   │   └── components/        # Reusable UI
 │   │       ├── Button.tsx             # primary/secondary/ghost × sm/md/lg
 │   │       ├── Container.tsx          # max-w-7xl centered wrapper
@@ -90,7 +89,7 @@ PagePerfect/
 | Backend language | JavaScript (CommonJS) |
 | PDF engine | Pandoc + XeLaTeX |
 | Containerization | Docker (Ubuntu 22.04) |
-| Auth & database | Supabase (self-hosted via Coolify) |
+| Auth & database | PocketBase (self-hosted via Coolify) |
 | Infrastructure | Digital Ocean droplet + Coolify |
 | Frontend hosting | Vercel |
 | Backend hosting | Coolify (Docker on Digital Ocean) |
@@ -163,7 +162,7 @@ User edits Markdown in browser
 | `/auth/login` | `app/auth/login/page.tsx` | Sign in / sign up (email + GitHub/Google OAuth) |
 | `/auth/forgot-password` | `app/auth/forgot-password/page.tsx` | Request password reset email |
 | `/auth/reset-password` | `app/auth/reset-password/page.tsx` | Set new password (via reset link) |
-| `/auth/callback` | `app/auth/callback/route.ts` | OAuth code exchange (server route) |
+| `/auth/callback` | `app/auth/callback/route.ts` | OAuth fallback redirect (PocketBase uses popup flow) |
 
 ## Design System
 
@@ -325,13 +324,14 @@ Defined in `frontend/src/app/pricing/page.tsx`. Currently informational (no payw
 
 ## Environment Variables
 
+All environment variables are configured in **Vercel** (frontend) or **Coolify** (backend + PocketBase).
+
 ### Frontend (Vercel)
 
 | Variable | Description |
 |----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Kong API gateway URL (`https://supabase.pageperfect.studio`) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key (from Studio → Settings → API) |
-| `RAILWAY_API_BASE` | Backend compile API URL (legacy name, points to Coolify-hosted backend) |
+| `NEXT_PUBLIC_POCKETBASE_URL` | PocketBase URL (`https://pb.pageperfect.studio`) |
+| `API_BASE_URL` | Backend compile API URL (Coolify-hosted backend) |
 | `NEXT_PUBLIC_STRIPE_PRICE_PUBLISHER` | Stripe price ID for Publisher tier |
 | `NEXT_PUBLIC_STRIPE_PRICE_STUDIO` | Stripe price ID for Studio tier |
 
@@ -342,8 +342,9 @@ Defined in `frontend/src/app/pricing/page.tsx`. Currently informational (no payw
 | `PORT` | `4000` | Backend server port |
 | `MAX_MD_BYTES` | `2097152` (2 MB) | Max Markdown payload size |
 | `COMPILE_TIMEOUT_MS` | `45000` | Pandoc compilation timeout |
-| `SUPABASE_URL` | — | Supabase Kong API gateway URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | — | Supabase service role key (backend only, never expose to client) |
+| `POCKETBASE_URL` | — | PocketBase URL (e.g. `https://pb.pageperfect.studio`) |
+| `POCKETBASE_ADMIN_EMAIL` | — | PocketBase admin email (set in Coolify, never expose to client) |
+| `POCKETBASE_ADMIN_PASSWORD` | — | PocketBase admin password (set in Coolify, never expose to client) |
 | `STRIPE_SECRET_KEY` | — | Stripe secret key |
 | `STRIPE_WEBHOOK_SECRET` | — | Stripe webhook signing secret |
 
@@ -360,33 +361,31 @@ When adding tests in the future, note that `.gitignore` excludes `test*.pdf` and
 ```
 Digital Ocean Droplet
 └── Coolify (self-hosted PaaS)
-    ├── Supabase (self-hosted)
-    │   ├── Kong API Gateway → https://supabase.pageperfect.studio
-    │   ├── Auth (GoTrue)    — email/password + GitHub/Google OAuth
-    │   ├── PostgreSQL       — profiles, manuscripts, compile_history
-    │   └── Studio           — admin dashboard
+    ├── PocketBase (self-hosted)
+    │   ├── REST API + Admin UI  → https://pb.pageperfect.studio
+    │   ├── Auth                 — email/password + GitHub/Google OAuth
+    │   └── SQLite               — users, manuscripts, compile_history
     └── Backend (Express/Docker)
-        └── PDF compile API  → proxied via Vercel rewrites
+        └── PDF compile API      → proxied via Vercel rewrites
 
 Vercel
-└── Frontend (Next.js)     → https://pageperfect.studio
+└── Frontend (Next.js)           → https://pageperfect.studio
 ```
 
-### Supabase (Self-Hosted via Coolify)
+### PocketBase (Self-Hosted via Coolify)
 
-- **Kong API gateway URL**: `https://supabase.pageperfect.studio` (port 8000 internally, reverse-proxied via Coolify)
-- **Auth providers**: Email/password, GitHub OAuth, Google OAuth
-- **OAuth callback URL** (set in GitHub/Google OAuth app settings): `https://supabase.pageperfect.studio/auth/v1/callback`
-- **Site URL** (set in Supabase Auth config): `https://pageperfect.studio`
-- **Redirect URLs** (set in Supabase Auth config): `https://pageperfect.studio/auth/callback`
-- **Database tables**: `profiles`, `manuscripts`, `compile_history` (see `frontend/src/lib/database.types.ts`)
+- **URL**: `https://pb.pageperfect.studio` (reverse-proxied via Coolify)
+- **Admin dashboard**: `https://pb.pageperfect.studio/_/`
+- **Auth providers**: Email/password, GitHub OAuth, Google OAuth (configured in PocketBase Admin → Settings → Auth providers)
+- **Collections**: `users` (built-in auth + custom fields), `manuscripts`, `compile_history` (see `frontend/src/lib/database.types.ts`)
+- **OAuth**: PocketBase JS SDK handles OAuth2 via popup flow (no server-side callback needed)
+- **Backend auth**: Uses admin email/password to get a token for server-side API calls (webhook handlers, Stripe payment flow)
 
 ### Deployment
 
-- **Frontend**: Deploys to Vercel from the `frontend/` directory. Auto-deploys on push to `main`.
-- **Backend**: Deploys via Coolify on a Digital Ocean droplet from the `backend/` directory via Docker.
-- **Supabase**: Self-hosted on the same Digital Ocean droplet via Coolify. Managed through Supabase Studio.
-- Environment variables are configured in Vercel dashboard (frontend) and Coolify dashboard (backend + Supabase).
+- **Frontend**: Deploys to Vercel from the `frontend/` directory. Auto-deploys on push to `main`. Env vars in Vercel dashboard.
+- **Backend**: Deploys via Coolify on a Digital Ocean droplet from the `backend/` directory via Docker. Env vars in Coolify dashboard.
+- **PocketBase**: Self-hosted on the same Digital Ocean droplet via Coolify. Managed through PocketBase Admin UI. Env vars in Coolify dashboard.
 
 ## Important Files for Common Tasks
 
@@ -405,5 +404,5 @@ Vercel
 | Reusable UI components | `frontend/src/components/` |
 | Auth & user management | `frontend/src/lib/auth-context.tsx`, `frontend/src/lib/supabase.ts` |
 | Auth pages (login, reset) | `frontend/src/app/auth/` |
-| Supabase DB schema types | `frontend/src/lib/database.types.ts` |
+| PocketBase collection types | `frontend/src/lib/database.types.ts` |
 | Status/health diagnostics | `frontend/src/app/status/StatusClient.tsx`, `frontend/src/app/docs/RequirementsCheck.tsx` |

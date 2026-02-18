@@ -1,8 +1,6 @@
-import { createBrowserClient } from '@supabase/ssr'
-import type { Database } from './database.types'
+import PocketBase from 'pocketbase'
 
-const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim()
-const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim()
+const pocketbaseUrl = (process.env.NEXT_PUBLIC_POCKETBASE_URL ?? '').trim()
 
 function isValidHttpUrl(s: string): boolean {
   try {
@@ -13,15 +11,22 @@ function isValidHttpUrl(s: string): boolean {
   }
 }
 
-export const isSupabaseConfigured = !!(
-  isValidHttpUrl(supabaseUrl) && supabaseAnonKey
-)
+export const isPocketBaseConfigured = !!(isValidHttpUrl(pocketbaseUrl))
 
-export function createClient() {
-  if (!isSupabaseConfigured) {
+let _pb: PocketBase | null = null
+
+export function createClient(): PocketBase {
+  if (!isPocketBaseConfigured) {
     throw new Error(
-      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL (must be a valid https:// URL) and NEXT_PUBLIC_SUPABASE_ANON_KEY.',
+      'PocketBase is not configured. Set NEXT_PUBLIC_POCKETBASE_URL (must be a valid https:// URL).',
     )
   }
-  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+  // Reuse the singleton so authStore state persists across calls
+  if (!_pb) {
+    _pb = new PocketBase(pocketbaseUrl)
+  }
+  return _pb
 }
+
+// Legacy alias used by NavAuth and other components
+export const isSupabaseConfigured = isPocketBaseConfigured
