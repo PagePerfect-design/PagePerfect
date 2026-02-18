@@ -182,42 +182,73 @@ app.post('/api/stripe/webhook',
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
+    // Helper: upgrade a user's tier in Supabase
+    async function upgradeTier(userId, tier, customerId, subscriptionId) {
+      if (!supabaseAdmin) {
+        console.error('Supabase admin not configured — cannot update user tier');
+        return;
+      }
+      const update = {
+        tier,
+        stripe_customer_id: customerId,
+        updated_at: new Date().toISOString(),
+      };
+      if (subscriptionId) update.stripe_subscription_id = subscriptionId;
+
+      const { error } = await supabaseAdmin
+        .from('profiles')
+        .update(update)
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Failed to update user tier:', error.message);
+      } else {
+        console.log(`User ${userId} upgraded to ${tier}`);
+      }
+    }
+
     // Handle relevant events
     switch (event.type) {
+      // Payment Element flow: one-time payment succeeded (Studio $199)
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object;
+        const tier = pi.metadata?.tier;
+        const userId = pi.metadata?.user_id;
+        console.log(`PaymentIntent succeeded: customer=${pi.customer}, tier=${tier}, user=${userId}`);
+
+        if (userId && tier) {
+          await upgradeTier(userId, tier, pi.customer, null);
+        }
+        break;
+      }
+      // Payment Element flow: subscription invoice paid (Publisher $9.99/mo)
+      case 'invoice.paid': {
+        const invoice = event.data.object;
+        // Only process the first invoice (subscription activation), not renewals
+        if (invoice.billing_reason === 'subscription_create') {
+          const sub = invoice.subscription;
+          const customerId = invoice.customer;
+          // Retrieve the subscription to get metadata
+          const subscription = await stripe.subscriptions.retrieve(sub);
+          const tier = subscription.metadata?.tier;
+          const userId = subscription.metadata?.user_id;
+          console.log(`Subscription activated: customer=${customerId}, tier=${tier}, user=${userId}`);
+
+          if (userId && tier) {
+            await upgradeTier(userId, tier, customerId, sub);
+          }
+        }
+        break;
+      }
+      // Legacy: checkout session flow (kept for backward compatibility)
       case 'checkout.session.completed': {
         const session = event.data.object;
         const tier = session.metadata?.tier;
         const userId = session.metadata?.user_id;
         console.log(`Checkout completed: customer=${session.customer}, tier=${tier}, user=${userId}`);
 
-        if (!supabaseAdmin) {
-          console.error('Supabase admin not configured — cannot update user tier');
-          break;
-        }
-        if (!userId || !tier) {
-          console.error('Missing user_id or tier in checkout metadata');
-          break;
-        }
-
-        const update = {
-          tier,
-          stripe_customer_id: session.customer,
-          updated_at: new Date().toISOString(),
-        };
-        // Publisher tier gets a subscription ID; Studio is a one-time payment
-        if (tier === 'publisher' && session.subscription) {
-          update.stripe_subscription_id = session.subscription;
-        }
-
-        const { error } = await supabaseAdmin
-          .from('profiles')
-          .update(update)
-          .eq('id', userId);
-
-        if (error) {
-          console.error('Failed to update user tier:', error.message);
-        } else {
-          console.log(`User ${userId} upgraded to ${tier}`);
+        if (userId && tier) {
+          await upgradeTier(userId, tier, session.customer, session.subscription || null);
         }
         break;
       }
@@ -230,7 +261,6 @@ app.post('/api/stripe/webhook',
           break;
         }
 
-        // Find the user by stripe_customer_id and downgrade to drafter
         const { error } = await supabaseAdmin
           .from('profiles')
           .update({
@@ -250,13 +280,9 @@ app.post('/api/stripe/webhook',
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
         console.log(`Payment failed: customer=${invoice.customer}, attempt=${invoice.attempt_count}`);
-        // For now, log the failure. Stripe will retry automatically (up to 4 times
-        // over ~3 weeks with Smart Retries). The subscription will eventually be
-        // cancelled if all retries fail, which triggers customer.subscription.deleted above.
         break;
       }
       default:
-        // Unhandled event type
         break;
     }
 
@@ -264,46 +290,107 @@ app.post('/api/stripe/webhook',
   },
 );
 
-// Stripe checkout session creation
-app.post('/api/stripe/checkout', async (req, res) => {
+// Stripe Payment Intent / Subscription creation (Payment Element flow)
+app.post('/api/stripe/create-payment', async (req, res) => {
   if (!stripe) {
     return res.status(501).json({ error: 'Stripe not configured' });
   }
 
-  const { tier, user_id } = req.body;
-  if (!['publisher', 'studio'].includes(tier)) {
+  const { tier, user_id, email } = req.body;
+  if (!['single', 'publisher', 'studio'].includes(tier)) {
     return res.status(400).json({ error: 'Invalid tier' });
   }
   if (!user_id) {
     return res.status(400).json({ error: 'user_id is required' });
   }
 
-  const priceId = tier === 'publisher'
-    ? process.env.STRIPE_PRICE_PUBLISHER
-    : process.env.STRIPE_PRICE_STUDIO;
-
-  if (!priceId) {
-    return res.status(500).json({ error: `Price not configured for tier: ${tier}` });
-  }
-
-  const mode = tier === 'publisher' ? 'subscription' : 'payment';
-
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/app?upgraded=${tier}`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pricing`,
-      metadata: {
-        tier,
-        user_id,
-      },
-    });
+    // Find or create a Stripe customer for this user
+    let customerId;
+    if (supabaseAdmin) {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('stripe_customer_id')
+        .eq('id', user_id)
+        .single();
+      customerId = profile?.stripe_customer_id;
+    }
 
-    res.json({ url: session.url });
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: email || undefined,
+        metadata: { user_id, tier },
+      });
+      customerId = customer.id;
+
+      // Store the customer ID in profiles
+      if (supabaseAdmin) {
+        await supabaseAdmin
+          .from('profiles')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', user_id);
+      }
+    }
+
+    if (tier === 'single') {
+      // Single PDF — £2.99 one-time PaymentIntent
+      const amount = 299; // £2.99 in pence
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'gbp',
+        customer: customerId,
+        metadata: { tier, user_id },
+        automatic_payment_methods: { enabled: true },
+      });
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        customerId,
+      });
+    } else if (tier === 'publisher') {
+      // Subscription — create with payment_behavior: 'default_incomplete'
+      // so the client can confirm via Payment Element
+      const priceId = process.env.STRIPE_PRICE_PUBLISHER;
+      if (!priceId) {
+        return res.status(500).json({ error: 'Publisher price not configured' });
+      }
+
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{ price: priceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        metadata: { tier, user_id },
+        expand: ['latest_invoice.payment_intent'],
+      });
+
+      const invoice = subscription.latest_invoice;
+      const paymentIntent = invoice?.payment_intent;
+
+      res.json({
+        clientSecret: paymentIntent?.client_secret,
+        subscriptionId: subscription.id,
+        customerId,
+      });
+    } else {
+      // Studio — one-time PaymentIntent
+      const amount = 19900; // $199.00 in cents
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'usd',
+        customer: customerId,
+        metadata: { tier, user_id },
+        automatic_payment_methods: { enabled: true },
+      });
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        customerId,
+      });
+    }
   } catch (err) {
-    console.error('Stripe checkout error:', err.message);
-    res.status(500).json({ error: 'Failed to create checkout session' });
+    console.error('Stripe payment creation error:', err.message);
+    res.status(500).json({ error: 'Failed to create payment' });
   }
 });
 

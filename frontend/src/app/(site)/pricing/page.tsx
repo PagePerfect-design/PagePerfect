@@ -1,11 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { motion, useInView } from 'framer-motion'
-import { useRef, useState } from 'react'
-import { ArrowRight, Check } from 'lucide-react'
+import { motion, useInView, AnimatePresence } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowRight, Check, X, Loader2 } from 'lucide-react'
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import type { StripeElementsOptions } from '@stripe/stripe-js'
 import { useAuth } from '@/lib/auth-context'
-import { redirectToCheckout } from '@/lib/stripe'
+import { stripePromise, createPayment } from '@/lib/stripe'
 
 const ease = [0.25, 0.4, 0.25, 1] as const
 
@@ -30,17 +32,35 @@ const TIERS = [
     ],
   },
   {
+    key: 'single' as const,
+    name: 'Single',
+    price: '\u00a32.99',
+    period: 'per PDF',
+    desc: 'One clean, watermark-free PDF export. Pay as you go.',
+    cta: 'Buy One PDF',
+    href: '/app',
+    highlight: false,
+    features: [
+      'Everything in Drafter',
+      'No watermark on this export',
+      'All 11 page sizes',
+      'Full quality compile',
+      'Print-ready PDF output',
+      'No subscription required',
+    ],
+  },
+  {
     key: 'publisher' as const,
     name: 'Publisher',
     price: '$9.99',
     period: '/mo',
-    desc: 'Print-ready output for serious authors. Clean exports, all sizes.',
+    desc: 'Unlimited clean exports for serious authors.',
     cta: 'Start Publishing',
     href: '/app',
     highlight: true,
     features: [
       'Everything in Drafter',
-      'No watermark on exports',
+      'Unlimited watermark-free exports',
       'All 11 page sizes including Amazon KDP',
       'Full quality compile mode',
       'Print-ready PDF (PDF/X compliance)',
@@ -96,6 +116,8 @@ const FAQ = [
   },
 ]
 
+// ── Tier Card ──
+
 function TierCard({
   tier,
   index,
@@ -109,7 +131,7 @@ function TierCard({
   inView: boolean
   cta: { label: string; disabled: boolean }
   isLoading: boolean
-  onUpgrade: (key: 'publisher' | 'studio') => void
+  onUpgrade: (key: 'single' | 'publisher' | 'studio') => void
 }) {
   return (
     <motion.div
@@ -122,7 +144,6 @@ function TierCard({
           : 'border-white/[0.06] bg-white/[0.01]'
       } hover:border-white/[0.12]`}
     >
-      {/* Highlight label */}
       {tier.highlight && (
         <div className="absolute -top-px left-0 right-0 flex justify-center">
           <div className="bg-[#0033ff] px-4 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-white">
@@ -132,7 +153,6 @@ function TierCard({
       )}
 
       <div className="flex h-full flex-col p-6 md:p-8">
-        {/* Header */}
         <div className="mb-8">
           <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/45">
             {tier.name}
@@ -148,7 +168,6 @@ function TierCard({
 
         <div className={`mb-6 h-px ${tier.highlight ? 'bg-[#0033ff]/20' : 'bg-white/[0.06]'}`} />
 
-        {/* Features */}
         <ul className="mb-8 flex-1 space-y-3">
           {tier.features.map((f) => (
             <li key={f} className="flex items-start gap-3 font-body text-[14px] text-white/55">
@@ -158,7 +177,6 @@ function TierCard({
           ))}
         </ul>
 
-        {/* CTA */}
         {tier.key === 'drafter' ? (
           <Link
             href={cta.disabled ? '#' : tier.href}
@@ -177,7 +195,7 @@ function TierCard({
         ) : (
           <button
             disabled={cta.disabled || isLoading}
-            onClick={() => onUpgrade(tier.key as 'publisher' | 'studio')}
+            onClick={() => onUpgrade(tier.key as 'single' | 'publisher' | 'studio')}
             className={`group/btn flex h-12 w-full items-center justify-center gap-2 font-mono text-[12px] uppercase tracking-[0.1em] transition-all duration-200 ${
               cta.disabled
                 ? 'cursor-default border border-white/[0.06] text-white/25'
@@ -187,13 +205,7 @@ function TierCard({
             }`}
           >
             {isLoading ? (
-              <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Redirecting&hellip;
-              </span>
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <>
                 {cta.label}
@@ -209,10 +221,218 @@ function TierCard({
   )
 }
 
+// ── Payment Form (inside <Elements>) ──
+
+function PaymentForm({
+  tier,
+  onSuccess,
+  onError,
+}: {
+  tier: 'single' | 'publisher' | 'studio'
+  onSuccess: () => void
+  onError: (msg: string) => void
+}) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [processing, setProcessing] = useState(false)
+
+  const buttonLabel = {
+    single: 'Pay \u00a32.99 \u2014 One PDF',
+    publisher: 'Subscribe \u2014 $9.99/mo',
+    studio: 'Pay $199 \u2014 Lifetime',
+  }[tier]
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!stripe || !elements) return
+
+    setProcessing(true)
+
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/pricing?success=${tier}`,
+      },
+      redirect: 'if_required',
+    })
+
+    if (error) {
+      onError(error.message || 'Payment failed. Please try again.')
+      setProcessing(false)
+    } else {
+      onSuccess()
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="px-6 py-5">
+        <PaymentElement
+          options={{
+            layout: 'tabs',
+          }}
+        />
+      </div>
+
+      <div className="border-t border-neutral-200 px-6 py-5">
+        <button
+          type="submit"
+          disabled={!stripe || processing}
+          className="flex h-12 w-full items-center justify-center gap-2 bg-[#0033ff] font-mono text-[12px] uppercase tracking-[0.1em] text-white transition-all duration-200 hover:bg-[#2255ff] disabled:opacity-50"
+        >
+          {processing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Processing&hellip;
+            </>
+          ) : (
+            <>
+              {buttonLabel}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </>
+          )}
+        </button>
+        <p className="mt-3 text-center font-mono text-[10px] text-neutral-400">
+          Secure payment via Stripe. Cancel anytime.
+        </p>
+      </div>
+    </form>
+  )
+}
+
+// ── Checkout Overlay ──
+
+function CheckoutOverlay({
+  tier,
+  clientSecret,
+  onClose,
+  onSuccess,
+  onError,
+}: {
+  tier: 'single' | 'publisher' | 'studio'
+  clientSecret: string
+  onClose: () => void
+  onSuccess: () => void
+  onError: (msg: string) => void
+}) {
+  const elementsOptions: StripeElementsOptions = {
+    clientSecret,
+    appearance: {
+      theme: 'stripe',
+      variables: {
+        colorPrimary: '#0033ff',
+        borderRadius: '0px',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      },
+    },
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="fixed inset-0 z-50 flex items-center justify-center"
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Panel */}
+      <motion.div
+        initial={{ opacity: 0, y: 32, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 32, scale: 0.98 }}
+        transition={{ duration: 0.4, ease }}
+        className="relative z-10 mx-4 w-full max-w-md"
+      >
+        {/* Header — dark, editorial */}
+        <div className="flex items-center justify-between border border-white/[0.06] border-b-0 bg-[#0a0a0f] px-6 py-5">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/40">
+              Upgrade to
+            </p>
+            <p className="font-display text-xl font-extrabold tracking-tight text-white">
+              {{ single: 'Single PDF', publisher: 'Publisher', studio: 'Studio' }[tier]}
+            </p>
+            <p className="mt-1 font-mono text-[11px] text-white/35">
+              {{ single: '\u00a32.99 \u00b7 one watermark-free PDF', publisher: '$9.99/month \u00b7 cancel anytime', studio: '$199 one-time \u00b7 lifetime access' }[tier]}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center text-white/40 transition-colors hover:text-white/70"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Payment form — white background for Stripe Elements readability */}
+        <div className="border border-white/[0.06] border-t-0 bg-white">
+          {stripePromise ? (
+            <Elements stripe={stripePromise} options={elementsOptions}>
+              <PaymentForm
+                tier={tier}
+                onSuccess={onSuccess}
+                onError={onError}
+              />
+            </Elements>
+          ) : (
+            <div className="flex items-center justify-center py-16">
+              <p className="font-mono text-[13px] text-neutral-500">
+                Payment not configured.
+              </p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// ── Success Banner ──
+
+function SuccessBanner({ tier }: { tier: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease }}
+      className="mx-auto mb-8 max-w-5xl px-6 md:px-8"
+    >
+      <div className="flex items-center gap-4 border border-emerald-500/20 bg-emerald-500/[0.05] px-6 py-4">
+        <div className="flex h-8 w-8 items-center justify-center bg-emerald-500/20">
+          <Check className="h-4 w-4 text-emerald-400" />
+        </div>
+        <div>
+          <p className="font-display text-[15px] font-semibold text-white">
+            {tier === 'single'
+              ? 'PDF purchased'
+              : `Welcome to ${tier === 'publisher' ? 'Publisher' : 'Studio'}`}
+          </p>
+          <p className="font-body text-[13px] text-white/50">
+            {tier === 'single'
+              ? 'Your watermark-free PDF is ready to download.'
+              : 'Your account has been upgraded. All features are now unlocked.'}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// ── Page ──
+
 export default function PricingPage() {
   const { user, tier: currentTier } = useAuth()
+  const [checkoutTier, setCheckoutTier] = useState<'single' | 'publisher' | 'studio' | null>(null)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [successTier, setSuccessTier] = useState<string | null>(null)
 
   const headerRef = useRef(null)
   const gridRef = useRef(null)
@@ -223,7 +443,17 @@ export default function PricingPage() {
   const faqInView = useInView(faqRef, { once: true, margin: '-60px' })
   const ctaInView = useInView(ctaRef, { once: true, margin: '-60px' })
 
-  async function handleUpgrade(tierKey: 'publisher' | 'studio') {
+  // Check for return from redirect-based payment (3D Secure, etc.)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const success = params.get('success')
+    if (success) {
+      window.history.replaceState({}, '', '/pricing')
+      setSuccessTier(success)
+    }
+  }, [])
+
+  async function handleUpgrade(tierKey: 'single' | 'publisher' | 'studio') {
     if (!user) {
       window.location.href = '/auth/login?redirect=/pricing'
       return
@@ -231,19 +461,45 @@ export default function PricingPage() {
 
     setError(null)
     setCheckoutLoading(tierKey)
+
     try {
-      await redirectToCheckout(tierKey, user.id)
+      const { clientSecret: secret } = await createPayment(
+        tierKey,
+        user.id,
+        user.email,
+      )
+      setClientSecret(secret)
+      setCheckoutTier(tierKey)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.')
+      setError(e instanceof Error ? e.message : 'Something went wrong.')
     } finally {
       setCheckoutLoading(null)
     }
+  }
+
+  function handleCloseCheckout() {
+    setCheckoutTier(null)
+    setClientSecret(null)
+  }
+
+  function handlePaymentSuccess() {
+    setCheckoutTier(null)
+    setClientSecret(null)
+    setSuccessTier(checkoutTier || 'publisher')
+  }
+
+  function handlePaymentError(msg: string) {
+    setError(msg)
   }
 
   function getCtaForTier(tier: typeof TIERS[number]) {
     if (tier.key === 'drafter') {
       if (currentTier === 'drafter' && user) return { label: 'Current Plan', disabled: true }
       return { label: tier.cta, disabled: false }
+    }
+    if (tier.key === 'single') {
+      // Always purchasable — it's a per-download product
+      return { label: user ? tier.cta : 'Sign in to Buy', disabled: false }
     }
     if (tier.key === 'publisher') {
       if (currentTier === 'publisher') return { label: 'Current Plan', disabled: true }
@@ -290,11 +546,15 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Error banner */}
+      {successTier && <SuccessBanner tier={successTier} />}
+
       {error && (
-        <div className="mx-auto max-w-5xl px-6 md:px-8 mb-6">
-          <div className="border border-red-500/20 bg-red-500/[0.05] px-5 py-3 font-mono text-[13px] text-red-400">
-            {error}
+        <div className="mx-auto mb-6 max-w-5xl px-6 md:px-8">
+          <div className="flex items-center justify-between border border-red-500/20 bg-red-500/[0.05] px-5 py-3">
+            <p className="font-mono text-[13px] text-red-400">{error}</p>
+            <button onClick={() => setError(null)} className="text-red-400/60 hover:text-red-400">
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       )}
@@ -302,7 +562,7 @@ export default function PricingPage() {
       {/* ── TIER GRID ── */}
       <section className="pb-32 md:pb-44">
         <div className="mx-auto max-w-5xl px-6 md:px-8">
-          <div ref={gridRef} className="grid grid-cols-1 gap-px bg-white/[0.06] md:grid-cols-3">
+          <div ref={gridRef} className="grid grid-cols-1 gap-px bg-white/[0.06] md:grid-cols-4">
             {TIERS.map((tier, i) => (
               <TierCard
                 key={tier.key}
@@ -348,7 +608,7 @@ export default function PricingPage() {
                 animate={faqInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: 0.1 + i * 0.05, ease }}
               >
-                <h3 className="font-display text-[17px] font-bold leading-snug text-white/90 mb-3">
+                <h3 className="mb-3 font-display text-[17px] font-bold leading-snug text-white/90">
                   {item.q}
                 </h3>
                 <p className="font-body text-[15px] leading-relaxed text-white/45">
@@ -403,6 +663,19 @@ export default function PricingPage() {
           </motion.div>
         </div>
       </section>
+
+      {/* ── PAYMENT OVERLAY ── */}
+      <AnimatePresence>
+        {checkoutTier && clientSecret && (
+          <CheckoutOverlay
+            tier={checkoutTier}
+            clientSecret={clientSecret}
+            onClose={handleCloseCheckout}
+            onSuccess={handlePaymentSuccess}
+            onError={handlePaymentError}
+          />
+        )}
+      </AnimatePresence>
     </main>
   )
 }

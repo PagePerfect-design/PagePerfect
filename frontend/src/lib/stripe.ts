@@ -3,49 +3,39 @@
  *
  * Environment variables required:
  *   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY — pk_live_... or pk_test_...
- *   STRIPE_SECRET_KEY                  — sk_live_... or sk_test_... (server-side only)
- *   STRIPE_WEBHOOK_SECRET              — whsec_... (server-side only)
- *
- * Price IDs configured per tier (set in .env):
- *   STRIPE_PRICE_PUBLISHER_MONTHLY — price_... ($9.99/mo)
- *   STRIPE_PRICE_STUDIO_LIFETIME   — price_... ($199 one-time)
  */
 
-export const STRIPE_TIERS = {
-  drafter: {
-    name: 'Drafter',
-    price: 'Free',
-    priceId: null, // No Stripe price — free tier
-  },
-  publisher: {
-    name: 'Publisher',
-    price: '$9.99/mo',
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PUBLISHER ?? null,
-  },
-  studio: {
-    name: 'Studio',
-    price: '$199',
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_STUDIO ?? null,
-  },
-} as const
+import { loadStripe } from '@stripe/stripe-js'
+
+// Singleton Stripe promise — loaded once, reused across the app
+const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+export const stripePromise = stripePublishableKey
+  ? loadStripe(stripePublishableKey)
+  : null
 
 /**
- * Redirect the user to Stripe Checkout.
- * Calls our API route which creates the session server-side.
+ * Create a PaymentIntent (Studio) or Subscription (Publisher)
+ * on the backend and return the client secret for the Payment Element.
  */
-export async function redirectToCheckout(tier: 'publisher' | 'studio', userId: string) {
-  const res = await fetch('/api/stripe/checkout', {
+export async function createPayment(
+  tier: 'single' | 'publisher' | 'studio',
+  userId: string,
+  email?: string,
+): Promise<{ clientSecret: string; subscriptionId?: string }> {
+  const res = await fetch('/api/stripe/create-payment', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tier, user_id: userId }),
+    body: JSON.stringify({ tier, user_id: userId, email }),
   })
 
-  const { url, error } = await res.json()
+  const data = await res.json()
 
-  if (error) {
-    throw new Error(error)
+  if (data.error) {
+    throw new Error(data.error)
   }
 
-  // Redirect to Stripe-hosted checkout
-  window.location.href = url
+  return {
+    clientSecret: data.clientSecret,
+    subscriptionId: data.subscriptionId,
+  }
 }
