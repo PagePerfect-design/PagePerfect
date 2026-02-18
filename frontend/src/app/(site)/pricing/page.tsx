@@ -106,7 +106,7 @@ export default function PricingPage() {
     setError(null)
     setCheckoutLoading(tierKey)
     try {
-      await redirectToCheckout(tierKey)
+      await redirectToCheckout(tierKey, user.id)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.')
     } finally {

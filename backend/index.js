@@ -150,6 +150,18 @@ try {
   }
 } catch { /* stripe not configured */ }
 
+// ── Supabase Admin Client (service role — server-side only) ──
+let supabaseAdmin;
+try {
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const { createClient } = require('@supabase/supabase-js');
+    supabaseAdmin = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    );
+  }
+} catch { /* supabase not configured */ }
+
 // Stripe webhook endpoint — needs raw body
 app.post('/api/stripe/webhook',
   express.raw({ type: 'application/json' }),
@@ -174,24 +186,73 @@ app.post('/api/stripe/webhook',
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        console.log(`Checkout completed for customer ${session.customer}, tier: ${session.metadata?.tier}`);
-        // TODO: Update user tier in Supabase using service role key
-        //   - session.metadata.tier = 'publisher' | 'studio'
-        //   - session.metadata.user_id = Supabase user ID
-        //   - session.customer = Stripe customer ID
-        //   - session.subscription = Stripe subscription ID (for publisher)
+        const tier = session.metadata?.tier;
+        const userId = session.metadata?.user_id;
+        console.log(`Checkout completed: customer=${session.customer}, tier=${tier}, user=${userId}`);
+
+        if (!supabaseAdmin) {
+          console.error('Supabase admin not configured — cannot update user tier');
+          break;
+        }
+        if (!userId || !tier) {
+          console.error('Missing user_id or tier in checkout metadata');
+          break;
+        }
+
+        const update = {
+          tier,
+          stripe_customer_id: session.customer,
+          updated_at: new Date().toISOString(),
+        };
+        // Publisher tier gets a subscription ID; Studio is a one-time payment
+        if (tier === 'publisher' && session.subscription) {
+          update.stripe_subscription_id = session.subscription;
+        }
+
+        const { error } = await supabaseAdmin
+          .from('profiles')
+          .update(update)
+          .eq('id', userId);
+
+        if (error) {
+          console.error('Failed to update user tier:', error.message);
+        } else {
+          console.log(`User ${userId} upgraded to ${tier}`);
+        }
         break;
       }
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
         console.log(`Subscription cancelled for customer ${sub.customer}`);
-        // TODO: Downgrade user to 'drafter' tier in Supabase
+
+        if (!supabaseAdmin) {
+          console.error('Supabase admin not configured — cannot downgrade user');
+          break;
+        }
+
+        // Find the user by stripe_customer_id and downgrade to drafter
+        const { error } = await supabaseAdmin
+          .from('profiles')
+          .update({
+            tier: 'drafter',
+            stripe_subscription_id: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_customer_id', sub.customer);
+
+        if (error) {
+          console.error('Failed to downgrade user:', error.message);
+        } else {
+          console.log(`Customer ${sub.customer} downgraded to drafter`);
+        }
         break;
       }
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
-        console.log(`Payment failed for customer ${invoice.customer}`);
-        // TODO: Send notification, grace period logic
+        console.log(`Payment failed: customer=${invoice.customer}, attempt=${invoice.attempt_count}`);
+        // For now, log the failure. Stripe will retry automatically (up to 4 times
+        // over ~3 weeks with Smart Retries). The subscription will eventually be
+        // cancelled if all retries fail, which triggers customer.subscription.deleted above.
         break;
       }
       default:
@@ -209,9 +270,12 @@ app.post('/api/stripe/checkout', async (req, res) => {
     return res.status(501).json({ error: 'Stripe not configured' });
   }
 
-  const { tier } = req.body;
+  const { tier, user_id } = req.body;
   if (!['publisher', 'studio'].includes(tier)) {
     return res.status(400).json({ error: 'Invalid tier' });
+  }
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' });
   }
 
   const priceId = tier === 'publisher'
@@ -232,7 +296,7 @@ app.post('/api/stripe/checkout', async (req, res) => {
       cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pricing`,
       metadata: {
         tier,
-        // user_id should be passed from the frontend after auth
+        user_id,
       },
     });
 
@@ -264,7 +328,7 @@ app.get('/api/health/details', (_req, res) => {
     marginPresets,
     compileModes,
     safeModeAvailable: true,
-    auth: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    auth: !!supabaseAdmin,
     payments: !!stripe,
     systems: {
       manuscriptStructure: true,

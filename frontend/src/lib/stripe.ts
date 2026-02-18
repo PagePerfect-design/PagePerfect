@@ -33,11 +33,11 @@ export const STRIPE_TIERS = {
  * Redirect the user to Stripe Checkout.
  * Calls our API route which creates the session server-side.
  */
-export async function redirectToCheckout(tier: 'publisher' | 'studio') {
+export async function redirectToCheckout(tier: 'publisher' | 'studio', userId: string) {
   const res = await fetch('/api/stripe/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tier }),
+    body: JSON.stringify({ tier, user_id: userId }),
   })
 
   const { url, error } = await res.json()
