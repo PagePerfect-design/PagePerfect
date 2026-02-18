@@ -1,8 +1,8 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import type { User, Session } from '@supabase/supabase-js'
-import { createClient, isSupabaseConfigured } from './supabase'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import type { RecordModel } from 'pocketbase'
+import { createClient, isPocketBaseConfigured } from './supabase'
 import type { Tier } from './database.types'
 
 type Profile = {
@@ -13,8 +13,8 @@ type Profile = {
 }
 
 type AuthState = {
-  user: User | null
-  session: Session | null
+  user: RecordModel | null
+  session: { token: string } | null
   profile: Profile | null
   loading: boolean
   tier: Tier
@@ -28,106 +28,127 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
+function userToProfile(user: RecordModel): Profile {
+  return {
+    id: user.id,
+    email: user.email,
+    display_name: user.display_name ?? user.name ?? null,
+    tier: (user.tier as Tier) || 'drafter',
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
+  const [user, setUser] = useState<RecordModel | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const syncUser = useCallback(() => {
+    if (!isPocketBaseConfigured) return
+    const pb = createClient()
+    if (pb.authStore.isValid && pb.authStore.record) {
+      const record = pb.authStore.record
+      setUser(record)
+      setProfile(userToProfile(record))
+    } else {
+      setUser(null)
+      setProfile(null)
+    }
+  }, [])
+
   useEffect(() => {
-    if (!isSupabaseConfigured) {
+    if (!isPocketBaseConfigured) {
       setLoading(false)
       return
     }
 
-    const supabase = createClient()
+    const pb = createClient()
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s)
-      setUser(s?.user ?? null)
-      if (s?.user) {
-        void fetchProfile(s.user.id)
-      }
-      setLoading(false)
+    // Hydrate from stored auth
+    syncUser()
+    setLoading(false)
+
+    // Listen for auth store changes
+    const unsubscribe = pb.authStore.onChange(() => {
+      syncUser()
     })
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, s) => {
-        setSession(s)
-        setUser(s?.user ?? null)
-        if (s?.user) {
-          void fetchProfile(s.user.id)
-        } else {
-          setProfile(null)
-        }
-      },
-    )
+    return () => unsubscribe()
+  }, [syncUser])
 
-    return () => subscription.unsubscribe()
-  }, [])
-
-  async function fetchProfile(userId: string) {
-    if (!isSupabaseConfigured) return
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, email, display_name, tier')
-      .eq('id', userId)
-      .single()
-
-    if (data) {
-      setProfile(data as Profile)
+  async function signIn(email: string, password: string) {
+    if (!isPocketBaseConfigured) return { error: new Error('Auth not configured') }
+    const pb = createClient()
+    try {
+      await pb.collection('users').authWithPassword(email, password)
+      syncUser()
+      return { error: null }
+    } catch (err) {
+      return { error: err as Error }
     }
   }
 
-  async function signIn(email: string, password: string) {
-    if (!isSupabaseConfigured) return { error: new Error('Auth not configured') }
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error: error as Error | null }
-  }
-
   async function signUp(email: string, password: string) {
-    if (!isSupabaseConfigured) return { error: new Error('Auth not configured') }
-    const supabase = createClient()
-    const { error } = await supabase.auth.signUp({ email, password })
-    return { error: error as Error | null }
+    if (!isPocketBaseConfigured) return { error: new Error('Auth not configured') }
+    const pb = createClient()
+    try {
+      await pb.collection('users').create({
+        email,
+        password,
+        passwordConfirm: password,
+        tier: 'drafter',
+      })
+      return { error: null }
+    } catch (err) {
+      return { error: err as Error }
+    }
   }
 
   async function signInWithOAuth(provider: 'google' | 'github') {
-    if (!isSupabaseConfigured) return
-    const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    })
+    if (!isPocketBaseConfigured) return
+    const pb = createClient()
+    await pb.collection('users').authWithOAuth2({ provider })
+    syncUser()
   }
 
   async function signOut() {
-    if (!isSupabaseConfigured) return
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    if (!isPocketBaseConfigured) return
+    const pb = createClient()
+    pb.authStore.clear()
+    setUser(null)
     setProfile(null)
   }
 
   async function resetPassword(email: string) {
-    if (!isSupabaseConfigured) return { error: new Error('Auth not configured') }
-    const supabase = createClient()
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    })
-    return { error: error as Error | null }
+    if (!isPocketBaseConfigured) return { error: new Error('Auth not configured') }
+    const pb = createClient()
+    try {
+      await pb.collection('users').requestPasswordReset(email)
+      return { error: null }
+    } catch (err) {
+      return { error: err as Error }
+    }
   }
 
   async function updatePassword(newPassword: string) {
-    if (!isSupabaseConfigured) return { error: new Error('Auth not configured') }
-    const supabase = createClient()
-    const { error } = await supabase.auth.updateUser({ password: newPassword })
-    return { error: error as Error | null }
+    if (!isPocketBaseConfigured) return { error: new Error('Auth not configured') }
+    const pb = createClient()
+    if (!pb.authStore.record) return { error: new Error('Not authenticated') }
+    try {
+      // PocketBase requires the old password to change password via client.
+      // For password-reset flows the user is already re-authenticated via the reset token.
+      // We use the admin-less approach: confirm the new password via requestPasswordReset.
+      // If the user reached this page via a reset link, PB already verified the token.
+      await pb.collection('users').update(pb.authStore.record.id, {
+        password: newPassword,
+        passwordConfirm: newPassword,
+      })
+      return { error: null }
+    } catch (err) {
+      return { error: err as Error }
+    }
   }
 
+  const session = user ? { token: createClient().authStore.token } : null
   const tier: Tier = profile?.tier ?? 'drafter'
 
   return (

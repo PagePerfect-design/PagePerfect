@@ -28,7 +28,7 @@ const TIERS: Tier[] = [
     href: '/app',
     highlight: false,
     features: [
-      'All 8 templates',
+      'All 12 templates',
       '3 page sizes',
       'Real-time preview',
       'Markdown auto-clean',
@@ -36,16 +36,32 @@ const TIERS: Tier[] = [
     ],
   },
   {
+    name: 'Single',
+    price: '\u00a32.99',
+    period: 'per PDF',
+    desc: 'One clean export, no subscription.',
+    cta: 'Buy One',
+    href: '/pricing',
+    highlight: false,
+    features: [
+      'No watermark',
+      'All 11 page sizes',
+      'Full quality compile',
+      'Print-ready output',
+      'No subscription',
+    ],
+  },
+  {
     name: 'Publisher',
     price: '$9.99',
-    period: '/month',
-    desc: 'Clean exports for serious authors.',
+    period: '/mo',
+    desc: 'Unlimited clean exports.',
     cta: 'Go Pro',
-    href: '/auth/login?next=/app',
+    href: '/pricing',
     highlight: true,
     features: [
       'Everything in Drafter',
-      'No watermark',
+      'Unlimited exports',
       'All 11 page sizes',
       'Citations & bibliography',
       'Priority compile queue',
@@ -57,7 +73,7 @@ const TIERS: Tier[] = [
     period: 'once',
     desc: 'Lifetime access. Pay once, own it.',
     cta: 'Get Studio',
-    href: '/auth/login?next=/app',
+    href: '/pricing',
     highlight: false,
     features: [
       'Everything in Publisher',
@@ -176,7 +192,7 @@ export function PricingPreview() {
           </motion.p>
         </div>
 
-        <div ref={ref} className="grid grid-cols-1 gap-px bg-white/[0.06] md:grid-cols-3">
+        <div ref={ref} className="grid grid-cols-1 gap-px bg-white/[0.06] md:grid-cols-4">
           {TIERS.map((tier, i) => (
             <TierCard key={tier.name} tier={tier} index={i} inView={inView} />
           ))}

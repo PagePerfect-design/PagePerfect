@@ -3,11 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   async rewrites() {
-    const target = process.env.RAILWAY_API_BASE?.replace(/\/$/, '') || 'http://localhost:4000'
+    const target = process.env.API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:4000'
     return [
       {
         source: '/api/:path*',
-        destination: `${target}/api/:path*`, // proxies /api/* → Railway/api/*
+        destination: `${target}/api/:path*`,
       },
     ]
   },

@@ -29,7 +29,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
       setDetails(d.status === 'fulfilled' ? d.value : { ok: false })
       setTs(new Date().toLocaleString())
     } catch {
-      setError('Failed to contact API via /api/* (check rewrites and Railway).')
+      setError('Failed to contact API via /api/* (check rewrites and backend URL).')
     } finally {
       setLoading(false)
     }

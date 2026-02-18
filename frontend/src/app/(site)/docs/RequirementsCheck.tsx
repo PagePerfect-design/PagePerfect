@@ -17,7 +17,7 @@ const IDLE_ICON = <span className="text-text-ghost">●</span>
 
 export default function RequirementsCheck() {
   const [checks, setChecks] = useState<Check[]>([
-    { key: 'proxy',  label: 'Proxy rewrite (/api → Railway) reachable', status: 'idle' },
+    { key: 'proxy',  label: 'Proxy rewrite (/api → backend) reachable', status: 'idle' },
     { key: 'health', label: 'Backend /health OK',                     status: 'idle' },
     { key: 'compile',label: 'Minimal PDF compile OK (safe, fast)',    status: 'idle' },
   ])
@@ -32,7 +32,7 @@ export default function RequirementsCheck() {
     const set = (key: string, patch: Partial<Check>) =>
       setChecks(cs => cs.map(c => (c.key === key ? { ...c, ...patch } : c)))
 
-    // 1) Proxy: /api/health (should hit Railway via Next rewrite)
+    // 1) Proxy: /api/health (should hit backend via Next rewrite)
     set('proxy', { status: 'running', note: '' })
     let healthJson: { ok?: boolean } | null = null
     try {
@@ -93,7 +93,7 @@ export default function RequirementsCheck() {
     <div className="card p-5">
       <div className="text-lg font-bold text-text-primary mb-2">Requirements</div>
       <p className="text-sm text-text-secondary mb-3">
-        Verifies the frontend proxy, backend health, and a minimal compile path. Useful for Vercel + Railway sanity checks.
+        Verifies the frontend proxy, backend health, and a minimal compile path. Useful for Vercel + Coolify sanity checks.
       </p>
 
       <ul className="divide-y divide-border">

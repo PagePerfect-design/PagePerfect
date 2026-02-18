@@ -150,6 +150,57 @@ try {
   }
 } catch { /* stripe not configured */ }
 
+// ── PocketBase Admin Client (server-side only) ──
+const POCKETBASE_URL = (process.env.POCKETBASE_URL || '').replace(/\/+$/, '');
+let pbAdminToken = null;
+let pbTokenExpiry = 0;
+
+async function getPbAdminToken() {
+  if (pbAdminToken && Date.now() < pbTokenExpiry) return pbAdminToken;
+  if (!POCKETBASE_URL || !process.env.POCKETBASE_ADMIN_EMAIL || !process.env.POCKETBASE_ADMIN_PASSWORD) {
+    return null;
+  }
+  try {
+    const resp = await fetch(`${POCKETBASE_URL}/api/admins/auth-with-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        identity: process.env.POCKETBASE_ADMIN_EMAIL,
+        password: process.env.POCKETBASE_ADMIN_PASSWORD,
+      }),
+    });
+    if (!resp.ok) {
+      console.error('PocketBase admin auth failed:', resp.status);
+      return null;
+    }
+    const data = await resp.json();
+    pbAdminToken = data.token;
+    // Refresh 5 minutes before expiry (PB tokens last ~2 hours)
+    pbTokenExpiry = Date.now() + 115 * 60 * 1000;
+    return pbAdminToken;
+  } catch (err) {
+    console.error('PocketBase admin auth error:', err.message);
+    return null;
+  }
+}
+
+// Helper: fetch from PocketBase with admin auth
+async function pbFetch(path, options = {}) {
+  const token = await getPbAdminToken();
+  if (!token) return null;
+  const resp = await fetch(`${POCKETBASE_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token,
+      ...options.headers,
+    },
+  });
+  return resp;
+}
+
+const isPocketBaseConfigured = !!(POCKETBASE_URL && process.env.POCKETBASE_ADMIN_EMAIL);
+
 // Stripe webhook endpoint — needs raw body
 app.post('/api/stripe/webhook',
   express.raw({ type: 'application/json' }),
@@ -170,32 +221,116 @@ app.post('/api/stripe/webhook',
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
+    // Helper: upgrade a user's tier in PocketBase
+    async function upgradeTier(userId, tier, customerId, subscriptionId) {
+      if (!isPocketBaseConfigured) {
+        console.error('PocketBase not configured — cannot update user tier');
+        return;
+      }
+      const update = { tier, stripe_customer_id: customerId };
+      if (subscriptionId) update.stripe_subscription_id = subscriptionId;
+
+      try {
+        const resp = await pbFetch(`/api/collections/users/records/${userId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(update),
+        });
+        if (!resp || !resp.ok) {
+          console.error('Failed to update user tier:', resp?.status);
+        } else {
+          console.log(`User ${userId} upgraded to ${tier}`);
+        }
+      } catch (err) {
+        console.error('Failed to update user tier:', err.message);
+      }
+    }
+
     // Handle relevant events
     switch (event.type) {
+      // Payment Element flow: one-time payment succeeded (Studio $199)
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object;
+        const tier = pi.metadata?.tier;
+        const userId = pi.metadata?.user_id;
+        console.log(`PaymentIntent succeeded: customer=${pi.customer}, tier=${tier}, user=${userId}`);
+
+        if (userId && tier) {
+          await upgradeTier(userId, tier, pi.customer, null);
+        }
+        break;
+      }
+      // Payment Element flow: subscription invoice paid (Publisher $9.99/mo)
+      case 'invoice.paid': {
+        const invoice = event.data.object;
+        // Only process the first invoice (subscription activation), not renewals
+        if (invoice.billing_reason === 'subscription_create') {
+          const sub = invoice.subscription;
+          const customerId = invoice.customer;
+          // Retrieve the subscription to get metadata
+          const subscription = await stripe.subscriptions.retrieve(sub);
+          const tier = subscription.metadata?.tier;
+          const userId = subscription.metadata?.user_id;
+          console.log(`Subscription activated: customer=${customerId}, tier=${tier}, user=${userId}`);
+
+          if (userId && tier) {
+            await upgradeTier(userId, tier, customerId, sub);
+          }
+        }
+        break;
+      }
+      // Legacy: checkout session flow (kept for backward compatibility)
       case 'checkout.session.completed': {
         const session = event.data.object;
-        console.log(`Checkout completed for customer ${session.customer}, tier: ${session.metadata?.tier}`);
-        // TODO: Update user tier in Supabase using service role key
-        //   - session.metadata.tier = 'publisher' | 'studio'
-        //   - session.metadata.user_id = Supabase user ID
-        //   - session.customer = Stripe customer ID
-        //   - session.subscription = Stripe subscription ID (for publisher)
+        const tier = session.metadata?.tier;
+        const userId = session.metadata?.user_id;
+        console.log(`Checkout completed: customer=${session.customer}, tier=${tier}, user=${userId}`);
+
+        if (userId && tier) {
+          await upgradeTier(userId, tier, session.customer, session.subscription || null);
+        }
         break;
       }
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
         console.log(`Subscription cancelled for customer ${sub.customer}`);
-        // TODO: Downgrade user to 'drafter' tier in Supabase
+
+        if (!isPocketBaseConfigured) {
+          console.error('PocketBase not configured — cannot downgrade user');
+          break;
+        }
+
+        try {
+          // Find the user by stripe_customer_id
+          const filter = encodeURIComponent(`stripe_customer_id='${sub.customer}'`);
+          const listResp = await pbFetch(`/api/collections/users/records?filter=${filter}`);
+          if (!listResp || !listResp.ok) {
+            console.error('Failed to find user for downgrade');
+            break;
+          }
+          const { items } = await listResp.json();
+          if (items && items.length > 0) {
+            const userId = items[0].id;
+            const patchResp = await pbFetch(`/api/collections/users/records/${userId}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ tier: 'drafter', stripe_subscription_id: '' }),
+            });
+            if (patchResp && patchResp.ok) {
+              console.log(`Customer ${sub.customer} downgraded to drafter`);
+            } else {
+              console.error('Failed to downgrade user:', patchResp?.status);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to downgrade user:', err.message);
+        }
         break;
       }
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
-        console.log(`Payment failed for customer ${invoice.customer}`);
-        // TODO: Send notification, grace period logic
+        console.log(`Payment failed: customer=${invoice.customer}, attempt=${invoice.attempt_count}`);
         break;
       }
       default:
-        // Unhandled event type
         break;
     }
 
@@ -203,43 +338,110 @@ app.post('/api/stripe/webhook',
   },
 );
 
-// Stripe checkout session creation
-app.post('/api/stripe/checkout', async (req, res) => {
+// Stripe Payment Intent / Subscription creation (Payment Element flow)
+app.post('/api/stripe/create-payment', async (req, res) => {
   if (!stripe) {
     return res.status(501).json({ error: 'Stripe not configured' });
   }
 
-  const { tier } = req.body;
-  if (!['publisher', 'studio'].includes(tier)) {
+  const { tier, user_id, email } = req.body;
+  if (!['single', 'publisher', 'studio'].includes(tier)) {
     return res.status(400).json({ error: 'Invalid tier' });
   }
-
-  const priceId = tier === 'publisher'
-    ? process.env.STRIPE_PRICE_PUBLISHER
-    : process.env.STRIPE_PRICE_STUDIO;
-
-  if (!priceId) {
-    return res.status(500).json({ error: `Price not configured for tier: ${tier}` });
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' });
   }
 
-  const mode = tier === 'publisher' ? 'subscription' : 'payment';
-
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/app?upgraded=${tier}`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pricing`,
-      metadata: {
-        tier,
-        // user_id should be passed from the frontend after auth
-      },
-    });
+    // Find or create a Stripe customer for this user
+    let customerId;
+    if (isPocketBaseConfigured) {
+      try {
+        const resp = await pbFetch(`/api/collections/users/records/${user_id}`);
+        if (resp && resp.ok) {
+          const user = await resp.json();
+          customerId = user.stripe_customer_id;
+        }
+      } catch { /* user not found */ }
+    }
 
-    res.json({ url: session.url });
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: email || undefined,
+        metadata: { user_id, tier },
+      });
+      customerId = customer.id;
+
+      // Store the customer ID in PocketBase
+      if (isPocketBaseConfigured) {
+        try {
+          await pbFetch(`/api/collections/users/records/${user_id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ stripe_customer_id: customerId }),
+          });
+        } catch { /* non-critical */ }
+      }
+    }
+
+    if (tier === 'single') {
+      // Single PDF — £2.99 one-time PaymentIntent
+      const amount = 299; // £2.99 in pence
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'gbp',
+        customer: customerId,
+        metadata: { tier, user_id },
+        automatic_payment_methods: { enabled: true },
+      });
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        customerId,
+      });
+    } else if (tier === 'publisher') {
+      // Subscription — create with payment_behavior: 'default_incomplete'
+      // so the client can confirm via Payment Element
+      const priceId = process.env.STRIPE_PRICE_PUBLISHER;
+      if (!priceId) {
+        return res.status(500).json({ error: 'Publisher price not configured' });
+      }
+
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{ price: priceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        metadata: { tier, user_id },
+        expand: ['latest_invoice.payment_intent'],
+      });
+
+      const invoice = subscription.latest_invoice;
+      const paymentIntent = invoice?.payment_intent;
+
+      res.json({
+        clientSecret: paymentIntent?.client_secret,
+        subscriptionId: subscription.id,
+        customerId,
+      });
+    } else {
+      // Studio — one-time PaymentIntent
+      const amount = 19900; // $199.00 in cents
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'usd',
+        customer: customerId,
+        metadata: { tier, user_id },
+        automatic_payment_methods: { enabled: true },
+      });
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        customerId,
+      });
+    }
   } catch (err) {
-    console.error('Stripe checkout error:', err.message);
-    res.status(500).json({ error: 'Failed to create checkout session' });
+    console.error('Stripe payment creation error:', err.message);
+    res.status(500).json({ error: 'Failed to create payment' });
   }
 });
 
@@ -264,7 +466,7 @@ app.get('/api/health/details', (_req, res) => {
     marginPresets,
     compileModes,
     safeModeAvailable: true,
-    auth: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    auth: isPocketBaseConfigured,
     payments: !!stripe,
     systems: {
       manuscriptStructure: true,

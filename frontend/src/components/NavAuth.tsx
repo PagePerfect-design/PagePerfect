@@ -2,13 +2,13 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
-import { isSupabaseConfigured } from '@/lib/supabase'
+import { isPocketBaseConfigured } from '@/lib/supabase'
 
 export default function NavAuth() {
   const { user, profile, loading, signOut } = useAuth()
 
-  // Don't show auth UI when Supabase isn't configured
-  if (!isSupabaseConfigured) return null
+  // Don't show auth UI when PocketBase isn't configured
+  if (!isPocketBaseConfigured) return null
 
   if (loading) {
     return <div className="h-8 w-20 animate-pulse rounded-full bg-surface-subtle" />
