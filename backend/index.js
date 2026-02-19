@@ -22,6 +22,7 @@ const templateExtensions = require('./template-extensions');
 const typographyAssurance = require('./typography-assurance');
 const multilingual = require('./multilingual');
 const printQA = require('./print-qa');
+const fontAvailability = require('./font-availability');
 
 // ---- limits (env overridable) ----
 const MAX_MD_BYTES = Number(process.env.MAX_MD_BYTES || 2_000_000); // ~2 MB
@@ -471,6 +472,7 @@ app.get('/api/health/details', (_req, res) => {
   const pageSizes = ['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','royal','bFormat','massMarket','aFormat','demy','fiveTwentyFiveByEight','crownQuarto','b5','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven'];
   const marginPresets = ['normal','narrow','wide','minimal','academic','generous','compact'];
   const compileModes = ['fast','full'];
+  const fontCheck = fontAvailability.quickCheck();
   res.json({
     ok: true,
     service: 'pageperfect-backend',
@@ -481,6 +483,7 @@ app.get('/api/health/details', (_req, res) => {
     safeModeAvailable: true,
     auth: isPocketBaseConfigured,
     payments: !!stripe,
+    fonts: fontCheck,
     systems: {
       manuscriptStructure: true,
       references: true,
@@ -492,6 +495,7 @@ app.get('/api/health/details', (_req, res) => {
       typographyAssurance: true,
       multilingual: true,
       printQA: true,
+      fontAvailability: true,
     },
     platforms: Object.keys(platformCompliance.PLATFORMS),
   });
@@ -507,6 +511,15 @@ app.get('/api/templates', (_req, res) => {
     gridType: template.gridType,
   }));
   res.json({ templates });
+});
+
+// ================================================================
+// Font Availability Diagnostics
+// ================================================================
+
+app.get('/api/fonts/status', (_req, res) => {
+  const audit = fontAvailability.auditFonts();
+  res.json(audit);
 });
 
 // ================================================================
@@ -1207,7 +1220,14 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   const enableMicrotype = !isFast;
   const enableCsquotes  = !isFast;
 
-  console.log(`[compile] template=${tplKey} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode}`);
+  // Resolve mainfont with fallback if unavailable
+  const fontResolution = fontAvailability.resolveFont(tpl.mainfont);
+  const effectiveMainfont = fontResolution.resolved;
+  if (fontResolution.warning) {
+    warnings.push(fontResolution.warning);
+  }
+
+  console.log(`[compile] template=${tplKey} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} font=${effectiveMainfont}${fontResolution.isFallback ? ` (fallback from ${tpl.mainfont})` : ''}`);
 
   const baseArgs = [
     mdPath,
@@ -1215,7 +1235,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     '--pdf-engine=xelatex',
     '-M', `title=${title}`,
     `--template=${tpl.templatePath}`,
-    '-V', `mainfont=${tpl.mainfont}`,
+    '-V', `mainfont=${effectiveMainfont}`,
     '-V', `geometry:${geo}`,
     ...(enableMicrotype ? ['-V','microtype=true'] : []),
     ...(enableCsquotes  ? ['-V','csquotes=true']  : []),
@@ -1263,6 +1283,9 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       });
       res.setHeader('X-PP-Build-Id', buildMeta.buildId);
       res.setHeader('X-PP-Content-Hash', buildMeta.contentHash);
+      if (fontResolution.isFallback) {
+        res.setHeader('X-PP-Font-Fallback', `${fontResolution.original} -> ${fontResolution.resolved}`);
+      }
 
       // Optional PDF/X-1a conversion for IngramSpark compliance
       if (wantPdfX) {
@@ -1300,7 +1323,15 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       const missingCitations = safeMode ? [] : parseMissingCitations(stderr);
       const missingPackages  = parseMissingPackages(stderr);
 
+      // Detect font-related failures in XeLaTeX output
+      const fontErrorPattern = /fontspec error.*"([^"]+)"/i;
+      const fontMatch = stderr.match(fontErrorPattern);
+      const missingFont = fontMatch ? fontMatch[1] : null;
+
       const messages = [];
+      if (missingFont) {
+        messages.push(`Font "${missingFont}" not found. Install it or try a different template.`);
+      }
       if (!safeMode) {
         if (missingCitations.length) messages.push(`Undefined citations: ${missingCitations.join(', ')}.`);
       } else {

@@ -28,7 +28,24 @@ RUN apt-get update && apt-get install -y \
     texlive-latex-recommended \
     ghostscript \
     icc-profiles-free \
+    # ── Font packages for PagePerfect templates ──
+    # DejaVu family (Sans, Serif, Sans Mono) — used by 6+ templates
+    fonts-dejavu \
+    # Noto fonts — multilingual fallback (Arabic, CJK, Devanagari, Hebrew, Thai)
+    fonts-noto-core \
+    fonts-noto-cjk \
+    fonts-noto-extra \
+    # Arabic typography
+    fonts-hosny-amiri \
+    fonts-sil-scheherazade \
+    # Cyrillic support
+    fonts-paratype \
+    # fontconfig for runtime font probing (fc-list)
+    fontconfig \
     && rm -rf /var/lib/apt/lists/*
+
+# Rebuild fontconfig cache so fc-list sees all TeX Live + system fonts
+RUN fc-cache -fv
 
 # App dir
 WORKDIR /app
