@@ -220,8 +220,8 @@ async function configurePbSmtp() {
         smtp: {
           enabled: true,
           host: 'smtp.resend.com',
-          port: 587,
-          tls: false,
+          port: 2465,
+          tls: true,
           username: 'resend',
           password: process.env.RESEND_API_KEY,
         },
@@ -232,7 +232,7 @@ async function configurePbSmtp() {
       }),
     });
     if (resp && resp.ok) {
-      console.log('PocketBase SMTP configured (Resend relay via smtp.resend.com:587)');
+      console.log('PocketBase SMTP configured (Resend relay via smtp.resend.com:2465)');
     } else {
       const body = resp ? await resp.text().catch(() => '') : 'no response';
       console.error('Failed to configure PocketBase SMTP:', resp?.status, body);
