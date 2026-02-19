@@ -415,35 +415,41 @@ export default function DocsPage() {
           <section id="all-sizes" className="scroll-mt-16 mb-10">
             <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">All Page Sizes</h3>
             <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
-              13 page sizes available. Standard sizes are shown by default; KDP sizes are under a collapsible menu in the editor.
+              19 page sizes available. Standard sizes are shown by default; KDP sizes are under a collapsible menu in the editor.
             </p>
             <table className="docs-table">
               <thead>
                 <tr>
                   <th>Size</th>
-                  <th>Code</th>
+                  <th>Dimensions</th>
                   <th>Type</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  ['5.5 \u00d7 8.5\u2033', 'fiveFiveByEightFive', 'Digest'],
-                  ['6 \u00d7 9\u2033', 'sixByNine', 'Trade'],
-                  ['8.5 \u00d7 11\u2033', 'letter', 'Letter'],
-                  ['210 \u00d7 297 mm', 'a4', 'A4'],
-                  ['148 \u00d7 210 mm', 'a5', 'A5'],
-                  ['7 \u00d7 10\u2033', 'sevenByTen', 'Textbook'],
-                  ['156 \u00d7 234 mm', 'royal', 'Royal'],
-                  ['129 \u00d7 198 mm', 'bFormat', 'B-format'],
-                  ['5 \u00d7 8\u2033', 'amazonFiveByEight', 'KDP'],
-                  ['6 \u00d7 9\u2033', 'amazonSixByNine', 'KDP'],
-                  ['7 \u00d7 10\u2033', 'amazonSevenByTen', 'KDP'],
-                  ['8 \u00d7 10\u2033', 'amazonEightByTen', 'KDP'],
-                  ['8.5 \u00d7 11\u2033', 'amazonEightFiveByEleven', 'KDP'],
-                ].map(([size, code, type]) => (
-                  <tr key={code}>
-                    <td className="font-mono text-[13px] font-medium text-[#1a1a1a]">{size}</td>
-                    <td className="accent">{code}</td>
+                  ['Mass Market', '4.25 \u00d7 6.87\u2033 (108 \u00d7 175 mm)', 'US pocket paperback'],
+                  ['A-format', '4.37 \u00d7 7.01\u2033 (111 \u00d7 178 mm)', 'UK mass-market'],
+                  ['B-format', '5.08 \u00d7 7.80\u2033 (129 \u00d7 198 mm)', 'UK trade paperback'],
+                  ['5.25 \u00d7 8\u2033', '5.25 \u00d7 8.00\u2033 (133 \u00d7 203 mm)', 'US fiction'],
+                  ['5.5 \u00d7 8.5\u2033', '5.50 \u00d7 8.50\u2033 (140 \u00d7 216 mm)', 'US digest'],
+                  ['Demy', '5.43 \u00d7 8.50\u2033 (138 \u00d7 216 mm)', 'UK trade standard'],
+                  ['6 \u00d7 9\u2033', '6.00 \u00d7 9.00\u2033 (152 \u00d7 229 mm)', 'US trade / academic'],
+                  ['A5', '5.83 \u00d7 8.27\u2033 (148 \u00d7 210 mm)', 'ISO standard'],
+                  ['Royal', '6.14 \u00d7 9.21\u2033 (156 \u00d7 234 mm)', 'UK hardcover / literary'],
+                  ['B5', '6.93 \u00d7 9.84\u2033 (176 \u00d7 250 mm)', 'European academic'],
+                  ['7 \u00d7 10\u2033', '7.00 \u00d7 10.00\u2033 (178 \u00d7 254 mm)', 'US textbook'],
+                  ['Crown Quarto', '7.44 \u00d7 9.69\u2033 (189 \u00d7 246 mm)', 'Illustrated non-fiction'],
+                  ['Letter', '8.50 \u00d7 11.00\u2033 (216 \u00d7 279 mm)', 'US standard'],
+                  ['A4', '8.27 \u00d7 11.69\u2033 (210 \u00d7 297 mm)', 'ISO standard'],
+                  ['5 \u00d7 8\u2033', '5.00 \u00d7 8.00\u2033', 'KDP'],
+                  ['6 \u00d7 9\u2033', '6.00 \u00d7 9.00\u2033', 'KDP'],
+                  ['7 \u00d7 10\u2033', '7.00 \u00d7 10.00\u2033', 'KDP'],
+                  ['8 \u00d7 10\u2033', '8.00 \u00d7 10.00\u2033', 'KDP'],
+                  ['8.5 \u00d7 11\u2033', '8.50 \u00d7 11.00\u2033', 'KDP'],
+                ].map(([name, dims, type]) => (
+                  <tr key={`${name}-${type}`}>
+                    <td className="font-medium text-[#1a1a1a]">{name}</td>
+                    <td className="font-mono text-[13px] accent">{dims}</td>
                     <td className={type === 'KDP' ? '' : 'muted'}>{type}</td>
                   </tr>
                 ))}

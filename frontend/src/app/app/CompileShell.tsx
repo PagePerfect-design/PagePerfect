@@ -26,7 +26,7 @@ import PublishingSystems from './PublishingSystems'
    ═══════════════════════════════════════════════════════════════════ */
 
 type TemplateKey = 'minimal' | 'symphony' | 'chronicle' | 'exhibit' | 'matrix' | 'avantgarde' | 'chicago' | 'paperback' | 'international' | 'cinema' | 'heirloom' | 'operator'
-type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'royal' | 'bFormat' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
+type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'royal' | 'bFormat' | 'massMarket' | 'aFormat' | 'demy' | 'fiveTwentyFiveByEight' | 'crownQuarto' | 'b5' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
 type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'generous' | 'compact'
 type CompileMode = 'fast' | 'full'
 type CompileError = { message: string }
@@ -112,6 +112,12 @@ const PAGE_SIZES: Record<string, { label: string; desc: string }> = {
   sevenByTen:          { label: '7 x 10"',     desc: 'Textbook' },
   royal:               { label: 'Royal',       desc: '156x234mm' },
   bFormat:             { label: 'B-format',    desc: '129x198mm' },
+  massMarket:          { label: '4.25 x 6.87"', desc: 'Mass Market' },
+  aFormat:             { label: 'A-format',    desc: '111x178mm' },
+  demy:                { label: 'Demy',        desc: '138x216mm' },
+  fiveTwentyFiveByEight: { label: '5.25 x 8"', desc: 'Fiction' },
+  crownQuarto:         { label: 'Crown Quarto', desc: '189x246mm' },
+  b5:                  { label: 'B5',          desc: '176x250mm' },
   amazonFiveByEight:   { label: '5 x 8"',      desc: 'KDP' },
   amazonSixByNine:     { label: '6 x 9"',      desc: 'KDP' },
   amazonSevenByTen:    { label: '7 x 10"',     desc: 'KDP' },
@@ -143,6 +149,8 @@ function sizeCode(size: PageSize) {
   const map: Record<PageSize, string> = {
     letter: 'letter', a4: 'a4', a5: 'a5', sixByNine: '6x9', fiveFiveByEightFive: '5.5x8.5',
     sevenByTen: '7x10', royal: 'royal', bFormat: 'b-format',
+    massMarket: 'mass-market', aFormat: 'a-format', demy: 'demy',
+    fiveTwentyFiveByEight: '5.25x8', crownQuarto: 'crown-quarto', b5: 'b5',
     amazonFiveByEight: 'amazon-5x8', amazonSixByNine: 'amazon-6x9',
     amazonSevenByTen: 'amazon-7x10', amazonEightByTen: 'amazon-8x10', amazonEightFiveByEleven: 'amazon-8.5x11',
   }
@@ -927,8 +935,8 @@ function FloatingHUD({
           >
             {/* Page Size */}
             <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Page Size</p>
-            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
-              {(['fiveFiveByEightFive', 'bFormat', 'sixByNine', 'royal', 'letter', 'a4', 'a5', 'sevenByTen'] as PageSize[]).map((key) => {
+            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-7">
+              {(['massMarket', 'aFormat', 'bFormat', 'fiveTwentyFiveByEight', 'fiveFiveByEightFive', 'demy', 'sixByNine', 'royal', 'b5', 'sevenByTen', 'crownQuarto', 'letter', 'a5', 'a4'] as PageSize[]).map((key) => {
                 const info = PAGE_SIZES[key]
                 const isActive = key === pageSize
                 return (
