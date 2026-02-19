@@ -7,6 +7,8 @@
  * and complex script detection.
  */
 
+const fontAvailability = require('./font-availability');
+
 // ================================================================
 // Script Detection
 // ================================================================
@@ -212,14 +214,21 @@ function generateMultilingualPreamble(scriptAnalysis, opts = {}) {
     commands.push('\\usepackage{bidi}');
   }
 
-  // Font configuration for non-Latin scripts
+  // Font configuration for non-Latin scripts (availability-aware)
   for (const script of scriptAnalysis.scripts) {
     if (script.script === 'latin') continue;
     const fallback = FONT_FALLBACK[script.script];
     if (fallback) {
-      const fontCmd = script.direction === 'rtl' ? 'newfontfamily' : 'newfontfamily';
-      const fontName = fallback.primary[0];
-      commands.push(`\\${fontCmd}{\\${script.script}font}{${fontName}}[Script=${script.label}]`);
+      // Walk the primary + fallback lists to find the first available font
+      const candidates = [...fallback.primary, ...fallback.fallback];
+      let fontName = candidates[0]; // default if probing unavailable
+      for (const candidate of candidates) {
+        if (fontAvailability.isFontAvailable(candidate)) {
+          fontName = candidate;
+          break;
+        }
+      }
+      commands.push(`\\newfontfamily{\\${script.script}font}{${fontName}}[Script=${script.label}]`);
     }
   }
 
