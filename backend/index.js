@@ -55,6 +55,14 @@ function sizeCode(size) {
     case 'amazonSevenByTen': return 'amazon-7x10';
     case 'amazonEightByTen': return 'amazon-8x10';
     case 'amazonEightFiveByEleven': return 'amazon-8.5x11';
+    case 'royal': return 'royal';
+    case 'bFormat': return 'b-format';
+    case 'massMarket': return 'mass-market';
+    case 'aFormat': return 'a-format';
+    case 'demy': return 'demy';
+    case 'fiveTwentyFiveByEight': return '5.25x8';
+    case 'crownQuarto': return 'crown-quarto';
+    case 'b5': return 'b5';
     case 'letter':
     default: return 'letter';
   }
@@ -455,7 +463,7 @@ app.get('/api/health', (_req, res) => {
 
 app.get('/api/health/details', (_req, res) => {
   const templates = Object.keys(DESIGN_TEMPLATES);
-  const pageSizes = ['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven'];
+  const pageSizes = ['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','royal','bFormat','massMarket','aFormat','demy','fiveTwentyFiveByEight','crownQuarto','b5','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven'];
   const marginPresets = ['normal','narrow','wide','minimal','academic','generous','compact'];
   const compileModes = ['fast','full'];
   res.json({
@@ -1141,7 +1149,7 @@ app.post('/api/analyze/full', (req, res) => {
 // Free tier page size restrictions
 // ================================================================
 const FREE_TIER_SIZES = new Set(['letter', 'a4', 'sixByNine']);
-const ALL_SIZES = new Set(['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven']);
+const ALL_SIZES = new Set(['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','royal','bFormat','massMarket','aFormat','demy','fiveTwentyFiveByEight','crownQuarto','b5','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven']);
 const ALL_MARGINS = new Set(['normal','narrow','wide','minimal','academic','generous','compact']);
 
 // ================================================================
