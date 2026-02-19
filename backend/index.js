@@ -169,7 +169,7 @@ async function getPbAdminToken() {
     return null;
   }
   try {
-    const resp = await fetch(`${POCKETBASE_URL}/api/admins/auth-with-password`, {
+    const resp = await fetch(`${POCKETBASE_URL}/api/collections/_superusers/auth-with-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -178,7 +178,8 @@ async function getPbAdminToken() {
       }),
     });
     if (!resp.ok) {
-      console.error('PocketBase admin auth failed:', resp.status);
+      const body = await resp.text().catch(() => '');
+      console.error('PocketBase admin auth failed:', resp.status, body);
       return null;
     }
     const data = await resp.json();
@@ -219,8 +220,8 @@ async function configurePbSmtp() {
         smtp: {
           enabled: true,
           host: 'smtp.resend.com',
-          port: 465,
-          tls: true,
+          port: 587,
+          tls: false,
           username: 'resend',
           password: process.env.RESEND_API_KEY,
         },
@@ -231,9 +232,10 @@ async function configurePbSmtp() {
       }),
     });
     if (resp && resp.ok) {
-      console.log('PocketBase SMTP configured (Resend relay)');
+      console.log('PocketBase SMTP configured (Resend relay via smtp.resend.com:587)');
     } else {
-      console.error('Failed to configure PocketBase SMTP:', resp?.status);
+      const body = resp ? await resp.text().catch(() => '') : 'no response';
+      console.error('Failed to configure PocketBase SMTP:', resp?.status, body);
     }
   } catch (err) {
     console.error('Failed to configure PocketBase SMTP:', err.message);
