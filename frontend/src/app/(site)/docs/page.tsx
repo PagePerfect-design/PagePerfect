@@ -244,10 +244,255 @@ export default function DocsPage() {
           </section>
 
           {/* ══════════════════════════════════════════════════════════
-              02 — TWELVE TYPOGRAPHIC SYSTEMS
+              02 — EDITOR GUIDE
+              ══════════════════════════════════════════════════════════ */}
+          <section id="editor" className="scroll-mt-16 mb-10">
+            <SectionLabel number="02">Editor</SectionLabel>
+            <h2 className="docs-section-title">Editor Guide</h2>
+            <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
+              The editor is a three-stage pipeline: Portal (ingest), Design (typeset), and Launch (export).
+              All settings auto-save to local storage.
+            </p>
+          </section>
+
+          {/* Keyboard Shortcuts */}
+          <section id="shortcuts" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Keyboard Shortcuts</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              Available in the Design stage. Press <code>?</code> in the editor to toggle the shortcut legend.
+            </p>
+            <table className="docs-table" style={{ maxWidth: '28rem' }}>
+              <thead>
+                <tr>
+                  <th>Key</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['\u2190 / \u2192', 'Cycle through templates'],
+                  ['Space', 'Force recompile'],
+                  ['E', 'Toggle manuscript editor'],
+                  ['S', 'Toggle publishing systems panel'],
+                  ['P', 'Open export / publish overlay'],
+                  ['?', 'Toggle shortcuts legend'],
+                  ['Esc', 'Close active panel'],
+                ].map(([key, desc]) => (
+                  <tr key={key}>
+                    <td className="font-mono text-[13px] font-medium text-[#1a1a1a]">{key}</td>
+                    <td>{desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          {/* Compile Modes */}
+          <section id="compile-modes" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Compile Modes</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#999] mb-1">Preview (Fast)</p>
+                <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
+                  Skips <code>microtype</code> and <code>csquotes</code> packages. Faster compilation for iterative editing.
+                  Use this while drafting.
+                </p>
+              </div>
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#999] mb-1">Full Quality</p>
+                <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
+                  Enables <code>microtype</code> (optical margin alignment, character protrusion) and <code>csquotes</code> (context-sensitive quotation marks).
+                  Use for final output.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Safe Mode */}
+          <section id="safe-mode" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Safe Mode</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-3">
+              When enabled, all Pandoc citation syntax (<code>[@Key]</code>) is stripped and replaced with placeholder text.
+              Compilation proceeds without needing a valid <code>references.bib</code>.
+            </p>
+            <Admonition type="tip" label="When to Use">
+              Enable safe mode while writing or when your bibliography has missing keys. Disable it for final
+              output to render proper citations and bibliography.
+            </Admonition>
+          </section>
+
+          {/* Manuscript Input */}
+          <section id="input" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Manuscript Input</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              Three input methods in the Portal stage: drag-and-drop a file, browse files, or paste text directly.
+            </p>
+            <table className="docs-table" style={{ maxWidth: '32rem' }}>
+              <thead>
+                <tr>
+                  <th>Format</th>
+                  <th>Handling</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="font-mono text-[13px] font-medium text-[#1a1a1a]">.md / .txt</td>
+                  <td>Read directly as Markdown. From-Word cleaning applied automatically.</td>
+                </tr>
+                <tr>
+                  <td className="font-mono text-[13px] font-medium text-[#1a1a1a]">.docx</td>
+                  <td>Sent to backend for Pandoc conversion to Markdown, then cleaned.</td>
+                </tr>
+                <tr>
+                  <td className="font-mono text-[13px] font-medium text-[#1a1a1a]">Paste</td>
+                  <td>Click &quot;Paste text&quot; to open the text area. From-Word cleaning applied.</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <Admonition type="info" label="From-Word Cleaning">
+              Pasted or dropped text is automatically normalized: smart quotes {'\u2192'} straight quotes, em/en dashes {'\u2192'} spaced em dashes,
+              non-breaking spaces {'\u2192'} regular spaces, bullet characters {'\u2192'} Markdown list items, excess newlines collapsed,
+              trailing whitespace stripped.
+            </Admonition>
+          </section>
+
+          {/* Genre Detection */}
+          <section id="genre-detection" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Genre Auto-Detection</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              The Portal stage scans the first 150 lines of your manuscript for structural signals and recommends a template.
+              You can always override the suggestion in the Style menu.
+            </p>
+            <table className="docs-table">
+              <thead>
+                <tr>
+                  <th>Signal</th>
+                  <th>Template</th>
+                  <th>Confidence</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['INT. / EXT. / FADE IN / CUT TO', 'Cinema', 'High'],
+                  ['Ingredients, measurements (tsp, cups, oz)', 'Heirloom', 'High'],
+                  ['4+ code blocks or WARNING/CAUTION/NOTE headers', 'Operator', 'Medium'],
+                  ['Abstract, bibliography, [@citations]', 'Chicago', 'Medium'],
+                  ['Executive summary, KPIs, quarterly, fiscal', 'Matrix', 'Medium'],
+                  ['2+ chapter headings or 5+ dialogue lines', 'Paperback', 'Low'],
+                ].map(([signal, tmpl, conf]) => (
+                  <tr key={signal}>
+                    <td className="text-[13px]">{signal}</td>
+                    <td className="accent">{tmpl}</td>
+                    <td className={conf === 'Low' ? 'muted' : ''}>{conf}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          {/* URL Parameters */}
+          <section id="url-params" className="scroll-mt-16 mb-20">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">URL Parameters</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-2">
+              Pre-select a template by appending <code>?template=name</code> to the editor URL.
+            </p>
+            <div className="docs-admonition docs-admonition-tip">
+              <div className="docs-admonition-label">Example</div>
+              <code className="text-sm">/app?template=cinema</code>
+            </div>
+          </section>
+
+          {/* ══════════════════════════════════════════════════════════
+              03 — PAGE SIZES & MARGINS
+              ══════════════════════════════════════════════════════════ */}
+          <section id="page-sizes" className="scroll-mt-16 mb-10">
+            <SectionLabel number="03">Layout</SectionLabel>
+            <h2 className="docs-section-title">Page Sizes &amp; Margins</h2>
+          </section>
+
+          {/* All Page Sizes */}
+          <section id="all-sizes" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">All Page Sizes</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              11 page sizes available. Standard sizes are shown by default; KDP sizes are under a collapsible menu in the editor.
+            </p>
+            <table className="docs-table">
+              <thead>
+                <tr>
+                  <th>Size</th>
+                  <th>Code</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['5.5 \u00d7 8.5\u2033', 'fiveFiveByEightFive', 'Digest'],
+                  ['6 \u00d7 9\u2033', 'sixByNine', 'Trade'],
+                  ['8.5 \u00d7 11\u2033', 'letter', 'Letter'],
+                  ['210 \u00d7 297 mm', 'a4', 'A4'],
+                  ['148 \u00d7 210 mm', 'a5', 'A5'],
+                  ['7 \u00d7 10\u2033', 'sevenByTen', 'Textbook'],
+                  ['5 \u00d7 8\u2033', 'amazonFiveByEight', 'KDP'],
+                  ['6 \u00d7 9\u2033', 'amazonSixByNine', 'KDP'],
+                  ['7 \u00d7 10\u2033', 'amazonSevenByTen', 'KDP'],
+                  ['8 \u00d7 10\u2033', 'amazonEightByTen', 'KDP'],
+                  ['8.5 \u00d7 11\u2033', 'amazonEightFiveByEleven', 'KDP'],
+                ].map(([size, code, type]) => (
+                  <tr key={code}>
+                    <td className="font-mono text-[13px] font-medium text-[#1a1a1a]">{size}</td>
+                    <td className="accent">{code}</td>
+                    <td className={type === 'KDP' ? '' : 'muted'}>{type}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          {/* Margin Presets */}
+          <section id="margins" className="scroll-mt-16 mb-20">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Margin Presets</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              Seven presets from minimal to generous. Margins are calculated as grid-unit multiples of the template&apos;s baseline.
+            </p>
+            <table className="docs-table" style={{ maxWidth: '28rem' }}>
+              <thead>
+                <tr>
+                  <th>Preset</th>
+                  <th>Grid Units</th>
+                  <th>Character</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['Minimal', '2', 'Tight'],
+                  ['Compact', '3', 'Snug'],
+                  ['Narrow', '4', 'Slim'],
+                  ['Normal', '5', 'Standard'],
+                  ['Wide', '6', 'Open'],
+                  ['Academic', '7', 'Scholarly'],
+                  ['Generous', '8', 'Airy'],
+                ].map(([preset, units, desc]) => (
+                  <tr key={preset}>
+                    <td className="font-medium text-[#1a1a1a]">{preset}</td>
+                    <td className="accent">{units}</td>
+                    <td className="muted">{desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Admonition type="info" label="How Margins Are Calculated">
+              The grid system multiplies the template&apos;s baseline (11pt or 12pt) by the preset&apos;s unit count,
+              then converts to page-size-appropriate units. For example: Normal (5) on a 12pt baseline =
+              60pt = 0.833&quot; margins.
+            </Admonition>
+          </section>
+
+          {/* ══════════════════════════════════════════════════════════
+              04 — TWELVE TYPOGRAPHIC SYSTEMS
               ══════════════════════════════════════════════════════════ */}
           <section id="templates" className="scroll-mt-16 mb-10">
-            <SectionLabel number="02">Reference</SectionLabel>
+            <SectionLabel number="04">Reference</SectionLabel>
             <h2 className="docs-section-title">Twelve Typographic Systems</h2>
             <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               Every template is a complete typographic system — not a theme. Each implements specific design
@@ -314,7 +559,7 @@ export default function DocsPage() {
               03 — AMAZON KDP GUIDE
               ══════════════════════════════════════════════════════════ */}
           <section id="kdp" className="scroll-mt-16 mb-10 mt-20">
-            <SectionLabel number="03">Publishing</SectionLabel>
+            <SectionLabel number="05">Publishing</SectionLabel>
             <h2 className="docs-section-title">Amazon KDP Guide</h2>
             <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               PagePerfect supports all five Amazon KDP trim sizes with dynamic gutter calculation and spine width estimation.
@@ -398,7 +643,7 @@ export default function DocsPage() {
               04 — PUBLISHING AUTOMATION
               ══════════════════════════════════════════════════════════ */}
           <section id="automation" className="scroll-mt-16 mb-10">
-            <SectionLabel number="04">Automation</SectionLabel>
+            <SectionLabel number="06">Automation</SectionLabel>
             <h2 className="docs-section-title">Publishing Automation</h2>
             <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               PagePerfect automates the entire path from Markdown to printed book. Pre-flight validation
@@ -510,8 +755,64 @@ export default function DocsPage() {
               05 — TROUBLESHOOTING
               ══════════════════════════════════════════════════════════ */}
           <section id="troubleshooting" className="scroll-mt-16 mb-20">
-            <SectionLabel number="05">Support</SectionLabel>
+            <SectionLabel number="07">Support</SectionLabel>
             <h2 className="docs-section-title">Troubleshooting</h2>
+
+            {/* Limits */}
+            <div className="mb-8">
+              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Limits</h3>
+              <table className="docs-table" style={{ maxWidth: '32rem' }}>
+                <thead>
+                  <tr>
+                    <th>Limit</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td className="font-medium text-[#1a1a1a]">Max Markdown size</td><td className="accent">2 MB</td></tr>
+                  <tr><td className="font-medium text-[#1a1a1a]">Max .docx upload</td><td className="accent">10 MB</td></tr>
+                  <tr><td className="font-medium text-[#1a1a1a]">Compile timeout</td><td className="accent">45 seconds</td></tr>
+                  <tr><td className="font-medium text-[#1a1a1a]">Rate limit (compile)</td><td className="accent">20/min per IP</td></tr>
+                  <tr><td className="font-medium text-[#1a1a1a]">Rate limit (general)</td><td className="accent">120/min per IP</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Error Reference */}
+            <div className="mb-8">
+              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Error Reference</h3>
+              <table className="docs-table">
+                <thead>
+                  <tr>
+                    <th>Error</th>
+                    <th>Cause</th>
+                    <th>Fix</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="accent">rate_limited</td>
+                    <td>Too many compile requests</td>
+                    <td>Wait 60 seconds, then retry</td>
+                  </tr>
+                  <tr>
+                    <td className="accent">payload_too_large</td>
+                    <td>Markdown exceeds 2 MB</td>
+                    <td>Split manuscript or remove embedded data</td>
+                  </tr>
+                  <tr>
+                    <td className="accent">compile_timeout</td>
+                    <td>XeLaTeX exceeded 45s</td>
+                    <td>Simplify content, reduce images, or use Preview mode</td>
+                  </tr>
+                  <tr>
+                    <td className="accent">compile_failed</td>
+                    <td>Pandoc/LaTeX error</td>
+                    <td>Check error console for missing packages or syntax errors</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
             {/* Undefined citation */}
             <div className="mb-6">
