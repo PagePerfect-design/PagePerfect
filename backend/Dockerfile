@@ -45,7 +45,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Rebuild fontconfig cache so fc-list sees all TeX Live + system fonts
-RUN fc-cache -fv
+# TeX Live installs fonts in its own tree (/usr/share/texlive/texmf-dist/fonts/)
+# but fontconfig doesn't know about them unless we link the config files.
+RUN cp /usr/share/texlive/texmf-dist/fontconfig/conf.avail/*.conf /etc/fonts/conf.d/ 2>/dev/null || true \
+    && fc-cache -fv
 
 # App dir
 WORKDIR /app

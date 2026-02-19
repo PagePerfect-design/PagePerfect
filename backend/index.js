@@ -699,6 +699,8 @@ const DESIGN_TEMPLATES = {
     category: 'Academic',
     templatePath: path.resolve(__dirname, 'templates/symphony.latex'),
     mainfont: 'EB Garamond',
+    sansfont: 'Libertinus Sans',
+    monofont: 'DejaVu Sans Mono',
     gridType: 'academic',
     characteristics: ['EB Garamond + Libertinus Sans', 'Van de Graaf Canon', 'Ornamental headings', 'Hanging footnotes'],
   },
@@ -708,6 +710,8 @@ const DESIGN_TEMPLATES = {
     category: 'Academic',
     templatePath: path.resolve(__dirname, 'templates/chicago.latex'),
     mainfont: 'ETbb',
+    sansfont: 'Latin Modern Sans',
+    monofont: 'Latin Modern Mono',
     gridType: 'academic',
     characteristics: ['ETbb (Bembo)', '2em paragraph indent', 'True footnotes', 'Centered running heads'],
   },
@@ -717,6 +721,8 @@ const DESIGN_TEMPLATES = {
     category: 'Fiction',
     templatePath: path.resolve(__dirname, 'templates/paperback.latex'),
     mainfont: 'Alegreya Sans',
+    sansfont: 'TeX Gyre Heros',
+    monofont: 'DejaVu Sans Mono',
     gridType: 'trade',
     characteristics: ['Alegreya Sans', 'Cinematic chapter numbers', 'Scene break ornaments', '1.5em fiction indent'],
   },
@@ -726,6 +732,8 @@ const DESIGN_TEMPLATES = {
     category: 'Editorial',
     templatePath: path.resolve(__dirname, 'templates/chronicle.latex'),
     mainfont: 'TeX Gyre Heros',
+    sansfont: null,
+    monofont: 'Fira Mono',
     gridType: 'editorial',
     characteristics: ['TeX Gyre Heros', 'Flush left / ragged right', '3pt section rules', 'Pull-quote blockquotes'],
   },
@@ -735,6 +743,8 @@ const DESIGN_TEMPLATES = {
     category: 'Trade',
     templatePath: path.resolve(__dirname, 'templates/exhibit.latex'),
     mainfont: 'Fira Sans',
+    sansfont: 'TeX Gyre Adventor',
+    monofont: 'Fira Mono',
     gridType: 'trade',
     characteristics: ['Fira Sans + TeX Gyre Adventor', '80pt ghost chapter numbers', 'Ragged right', 'Generous whitespace'],
   },
@@ -744,6 +754,8 @@ const DESIGN_TEMPLATES = {
     category: 'Business',
     templatePath: path.resolve(__dirname, 'templates/matrix.latex'),
     mainfont: 'Fira Sans',
+    sansfont: null,
+    monofont: 'Fira Mono',
     gridType: 'corporate',
     characteristics: ['Fira Sans (lining figures)', 'Corporate blue palette', 'Executive summary blocks', 'booktabs tables'],
   },
@@ -753,6 +765,8 @@ const DESIGN_TEMPLATES = {
     category: 'Creative',
     templatePath: path.resolve(__dirname, 'templates/avantgarde.latex'),
     mainfont: 'Source Sans 3',
+    sansfont: 'DejaVu Sans',
+    monofont: 'TeX Gyre Cursor',
     gridType: 'creative',
     characteristics: ['Source Sans 3', '120pt ghost chapter numbers', 'Brutalist blockquotes', 'Ragged right'],
   },
@@ -762,6 +776,8 @@ const DESIGN_TEMPLATES = {
     category: 'Basic',
     templatePath: path.resolve(__dirname, 'templates/minimal.latex'),
     mainfont: 'Latin Modern Roman',
+    sansfont: null,
+    monofont: null,
     gridType: 'basic',
     characteristics: ['Zero dependencies', 'pdflatex compatible', 'Latin Modern', 'Maximum portability'],
   },
@@ -771,6 +787,8 @@ const DESIGN_TEMPLATES = {
     category: 'Design',
     templatePath: path.resolve(__dirname, 'templates/international.latex'),
     mainfont: 'TeX Gyre Heros',
+    sansfont: 'TeX Gyre Heros',
+    monofont: 'TeX Gyre Cursor',
     gridType: 'editorial',
     characteristics: ['TeX Gyre Heros only', 'No italics', 'Flush left / ragged right', 'Rule-separated sections'],
   },
@@ -780,6 +798,8 @@ const DESIGN_TEMPLATES = {
     category: 'Screenplay',
     templatePath: path.resolve(__dirname, 'templates/cinema.latex'),
     mainfont: 'TeX Gyre Cursor',
+    sansfont: null,
+    monofont: 'TeX Gyre Cursor',
     gridType: 'basic',
     characteristics: ['TeX Gyre Cursor (Courier)', 'Industry-standard margins', 'Single-spaced', 'Dialogue blocks'],
   },
@@ -789,6 +809,8 @@ const DESIGN_TEMPLATES = {
     category: 'Cookbook',
     templatePath: path.resolve(__dirname, 'templates/heirloom.latex'),
     mainfont: 'Fira Sans',
+    sansfont: 'DejaVu Serif',
+    monofont: 'Fira Mono',
     gridType: 'trade',
     characteristics: ['Fira Sans + DejaVu Serif headers', 'Ingredient colorboxes', 'Bold numbered steps', 'Warm earth tones'],
   },
@@ -798,6 +820,8 @@ const DESIGN_TEMPLATES = {
     category: 'Technical',
     templatePath: path.resolve(__dirname, 'templates/operator.latex'),
     mainfont: 'Fira Sans',
+    sansfont: null,
+    monofont: 'Fira Mono',
     gridType: 'editorial',
     characteristics: ['Fira Sans + Fira Mono', 'Warning/Info/Code admonition boxes', 'Navy blue headings', 'Technical hierarchy'],
   },
@@ -1223,12 +1247,40 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   // Style warnings (must be declared before font resolution uses it)
   const warnings = styleWarnings(manuscriptText);
 
-  // Resolve mainfont with fallback if unavailable
+  // ── Font Resolution ────────────────────────────────────────
+  // Resolve all three font slots (main, sans, mono) against installed fonts.
+  // Templates hardcode font names in \setmainfont{}, \setsansfont{}, \setmonofont{},
+  // so we must patch the template content with resolved (fallback) names.
   const fontResolution = fontAvailability.resolveFont(tpl.mainfont);
   const effectiveMainfont = fontResolution.resolved;
-  if (fontResolution.warning) {
-    warnings.push(fontResolution.warning);
+  if (fontResolution.warning) warnings.push(fontResolution.warning);
+
+  const sansResolution = tpl.sansfont ? fontAvailability.resolveFont(tpl.sansfont) : null;
+  const monoResolution = tpl.monofont ? fontAvailability.resolveFont(tpl.monofont) : null;
+  if (sansResolution?.warning) warnings.push(sansResolution.warning);
+  if (monoResolution?.warning) warnings.push(monoResolution.warning);
+
+  // Patch the template file: replace hardcoded font names with resolved ones.
+  // This handles \setmainfont{FontName}, \setsansfont{FontName}, \setmonofont{FontName}
+  // regardless of whether options follow on the same or next line.
+  let templateContent = fs.readFileSync(tpl.templatePath, 'utf8');
+  const fontReplacements = [
+    { original: tpl.mainfont, resolved: effectiveMainfont },
+    ...(sansResolution ? [{ original: tpl.sansfont, resolved: sansResolution.resolved }] : []),
+    ...(monoResolution ? [{ original: tpl.monofont, resolved: monoResolution.resolved }] : []),
+  ];
+  for (const { original, resolved } of fontReplacements) {
+    if (original !== resolved) {
+      // Escape regex special chars in font name, replace in \set*font{Name} commands
+      const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      templateContent = templateContent.replace(
+        new RegExp(`(\\\\set(?:main|sans|mono)font\\{)${escaped}(\\})`, 'g'),
+        `$1${resolved}$2`
+      );
+    }
   }
+  const patchedTemplatePath = path.join(tmpBase, 'template.latex');
+  fs.writeFileSync(patchedTemplatePath, templateContent, 'utf8');
 
   // ── Preamble Assembly ──────────────────────────────────────
   // Collect LaTeX preamble from all analysis modules → header.tex → Pandoc -H
@@ -1267,14 +1319,19 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   const headerPath = path.join(tmpBase, 'header.tex');
   fs.writeFileSync(headerPath, preambleParts.join('\n\n'), 'utf8');
 
-  console.log(`[compile] template=${tplKey} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} font=${effectiveMainfont}${fontResolution.isFallback ? ` (fallback from ${tpl.mainfont})` : ''}`);
+  const fontLog = [
+    `font=${effectiveMainfont}${fontResolution.isFallback ? ` (fallback from ${tpl.mainfont})` : ''}`,
+    sansResolution?.isFallback ? `sans=${sansResolution.resolved} (fallback from ${tpl.sansfont})` : '',
+    monoResolution?.isFallback ? `mono=${monoResolution.resolved} (fallback from ${tpl.monofont})` : '',
+  ].filter(Boolean).join(' ');
+  console.log(`[compile] template=${tplKey} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
 
   const baseArgs = [
     mdPath,
     safeMode ? '--from=markdown' : '--from=markdown+citations',
     '--pdf-engine=xelatex',
     '-M', `title=${title}`,
-    `--template=${tpl.templatePath}`,
+    `--template=${patchedTemplatePath}`,
     '-H', headerPath,
     '-V', `mainfont=${effectiveMainfont}`,
     '-V', `geometry:${geo}`,
