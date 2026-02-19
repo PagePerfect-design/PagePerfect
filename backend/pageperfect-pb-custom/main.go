@@ -173,7 +173,7 @@ func authAlertEmailHTML() string {
 func main() {
 	app := pocketbase.New()
 
-	// Log config on startup
+	// Log Resend config on startup
 	if resendAPIKey == "" || resendFrom == "" {
 		log.Println("[resend] WARNING: RESEND_API_KEY or RESEND_FROM not set — emails will fail")
 	} else {
@@ -185,6 +185,7 @@ func main() {
 		log.Printf("[resend] Frontend URL: %s", frontendURL)
 	}
 
+	// Intercept all system emails and send via Resend HTTP API (bypasses SMTP entirely)
 	const users = "users"
 
 	// ── Verification email ──────────────────────────────────────────────
