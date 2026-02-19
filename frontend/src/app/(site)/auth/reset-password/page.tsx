@@ -1,14 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { useAuth } from '@/lib/auth-context'
+import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
 
 function ResetPasswordForm() {
-  const { updatePassword } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const token = searchParams.get('token')
+
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -24,15 +26,39 @@ function ResetPasswordForm() {
       return
     }
 
+    if (!isPocketBaseConfigured) {
+      setError('Authentication is not configured.')
+      return
+    }
+
     setLoading(true)
+    const pb = createClient()
 
-    const { error: err } = await updatePassword(password)
+    try {
+      if (token) {
+        // Token-based flow: user clicked a reset link in their email
+        await pb.collection('users').confirmPasswordReset(token, password, confirmPassword)
+      } else if (pb.authStore.isValid && pb.authStore.record) {
+        // Authenticated flow: user is changing their password while logged in
+        await pb.collection('users').update(pb.authStore.record.id, {
+          password,
+          passwordConfirm: password,
+        })
+      } else {
+        setError('Missing reset token. Please request a new password reset link.')
+        setLoading(false)
+        return
+      }
 
-    if (err) {
-      setError(err.message)
-    } else {
       setSuccess(true)
-      setTimeout(() => router.push('/app'), 2000)
+      setTimeout(() => router.push('/auth/login'), 2000)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Password reset failed'
+      if (message.includes('expired') || message.includes('invalid')) {
+        setError('This reset link has expired. Please request a new one.')
+      } else {
+        setError(message)
+      }
     }
     setLoading(false)
   }
@@ -48,7 +74,7 @@ function ResetPasswordForm() {
           </div>
           <h1 className="font-display text-2xl font-bold text-text-primary mb-2">Password updated</h1>
           <p className="text-sm text-text-secondary">
-            Your password has been reset. Redirecting you now...
+            Your password has been reset. Redirecting you to sign in...
           </p>
         </div>
       </div>
