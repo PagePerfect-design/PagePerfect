@@ -1220,12 +1220,52 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   const enableMicrotype = !isFast;
   const enableCsquotes  = !isFast;
 
+  // Style warnings (must be declared before font resolution uses it)
+  const warnings = styleWarnings(manuscriptText);
+
   // Resolve mainfont with fallback if unavailable
   const fontResolution = fontAvailability.resolveFont(tpl.mainfont);
   const effectiveMainfont = fontResolution.resolved;
   if (fontResolution.warning) {
     warnings.push(fontResolution.warning);
   }
+
+  // ── Preamble Assembly ──────────────────────────────────────
+  // Collect LaTeX preamble from all analysis modules → header.tex → Pandoc -H
+  const preambleParts = [];
+
+  // 1. Book engineering (widow/orphan control, hyphenation, line breaking, floats)
+  preambleParts.push(bookEngineering.generateEngineeringPreamble(templateType));
+
+  // 2. Multilingual support (polyglossia, bidi, script-specific fonts)
+  const scriptAnalysis = multilingual.detectScripts(effectiveMd);
+  if (scriptAnalysis.isMultiscript || scriptAnalysis.hasRTL) {
+    preambleParts.push(multilingual.generateMultilingualPreamble(scriptAnalysis));
+    if (scriptAnalysis.hasRTL) {
+      warnings.push('RTL content detected — bidi and polyglossia packages activated.');
+    }
+  }
+
+  // 3. Provenance metadata (embedded in PDF properties via hypersetup)
+  const buildMeta = provenance.generateBuildMetadata({
+    manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
+  });
+  preambleParts.push(provenance.generateMetadataPreamble(buildMeta));
+
+  // 4. Template extensions (if provided by user)
+  const extensions = req.body.extensions;
+  if (extensions && typeof extensions === 'object' && Object.keys(extensions).length > 0) {
+    const extResult = templateExtensions.validateExtensions(extensions, templateType);
+    if (extResult.valid) {
+      preambleParts.push(templateExtensions.generateExtensionPreamble(extResult.resolvedTokens));
+    } else {
+      warnings.push(`Template extension errors: ${extResult.errors.map(e => e.error).join('; ')}`);
+    }
+  }
+
+  // Write assembled preamble to header.tex for Pandoc -H injection
+  const headerPath = path.join(tmpBase, 'header.tex');
+  fs.writeFileSync(headerPath, preambleParts.join('\n\n'), 'utf8');
 
   console.log(`[compile] template=${tplKey} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} font=${effectiveMainfont}${fontResolution.isFallback ? ` (fallback from ${tpl.mainfont})` : ''}`);
 
@@ -1235,6 +1275,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     '--pdf-engine=xelatex',
     '-M', `title=${title}`,
     `--template=${tpl.templatePath}`,
+    '-H', headerPath,
     '-V', `mainfont=${effectiveMainfont}`,
     '-V', `geometry:${geo}`,
     ...(enableMicrotype ? ['-V','microtype=true'] : []),
@@ -1249,7 +1290,6 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         `--bibliography=${BIB_PATH}`,
       ]);
 
-  const warnings = styleWarnings(manuscriptText);
   const startTs = Date.now();
   const pandoc = spawn('pandoc', args, { cwd: tmpBase });
 
@@ -1277,14 +1317,22 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     }
 
     if (code === 0 && fs.existsSync(pdfPath)) {
-      // Generate provenance metadata
-      const buildMeta = provenance.generateBuildMetadata({
-        manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
-      });
+      // Provenance headers (buildMeta generated before compile for PDF embedding)
       res.setHeader('X-PP-Build-Id', buildMeta.buildId);
       res.setHeader('X-PP-Content-Hash', buildMeta.contentHash);
       if (fontResolution.isFallback) {
         res.setHeader('X-PP-Font-Fallback', `${fontResolution.original} -> ${fontResolution.resolved}`);
+      }
+
+      // Compile log analysis — surface typography warnings
+      const compileLog = bookEngineering.analyzeCompileLog(stderr);
+      const overfullCount = compileLog.overfullBoxes.length;
+      const underfullCount = compileLog.underfullBoxes.length;
+      if (overfullCount > 0) {
+        res.setHeader('X-PP-Overfull-Boxes', String(overfullCount));
+      }
+      if (underfullCount > 0) {
+        res.setHeader('X-PP-Underfull-Boxes', String(underfullCount));
       }
 
       // Optional PDF/X-1a conversion for IngramSpark compliance
@@ -1328,6 +1376,9 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       const fontMatch = stderr.match(fontErrorPattern);
       const missingFont = fontMatch ? fontMatch[1] : null;
 
+      // Compile log analysis for detailed diagnostics
+      const compileLog = bookEngineering.analyzeCompileLog(stderr);
+
       const messages = [];
       if (missingFont) {
         messages.push(`Font "${missingFont}" not found. Install it or try a different template.`);
@@ -1348,6 +1399,12 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         missingCitations,
         missingPackages,
         warnings,
+        compileLog: {
+          overfullBoxes: compileLog.overfullBoxes.length,
+          underfullBoxes: compileLog.underfullBoxes.length,
+          floatIssues: compileLog.floatIssues.length,
+          footnoteIssues: compileLog.footnoteIssues.length,
+        },
         detail: tail,
       });
 

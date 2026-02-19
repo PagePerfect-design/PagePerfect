@@ -49,6 +49,11 @@ $if(author)$\author{$author$}$endif$
 \date{$if(date)$$date$$else$$endif$}
 $endif$
 
+% ── Header includes (injected by compile pipeline) ─────────
+$for(header-includes)$
+$header-includes$
+$endfor$
+
 \begin{document}
 
 $if(title)$
