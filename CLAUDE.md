@@ -50,7 +50,7 @@ PagePerfect/
 │   │       └── CopyCitation.tsx       # Copy citation example to clipboard
 │   ├── public/                # Static assets, PWA manifest, icons
 │   ├── tailwind.config.ts     # Dark design system tokens (colors, shadows, animations)
-│   ├── next.config.ts         # API rewrites to backend (Coolify via RAILWAY_API_BASE)
+│   ├── next.config.ts         # API rewrites to backend (Coolify via API_BASE_URL)
 │   ├── eslint.config.mjs      # ESLint flat config (next/core-web-vitals)
 │   └── tsconfig.json          # Strict mode, @/* path alias
 │
@@ -126,7 +126,7 @@ cd backend && npm install && npm run dev
 cd frontend && npm install && npm run dev
 ```
 
-The frontend proxies `/api/*` to the backend via Next.js rewrites (configured in `next.config.ts`). Set `RAILWAY_API_BASE` env var to override the backend URL (defaults to `http://localhost:4000`). The env var name is a legacy holdover — it now points to the Coolify-hosted backend on Digital Ocean.
+The frontend proxies `/api/*` to the backend via Next.js rewrites (configured in `next.config.ts`). Set `API_BASE_URL` env var to point to the Coolify-hosted backend (defaults to `http://localhost:4000` for local dev).
 
 ## Architecture & Data Flow
 
