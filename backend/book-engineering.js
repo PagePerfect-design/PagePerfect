@@ -382,28 +382,21 @@ function generateEngineeringPreamble(templateType, overrides = {}) {
     `\\renewcommand{\\bottomfraction}{0.8}`,
     `\\renewcommand{\\textfraction}{0.1}`,
     '',
-    '% Prevent page breaks immediately after headings',
-    '\\makeatletter',
-    '\\@afterheading',
-    '\\makeatother',
   ];
 
   if (policy.raggedBottom) {
-    commands.push('\\raggedbottom');
+    commands.push('', '\\raggedbottom');
   } else {
-    commands.push('\\flushbottom');
+    commands.push('', '\\flushbottom');
   }
 
-  if (policy.raggedRight) {
-    commands.push('\\raggedright');
-  }
-
-  // URL line breaking
+  // URL line breaking (safe for header-includes — url already loaded by hyperref)
   commands.push(
     '',
     '% URL line breaking',
-    '\\usepackage[hyphens]{url}',
-    '\\usepackage{xurl}',
+    '\\makeatletter',
+    '\\g@addto@macro\\UrlBreaks{\\do\\/\\do\\-\\do\\.\\do\\=\\do\\?\\do\\&\\do\\_\\do\\~}',
+    '\\makeatother',
   );
 
   return commands.join('\n');

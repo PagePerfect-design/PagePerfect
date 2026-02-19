@@ -74,6 +74,11 @@
 \setlist{nosep,leftmargin=1em}
 \hypersetup{colorlinks=true,linkcolor=black!60,urlcolor=black!50,citecolor=black!60}
 
+% ── Header includes (injected by compile pipeline) ─────────
+$for(header-includes)$
+$header-includes$
+$endfor$
+
 % ── DOCUMENT ────────────────────────────────────────────────
 \begin{document}
 

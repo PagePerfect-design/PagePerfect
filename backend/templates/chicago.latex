@@ -75,6 +75,11 @@
 % ── HYPERLINKS ──────────────────────────────────────────────
 \hypersetup{colorlinks=true,linkcolor=black,urlcolor=black!70,citecolor=black}
 
+% ── Header includes (injected by compile pipeline) ─────────
+$for(header-includes)$
+$header-includes$
+$endfor$
+
 % ── DOCUMENT ────────────────────────────────────────────────
 \begin{document}
 

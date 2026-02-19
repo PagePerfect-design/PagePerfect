@@ -92,6 +92,11 @@
   citecolor=oxblood
 }
 
+% ── Header includes (injected by compile pipeline) ─────────
+$for(header-includes)$
+$header-includes$
+$endfor$
+
 % ── DOCUMENT ────────────────────────────────────────────────
 \begin{document}
 

@@ -96,6 +96,11 @@
 
 \hypersetup{colorlinks=true,linkcolor=headblue,urlcolor=infoblue,citecolor=headblue}
 
+% ── Header includes (injected by compile pipeline) ─────────
+$for(header-includes)$
+$header-includes$
+$endfor$
+
 % ── DOCUMENT ────────────────────────────────────────────────
 \begin{document}
 
