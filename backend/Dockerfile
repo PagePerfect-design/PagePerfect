@@ -16,11 +16,10 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs
 
-# Install Pandoc and pandoc-citeproc
-RUN apt-get update && apt-get install -y pandoc pandoc-citeproc
-
-# Install LaTeX with XeLaTeX support + Ghostscript for PDF/X-1a conversion
+# Install Pandoc + LaTeX (XeLaTeX) + Ghostscript
+# Note: pandoc-citeproc is built into pandoc since 2.11+, no separate package needed
 RUN apt-get update && apt-get install -y \
+    pandoc \
     texlive-latex-base \
     texlive-latex-extra \
     texlive-fonts-recommended \

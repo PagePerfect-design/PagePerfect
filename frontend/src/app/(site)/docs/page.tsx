@@ -480,38 +480,39 @@ export default function DocsPage() {
           <section id="margins" className="scroll-mt-16 mb-20">
             <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Margin Presets</h3>
             <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
-              Seven presets from minimal to generous. Margins are calculated as grid-unit multiples of the template&apos;s baseline.
+              Seven presets control the white space around your text. Pick one that matches the feel you want — <strong>Normal</strong> is a safe default for most books.
             </p>
-            <table className="docs-table" style={{ maxWidth: '28rem' }}>
+            <table className="docs-table" style={{ maxWidth: '32rem' }}>
               <thead>
                 <tr>
                   <th>Preset</th>
-                  <th>Grid Units</th>
-                  <th>Character</th>
+                  <th>Margin Size</th>
+                  <th>Good For</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  ['Minimal', '2', 'Tight'],
-                  ['Compact', '3', 'Snug'],
-                  ['Narrow', '4', 'Slim'],
-                  ['Normal', '5', 'Standard'],
-                  ['Wide', '6', 'Open'],
-                  ['Academic', '7', 'Scholarly'],
-                  ['Generous', '8', 'Airy'],
-                ].map(([preset, units, desc]) => (
+                  ['Minimal', '~0.3\u2033', 'Maximum text per page'],
+                  ['Compact', '~0.5\u2033', 'Reference books, dense layouts'],
+                  ['Narrow', '~0.6\u2033', 'Space-efficient but comfortable'],
+                  ['Normal', '~0.75\u2033', 'Most books \u2014 the safe default'],
+                  ['Wide', '~0.9\u2033', 'Literary fiction, open feel'],
+                  ['Academic', '~1.1\u2033', 'Scholarly work, room for notes'],
+                  ['Generous', '~1.2\u2033', 'Art books, poetry, maximum breathing room'],
+                ].map(([preset, size, use]) => (
                   <tr key={preset}>
                     <td className="font-medium text-[#1a1a1a]">{preset}</td>
-                    <td className="accent">{units}</td>
-                    <td className="muted">{desc}</td>
+                    <td className="accent">{size}</td>
+                    <td className="muted">{use}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <Admonition type="info" label="How Margins Are Calculated">
-              The grid system multiplies the template&apos;s baseline (11pt or 12pt) by the preset&apos;s unit count,
-              then converts to page-size-appropriate units. For example: Normal (5) on a 12pt baseline =
-              60pt = 0.833&quot; margins.
+            <Admonition type="info" label="How It Works">
+              Wider margins mean more white space and fewer words per page — your book will have more pages but feel
+              more spacious and premium. Narrower margins pack more text in, keeping page counts (and printing costs)
+              down. The exact size adjusts slightly between templates to match publishing conventions — academic
+              templates use a touch more space than fiction templates.
             </Admonition>
           </section>
 

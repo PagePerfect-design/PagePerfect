@@ -15,11 +15,18 @@ const FAIL_ICON = <span className="text-danger">●</span>
 const RUN_ICON  = <span className="text-accent animate-pulse">●</span>
 const IDLE_ICON = <span className="text-text-ghost">●</span>
 
+function diagnose(status: number): string {
+  if (status === 404) return 'API proxy not reaching backend — check API_BASE_URL env var on Vercel'
+  if (status === 502 || status === 503) return 'Backend is down or unreachable'
+  if (status === 504) return 'Backend timed out — server may be overloaded'
+  if (status >= 400) return `Unexpected status ${status}`
+  return `Status ${status}`
+}
+
 export default function RequirementsCheck() {
   const [checks, setChecks] = useState<Check[]>([
-    { key: 'proxy',  label: 'Proxy rewrite (/api → backend) reachable', status: 'idle' },
-    { key: 'health', label: 'Backend /health OK',                     status: 'idle' },
-    { key: 'compile',label: 'Minimal PDF compile OK (safe, fast)',    status: 'idle' },
+    { key: 'health', label: 'Backend API reachable',                  status: 'idle' },
+    { key: 'compile', label: 'PDF compile working',                   status: 'idle' },
   ])
   const [ts, setTs] = useState<string>('')
 
@@ -32,37 +39,28 @@ export default function RequirementsCheck() {
     const set = (key: string, patch: Partial<Check>) =>
       setChecks(cs => cs.map(c => (c.key === key ? { ...c, ...patch } : c)))
 
-    // 1) Proxy: /api/health (should hit backend via Next rewrite)
-    set('proxy', { status: 'running', note: '' })
-    let healthJson: { ok?: boolean } | null = null
+    // 1) Backend health via proxy rewrite
+    set('health', { status: 'running', note: '' })
+    let backendOk = false
     try {
       const res = await fetch('/api/health', { method: 'GET' })
-      healthJson = await res.json().catch(() => ({}))
-      if (res.ok && healthJson?.ok) {
-        set('proxy', { status: 'ok', note: 'Rewrites active' })
-      } else {
-        set('proxy', { status: 'fail', note: `Status ${res.status}` })
-      }
-    } catch {
-      set('proxy', { status: 'fail', note: 'Network error' })
-    }
-
-    // 2) Health explicitly (redundant but clearer)
-    set('health', { status: 'running', note: '' })
-    try {
-      const res = await fetch('/api/health')
       const json = await res.json().catch(() => ({}))
       if (res.ok && json?.ok) {
-        set('health', { status: 'ok', note: json?.service || 'backend' })
+        set('health', { status: 'ok', note: json?.service || 'Connected' })
+        backendOk = true
       } else {
-        set('health', { status: 'fail', note: `Status ${res.status}` })
+        set('health', { status: 'fail', note: diagnose(res.status) })
       }
     } catch {
-      set('health', { status: 'fail', note: 'Network error' })
+      set('health', { status: 'fail', note: 'Network error — backend unreachable' })
     }
 
-    // 3) Minimal compile (safe mode + fast mode; tiny markdown)
+    // 2) Minimal compile (only attempt if health passed)
     set('compile', { status: 'running', note: '' })
+    if (!backendOk) {
+      set('compile', { status: 'fail', note: 'Skipped — backend not available' })
+      return
+    }
     try {
       const res = await fetch('/api/compile', {
         method: 'POST',
@@ -79,31 +77,31 @@ export default function RequirementsCheck() {
       })
       const ct = res.headers.get('content-type') || ''
       if (res.ok && ct.includes('application/pdf')) {
-        set('compile', { status: 'ok', note: 'PDF streamed' })
+        set('compile', { status: 'ok', note: 'PDF generated' })
       } else {
         const j = await res.json().catch(() => ({}))
-        set('compile', { status: 'fail', note: j?.message ? String(j.message) : `Status ${res.status}` })
+        set('compile', { status: 'fail', note: j?.message ? String(j.message) : diagnose(res.status) })
       }
     } catch {
-      set('compile', { status: 'fail', note: 'Network error' })
+      set('compile', { status: 'fail', note: 'Network error during compile' })
     }
   }
 
   return (
     <div className="card p-5">
-      <div className="text-lg font-bold text-text-primary mb-2">Requirements</div>
+      <div className="text-lg font-bold text-text-primary mb-2">System Check</div>
       <p className="text-sm text-text-secondary mb-3">
-        Verifies the frontend proxy, backend health, and a minimal compile path. Useful for Vercel + Coolify sanity checks.
+        Tests the API proxy and compile pipeline. If checks fail, the backend may be starting up — wait 30 seconds and retry.
       </p>
 
       <ul className="divide-y divide-border">
         {checks.map((c) => (
-          <li key={c.key} className="py-2 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <li key={c.key} className="py-2 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 shrink-0">
               <span aria-hidden>{icon(c.status)}</span>
               <span className="text-text-primary">{c.label}</span>
             </div>
-            <div className="small-mono text-right text-text-secondary">
+            <div className="text-right font-mono text-[11px] text-text-secondary truncate">
               {c.note || '\u00A0'}
             </div>
           </li>
@@ -112,7 +110,7 @@ export default function RequirementsCheck() {
 
       <div className="mt-4 flex items-center gap-3">
         <Button onClick={() => void run()}>Run checks</Button>
-        {ts && <span className="small-mono text-text-ghost">Last run: {ts}</span>}
+        {ts && <span className="font-mono text-[11px] text-text-ghost">Last run: {ts}</span>}
       </div>
     </div>
   )

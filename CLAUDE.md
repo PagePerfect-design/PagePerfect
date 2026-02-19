@@ -12,62 +12,111 @@ The product targets authors, academics, and publishers who need professional typ
 PagePerfect/
 ├── frontend/                  # Next.js 15 React app (TypeScript)
 │   ├── src/
-│   │   ├── app/               # App Router pages
-│   │   │   ├── page.tsx       # Product landing page (/) — hero, features, comparison table
-│   │   │   ├── layout.tsx     # Root layout with Nav, Footer, Google Fonts
-│   │   │   ├── globals.css    # Dark design system — tokens, utilities, button/card styles
-│   │   │   ├── page.module.css # Legacy (unused) — left over from create-next-app
-│   │   │   ├── app/           # Editor (/app)
-│   │   │   │   ├── CompileShell.tsx   # Main editor component (~670 lines)
-│   │   │   │   ├── TemplateHelp.tsx   # Template help tooltip
-│   │   │   │   ├── TemplateNotes.tsx  # Template-specific notes
-│   │   │   │   ├── authorGuide.ts     # Author guide content
-│   │   │   │   └── sample.ts          # Sample manuscript
-│   │   │   ├── docs/          # Documentation (/docs)
-│   │   │   │   ├── page.tsx           # Docs page with troubleshooting cards
-│   │   │   │   └── RequirementsCheck.tsx  # Automated health/compile checks
-│   │   │   ├── auth/          # Auth routes
-│   │   │   │   ├── login/page.tsx     # Sign in / sign up (email + OAuth)
-│   │   │   │   ├── forgot-password/page.tsx  # Request password reset
-│   │   │   │   ├── reset-password/page.tsx   # Set new password
-│   │   │   │   └── callback/route.ts  # OAuth callback handler
-│   │   │   ├── pricing/       # Pricing (/pricing)
-│   │   │   │   └── page.tsx           # 3-tier pricing with FAQ
-│   │   │   └── status/        # Health check (/status)
-│   │   │       ├── page.tsx           # Server-rendered status shell
-│   │   │       └── StatusClient.tsx   # Client-side connectivity diagnostics
-│   │   ├── lib/               # Shared utilities
-│   │   │   ├── supabase.ts            # PocketBase client factory + isPocketBaseConfigured guard
-│   │   │   ├── auth-context.tsx       # AuthProvider context (user, session, profile, tier) via PocketBase
-│   │   │   └── database.types.ts      # PocketBase collection types (users, manuscripts, compile_history)
-│   │   └── components/        # Reusable UI
-│   │       ├── Button.tsx             # primary/secondary/ghost × sm/md/lg
-│   │       ├── Container.tsx          # max-w-7xl centered wrapper
-│   │       ├── Section.tsx            # default/raised/light/dark page sections
-│   │       ├── Providers.tsx          # Client provider wrapper (AuthProvider)
-│   │       ├── NavAuth.tsx            # Auth state in nav (sign in / user menu)
-│   │       ├── AuthorGuideTools.tsx   # Copy/download author guide
-│   │       └── CopyCitation.tsx       # Copy citation example to clipboard
+│   │   ├── app/
+│   │   │   ├── layout.tsx           # Root layout — fonts, metadata, Providers, noise overlay
+│   │   │   ├── globals.css          # Dark design system — tokens, utilities, docs theme
+│   │   │   ├── favicon.ico
+│   │   │   ├── page.module.css      # Legacy (unused) — left over from create-next-app
+│   │   │   │
+│   │   │   ├── (site)/              # Route group — marketing pages with Nav + Footer
+│   │   │   │   ├── layout.tsx       # Site layout (Nav, Footer, skip-link)
+│   │   │   │   ├── page.tsx         # Landing page (/) — hero, comparison, templates, CTA
+│   │   │   │   ├── page.module.css  # Legacy (unused)
+│   │   │   │   ├── auth/
+│   │   │   │   │   ├── login/page.tsx           # Sign in / sign up (email + OAuth)
+│   │   │   │   │   ├── forgot-password/page.tsx # Request password reset
+│   │   │   │   │   ├── reset-password/page.tsx  # Set new password
+│   │   │   │   │   └── callback/route.ts        # OAuth fallback redirect
+│   │   │   │   ├── docs/
+│   │   │   │   │   ├── page.tsx             # Documentation hub
+│   │   │   │   │   ├── DocsNav.tsx          # Sidebar navigation for docs
+│   │   │   │   │   └── RequirementsCheck.tsx # Automated health/compile diagnostics
+│   │   │   │   ├── pricing/
+│   │   │   │   │   ├── layout.tsx           # Pricing-specific layout wrapper
+│   │   │   │   │   └── page.tsx             # 3-tier pricing with FAQ
+│   │   │   │   └── status/
+│   │   │   │       ├── page.tsx             # Server-rendered status shell
+│   │   │   │       └── StatusClient.tsx     # Client-side connectivity diagnostics
+│   │   │   │
+│   │   │   └── app/                 # Editor (/app) — full-screen, no Nav/Footer
+│   │   │       ├── layout.tsx             # Editor layout (full-screen, no footer)
+│   │   │       ├── page.tsx               # Editor page wrapper
+│   │   │       ├── CompileShell.tsx       # Main editor component
+│   │   │       ├── TemplateHelp.tsx       # Template help tooltip
+│   │   │       ├── TemplateNotes.tsx      # Template-specific usage notes
+│   │   │       ├── PublishingSystems.tsx   # Publishing system comparison
+│   │   │       ├── authorGuide.ts         # Author guide content
+│   │   │       └── sample.ts              # Sample manuscript
+│   │   │
+│   │   ├── lib/
+│   │   │   ├── supabase.ts          # PocketBase client factory (legacy filename)
+│   │   │   ├── auth-context.tsx      # AuthProvider context (PocketBase auth)
+│   │   │   ├── database.types.ts     # PocketBase collection types
+│   │   │   └── stripe.ts            # Stripe.js loader + createPayment helper
+│   │   │
+│   │   └── components/
+│   │       ├── Button.tsx            # primary/secondary/ghost × sm/md/lg
+│   │       ├── Container.tsx         # container-grid centered wrapper
+│   │       ├── Section.tsx           # default/raised/light/dark page sections
+│   │       ├── Providers.tsx         # Client provider wrapper (AuthProvider)
+│   │       ├── NavAuth.tsx           # Auth state in nav (sign in / user menu + tier badge)
+│   │       ├── AuthorGuideTools.tsx  # Copy/download author guide
+│   │       ├── CopyCitation.tsx      # Copy citation to clipboard
+│   │       └── landing/             # Landing page components
+│   │           ├── Hero.tsx          # Hero section with parallax
+│   │           ├── HeroImage.tsx     # Animated hero image
+│   │           ├── Comparison.tsx    # Before/after interactive slider
+│   │           ├── TemplateShowcase.tsx  # Animated template cards
+│   │           ├── TemplateGallery.tsx   # Template gallery view
+│   │           ├── TemplateGrid.tsx      # Template grid layout
+│   │           ├── Steps.tsx         # How-it-works walkthrough
+│   │           ├── WhyDifferent.tsx  # Feature callouts
+│   │           ├── SocialProof.tsx   # Testimonials
+│   │           ├── PricingPreview.tsx # Pricing cards for landing
+│   │           ├── FinalCTA.tsx      # Final call-to-action
+│   │           ├── Reveal.tsx        # Scroll-reveal animation wrapper
+│   │           ├── SectionTransition.tsx # Visual section transitions
+│   │           └── LevitatingCard.tsx   # Hover levitation effect
+│   │
 │   ├── public/                # Static assets, PWA manifest, icons
+│   ├── .env.example           # Environment variable template
 │   ├── tailwind.config.ts     # Dark design system tokens (colors, shadows, animations)
-│   ├── next.config.ts         # API rewrites to backend (Coolify via RAILWAY_API_BASE)
+│   ├── next.config.ts         # API rewrites to backend via API_BASE_URL
 │   ├── eslint.config.mjs      # ESLint flat config (next/core-web-vitals)
 │   └── tsconfig.json          # Strict mode, @/* path alias
 │
 ├── backend/                   # Express 5 API (JavaScript, CommonJS)
-│   ├── index.js               # Server, routes, Pandoc orchestration
+│   ├── index.js               # Server, 30+ routes, Pandoc orchestration, Stripe webhooks
 │   ├── grid-system.js         # GridSystem class (margins, typography, LaTeX)
-│   ├── templates/             # 8 LaTeX templates
+│   ├── publishing.js          # Pre-flight validation, cover dimensions, PDF/X-1a
+│   ├── lulu.js                # Lulu xPress API client (print-on-demand)
+│   ├── platform-compliance.js # KDP, IngramSpark, Lulu, offset print specs
+│   ├── book-engineering.js    # Widows/orphans, hyphenation, float placement
+│   ├── manuscript-structure.js # Front/body/back matter standardization
+│   ├── references-system.js   # Citation validation, BibTeX parsing
+│   ├── figures-system.js      # Image pipeline, DPI validation, asset checks
+│   ├── typography-assurance.js # Baseline grid conformance, typographic scoring
+│   ├── multilingual.js        # RTL, Arabic shaping, CJK, Devanagari support
+│   ├── print-qa.js            # Ink coverage, contrast, DPI, reverse type checks
+│   ├── provenance.js          # Build metadata, versioning, reproducible builds
+│   ├── template-extensions.js # Governed extension tokens for template customization
+│   ├── templates/             # 12 LaTeX templates
 │   │   ├── chicago.latex      # Academic (12pt baseline)
-│   │   ├── paperback.latex    # Trade (11pt baseline)
-│   │   ├── minimal.latex      # BasicTeX-compatible
 │   │   ├── symphony.latex     # Classic academic
-│   │   ├── chronicle.latex    # Editorial multi-column
+│   │   ├── minimal.latex      # BasicTeX-compatible
+│   │   ├── paperback.latex    # Trade fiction/nonfiction (11pt baseline)
 │   │   ├── exhibit.latex      # Modern trade design
+│   │   ├── heirloom.latex     # Heritage trade
+│   │   ├── chronicle.latex    # Editorial multi-column
+│   │   ├── international.latex # Editorial international
+│   │   ├── operator.latex     # Editorial technical
 │   │   ├── matrix.latex       # Corporate structured
-│   │   └── avantgarde.latex   # Experimental creative
+│   │   ├── avantgarde.latex   # Experimental creative
+│   │   └── cinema.latex       # Screenplay format
 │   ├── references/            # Sample .bib for citations
-│   └── Dockerfile             # Ubuntu 22.04, Node 18, Pandoc, texlive-xetex (deployed via Coolify)
+│   ├── .env.example           # Environment variable template
+│   ├── Dockerfile             # Ubuntu 22.04, Node 18, Pandoc, texlive-xetex, Ghostscript
+│   └── package.json
 │
 ├── CLAUDE.md                  # This file
 ├── README.md
@@ -80,7 +129,7 @@ PagePerfect/
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend framework | Next.js 15.5.4 (React 19, App Router) |
+| Frontend framework | Next.js 15 (React 19, App Router) |
 | Frontend language | TypeScript 5 (strict mode) |
 | Styling | Tailwind CSS 3.4 with dark design system tokens |
 | Build tool | Turbopack (via Next.js) |
@@ -88,9 +137,12 @@ PagePerfect/
 | Backend framework | Express 5.1 |
 | Backend language | JavaScript (CommonJS) |
 | PDF engine | Pandoc + XeLaTeX |
+| PDF/X conversion | Ghostscript (for IngramSpark/offset compliance) |
 | Containerization | Docker (Ubuntu 22.04) |
 | Auth & database | PocketBase (self-hosted via Coolify) |
-| Infrastructure | Digital Ocean droplet + Coolify |
+| Payments | Stripe (Payment Element flow) |
+| Print-on-demand | Lulu xPress API |
+| Email | Resend |
 | Frontend hosting | Vercel |
 | Backend hosting | Coolify (Docker on Digital Ocean) |
 
@@ -108,8 +160,8 @@ npm run lint      # Run ESLint
 ### Backend (`backend/`)
 
 ```bash
-npm run dev       # Nodemon watch mode (port 4000)
-npm start         # Production server
+npm run dev            # Nodemon watch mode (port 4000)
+npm start              # Production server
 npm run docker:build   # Build Docker image
 npm run docker:run     # Run Docker container on port 4000
 ```
@@ -126,237 +178,11 @@ cd backend && npm install && npm run dev
 cd frontend && npm install && npm run dev
 ```
 
-The frontend proxies `/api/*` to the backend via Next.js rewrites (configured in `next.config.ts`). Set `RAILWAY_API_BASE` env var to override the backend URL (defaults to `http://localhost:4000`). The env var name is a legacy holdover — it now points to the Coolify-hosted backend on Digital Ocean.
+The frontend proxies `/api/*` to the backend via Next.js rewrites (configured in `next.config.ts`). In local dev this defaults to `http://localhost:4000`. In production, set `API_BASE_URL` on Vercel to point to the Coolify-hosted backend.
 
 ## Architecture & Data Flow
 
-```
-User edits Markdown in browser
-    → 1s debounce
-    → POST /api/compile (proxied via Next.js rewrites)
-    → Backend: sanitize inputs, write to temp dir
-    → GridSystem calculates geometry/typography
-    → Spawn Pandoc with XeLaTeX + selected template
-    → (Optional) pandoc-citeproc for bibliography
-    → 45s timeout (COMPILE_TIMEOUT_MS)
-    → Stream PDF back | Return JSON error with diagnostics
-    → Frontend creates object URL, renders in iframe
-```
-
-### API Endpoints
-
-- `GET /api/health` — Basic health check
-- `GET /api/health/details` — Server capabilities (templates, sizes, presets)
-- `GET /api/templates` — Design template registry
-- `POST /api/compile` — Compile Markdown to PDF (accepts: markdown, template, pageSize, marginPreset, compileMode, safeMode, title)
-
-### Frontend Routes
-
-| Route | File | Description |
-|-------|------|-------------|
-| `/` | `app/page.tsx` | Product landing page with hero, features, comparison table, CTA |
-| `/app` | `app/app/page.tsx` | Markdown editor with live PDF preview |
-| `/docs` | `app/docs/page.tsx` | Author guide, citation help, troubleshooting, requirements check |
-| `/pricing` | `app/pricing/page.tsx` | 3-tier pricing (Drafter / Publisher / Studio) with FAQ |
-| `/status` | `app/status/page.tsx` | API connectivity diagnostics and server capabilities |
-| `/auth/login` | `app/auth/login/page.tsx` | Sign in / sign up (email + GitHub/Google OAuth) |
-| `/auth/forgot-password` | `app/auth/forgot-password/page.tsx` | Request password reset email |
-| `/auth/reset-password` | `app/auth/reset-password/page.tsx` | Set new password (via reset link) |
-| `/auth/callback` | `app/auth/callback/route.ts` | OAuth fallback redirect (PocketBase uses popup flow) |
-
-## Design System
-
-The frontend uses a **dark-first** design language. All color tokens, shadows, and animations are defined in `tailwind.config.ts` with supporting CSS utilities in `globals.css`.
-
-### Color Tokens
-
-Use these token names in Tailwind classes (e.g., `bg-surface-raised`, `text-accent`, `border-border`).
-
-**Surfaces (dark backgrounds):**
-- `surface` — `#0a0a0f` (page background)
-- `surface-raised` — `#111118` (cards, panels)
-- `surface-overlay` — `#1a1a24` (modals, dropdowns)
-- `surface-subtle` — `#22222e` (hover states, code blocks)
-
-**Accent (blue spectrum):**
-- `accent` — `#4f8fff` (links, primary actions)
-- `accent-hover` — `#6ba1ff`
-- `accent-muted` — `#2a4a7f`
-- `accent-glow` — `rgba(79,143,255,0.15)` (glow effects)
-- `accent-soft` — `rgba(79,143,255,0.08)` (tinted backgrounds)
-
-**Text hierarchy:**
-- `text-primary` — `#f0f0f5` (headings, important text)
-- `text-secondary` — `#a0a0b0` (body copy)
-- `text-tertiary` — `#606070` (labels, captions)
-- `text-ghost` — `#404050` (placeholders, disabled)
-
-**Status:**
-- `success` / `success-muted` — green (`#34d399`)
-- `warning` / `warning-muted` — amber (`#fbbf24`)
-- `danger` / `danger-muted` — red (`#f87171`)
-
-**Borders:**
-- `border` — `rgba(255,255,255,0.06)` (default dividers)
-- `border-subtle` — `rgba(255,255,255,0.03)`
-- `border-accent` — `rgba(79,143,255,0.2)` (focus rings, active states)
-
-**Legacy ENS tokens** (`ens-blue`, `ens-dark`, `ens-midnight`, etc.) remain in the config for backward compatibility but should not be used in new code.
-
-### Typography
-
-Three Google Fonts loaded in `layout.tsx`:
-- **Space Grotesk** (`--font-display`) — headings, nav, UI labels
-- **Source Serif 4** (`--font-body`) — body text, paragraphs
-- **IBM Plex Mono** (`--font-mono`) — code, status indicators
-
-Responsive type scale in `globals.css`:
-- `.h1` — `clamp(2rem, 3.5vw, 3.5rem)`
-- `.h2` — `clamp(1.5rem, 2.5vw, 2.5rem)`
-- `.h3` — `clamp(1.25rem, 1.8vw, 1.5rem)`
-- Hero size — `clamp(3rem, 6vw, 5.5rem)`
-
-### Shadows
-
-- `shadow-card` / `shadow-card-hover` — card elevation
-- `shadow-elevated` — modals, overlays
-- `shadow-pill` / `shadow-pill-hover` — accent-glowing buttons
-- `shadow-paper` — PDF preview skeuomorphic shadow
-- `shadow-glow-accent` / `shadow-glow-success` — colored glow halos
-
-### Animations
-
-- `animate-fade-in` — 0.5s opacity
-- `animate-fade-in-up` — 0.6s opacity + translateY
-- `animate-fade-in-down` — 0.4s opacity + translateY
-- `animate-scale-in` — 0.3s scale
-- `animate-shimmer` — 2s infinite gradient sweep
-- `animate-pulse-soft` — 2s breathing opacity
-- `animate-slide-up` — 0.5s translateY
-
-### CSS Utility Classes (globals.css)
-
-| Class | Purpose |
-|-------|---------|
-| `.btn-pill` | Base pill-shaped button (rounded-full, transitions) |
-| `.btn-primary` | Accent blue button with glow shadow |
-| `.btn-secondary` | Bordered ghost button |
-| `.btn-ghost` | Transparent text-only button |
-| `.card` | Dark raised surface with border and shadow |
-| `.input-dark` | Dark form input/select styling |
-| `.paper-surface` | Radial-gradient dark desk for PDF preview |
-| `.gradient-text` | White→gray gradient text |
-| `.gradient-accent-text` | Blue→indigo gradient text |
-| `.divider` | Horizontal gradient separator line |
-| `.skip-link` | Accessibility skip-to-content link |
-
-## Key Conventions
-
-### File Naming
-
-- **React components**: PascalCase (e.g., `CompileShell.tsx`, `TemplateHelp.tsx`)
-- **Data/constants files**: camelCase (e.g., `authorGuide.ts`, `sample.ts`)
-- **LaTeX templates**: lowercase (e.g., `chronicle.latex`)
-- **Backend modules**: lowercase (e.g., `grid-system.js`, `index.js`)
-
-### Frontend Patterns
-
-- **Client components** use `'use client'` directive; server components are the default
-- **State**: React `useState`/`useContext` with `localStorage` persistence (key: `pp-prefs-v1`)
-- **Auto-compile**: 1-second debounce with `AbortController` for in-flight cancellation
-- **Tooltips**: Rendered via `createPortal` to `document.body`
-- **Path alias**: `@/*` maps to `./src/*`
-- **Types**: Defined locally at the top of files (e.g., `TemplateKey`, `PageSize`, `MarginPreset`, `CompileMode`)
-- **CSS**: Utility-first Tailwind with dark design system tokens (`surface-*`, `accent-*`, `text-*`, `border-*`). Do NOT use legacy `ens-*` tokens in new code.
-- **Layout**: Root layout provides sticky `Nav` (blur header with logo, Pricing, Docs, Open Editor CTA) and `Footer` (logo, links, tagline). Pages render between them.
-- **Fonts**: Space Grotesk for display, Source Serif 4 for body, IBM Plex Mono for mono — loaded via `next/font/google` in `layout.tsx`.
-
-### Component APIs
-
-**`Button`** (`@/components/Button`):
-- `variant`: `'primary'` | `'secondary'` | `'ghost'` (default: `'primary'`)
-- `size`: `'sm'` | `'md'` | `'lg'` (default: `'md'`)
-- `href`: optional — renders as `<Link>` instead of `<button>`
-- Extends `ButtonHTMLAttributes<HTMLButtonElement>`
-
-**`Section`** (`@/components/Section`):
-- `variant`: `'default'` | `'raised'` | `'light'` | `'dark'` (default: `'default'`)
-- `id`: optional — for anchor links
-- Default padding: `py-16 md:py-24`
-
-**`Container`** (`@/components/Container`):
-- Centered wrapper: `mx-auto max-w-7xl px-6 md:px-8`
-
-### Backend Patterns
-
-- **CommonJS** module system (`require`/`module.exports`)
-- **Temp files**: `fs.mkdtempSync` for isolated compilation, cleaned up after each request
-- **PDF streaming**: `fs.createReadStream().pipe(res)` with Content-Disposition header
-- **Process spawning**: `child_process.spawn` for Pandoc with timeout (`SIGKILL` after 45s)
-- **Error parsing**: Regex extraction of missing citations/packages from stderr
-- **Safe mode**: Strips citation syntax for compilation without bibliography processing
-- **CORS**: Currently permissive (`origin: true`)
-
-### Grid System
-
-The `GridSystem` class in `backend/grid-system.js` implements:
-
-- **Baseline grids**: 12pt (academic/basic) or 11pt (trade/editorial/corporate/creative) depending on template
-- **Golden-ratio typographic scale** (multiplier 1.618): heading sizes derived from baseline
-- **Margin presets**: 7 presets (minimal→generous) expressed as grid-unit multiples
-- **LaTeX generation**: Produces `\geometry{}` commands and typography preamble
-
-### Git Conventions
-
-- **Branches**: `main` (production), `develop` (integration), `feature/*`, `bugfix/*`, `hotfix/*`
-- **Commits**: Conventional Commits format (`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`, `chore:`)
-- **Commit template**: `.gitmessage` at repo root
-
-## Pricing Model
-
-Defined in `frontend/src/app/pricing/page.tsx`. Currently informational (no paywall enforced).
-
-| Tier | Price | Key differentiators |
-|------|-------|-------------------|
-| **Drafter** | Free | All 8 templates, 3 page sizes, real-time preview, watermarked output |
-| **Publisher** | $9.99/mo | No watermark, all 11 page sizes, full quality, citations, priority queue |
-| **Studio** | $199 one-time | Lifetime Publisher access, future EPUB/custom fonts/batch export, direct support |
-
-## Environment Variables
-
-All environment variables are configured in **Vercel** (frontend) or **Coolify** (backend + PocketBase).
-
-### Frontend (Vercel)
-
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_POCKETBASE_URL` | PocketBase URL (`https://pb.pageperfect.studio`) |
-| `API_BASE_URL` | Backend compile API URL (Coolify-hosted backend) |
-| `NEXT_PUBLIC_STRIPE_PRICE_PUBLISHER` | Stripe price ID for Publisher tier |
-| `NEXT_PUBLIC_STRIPE_PRICE_STUDIO` | Stripe price ID for Studio tier |
-
-### Backend (Coolify)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `4000` | Backend server port |
-| `MAX_MD_BYTES` | `2097152` (2 MB) | Max Markdown payload size |
-| `COMPILE_TIMEOUT_MS` | `45000` | Pandoc compilation timeout |
-| `POCKETBASE_URL` | — | PocketBase URL (e.g. `https://pb.pageperfect.studio`) |
-| `POCKETBASE_ADMIN_EMAIL` | — | PocketBase admin email (set in Coolify, never expose to client) |
-| `POCKETBASE_ADMIN_PASSWORD` | — | PocketBase admin password (set in Coolify, never expose to client) |
-| `STRIPE_SECRET_KEY` | — | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | — | Stripe webhook signing secret |
-
-## Testing
-
-No automated test suite is configured. Testing is manual via the frontend UI. Health check endpoints (`/api/health`, `/api/health/details`) and the `/status` page provide connectivity diagnostics. The `/docs` page includes a `RequirementsCheck` component that runs automated proxy, health, and compile checks.
-
-When adding tests in the future, note that `.gitignore` excludes `test*.pdf` and `*-test.pdf` but preserves `sample*.pdf`.
-
-## Infrastructure & Deployment
-
-### Architecture
+### Infrastructure
 
 ```
 Digital Ocean Droplet
@@ -372,20 +198,358 @@ Vercel
 └── Frontend (Next.js)           → https://pageperfect.studio
 ```
 
-### PocketBase (Self-Hosted via Coolify)
+### Compile Flow
 
-- **URL**: `https://pb.pageperfect.studio` (reverse-proxied via Coolify)
-- **Admin dashboard**: `https://pb.pageperfect.studio/_/`
-- **Auth providers**: Email/password, GitHub OAuth, Google OAuth (configured in PocketBase Admin → Settings → Auth providers)
-- **Collections**: `users` (built-in auth + custom fields), `manuscripts`, `compile_history` (see `frontend/src/lib/database.types.ts`)
-- **OAuth**: PocketBase JS SDK handles OAuth2 via popup flow (no server-side callback needed)
-- **Backend auth**: Uses admin email/password to get a token for server-side API calls (webhook handlers, Stripe payment flow)
+```
+User edits Markdown in browser
+    → 1s debounce
+    → POST /api/compile (proxied via Next.js rewrites → Coolify backend)
+    → Backend: sanitize inputs, write to temp dir
+    → GridSystem calculates geometry/typography
+    → Spawn Pandoc with XeLaTeX + selected template
+    → (Optional) --citeproc for bibliography processing
+    → 45s timeout (COMPILE_TIMEOUT_MS)
+    → Stream PDF back | Return JSON error with diagnostics
+    → Frontend creates object URL, renders in iframe
+```
 
-### Deployment
+### API Endpoints
 
-- **Frontend**: Deploys to Vercel from the `frontend/` directory. Auto-deploys on push to `main`. Env vars in Vercel dashboard.
-- **Backend**: Deploys via Coolify on a Digital Ocean droplet from the `backend/` directory via Docker. Env vars in Coolify dashboard.
-- **PocketBase**: Self-hosted on the same Digital Ocean droplet via Coolify. Managed through PocketBase Admin UI. Env vars in Coolify dashboard.
+**Health & Info:**
+- `GET /api/health` — Basic health check (ok, service, timestamp, version)
+- `GET /api/health/details` — Server capabilities (templates, sizes, presets, auth/payment status)
+- `GET /api/templates` — Design template registry
+
+**Core Compilation:**
+- `POST /api/compile` — Compile Markdown to PDF
+- `POST /api/convert` — Convert .docx to Markdown via Pandoc
+
+**Publishing Utilities:**
+- `GET /api/kdp/spine` — KDP spine width calculator
+- `GET /api/kdp/gutter` — KDP dynamic gutter calculator
+- `POST /api/preflight` — Pre-flight validation (page count, platform compliance)
+- `GET /api/cover-dimensions` — Cover dimensions calculator (trim + spine + bleed)
+
+**Lulu Print-on-Demand:**
+- `GET /api/lulu/status` — Lulu API configuration status
+- `POST /api/lulu/cost-estimate` — Print cost estimate
+- `POST /api/lulu/print-job` — Create print job
+- `GET /api/lulu/print-job/:id` — Print job status
+- `POST /api/lulu/webhook` — Lulu webhook handler (HMAC-verified)
+
+**Platform Compliance:**
+- `GET /api/platforms` — All platform specs (KDP, IngramSpark, Lulu, offset)
+- `GET /api/platforms/:key/pipeline` — Export pipeline for a platform
+- `POST /api/analyze/platform` — Validate manuscript against platform requirements
+
+**Manuscript Analysis:**
+- `POST /api/analyze/structure` — Front/body/back matter analysis
+- `POST /api/analyze/references` — Citation extraction and bibliography validation
+- `POST /api/validate/bibliography` — BibTeX content validation
+- `POST /api/analyze/assets` — Figure, table, image validation
+- `POST /api/analyze/lint` — Book engineering lint
+- `POST /api/analyze/typography` — Typography conformance analysis
+- `POST /api/analyze/multilingual` — Script detection (RTL, CJK)
+- `POST /api/analyze/print-qa` — Print quality assurance
+- `POST /api/analyze/full` — All analysis systems combined
+
+**Template Extensions:**
+- `GET /api/template-tokens/:template` — Extension token schema for a template
+- `POST /api/validate/extensions` — Validate template extension overrides
+
+**Payments (Stripe):**
+- `POST /api/stripe/webhook` — Stripe webhook handler (payment intents, invoices, subscriptions)
+- `POST /api/stripe/create-payment` — Create payment intent or subscription
+
+### Frontend Routes
+
+| Route | File | Description |
+|-------|------|-------------|
+| `/` | `(site)/page.tsx` | Landing page — hero, comparison slider, template showcase, pricing preview, CTA |
+| `/app` | `app/page.tsx` | Full-screen Markdown editor with live PDF preview (no Nav/Footer) |
+| `/docs` | `(site)/docs/page.tsx` | Documentation — author guide, citations, troubleshooting, system check |
+| `/pricing` | `(site)/pricing/page.tsx` | 3-tier pricing (Drafter / Publisher / Studio) with FAQ |
+| `/status` | `(site)/status/page.tsx` | API connectivity diagnostics and server capabilities |
+| `/auth/login` | `(site)/auth/login/page.tsx` | Sign in / sign up (email + GitHub/Google OAuth) |
+| `/auth/forgot-password` | `(site)/auth/forgot-password/page.tsx` | Request password reset email |
+| `/auth/reset-password` | `(site)/auth/reset-password/page.tsx` | Set new password (via reset link) |
+| `/auth/callback` | `(site)/auth/callback/route.ts` | OAuth fallback redirect (PocketBase uses popup flow) |
+
+**Route groups:**
+- `(site)/` — Marketing/docs pages wrapped with `Nav` + `Footer` via `(site)/layout.tsx`
+- `app/` — Editor route with its own `layout.tsx` (full-screen, no chrome)
+
+## Design System
+
+The frontend uses a **dark-first** design language. All color tokens, shadows, and animations are defined in `tailwind.config.ts` with supporting CSS utilities in `globals.css`. The docs pages override to a light theme via `[data-docs]` scoping.
+
+### Color Tokens
+
+Tokens are driven by CSS variables and used in Tailwind classes (e.g., `bg-surface-raised`, `text-accent`, `border-border`).
+
+**Editorial palette (static):**
+- `ink` — `#050505` (deep black), `ink-raised`, `ink-overlay`, `ink-subtle`
+- `paper` — `#f5f5f0` (off-white), `paper-warm`, `paper-cool`
+- `reg` — `#0033ff` (registration blue), `reg-light`
+
+**Semantic tokens (CSS-variable-driven):**
+- `void` — page background
+- `surface` / `surface-raised` / `surface-overlay` / `surface-subtle` / `surface-glass`
+- `accent` / `accent-hover` / `accent-muted` / `accent-glow` / `accent-soft`
+- `text-primary` / `text-secondary` / `text-tertiary` / `text-ghost`
+- `success` / `success-muted`, `warning` / `warning-muted`, `danger` / `danger-muted`
+- `border` / `border-subtle` / `border-visible` / `border-accent`
+
+### Typography
+
+Three Google Fonts loaded via `next/font/google` in `layout.tsx`:
+- **Inter Tight** (`--font-display`) — headings, nav, UI labels (weights 400–800)
+- **Source Serif 4** (`--font-body`) — body text, paragraphs
+- **IBM Plex Mono** (`--font-mono`) — code, status, labels (weights 400, 600)
+
+Responsive type scale (Tailwind `fontSize` + `globals.css`):
+- `hero` — `clamp(3.5rem, 9vw, 7.5rem)`
+- `h1` — `clamp(2rem, 3.5vw, 3.5rem)`
+- `h2` — `clamp(1.5rem, 2.5vw, 2.5rem)`
+- `h3` — `clamp(1.25rem, 1.8vw, 1.5rem)`
+- `editorial-body` — `1.125rem`
+- `editorial-caption` — `0.6875rem`
+
+### Shadows
+
+- `shadow-card` / `shadow-card-hover` — card elevation
+- `shadow-elevated` — modals, overlays
+- `shadow-paper` / `shadow-paper-hover` — skeuomorphic PDF preview
+- `shadow-editorial` / `shadow-editorial-hover` — clean drop shadows
+- `shadow-inner-subtle` — inset shadow
+
+### Animations
+
+- `animate-fade-in` — 0.6s opacity
+- `animate-fade-in-up` — 0.8s opacity + translateY
+- `animate-reveal-up` — 0.8s blur + translateY reveal
+
+### CSS Utility Classes (globals.css)
+
+| Class | Purpose |
+|-------|---------|
+| `.btn-pill` | Base pill-shaped button (rounded-full, transitions) |
+| `.btn-primary` | Accent blue button with glow shadow |
+| `.btn-secondary` | Bordered ghost button |
+| `.btn-ghost` | Transparent text-only button |
+| `.card` | Dark raised surface with border and shadow |
+| `.container-grid` | Centered max-w-7xl wrapper with padding |
+| `.input-dark` | Dark form input/select styling |
+| `.paper-surface` | Dark surface for PDF preview |
+| `.bg-noise` | Fixed SVG noise overlay (0.03 opacity) |
+| `.divider` | Horizontal hairline separator |
+| `.colophon` | Top/bottom border strip |
+| `.crop-mark` / `.crop-mark-tl` | Print registration crop marks |
+| `.h1` / `.h2` / `.h3` / `.p` | Responsive typography helpers |
+| `.label-mono` | Uppercase monospace label (11px) |
+| `.caption` | Monospace figure caption |
+| `.skip-link` | Accessibility skip-to-content link |
+| `.docs-sidebar` | Sticky sidebar navigation (docs) |
+| `.docs-table` | Swiss-style annual report tables (docs) |
+| `.docs-admonition` | Left-border callout boxes (docs) |
+| `.docs-code` | Code blocks (docs) |
+| `.docs-template-card` | Template cards (docs) |
+| `.docs-badge` | Category badges (docs) |
+
+## Templates
+
+12 LaTeX templates organized by category:
+
+| Template | Category | Baseline | Description |
+|----------|----------|----------|-------------|
+| `chicago` | Academic | 12pt | Chicago Manual style |
+| `symphony` | Academic | 12pt | Classic academic |
+| `minimal` | Basic | 12pt | BasicTeX-compatible, lightweight |
+| `paperback` | Trade | 11pt | Fiction/nonfiction trade |
+| `exhibit` | Trade | 11pt | Modern trade design |
+| `heirloom` | Trade | 11pt | Heritage trade |
+| `chronicle` | Editorial | 11pt | Multi-column editorial |
+| `international` | Editorial | 11pt | International format |
+| `operator` | Editorial | 11pt | Technical editorial |
+| `matrix` | Corporate | 11pt | Structured corporate |
+| `avantgarde` | Creative | 11pt | Experimental creative |
+| `cinema` | Creative | 11pt | Screenplay format |
+
+## Page Sizes
+
+19 page sizes in 3 tiers:
+
+**Default (always visible in editor):**
+5.5×8.5", 6×9", A5, Royal, US Letter, A4
+
+**More Book Sizes (collapsible):**
+Mass Market (4.25×6.87"), A-format (111×178mm), B-format (129×198mm), 5.25×8", Demy (138×216mm), 7×10", B5, Crown Quarto
+
+**Amazon KDP (collapsible):**
+5×8", 6×9", 7×10", 8×10", 8.5×11"
+
+## Margin Presets
+
+7 presets expressed as grid-unit multiples:
+
+| Preset | Grid Units |
+|--------|-----------|
+| `minimal` | 2 |
+| `compact` | 3 |
+| `narrow` | 4 |
+| `normal` | 5 (default) |
+| `wide` | 6 |
+| `academic` | 7 |
+| `generous` | 8 |
+
+## Key Conventions
+
+### File Naming
+
+- **React components**: PascalCase (`CompileShell.tsx`, `TemplateHelp.tsx`)
+- **Data/constants files**: camelCase (`authorGuide.ts`, `sample.ts`)
+- **LaTeX templates**: lowercase (`chronicle.latex`)
+- **Backend modules**: lowercase kebab-case (`grid-system.js`, `book-engineering.js`)
+
+### Frontend Patterns
+
+- **Route groups**: `(site)/` for marketing pages with Nav/Footer; `app/` for full-screen editor
+- **Client components** use `'use client'` directive; server components are the default
+- **State**: React `useState`/`useContext` with `localStorage` persistence (key: `pp-prefs-v1`)
+- **Auto-compile**: 1-second debounce with `AbortController` for in-flight cancellation
+- **Tooltips**: Rendered via `createPortal` to `document.body`
+- **Path alias**: `@/*` maps to `./src/*`
+- **Types**: Defined locally at the top of files (`TemplateKey`, `PageSize`, `MarginPreset`, `CompileMode`)
+- **CSS**: Utility-first Tailwind with dark design system tokens. Do NOT use legacy `ens-*` tokens in new code.
+- **Layout**: `(site)/layout.tsx` provides sticky `Nav` and `Footer`; `app/layout.tsx` provides full-screen editor chrome. Root `layout.tsx` provides fonts, Providers, and noise overlay.
+- **Fonts**: Inter Tight for display, Source Serif 4 for body, IBM Plex Mono for mono — loaded via `next/font/google` in root `layout.tsx`.
+
+### Component APIs
+
+**`Button`** (`@/components/Button`):
+- `variant`: `'primary'` | `'secondary'` | `'ghost'` (default: `'primary'`)
+- `size`: `'sm'` | `'md'` | `'lg'` (default: `'md'`)
+- `href`: optional — renders as `<Link>` instead of `<button>`
+- Extends `ButtonHTMLAttributes<HTMLButtonElement>`
+
+**`Section`** (`@/components/Section`):
+- `variant`: `'default'` | `'raised'` | `'light'` | `'dark'` (default: `'default'`)
+- `id`: optional — for anchor links
+- Sets `data-theme="light"` when variant is `'light'`
+
+**`Container`** (`@/components/Container`):
+- Renders children inside `.container-grid` (centered max-w-7xl with padding)
+
+### Backend Patterns
+
+- **CommonJS** module system (`require`/`module.exports`)
+- **Temp files**: `fs.mkdtempSync` for isolated compilation, cleaned up after each request
+- **PDF streaming**: `fs.createReadStream().pipe(res)` with Content-Disposition header
+- **Process spawning**: `child_process.spawn` for Pandoc with timeout (`SIGKILL` after 45s)
+- **Error parsing**: Regex extraction of missing citations/packages from stderr
+- **Safe mode**: Strips citation syntax for compilation without bibliography processing
+- **Rate limiting**: `express-rate-limit` on API endpoints
+- **Security**: `helmet` middleware for HTTP headers
+- **Logging**: `morgan` for HTTP request logging
+
+### Grid System
+
+The `GridSystem` class in `backend/grid-system.js` implements:
+
+- **Baseline grids**: 12pt (academic/basic) or 11pt (trade/editorial/corporate/creative)
+- **Golden-ratio typographic scale** (multiplier 1.618): heading sizes derived from baseline
+- **Margin presets**: 7 presets (minimal→generous) as grid-unit multiples
+- **LaTeX generation**: `\geometry{}` commands and typography preamble
+
+### Auth (PocketBase)
+
+- **Client**: `frontend/src/lib/supabase.ts` (legacy filename) exports `createClient()` returning a PocketBase singleton
+- **Context**: `frontend/src/lib/auth-context.tsx` provides `AuthProvider` with:
+  - `signIn(email, password)` / `signUp(email, password)`
+  - `signInWithOAuth('google' | 'github')` — popup flow
+  - `resetPassword(email)` / `updatePassword(newPassword)`
+  - `signOut()`
+  - State: `user`, `session`, `profile`, `tier`, `loading`
+- **Collections** (in `database.types.ts`):
+  - `users` — built-in auth + `display_name`, `tier`, `stripe_customer_id`, `stripe_subscription_id`
+  - `manuscripts` — `user`, `title`, `content`, `template`, `page_size`, `margin_preset`, `safe_mode`
+  - `compile_history` — `user`, `template`, `page_size`, `status`, `compile_time_ms`, `error_message`
+- **Tiers**: `'drafter'` (default) | `'publisher'` | `'studio'`
+- **NavAuth**: Shows tier badge ("Pro" for publisher, "Studio" for studio) + avatar dropdown
+
+### Payments (Stripe)
+
+- **Frontend**: `lib/stripe.ts` loads Stripe.js via `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` and exports `createPayment(tier, userId, email?)`
+- **Backend**: `POST /api/stripe/create-payment` creates payment intents/subscriptions; `POST /api/stripe/webhook` handles events
+- **Env vars**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PUBLISHER` on backend; `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` on frontend
+
+### Git Conventions
+
+- **Branches**: `main` (production), `develop` (integration), `feature/*`, `bugfix/*`, `hotfix/*`
+- **Commits**: Conventional Commits format (`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`, `chore:`)
+- **Commit template**: `.gitmessage` at repo root
+
+## Pricing Model
+
+Defined in `frontend/src/app/(site)/pricing/page.tsx`. Stripe integration exists but paywall is not yet fully enforced.
+
+| Tier | Price | Key differentiators |
+|------|-------|-------------------|
+| **Drafter** | Free | All 12 templates, 6 default page sizes, real-time preview, watermarked output |
+| **Publisher** | $9.99/mo | No watermark, all 19 page sizes, full quality, citations, priority queue |
+| **Studio** | $199 one-time | Lifetime Publisher access, future EPUB/custom fonts/batch export, direct support |
+
+## Environment Variables
+
+### Frontend (Vercel)
+
+These are the env vars used in the frontend code. Configure them in the Vercel dashboard.
+
+| Variable | Used In | Description |
+|----------|---------|-------------|
+| `NEXT_PUBLIC_POCKETBASE_URL` | `lib/supabase.ts` | PocketBase URL (`https://pb.pageperfect.studio`) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `lib/stripe.ts` | Stripe publishable key (`pk_live_...` or `pk_test_...`) |
+| `NEXT_PUBLIC_STRIPE_PRICE_PUBLISHER` | `pricing/page.tsx` | Stripe price ID for Publisher tier |
+| `NEXT_PUBLIC_STRIPE_PRICE_STUDIO` | `pricing/page.tsx` | Stripe price ID for Studio tier |
+| `API_BASE_URL` | `next.config.ts` | Backend URL for API proxy rewrites (e.g. Coolify backend URL). **Server-side only.** Defaults to `http://localhost:4000`. |
+| `RESEND_API` | — | Resend API key for transactional email |
+
+**Critical**: `API_BASE_URL` must be set on Vercel for the `/api/*` proxy to reach the Coolify backend. Without it, all compile and health-check requests fall back to `localhost:4000` and return 404.
+
+### Backend (Coolify)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `4000` | Server port |
+| `NODE_ENV` | `development` | Environment |
+| `FRONTEND_URL` | — | Frontend URL for CORS (e.g. `https://pageperfect.studio`) |
+| `POCKETBASE_URL` | — | PocketBase URL (`https://pb.pageperfect.studio`) |
+| `POCKETBASE_ADMIN_EMAIL` | — | PocketBase admin email (never expose to client) |
+| `POCKETBASE_ADMIN_PASSWORD` | — | PocketBase admin password (never expose to client) |
+| `STRIPE_SECRET_KEY` | — | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | — | Stripe webhook signing secret |
+| `STRIPE_PRICE_PUBLISHER` | — | Stripe price ID for Publisher tier |
+| `LULU_CLIENT_KEY` | — | Lulu xPress API key |
+| `LULU_CLIENT_SECRET` | — | Lulu xPress API secret |
+| `LULU_SANDBOX` | — | Set `'true'` for sandbox mode |
+| `MAX_MD_BYTES` | `2097152` (2 MB) | Max Markdown payload size |
+| `MAX_DOCX_BYTES` | `10000000` (10 MB) | Max .docx upload size |
+| `COMPILE_TIMEOUT_MS` | `45000` (45s) | Pandoc compilation timeout |
+
+## Testing
+
+No automated test suite is configured. Testing is manual via the frontend UI:
+- `/status` page runs connectivity diagnostics
+- `/docs` page includes `RequirementsCheck` component (health check + compile test)
+- `GET /api/health` and `GET /api/health/details` for backend status
+
+`.gitignore` excludes `test*.pdf` and `*-test.pdf` but preserves `sample*.pdf`.
+
+## Deployment
+
+- **Frontend**: Deploys to Vercel from `frontend/`. Auto-deploys on push to `main`. Env vars in Vercel dashboard.
+- **Backend**: Deploys via Coolify on a Digital Ocean droplet from `backend/` via Docker. Env vars in Coolify dashboard.
+- **PocketBase**: Self-hosted on the same Digital Ocean droplet via Coolify. Admin UI at `https://pb.pageperfect.studio/_/`. OAuth providers configured in PocketBase Admin → Settings → Auth providers.
 
 ## Important Files for Common Tasks
 
@@ -395,14 +559,18 @@ Vercel
 | Add/modify templates | `backend/templates/*.latex`, template registry in `backend/index.js` |
 | Grid/typography changes | `backend/grid-system.js` |
 | API route changes | `backend/index.js` |
-| Landing page | `frontend/src/app/page.tsx` |
-| Pricing page | `frontend/src/app/pricing/page.tsx` |
+| Landing page | `frontend/src/app/(site)/page.tsx`, `frontend/src/components/landing/` |
+| Pricing page | `frontend/src/app/(site)/pricing/page.tsx` |
 | Design system tokens | `frontend/tailwind.config.ts` |
 | CSS utilities & global styles | `frontend/src/app/globals.css` |
-| Nav & Footer / layout | `frontend/src/app/layout.tsx` |
+| Site Nav & Footer | `frontend/src/app/(site)/layout.tsx` |
+| Root layout (fonts, metadata) | `frontend/src/app/layout.tsx` |
 | API proxy config | `frontend/next.config.ts` |
 | Reusable UI components | `frontend/src/components/` |
-| Auth & user management | `frontend/src/lib/auth-context.tsx`, `frontend/src/lib/supabase.ts` |
-| Auth pages (login, reset) | `frontend/src/app/auth/` |
+| Auth context & PocketBase client | `frontend/src/lib/auth-context.tsx`, `frontend/src/lib/supabase.ts` |
+| Auth pages (login, reset) | `frontend/src/app/(site)/auth/` |
 | PocketBase collection types | `frontend/src/lib/database.types.ts` |
-| Status/health diagnostics | `frontend/src/app/status/StatusClient.tsx`, `frontend/src/app/docs/RequirementsCheck.tsx` |
+| Stripe integration | `frontend/src/lib/stripe.ts`, `backend/index.js` (webhook + create-payment routes) |
+| Lulu print-on-demand | `backend/lulu.js` |
+| Publishing/pre-flight | `backend/publishing.js`, `backend/platform-compliance.js` |
+| Status/health diagnostics | `frontend/src/app/(site)/status/StatusClient.tsx`, `frontend/src/app/(site)/docs/RequirementsCheck.tsx` |
