@@ -845,6 +845,7 @@ export default function DocsPage() {
               </Admonition>
             </div>
 
+
             {/* Style warnings */}
             <div className="mb-6">
               <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-2">Style warnings</h3>
