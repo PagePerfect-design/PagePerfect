@@ -12,6 +12,7 @@ RUN CGO_ENABLED=0 go build -o /pageperfect-pb-custom .
 FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /pageperfect-pb-custom .
+EXPOSE 8090
 ENTRYPOINT ["./pageperfect-pb-custom"]
-CMD ["serve"]
+CMD ["serve", "--http=0.0.0.0:8090"]
 

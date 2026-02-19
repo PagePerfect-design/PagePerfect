@@ -54,8 +54,20 @@ func main() {
 		return sendResendMail(to, e.Message.Subject, e.Message.HTML)
 	})
 
-	// Add more mailer hooks (e.g. OnMailerRecordConfirmEmailChangeSend, OTP, LoginAlert)
-	// when available in your PocketBase version.
+	app.OnMailerRecordEmailChangeSend(users).BindFunc(func(e *core.MailerRecordEvent) error {
+		to := e.Record.GetString("email")
+		return sendResendMail(to, e.Message.Subject, e.Message.HTML)
+	})
+
+	app.OnMailerRecordOTPSend(users).BindFunc(func(e *core.MailerRecordEvent) error {
+		to := e.Record.GetString("email")
+		return sendResendMail(to, e.Message.Subject, e.Message.HTML)
+	})
+
+	app.OnMailerRecordAuthAlertSend(users).BindFunc(func(e *core.MailerRecordEvent) error {
+		to := e.Record.GetString("email")
+		return sendResendMail(to, e.Message.Subject, e.Message.HTML)
+	})
 
 	app.Start()
 }
