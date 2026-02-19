@@ -297,6 +297,193 @@ select.input-dark {
 body[data-editor] { overflow: hidden !important; height: 100dvh !important; }
 body[data-editor] > * > footer { display: none !important; }
 
+/* ===== Docs — Swiss Reference Manual ===== */
+/* The docs page is a paper surface inside the dark shell.
+   These styles scope to [data-docs] to avoid bleed. */
+
+[data-docs] {
+  background: #f7f7f5;
+  color: #1a1a1a;
+}
+
+/* Override cards and buttons within docs to paper-light context */
+[data-docs] .card {
+  background: #ffffff;
+  border-color: #e5e5e0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+[data-docs] .btn-primary {
+  background: #0033ff;
+  color: #fff;
+}
+[data-docs] .btn-secondary {
+  background: #ffffff;
+  border-color: #e5e5e0;
+  color: #1a1a1a;
+}
+[data-docs] .bg-surface-subtle {
+  background: #f0f0ec !important;
+}
+
+/* Scrollbar for light context */
+[data-docs] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); }
+
+/* Sidebar */
+.docs-sidebar {
+  position: sticky;
+  top: 3.5rem; /* nav height */
+  height: calc(100dvh - 3.5rem);
+  overflow-y: auto;
+  border-right: 1px solid #e5e5e0;
+  background: #f5f5f0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.08) transparent;
+}
+.docs-sidebar::-webkit-scrollbar { width: 4px; }
+.docs-sidebar::-webkit-scrollbar-track { background: transparent; }
+.docs-sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 2px; }
+
+.docs-sidebar a {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  color: #6a6a64;
+  padding: 0.375rem 1.5rem;
+  border-left: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.docs-sidebar a:hover {
+  color: #1a1a1a;
+}
+.docs-sidebar a[data-active="true"] {
+  color: #1a1a1a;
+  font-weight: 600;
+  border-left-color: #0033ff;
+}
+.docs-sidebar .docs-sidebar-group {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #999;
+  padding: 1.25rem 1.5rem 0.5rem;
+}
+
+/* Swiss tables — annual report / timetable style */
+.docs-table {
+  width: 100%;
+  border-top: 2px solid #1a1a1a;
+  border-bottom: 2px solid #1a1a1a;
+  border-collapse: collapse;
+  font-family: var(--font-display);
+}
+.docs-table th {
+  text-align: left;
+  padding: 0.75rem 0.75rem;
+  border-bottom: 1px solid #1a1a1a;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  color: #6a6a64;
+}
+.docs-table td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid #e5e5e0;
+  font-size: 0.875rem;
+  color: #3a3a3a;
+}
+.docs-table tr:last-child td { border-bottom: 0; }
+.docs-table td.accent { color: #0033ff; font-family: var(--font-mono); font-size: 0.8125rem; }
+.docs-table td.muted { color: #999; }
+
+/* Left-border admonitions — no color boxes, just structure */
+.docs-admonition {
+  border-left: 4px solid #e5e5e0;
+  padding: 1rem 1.25rem;
+  background: #f5f5f0;
+  margin: 1.5rem 0;
+}
+.docs-admonition-info { border-left-color: #003366; }
+.docs-admonition-warn { border-left-color: #800020; }
+.docs-admonition-tip  { border-left-color: #0033ff; }
+.docs-admonition-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #999;
+  margin-bottom: 0.375rem;
+}
+
+/* Code blocks on paper */
+[data-docs] pre,
+[data-docs] .docs-code {
+  background: #f0f0ec;
+  border: 1px solid #e5e5e0;
+  border-radius: 2px;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: #1a1a1a;
+  overflow-x: auto;
+}
+[data-docs] code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: #0033ff;
+}
+[data-docs] pre code { color: inherit; }
+
+/* Template cards on paper */
+.docs-template-card {
+  background: #ffffff;
+  border: 1px solid #e5e5e0;
+  padding: 1.5rem 2rem;
+  transition: box-shadow 0.2s;
+}
+.docs-template-card:hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* Section headings — architectural hairline underneath */
+.docs-section-title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #1a1a1a;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #1a1a1a;
+  margin-bottom: 2rem;
+}
+
+/* Section label — monospace figure number */
+.docs-section-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #999;
+  margin-bottom: 0.75rem;
+}
+
+/* Category badges */
+.docs-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid #e5e5e0;
+  color: #6a6a64;
+}
+.docs-badge-live { border-color: #16a34a; color: #16a34a; }
+.docs-badge-api  { border-color: #0033ff; color: #0033ff; }
+.docs-badge-warn { border-color: #ca8a04; color: #ca8a04; }
+
 /* ===== Reduced motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
