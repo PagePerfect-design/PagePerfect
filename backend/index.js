@@ -1285,34 +1285,45 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   // ── Preamble Assembly ──────────────────────────────────────
   // Collect LaTeX preamble from all analysis modules → header.tex → Pandoc -H
   const preambleParts = [];
+  let buildMeta;
 
-  // 1. Book engineering (widow/orphan control, hyphenation, line breaking, floats)
-  preambleParts.push(bookEngineering.generateEngineeringPreamble(templateType));
+  try {
+    // 1. Book engineering (widow/orphan control, hyphenation, line breaking, floats)
+    preambleParts.push(bookEngineering.generateEngineeringPreamble(templateType));
 
-  // 2. Multilingual support (polyglossia, bidi, script-specific fonts)
-  const scriptAnalysis = multilingual.detectScripts(effectiveMd);
-  if (scriptAnalysis.isMultiscript || scriptAnalysis.hasRTL) {
-    preambleParts.push(multilingual.generateMultilingualPreamble(scriptAnalysis));
-    if (scriptAnalysis.hasRTL) {
-      warnings.push('RTL content detected — bidi and polyglossia packages activated.');
+    // 2. Multilingual support (polyglossia, bidi, script-specific fonts)
+    const scriptAnalysis = multilingual.detectScripts(effectiveMd);
+    if (scriptAnalysis.isMultiscript || scriptAnalysis.hasRTL) {
+      preambleParts.push(multilingual.generateMultilingualPreamble(scriptAnalysis));
+      if (scriptAnalysis.hasRTL) {
+        warnings.push('RTL content detected — bidi and polyglossia packages activated.');
+      }
     }
-  }
 
-  // 3. Provenance metadata (embedded in PDF properties via hypersetup)
-  const buildMeta = provenance.generateBuildMetadata({
-    manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
-  });
-  preambleParts.push(provenance.generateMetadataPreamble(buildMeta));
+    // 3. Provenance metadata (embedded in PDF properties via hypersetup)
+    buildMeta = provenance.generateBuildMetadata({
+      manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
+    });
+    preambleParts.push(provenance.generateMetadataPreamble(buildMeta));
 
-  // 4. Template extensions (if provided by user)
-  const extensions = req.body.extensions;
-  if (extensions && typeof extensions === 'object' && Object.keys(extensions).length > 0) {
-    const extResult = templateExtensions.validateExtensions(extensions, templateType);
-    if (extResult.valid) {
-      preambleParts.push(templateExtensions.generateExtensionPreamble(extResult.resolvedTokens));
-    } else {
-      warnings.push(`Template extension errors: ${extResult.errors.map(e => e.error).join('; ')}`);
+    // 4. Template extensions (if provided by user)
+    const extensions = req.body.extensions;
+    if (extensions && typeof extensions === 'object' && Object.keys(extensions).length > 0) {
+      const extResult = templateExtensions.validateExtensions(extensions, templateType);
+      if (extResult.valid) {
+        preambleParts.push(templateExtensions.generateExtensionPreamble(extResult.resolvedTokens));
+      } else {
+        warnings.push(`Template extension errors: ${extResult.errors.map(e => e.error).join('; ')}`);
+      }
     }
+  } catch (preambleErr) {
+    console.error('[compile] Preamble assembly error:', preambleErr);
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+    return res.status(500).json({
+      error: 'preamble_error',
+      message: 'Failed to assemble compile preamble. Please try again or switch templates.',
+      detail: String(preambleErr),
+    });
   }
 
   // Write assembled preamble to header.tex for Pandoc -H injection
@@ -1348,10 +1359,32 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       ]);
 
   const startTs = Date.now();
-  const pandoc = spawn('pandoc', args, { cwd: tmpBase });
+  let pandoc;
+  try {
+    pandoc = spawn('pandoc', args, { cwd: tmpBase });
+  } catch (spawnErr) {
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+    return res.status(500).json({
+      error: 'spawn_failed',
+      message: 'Failed to start the typesetting engine. Please try again.',
+      detail: String(spawnErr),
+    });
+  }
 
   let stderr = '';
   pandoc.stderr.on('data', (d) => { stderr += d.toString(); });
+
+  // Handle spawn errors (e.g. pandoc binary not found, permission denied)
+  pandoc.on('error', (err) => {
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'spawn_failed',
+        message: 'Failed to start the typesetting engine. Please try again.',
+        detail: String(err),
+      });
+    }
+  });
 
   let timedOut = false;
   const killer = setTimeout(() => {
@@ -1360,6 +1393,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   }, COMPILE_TIMEOUT_MS);
 
   pandoc.on('close', async (code) => {
+    if (res.headersSent) return; // Already responded via error handler
     clearTimeout(killer);
     const elapsed = Date.now() - startTs;
     res.setHeader('X-PP-Compile-Time', String(elapsed));
@@ -1429,9 +1463,13 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       const missingPackages  = parseMissingPackages(stderr);
 
       // Detect font-related failures in XeLaTeX output
-      const fontErrorPattern = /fontspec error.*"([^"]+)"/i;
-      const fontMatch = stderr.match(fontErrorPattern);
-      const missingFont = fontMatch ? fontMatch[1] : null;
+      // fontspec reports: The font "FontName" cannot be found.
+      const fontCannotFind = stderr.match(/The font "([^"]+)" cannot be found/i);
+      const missingFont = fontCannotFind ? fontCannotFind[1] : null;
+
+      // Detect common LaTeX errors from stderr
+      const latexError = stderr.match(/^!\s+(.+?)\.?\s*$/m);
+      const undefinedCS = stderr.match(/Undefined control sequence[\s\S]*?l\.\d+\s+(.*)/);
 
       // Compile log analysis for detailed diagnostics
       const compileLog = bookEngineering.analyzeCompileLog(stderr);
@@ -1442,11 +1480,15 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       }
       if (!safeMode) {
         if (missingCitations.length) messages.push(`Undefined citations: ${missingCitations.join(', ')}.`);
-      } else {
-        messages.push('Safe mode was enabled. Citations/bibliography were not processed.');
       }
       if (missingPackages.length) messages.push(`Missing LaTeX packages: ${missingPackages.join(', ')}.`);
+      if (undefinedCS) {
+        messages.push(`LaTeX error: Undefined control sequence near "${undefinedCS[1].trim().slice(0, 80)}".`);
+      } else if (latexError && !missingFont && !missingPackages.length) {
+        messages.push(`LaTeX error: ${latexError[1].slice(0, 120)}.`);
+      }
       if (messages.length === 0) messages.push('Typesetting failed. Please review your Markdown.');
+      if (safeMode) messages.push('Safe mode was enabled — citations were not processed.');
 
       const tail = stderr.split('\n').slice(-15).join('\n');
 

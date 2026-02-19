@@ -730,10 +730,12 @@ function LevitatingBook({
   pdfUrl,
   loading,
   status,
+  errors,
 }: {
   pdfUrl: string | null
   loading: boolean
   status: Status
+  errors: CompileError[]
 }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center pb-24 pt-16">
@@ -765,6 +767,18 @@ function LevitatingBook({
               />
             ) : loading ? (
               <BookSkeleton />
+            ) : status === 'error' && errors.length > 0 ? (
+              <div className="flex h-full w-full items-center justify-center bg-[#0a0a0a] p-8">
+                <div className="max-w-[360px] text-center">
+                  <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/20 bg-red-400/5">
+                    <AlertTriangle className="h-4 w-4 text-red-400/60" />
+                  </div>
+                  <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-wider text-red-400/70">Typesetting Error</p>
+                  {errors.map((e, i) => (
+                    <p key={i} className="mb-1.5 font-mono text-[10px] leading-relaxed text-white/40">{e.message}</p>
+                  ))}
+                </div>
+              </div>
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-[#0a0a0a]">
                 <div className="text-center">
@@ -1787,12 +1801,12 @@ export default function CompileShell() {
           a.remove()
         }
       } else {
-        let payload: { message?: string; error?: string } | null = null
+        let payload: { message?: string; error?: string; detail?: string } | null = null
         try { payload = await resp.json() } catch { /* noop */ }
         pdfBlobRef.current = null
         const msgs: CompileError[] = []
         if (payload?.message) msgs.push({ message: payload.message })
-        if (payload?.error) msgs.push({ message: String(payload.error) })
+        if (payload?.detail) msgs.push({ message: payload.detail })
         if (!msgs.length) msgs.push({ message: `Compile failed (status ${resp.status}).` })
         setErrors(msgs)
         setStatus('error')
@@ -1860,6 +1874,7 @@ export default function CompileShell() {
               pdfUrl={showEditor ? null : pdfUrl}
               loading={loading}
               status={status}
+              errors={errors}
             />
 
             {/* Layer 2: Top Bar */}
