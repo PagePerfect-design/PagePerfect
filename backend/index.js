@@ -209,6 +209,37 @@ async function pbFetch(path, options = {}) {
 
 const isPocketBaseConfigured = !!(POCKETBASE_URL && process.env.POCKETBASE_ADMIN_EMAIL);
 
+// ── Auto-configure PocketBase SMTP via Resend relay ──
+async function configurePbSmtp() {
+  if (!isPocketBaseConfigured || !process.env.RESEND_API_KEY) return;
+  try {
+    const resp = await pbFetch('/api/settings', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        smtp: {
+          enabled: true,
+          host: 'smtp.resend.com',
+          port: 465,
+          tls: true,
+          username: 'resend',
+          password: process.env.RESEND_API_KEY,
+        },
+        meta: {
+          senderName: process.env.RESEND_FROM_NAME || 'PagePerfect',
+          senderAddress: process.env.RESEND_FROM || 'noreply@pageperfect.studio',
+        },
+      }),
+    });
+    if (resp && resp.ok) {
+      console.log('PocketBase SMTP configured (Resend relay)');
+    } else {
+      console.error('Failed to configure PocketBase SMTP:', resp?.status);
+    }
+  } catch (err) {
+    console.error('Failed to configure PocketBase SMTP:', err.message);
+  }
+}
+
 // Stripe webhook endpoint — needs raw body
 app.post('/api/stripe/webhook',
   express.raw({ type: 'application/json' }),
@@ -1331,4 +1362,7 @@ app.listen(PORT, () => {
   console.log(`  Lulu: ${lulu.isConfigured() ? `configured (${lulu.getBaseUrl()})` : 'not configured'}`);
   console.log(`  Templates: ${Object.keys(DESIGN_TEMPLATES).length}`);
   console.log(`  Rate limit: 20 compiles/min, 120 requests/min`);
+
+  // Configure PocketBase SMTP on startup (idempotent)
+  configurePbSmtp();
 });
