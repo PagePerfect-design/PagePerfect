@@ -1,11 +1,10 @@
-import Container from '@/components/Container'
-import Section from '@/components/Section'
 import CopyCitation from '@/components/CopyCitation'
 import AuthorGuideTools from '@/components/AuthorGuideTools'
 import RequirementsCheck from './RequirementsCheck'
+import DocsNav from './DocsNav'
 
 export const metadata = {
-  title: 'Docs — PagePerfect',
+  title: 'Documentation — PagePerfect',
   description: 'Template reference, KDP publishing guide, troubleshooting, and citation help for PagePerfect.',
 }
 
@@ -147,380 +146,439 @@ const TEMPLATE_DOCS = [
 ]
 
 const KDP_TRIM_SIZES = [
-  { size: '5 x 8"', code: 'amazonFiveByEight', bestFor: 'Novellas, poetry, compact fiction' },
-  { size: '5.5 x 8.5"', code: 'fiveFiveByEightFive', bestFor: 'Standard fiction, memoir' },
-  { size: '6 x 9"', code: 'amazonSixByNine', bestFor: 'Nonfiction, trade standard' },
-  { size: '7 x 10"', code: 'amazonSevenByTen', bestFor: 'Textbooks, technical books' },
-  { size: '8.5 x 11"', code: 'amazonEightFiveByEleven', bestFor: 'Workbooks, cookbooks, manuals' },
+  { size: '5 \u00d7 8\u2033', code: 'amazonFiveByEight', bestFor: 'Novellas, poetry, compact fiction' },
+  { size: '5.5 \u00d7 8.5\u2033', code: 'fiveFiveByEightFive', bestFor: 'Standard fiction, memoir' },
+  { size: '6 \u00d7 9\u2033', code: 'amazonSixByNine', bestFor: 'Nonfiction, trade standard' },
+  { size: '7 \u00d7 10\u2033', code: 'amazonSevenByTen', bestFor: 'Textbooks, technical books' },
+  { size: '8.5 \u00d7 11\u2033', code: 'amazonEightFiveByEleven', bestFor: 'Workbooks, cookbooks, manuals' },
 ]
 
 const GUTTER_TABLE = [
-  { pages: '24–150', gutter: '0.375"' },
-  { pages: '151–300', gutter: '0.5"' },
-  { pages: '301–500', gutter: '0.625"' },
-  { pages: '501–828', gutter: '0.75"' },
+  { pages: '24\u2013150', gutter: '0.375\u2033' },
+  { pages: '151\u2013300', gutter: '0.500\u2033' },
+  { pages: '301\u2013500', gutter: '0.625\u2033' },
+  { pages: '501\u2013828', gutter: '0.750\u2033' },
 ]
+
+const PLATFORM_TABLE = [
+  { feature: 'PDF format', kdp: 'Standard', ingram: 'PDF/X-1a', lulu: 'Standard', luluAccent: false },
+  { feature: 'API upload', kdp: 'No', ingram: 'FTP only', lulu: 'REST API', luluAccent: true },
+  { feature: 'Cost API', kdp: 'No', ingram: 'No', lulu: 'Yes', luluAccent: true },
+  { feature: 'Distribution', kdp: 'Amazon', ingram: '40,000+ retailers', lulu: 'Direct + retail', luluAccent: false },
+  { feature: 'Page range', kdp: '24\u2013828', ingram: '18\u20131,200', lulu: '2\u2013800', luluAccent: false },
+  { feature: 'Sandbox', kdp: 'No', ingram: 'No', lulu: 'Yes', luluAccent: true },
+]
+
+/* ─── Helper components ─── */
+
+function SectionLabel({ children, number }: { children: React.ReactNode; number: string }) {
+  return (
+    <div className="docs-section-label">
+      <span className="mr-3">{number}</span>
+      {children}
+    </div>
+  )
+}
+
+function Admonition({ type, label, children }: { type: 'info' | 'warn' | 'tip'; label: string; children: React.ReactNode }) {
+  const cls = type === 'info' ? 'docs-admonition-info' : type === 'warn' ? 'docs-admonition-warn' : 'docs-admonition-tip'
+  return (
+    <div className={`docs-admonition ${cls}`}>
+      <div className="docs-admonition-label">{label}</div>
+      <div className="font-body text-sm leading-relaxed text-[#3a3a3a]">{children}</div>
+    </div>
+  )
+}
+
+function ApiEndpoint({ method, path, note }: { method: string; path: string; note: string }) {
+  return (
+    <div className="flex items-start gap-3 py-2">
+      <span className="docs-badge docs-badge-api shrink-0 mt-0.5">{method}</span>
+      <div>
+        <code className="text-sm">{path}</code>
+        <p className="font-body text-xs text-[#999] mt-0.5">{note}</p>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Page ─── */
 
 export default function DocsPage() {
   return (
-    <main id="main">
-      <Container>
-        <Section>
-          <h1 className="font-display text-h1 font-bold tracking-tight text-text-primary mb-2">Documentation</h1>
-          <p className="p mt-3">
-            Quick tips to get your manuscript compiling smoothly. Use the helpers below to copy a valid
-            citation and test that your bibliography is set up.
-          </p>
-          <div className="mt-6"><CopyCitation /></div>
-          <div className="mt-4"><AuthorGuideTools /></div>
-          <div className="mt-6"><RequirementsCheck /></div>
-        </Section>
+    <div data-docs className="min-h-screen">
+      <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr]">
+        {/* ── Sidebar ── */}
+        <aside className="hidden lg:block">
+          <DocsNav />
+        </aside>
 
-        {/* ══════════════════════════════════════════════════════
-            TEMPLATE REFERENCE — 12 Typographic Systems
-            ══════════════════════════════════════════════════════ */}
-        <Section className="pt-0">
-          <div className="mb-10">
-            <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary mb-3">Reference</p>
-            <h2 className="font-display text-h2 font-bold tracking-tight text-text-primary">Twelve Typographic Systems</h2>
-            <p className="p mt-3 max-w-2xl">
+        {/* ── Main content ── */}
+        <main id="main" className="min-w-0 px-8 py-12 md:px-16 lg:px-20 xl:px-24" style={{ maxWidth: '52rem' }}>
+
+          {/* ══════════════════════════════════════════════════════════
+              01 — QUICK START
+              ══════════════════════════════════════════════════════════ */}
+          <section id="quickstart" className="scroll-mt-16 mb-20">
+            <SectionLabel number="01">Getting Started</SectionLabel>
+            <h1 className="docs-section-title" style={{ fontSize: '2.25rem', borderBottomWidth: '2px' }}>
+              Documentation
+            </h1>
+
+            <p className="font-body text-lg leading-8 text-[#3a3a3a] mb-8 max-w-xl">
+              Quick tips to get your manuscript compiling smoothly. Use the helpers below to copy a valid
+              citation and test that your bibliography is set up.
+            </p>
+
+            <div className="space-y-4">
+              <CopyCitation />
+              <AuthorGuideTools />
+            </div>
+          </section>
+
+          {/* ── Requirements Check ── */}
+          <section id="requirements" className="scroll-mt-16 mb-20">
+            <SectionLabel number="01.1">Diagnostics</SectionLabel>
+            <h2 className="docs-section-title" style={{ fontSize: '1.375rem' }}>Requirements Check</h2>
+            <RequirementsCheck />
+          </section>
+
+          {/* ══════════════════════════════════════════════════════════
+              02 — TWELVE TYPOGRAPHIC SYSTEMS
+              ══════════════════════════════════════════════════════════ */}
+          <section id="templates" className="scroll-mt-16 mb-10">
+            <SectionLabel number="02">Reference</SectionLabel>
+            <h2 className="docs-section-title">Twelve Typographic Systems</h2>
+            <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               Every template is a complete typographic system — not a theme. Each implements specific design
               principles: baseline grids, proportional scales, calculated margins, and intentional font stacks.
             </p>
-          </div>
+          </section>
 
-          <div className="grid gap-6">
-            {TEMPLATE_DOCS.map((t) => (
-              <div key={t.key} className="card p-6 md:p-8">
-                <div className="flex flex-wrap items-baseline gap-3 mb-1">
-                  <h3 className="font-display text-xl font-bold text-text-primary">{t.name}</h3>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-accent bg-accent-soft px-2 py-0.5 rounded">{t.category}</span>
-                </div>
-                <p className="font-mono text-[11px] text-text-tertiary mb-4">{t.subtitle}</p>
-                <p className="p mb-6">{t.description}</p>
-
-                <div className="grid gap-6 md:grid-cols-3">
-                  {/* Font Stack */}
-                  <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-tertiary mb-2">Font Stack</p>
-                    <p className="text-sm text-text-primary font-medium">{t.fonts.primary}</p>
-                    {t.fonts.secondary && <p className="text-sm text-text-secondary">+ {t.fonts.secondary}</p>}
-                    {t.fonts.mono && <p className="text-sm text-text-secondary font-mono">{t.fonts.mono}</p>}
+          {TEMPLATE_DOCS.map((t, i) => (
+            <section key={t.key} id={`template-${t.key}`} className="scroll-mt-16 mb-10">
+              <div className="docs-template-card">
+                {/* Header row */}
+                <div className="flex items-baseline justify-between mb-1">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-mono text-[10px] text-[#999]">{String(i + 1).padStart(2, '0')}</span>
+                    <h3 className="font-display text-lg font-bold tracking-tight text-[#1a1a1a]">{t.name}</h3>
                   </div>
+                  <span className="docs-badge">{t.category}</span>
+                </div>
+                <p className="font-mono text-[11px] text-[#999] mb-4">{t.subtitle}</p>
 
-                  {/* Geometry */}
+                {/* Description */}
+                <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-6">{t.description}</p>
+
+                {/* Spec grid */}
+                <div className="grid gap-6 md:grid-cols-3 mb-6">
                   <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-tertiary mb-2">Geometry</p>
-                    <div className="space-y-1 text-sm text-text-secondary">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#999] mb-2">Font Stack</p>
+                    <p className="font-display text-sm font-medium text-[#1a1a1a]">{t.fonts.primary}</p>
+                    {t.fonts.secondary && <p className="font-display text-sm text-[#6a6a64]">+ {t.fonts.secondary}</p>}
+                    {t.fonts.mono && <p className="font-mono text-xs text-[#6a6a64]">{t.fonts.mono}</p>}
+                  </div>
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#999] mb-2">Geometry</p>
+                    <div className="space-y-0.5 font-display text-sm text-[#3a3a3a]">
                       <p>Base: {t.geometry.baseSize}</p>
                       <p>Leading: {t.geometry.leading}</p>
                       <p>Indent: {t.geometry.indent}</p>
                       <p>Par skip: {t.geometry.parskip}</p>
                     </div>
                   </div>
-
-                  {/* Best For */}
                   <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-tertiary mb-2">Best For</p>
-                    <p className="text-sm text-text-secondary">{t.bestFor}</p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#999] mb-2">Best For</p>
+                    <p className="font-body text-sm text-[#3a3a3a]">{t.bestFor}</p>
                   </div>
                 </div>
 
-                {/* Features */}
-                <div className="mt-6 pt-4 border-t border-border">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-tertiary mb-3">Key Features</p>
+                {/* Features — hairline top */}
+                <div className="border-t border-[#e5e5e0] pt-4">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#999] mb-3">Key Features</p>
                   <div className="grid gap-1.5 sm:grid-cols-2">
-                    {t.features.map((f, i) => (
-                      <p key={i} className="flex items-start gap-2 text-sm text-text-secondary">
-                        <span className="mt-1.5 h-1 w-1 rounded-full bg-accent shrink-0" />
+                    {t.features.map((f, fi) => (
+                      <p key={fi} className="flex items-start gap-2 font-display text-[13px] text-[#3a3a3a]">
+                        <span className="mt-1.5 h-1 w-1 rounded-full bg-[#0033ff] shrink-0" />
                         {f}
                       </p>
                     ))}
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </Section>
+            </section>
+          ))}
 
-        {/* ══════════════════════════════════════════════════════
-            AMAZON KDP PUBLISHING GUIDE
-            ══════════════════════════════════════════════════════ */}
-        <Section className="pt-0">
-          <div className="mb-10">
-            <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary mb-3">Publishing</p>
-            <h2 className="font-display text-h2 font-bold tracking-tight text-text-primary">Amazon KDP Guide</h2>
-            <p className="p mt-3 max-w-2xl">
+          {/* ══════════════════════════════════════════════════════════
+              03 — AMAZON KDP GUIDE
+              ══════════════════════════════════════════════════════════ */}
+          <section id="kdp" className="scroll-mt-16 mb-10 mt-20">
+            <SectionLabel number="03">Publishing</SectionLabel>
+            <h2 className="docs-section-title">Amazon KDP Guide</h2>
+            <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               PagePerfect supports all five Amazon KDP trim sizes with dynamic gutter calculation and spine width estimation.
               Select any KDP page size in the editor to generate compliant interior PDFs.
             </p>
-          </div>
+          </section>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Trim Sizes */}
-            <div className="card p-6">
-              <h3 className="font-display text-lg font-bold text-text-primary mb-4">KDP Trim Sizes</h3>
-              <div className="space-y-3">
+          {/* Trim Sizes — Swiss table */}
+          <section id="trim-sizes" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">KDP Trim Sizes</h3>
+            <table className="docs-table">
+              <thead>
+                <tr>
+                  <th>Trim</th>
+                  <th>Code</th>
+                  <th>Best For</th>
+                </tr>
+              </thead>
+              <tbody>
                 {KDP_TRIM_SIZES.map((s) => (
-                  <div key={s.code} className="flex items-baseline justify-between border-b border-border pb-2 last:border-0">
-                    <span className="font-mono text-sm text-text-primary">{s.size}</span>
-                    <span className="text-sm text-text-secondary">{s.bestFor}</span>
-                  </div>
+                  <tr key={s.code}>
+                    <td className="font-mono text-[13px] font-medium text-[#1a1a1a]">{s.size}</td>
+                    <td className="accent">{s.code}</td>
+                    <td>{s.bestFor}</td>
+                  </tr>
                 ))}
-              </div>
-            </div>
+              </tbody>
+            </table>
+          </section>
 
-            {/* Dynamic Gutter */}
-            <div className="card p-6">
-              <h3 className="font-display text-lg font-bold text-text-primary mb-4">Dynamic Gutter (Inside Margin)</h3>
-              <p className="p text-sm mb-4">
-                KDP requires minimum inside margins based on page count to accommodate binding.
-              </p>
-              <div className="space-y-3">
+          {/* Dynamic Gutter — Swiss table */}
+          <section id="gutters" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Dynamic Gutter (Inside Margin)</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              KDP requires minimum inside margins based on page count to accommodate binding.
+            </p>
+            <table className="docs-table" style={{ maxWidth: '24rem' }}>
+              <thead>
+                <tr>
+                  <th>Page Count</th>
+                  <th>Min. Gutter</th>
+                </tr>
+              </thead>
+              <tbody>
                 {GUTTER_TABLE.map((g) => (
-                  <div key={g.pages} className="flex items-baseline justify-between border-b border-border pb-2 last:border-0">
-                    <span className="font-mono text-sm text-text-primary">{g.pages} pages</span>
-                    <span className="font-mono text-sm text-accent">{g.gutter}</span>
-                  </div>
+                  <tr key={g.pages}>
+                    <td>{g.pages}</td>
+                    <td className="accent">{g.gutter}</td>
+                  </tr>
                 ))}
-              </div>
-            </div>
-          </div>
+              </tbody>
+            </table>
+          </section>
 
-          {/* Spine Width Calculator Info */}
-          <div className="card p-6 mt-6">
-            <h3 className="font-display text-lg font-bold text-text-primary mb-3">Spine Width Calculation</h3>
-            <p className="p text-sm mb-4">
-              Spine width determines your cover template dimensions. PagePerfect calculates this automatically
-              in the Press stage based on your word count.
+          {/* Spine Width */}
+          <section id="spine" className="scroll-mt-16 mb-20">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Spine Width Calculation</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              Spine width determines your cover template dimensions. Calculated automatically in the Press stage based on word count.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary mb-1">White Paper (55#)</p>
-                <p className="text-sm text-text-primary">Page count &times; 0.002252&quot;</p>
-                <p className="text-xs text-text-tertiary mt-1">Example: 300 pages = 0.676&quot; spine</p>
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#999] mb-1">White Paper (55#)</p>
+                <p className="font-display text-sm font-medium text-[#1a1a1a]">Page count &times; 0.002252&quot;</p>
+                <p className="font-mono text-xs text-[#999] mt-1">300 pages = 0.676&quot; spine</p>
               </div>
-              <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary mb-1">Cream Paper (60#)</p>
-                <p className="text-sm text-text-primary">Page count &times; 0.0025&quot;</p>
-                <p className="text-xs text-text-tertiary mt-1">Example: 300 pages = 0.750&quot; spine</p>
-              </div>
-            </div>
-          </div>
-
-          {/* API Endpoints */}
-          <div className="card p-6 mt-6">
-            <h3 className="font-display text-lg font-bold text-text-primary mb-3">KDP API Endpoints</h3>
-            <p className="p text-sm mb-4">
-              Use these endpoints to integrate spine and gutter calculations into your workflow.
-            </p>
-            <div className="space-y-3">
-              <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                <code className="text-accent text-sm font-mono">GET /api/kdp/spine?pages=300</code>
-                <p className="text-xs text-text-tertiary mt-1">Returns spine width for both paper stocks and recommended gutter</p>
-              </div>
-              <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                <code className="text-accent text-sm font-mono">GET /api/kdp/gutter?pages=300</code>
-                <p className="text-xs text-text-tertiary mt-1">Returns minimum inside margin for the given page count</p>
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#999] mb-1">Cream Paper (60#)</p>
+                <p className="font-display text-sm font-medium text-[#1a1a1a]">Page count &times; 0.0025&quot;</p>
+                <p className="font-mono text-xs text-[#999] mt-1">300 pages = 0.750&quot; spine</p>
               </div>
             </div>
-          </div>
-        </Section>
 
-        {/* ══════════════════════════════════════════════════════
-            PUBLISHING AUTOMATION
-            ══════════════════════════════════════════════════════ */}
-        <Section className="pt-0">
-          <div className="mb-10">
-            <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary mb-3">Automation</p>
-            <h2 className="font-display text-h2 font-bold tracking-tight text-text-primary">Publishing Automation</h2>
-            <p className="p mt-3 max-w-2xl">
+            <Admonition type="info" label="API Endpoints">
+              <ApiEndpoint method="GET" path="/api/kdp/spine?pages=300" note="Returns spine width for both paper stocks and recommended gutter" />
+              <ApiEndpoint method="GET" path="/api/kdp/gutter?pages=300" note="Returns minimum inside margin for the given page count" />
+            </Admonition>
+          </section>
+
+          {/* ══════════════════════════════════════════════════════════
+              04 — PUBLISHING AUTOMATION
+              ══════════════════════════════════════════════════════════ */}
+          <section id="automation" className="scroll-mt-16 mb-10">
+            <SectionLabel number="04">Automation</SectionLabel>
+            <h2 className="docs-section-title">Publishing Automation</h2>
+            <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               PagePerfect automates the entire path from Markdown to printed book. Pre-flight validation
               catches rejection-causing errors before submission, while platform-specific exports ensure compliance.
             </p>
-          </div>
+          </section>
 
-          <div className="grid gap-6">
-            {/* Pre-flight Validator */}
-            <div className="card p-6">
-              <div className="flex items-baseline gap-3 mb-4">
-                <h3 className="font-display text-lg font-bold text-text-primary">Pre-flight Validator</h3>
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Live</span>
-              </div>
-              <p className="p text-sm mb-4">
-                The Press stage runs real-time pre-flight checks against your target platform&apos;s requirements.
-                Select Amazon KDP, IngramSpark, or Lulu to validate margins, page count, gutter, trim size, and font embedding.
-              </p>
-              <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                <code className="text-accent text-sm font-mono">POST /api/preflight</code>
-                <p className="text-xs text-text-tertiary mt-1">Body: &#123; pageSize, marginPreset, template, wordCount, platform: &quot;kdp&quot; | &quot;ingram&quot; | &quot;lulu&quot; &#125;</p>
-              </div>
+          {/* Pre-flight Validator */}
+          <section id="preflight" className="scroll-mt-16 mb-10">
+            <div className="flex items-baseline gap-3 mb-3">
+              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a]">Pre-flight Validator</h3>
+              <span className="docs-badge docs-badge-live">Live</span>
             </div>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              The Press stage runs real-time pre-flight checks against your target platform&apos;s requirements.
+              Select Amazon KDP, IngramSpark, or Lulu to validate margins, page count, gutter, trim size, and font embedding.
+            </p>
+            <Admonition type="tip" label="API">
+              <ApiEndpoint method="POST" path="/api/preflight" note='Body: { pageSize, marginPreset, template, wordCount, platform: "kdp" | "ingram" | "lulu" }' />
+            </Admonition>
+          </section>
 
-            {/* Cover Dimensions */}
-            <div className="card p-6">
-              <div className="flex items-baseline gap-3 mb-4">
-                <h3 className="font-display text-lg font-bold text-text-primary">Cover Dimensions Calculator</h3>
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Live</span>
-              </div>
-              <p className="p text-sm mb-4">
-                Calculates exact cover template dimensions including spine width, bleed zones, and safety margins.
-                Displayed automatically in the Press stage based on your page count and paper stock.
-              </p>
-              <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                <code className="text-accent text-sm font-mono">GET /api/cover-dimensions?width=6&amp;height=9&amp;pages=300&amp;paper=white</code>
-                <p className="text-xs text-text-tertiary mt-1">Returns full cover width/height, spine, bleed, safety margins, and breakdown</p>
-              </div>
+          {/* Cover Dimensions */}
+          <section id="cover-dimensions" className="scroll-mt-16 mb-10">
+            <div className="flex items-baseline gap-3 mb-3">
+              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a]">Cover Dimensions Calculator</h3>
+              <span className="docs-badge docs-badge-live">Live</span>
             </div>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              Calculates exact cover template dimensions including spine width, bleed zones, and safety margins.
+              Displayed automatically in the Press stage based on page count and paper stock.
+            </p>
+            <Admonition type="tip" label="API">
+              <ApiEndpoint method="GET" path="/api/cover-dimensions?width=6&amp;height=9&amp;pages=300&amp;paper=white" note="Returns full cover width/height, spine, bleed, safety margins, and breakdown" />
+            </Admonition>
+          </section>
 
-            {/* PDF/X-1a */}
-            <div className="card p-6">
-              <div className="flex items-baseline gap-3 mb-4">
-                <h3 className="font-display text-lg font-bold text-text-primary">PDF/X-1a Export</h3>
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded">IngramSpark</span>
-              </div>
-              <p className="p text-sm mb-4">
-                IngramSpark requires PDF/X-1a:2001 compliance — CMYK color space, all fonts embedded, no transparency, PDF 1.3.
-                PagePerfect converts XeLaTeX output to PDF/X-1a via Ghostscript post-processing with US Web Coated (SWOP) v2 output intent.
-              </p>
-              <p className="p text-sm">
-                Select &quot;IngramSpark&quot; as your platform in the Press stage, then click &quot;Export PDF/X-1a&quot; to generate a compliant file.
-                The standard interior PDF download remains available for KDP (which accepts regular PDFs).
-              </p>
+          {/* PDF/X-1a */}
+          <section id="pdfx" className="scroll-mt-16 mb-10">
+            <div className="flex items-baseline gap-3 mb-3">
+              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a]">PDF/X-1a Export</h3>
+              <span className="docs-badge docs-badge-api">IngramSpark</span>
             </div>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-2">
+              IngramSpark requires PDF/X-1a:2001 compliance — CMYK color space, all fonts embedded, no transparency, PDF 1.3.
+              PagePerfect converts XeLaTeX output to PDF/X-1a via Ghostscript post-processing with US Web Coated (SWOP) v2 output intent.
+            </p>
+            <Admonition type="info" label="Note">
+              Select &quot;IngramSpark&quot; as your platform in the Press stage, then click &quot;Export PDF/X-1a&quot; to generate a compliant file.
+              The standard interior PDF download remains available for KDP (which accepts regular PDFs).
+            </Admonition>
+          </section>
 
-            {/* Lulu Integration */}
-            <div className="card p-6">
-              <div className="flex items-baseline gap-3 mb-4">
-                <h3 className="font-display text-lg font-bold text-text-primary">Lulu xPress API</h3>
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">Requires API Keys</span>
-              </div>
-              <p className="p text-sm mb-4">
-                Lulu is the only major print-on-demand platform with a full REST API. PagePerfect integrates with Lulu xPress
-                for cost estimation, print job creation, and order status tracking via webhooks.
-              </p>
-              <div className="space-y-3 mt-4">
-                <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary mb-2">Configuration</p>
-                  <div className="space-y-1 text-sm text-text-secondary">
-                    <p><code className="text-accent">LULU_CLIENT_KEY</code> — API key from developers.lulu.com</p>
-                    <p><code className="text-accent">LULU_CLIENT_SECRET</code> — API secret</p>
-                    <p><code className="text-accent">LULU_SANDBOX=true</code> — Use sandbox for testing (no real charges)</p>
-                  </div>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                    <code className="text-accent text-sm font-mono">POST /api/lulu/cost-estimate</code>
-                    <p className="text-xs text-text-tertiary mt-1">Calculate print + shipping cost without ordering</p>
-                  </div>
-                  <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                    <code className="text-accent text-sm font-mono">POST /api/lulu/print-job</code>
-                    <p className="text-xs text-text-tertiary mt-1">Create a print job (actual order)</p>
-                  </div>
-                  <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                    <code className="text-accent text-sm font-mono">GET /api/lulu/print-job/:id</code>
-                    <p className="text-xs text-text-tertiary mt-1">Check print job status</p>
-                  </div>
-                  <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                    <code className="text-accent text-sm font-mono">GET /api/lulu/status</code>
-                    <p className="text-xs text-text-tertiary mt-1">Check if Lulu API is configured</p>
-                  </div>
-                </div>
-              </div>
+          {/* Lulu */}
+          <section id="lulu" className="scroll-mt-16 mb-10">
+            <div className="flex items-baseline gap-3 mb-3">
+              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a]">Lulu xPress API</h3>
+              <span className="docs-badge docs-badge-warn">Requires API Keys</span>
             </div>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              Lulu is the only major print-on-demand platform with a full REST API. PagePerfect integrates with Lulu xPress
+              for cost estimation, print job creation, and order status tracking via webhooks.
+            </p>
 
-            {/* Platform Comparison */}
-            <div className="card p-6">
-              <h3 className="font-display text-lg font-bold text-text-primary mb-4">Platform Comparison</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-2 pr-4 font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary">Feature</th>
-                      <th className="text-center py-2 px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary">KDP</th>
-                      <th className="text-center py-2 px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary">IngramSpark</th>
-                      <th className="text-center py-2 px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-text-tertiary">Lulu</th>
+            <Admonition type="warn" label="Configuration Required">
+              <div className="space-y-1 font-mono text-xs">
+                <p><code>LULU_CLIENT_KEY</code> — API key from developers.lulu.com</p>
+                <p><code>LULU_CLIENT_SECRET</code> — API secret</p>
+                <p><code>LULU_SANDBOX=true</code> — Use sandbox for testing (no real charges)</p>
+              </div>
+            </Admonition>
+
+            <div className="mt-4 space-y-1">
+              <ApiEndpoint method="POST" path="/api/lulu/cost-estimate" note="Calculate print + shipping cost without ordering" />
+              <ApiEndpoint method="POST" path="/api/lulu/print-job" note="Create a print job (actual order)" />
+              <ApiEndpoint method="GET" path="/api/lulu/print-job/:id" note="Check print job status" />
+              <ApiEndpoint method="GET" path="/api/lulu/status" note="Check if Lulu API is configured" />
+            </div>
+          </section>
+
+          {/* Platform Comparison — Swiss table */}
+          <section id="platform-comparison" className="scroll-mt-16 mb-20">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Platform Comparison</h3>
+            <div className="overflow-x-auto">
+              <table className="docs-table">
+                <thead>
+                  <tr>
+                    <th>Feature</th>
+                    <th>KDP</th>
+                    <th>IngramSpark</th>
+                    <th>Lulu</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {PLATFORM_TABLE.map((row) => (
+                    <tr key={row.feature}>
+                      <td className="font-medium text-[#1a1a1a]">{row.feature}</td>
+                      <td className={row.kdp === 'No' ? 'muted' : ''}>{row.kdp}</td>
+                      <td className={row.ingram === 'No' || row.ingram === 'FTP only' ? 'muted' : ''}>{row.ingram}</td>
+                      <td className={row.luluAccent ? 'accent' : ''}>{row.lulu}</td>
                     </tr>
-                  </thead>
-                  <tbody className="text-text-secondary">
-                    <tr className="border-b border-border-subtle"><td className="py-2 pr-4">PDF format</td><td className="py-2 px-4 text-center">Standard</td><td className="py-2 px-4 text-center">PDF/X-1a</td><td className="py-2 px-4 text-center">Standard</td></tr>
-                    <tr className="border-b border-border-subtle"><td className="py-2 pr-4">API upload</td><td className="py-2 px-4 text-center text-text-tertiary">No</td><td className="py-2 px-4 text-center text-text-tertiary">FTP only</td><td className="py-2 px-4 text-center text-accent">REST API</td></tr>
-                    <tr className="border-b border-border-subtle"><td className="py-2 pr-4">Cost API</td><td className="py-2 px-4 text-center text-text-tertiary">No</td><td className="py-2 px-4 text-center text-text-tertiary">No</td><td className="py-2 px-4 text-center text-accent">Yes</td></tr>
-                    <tr className="border-b border-border-subtle"><td className="py-2 pr-4">Distribution</td><td className="py-2 px-4 text-center">Amazon</td><td className="py-2 px-4 text-center">40,000+ retailers</td><td className="py-2 px-4 text-center">Direct + retail</td></tr>
-                    <tr className="border-b border-border-subtle"><td className="py-2 pr-4">Page range</td><td className="py-2 px-4 text-center">24–828</td><td className="py-2 px-4 text-center">18–1200</td><td className="py-2 px-4 text-center">2–800</td></tr>
-                    <tr><td className="py-2 pr-4">Sandbox</td><td className="py-2 px-4 text-center text-text-tertiary">No</td><td className="py-2 px-4 text-center text-text-tertiary">No</td><td className="py-2 px-4 text-center text-accent">Yes</td></tr>
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        </Section>
+          </section>
 
-        {/* ══════════════════════════════════════════════════════
-            TROUBLESHOOTING
-            ══════════════════════════════════════════════════════ */}
-        <Section className="pt-0">
-          <div className="mb-10">
-            <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-text-tertiary mb-3">Troubleshooting</p>
-            <h2 className="font-display text-h2 font-bold tracking-tight text-text-primary">Common Issues</h2>
-          </div>
+          {/* ══════════════════════════════════════════════════════════
+              05 — TROUBLESHOOTING
+              ══════════════════════════════════════════════════════════ */}
+          <section id="troubleshooting" className="scroll-mt-16 mb-20">
+            <SectionLabel number="05">Support</SectionLabel>
+            <h2 className="docs-section-title">Troubleshooting</h2>
 
-          <div className="grid gap-4">
-            <div className="card p-6">
-              <h3 className="font-display text-xl font-bold text-text-primary mb-3">Undefined citation</h3>
-              <p className="p">
-                If the error console shows <code className="text-accent text-sm">Undefined citations</code>, confirm the keys exist in
-                <code className="text-accent text-sm"> references.bib</code> on the server and that your in-text cites use Pandoc syntax
-                <code className="text-accent text-sm"> [@Key]</code> exactly.
-              </p>
+            {/* Undefined citation */}
+            <div className="mb-6">
+              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-2">Undefined citation</h3>
+              <Admonition type="warn" label="Common Error">
+                If the error console shows <code>Undefined citations</code>, confirm the keys exist in{' '}
+                <code>references.bib</code> on the server and that your in-text cites use Pandoc syntax{' '}
+                <code>[@Key]</code> exactly.
+              </Admonition>
             </div>
 
-            <div className="card p-6">
-              <h3 className="font-display text-xl font-bold text-text-primary mb-3">No PDF / 400-501 errors</h3>
-              <ul className="list-disc pl-5 text-text-secondary leading-7">
-                <li>Make sure the compiler backend is running on <code className="text-accent text-sm">http://localhost:4000</code>.</li>
-                <li>If using Docker: <code className="text-accent text-sm">npm run docker:build && npm run docker:run</code> in <code className="text-accent text-sm">backend/</code>.</li>
-                <li>Network errors: check that your browser can reach <code className="text-accent text-sm">/api/health</code>.</li>
-              </ul>
+            {/* No PDF */}
+            <div className="mb-6">
+              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-2">No PDF / 400{'\u2013'}501 errors</h3>
+              <Admonition type="info" label="Checklist">
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>Make sure the compiler backend is running on <code>http://localhost:4000</code>.</li>
+                  <li>If using Docker: <code>npm run docker:build &amp;&amp; npm run docker:run</code> in <code>backend/</code>.</li>
+                  <li>Network errors: check that your browser can reach <code>/api/health</code>.</li>
+                </ul>
+              </Admonition>
             </div>
 
-            <div className="card p-6">
-              <h3 className="font-display text-xl font-bold text-text-primary mb-3">Template or package issues</h3>
-              <p className="p">
-                If the console lists missing LaTeX packages, add them to the Dockerfile via
-                <code className="text-accent text-sm"> tlmgr install &lt;package&gt;</code>, rebuild, and redeploy.
-              </p>
+            {/* Template or package issues */}
+            <div className="mb-6">
+              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-2">Template or package issues</h3>
+              <Admonition type="info" label="Fix">
+                If the console lists missing LaTeX packages, add them to the Dockerfile via{' '}
+                <code>tlmgr install &lt;package&gt;</code>, rebuild, and redeploy.
+              </Admonition>
             </div>
 
-            <div className="card p-6">
-              <h3 className="font-display text-xl font-bold text-text-primary mb-3">Style warnings</h3>
-              <p className="p">
+            {/* Style warnings */}
+            <div className="mb-6">
+              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-2">Style warnings</h3>
+              <Admonition type="tip" label="Tip">
                 Double spaces after punctuation are flagged as warnings. They won&apos;t stop compilation but are worth fixing for polish.
-              </p>
+              </Admonition>
             </div>
 
-            <div className="card p-6">
-              <h3 className="font-display text-xl font-bold text-text-primary mb-3">Recommended Reading</h3>
-              <p className="p mb-4">
-                PagePerfect&apos;s grid system is inspired by Josef Muller-Brockmann&apos;s systematic approach to graphic design — baseline grids, proportional typography, and mathematical spacing.
-              </p>
-              <div className="bg-surface-subtle p-4 rounded-lg border border-[rgba(255,255,255,0.04)]">
-                <p className="text-sm font-medium text-text-primary mb-1">Grid Systems in Graphic Design</p>
-                <p className="text-sm text-text-tertiary mb-3">Josef Muller-Brockmann</p>
+            {/* Recommended Reading */}
+            <div className="mt-12 border-t-2 border-[#1a1a1a] pt-8">
+              <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#999] mb-4">Recommended Reading</p>
+              <div className="docs-template-card">
+                <p className="font-display text-sm font-bold text-[#1a1a1a] mb-0.5">Grid Systems in Graphic Design</p>
+                <p className="font-body text-sm text-[#6a6a64] mb-3">Josef Muller-Brockmann</p>
                 <a
                   href="https://ia902309.us.archive.org/4/items/GridSystemsInGraphicDesignJosefMullerBrockmann/Grid%20systems%20in%20graphic%20design%20-%20Josef%20Muller-Brockmann.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-accent hover:text-accent-hover text-sm font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#0033ff] hover:text-[#2255ff] transition-colors"
                 >
                   Read the PDF
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                 </a>
               </div>
             </div>
-          </div>
-        </Section>
-      </Container>
-    </main>
+
+            {/* Colophon */}
+            <div className="mt-16 border-t border-[#e5e5e0] pt-6">
+              <p className="font-mono text-[10px] text-[#c0c0c0]">
+                PagePerfect Documentation &middot; Built on XeLaTeX + Pandoc &middot; Typography is the foundation of graphic design.
+              </p>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
   )
 }
