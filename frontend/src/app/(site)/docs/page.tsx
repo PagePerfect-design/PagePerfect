@@ -415,42 +415,61 @@ export default function DocsPage() {
           <section id="all-sizes" className="scroll-mt-16 mb-10">
             <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">All Page Sizes</h3>
             <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
-              19 page sizes available. Standard sizes are shown by default; KDP sizes are under a collapsible menu in the editor.
+              19 page sizes across three tiers. The editor shows 6 common sizes by default, with specialist and KDP sizes behind expandable menus.
             </p>
             <table className="docs-table">
               <thead>
                 <tr>
                   <th>Size</th>
                   <th>Dimensions</th>
-                  <th>Type</th>
+                  <th>Use Case</th>
                 </tr>
               </thead>
               <tbody>
+                <tr><td colSpan={3} className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#999] pt-3 pb-1" style={{ borderBottom: 'none' }}>Default Sizes</td></tr>
                 {[
-                  ['Mass Market', '4.25 \u00d7 6.87\u2033 (108 \u00d7 175 mm)', 'US pocket paperback'],
-                  ['A-format', '4.37 \u00d7 7.01\u2033 (111 \u00d7 178 mm)', 'UK mass-market'],
-                  ['B-format', '5.08 \u00d7 7.80\u2033 (129 \u00d7 198 mm)', 'UK trade paperback'],
-                  ['5.25 \u00d7 8\u2033', '5.25 \u00d7 8.00\u2033 (133 \u00d7 203 mm)', 'US fiction'],
-                  ['5.5 \u00d7 8.5\u2033', '5.50 \u00d7 8.50\u2033 (140 \u00d7 216 mm)', 'US digest'],
-                  ['Demy', '5.43 \u00d7 8.50\u2033 (138 \u00d7 216 mm)', 'UK trade standard'],
-                  ['6 \u00d7 9\u2033', '6.00 \u00d7 9.00\u2033 (152 \u00d7 229 mm)', 'US trade / academic'],
-                  ['A5', '5.83 \u00d7 8.27\u2033 (148 \u00d7 210 mm)', 'ISO standard'],
-                  ['Royal', '6.14 \u00d7 9.21\u2033 (156 \u00d7 234 mm)', 'UK hardcover / literary'],
-                  ['B5', '6.93 \u00d7 9.84\u2033 (176 \u00d7 250 mm)', 'European academic'],
-                  ['7 \u00d7 10\u2033', '7.00 \u00d7 10.00\u2033 (178 \u00d7 254 mm)', 'US textbook'],
-                  ['Crown Quarto', '7.44 \u00d7 9.69\u2033 (189 \u00d7 246 mm)', 'Illustrated non-fiction'],
-                  ['Letter', '8.50 \u00d7 11.00\u2033 (216 \u00d7 279 mm)', 'US standard'],
-                  ['A4', '8.27 \u00d7 11.69\u2033 (210 \u00d7 297 mm)', 'ISO standard'],
-                  ['5 \u00d7 8\u2033', '5.00 \u00d7 8.00\u2033', 'KDP'],
-                  ['6 \u00d7 9\u2033', '6.00 \u00d7 9.00\u2033', 'KDP'],
-                  ['7 \u00d7 10\u2033', '7.00 \u00d7 10.00\u2033', 'KDP'],
-                  ['8 \u00d7 10\u2033', '8.00 \u00d7 10.00\u2033', 'KDP'],
-                  ['8.5 \u00d7 11\u2033', '8.50 \u00d7 11.00\u2033', 'KDP'],
-                ].map(([name, dims, type]) => (
-                  <tr key={`${name}-${type}`}>
+                  ['5.5 \u00d7 8.5\u2033', '140 \u00d7 216 mm', 'US digest'],
+                  ['6 \u00d7 9\u2033', '152 \u00d7 229 mm', 'US trade / academic'],
+                  ['A5', '148 \u00d7 210 mm', 'ISO book standard'],
+                  ['Royal', '156 \u00d7 234 mm', 'UK hardcover / literary'],
+                  ['Letter', '216 \u00d7 279 mm', 'US document'],
+                  ['A4', '210 \u00d7 297 mm', 'ISO document'],
+                ].map(([name, dims, use]) => (
+                  <tr key={name}>
                     <td className="font-medium text-[#1a1a1a]">{name}</td>
                     <td className="font-mono text-[13px] accent">{dims}</td>
-                    <td className={type === 'KDP' ? '' : 'muted'}>{type}</td>
+                    <td className="muted">{use}</td>
+                  </tr>
+                ))}
+                <tr><td colSpan={3} className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#999] pt-5 pb-1" style={{ borderBottom: 'none' }}>More Book Sizes</td></tr>
+                {[
+                  ['Mass Market', '108 \u00d7 175 mm', 'US pocket paperback'],
+                  ['A-format', '111 \u00d7 178 mm', 'UK mass-market'],
+                  ['B-format', '129 \u00d7 198 mm', 'UK trade paperback'],
+                  ['5.25 \u00d7 8\u2033', '133 \u00d7 203 mm', 'US fiction'],
+                  ['Demy', '138 \u00d7 216 mm', 'UK trade standard'],
+                  ['7 \u00d7 10\u2033', '178 \u00d7 254 mm', 'US textbook'],
+                  ['B5', '176 \u00d7 250 mm', 'European academic'],
+                  ['Crown Quarto', '189 \u00d7 246 mm', 'Illustrated non-fiction'],
+                ].map(([name, dims, use]) => (
+                  <tr key={name}>
+                    <td className="font-medium text-[#1a1a1a]">{name}</td>
+                    <td className="font-mono text-[13px] accent">{dims}</td>
+                    <td className="muted">{use}</td>
+                  </tr>
+                ))}
+                <tr><td colSpan={3} className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#999] pt-5 pb-1" style={{ borderBottom: 'none' }}>Amazon KDP</td></tr>
+                {[
+                  ['5 \u00d7 8\u2033', '127 \u00d7 203 mm', 'KDP small'],
+                  ['6 \u00d7 9\u2033', '152 \u00d7 229 mm', 'KDP trade'],
+                  ['7 \u00d7 10\u2033', '178 \u00d7 254 mm', 'KDP textbook'],
+                  ['8 \u00d7 10\u2033', '203 \u00d7 254 mm', 'KDP large'],
+                  ['8.5 \u00d7 11\u2033', '216 \u00d7 279 mm', 'KDP letter'],
+                ].map(([name, dims, use]) => (
+                  <tr key={`${name}-kdp`}>
+                    <td className="font-medium text-[#1a1a1a]">{name}</td>
+                    <td className="font-mono text-[13px] accent">{dims}</td>
+                    <td className="muted">{use}</td>
                   </tr>
                 ))}
               </tbody>

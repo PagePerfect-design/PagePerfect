@@ -935,8 +935,8 @@ function FloatingHUD({
           >
             {/* Page Size */}
             <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Page Size</p>
-            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-7">
-              {(['massMarket', 'aFormat', 'bFormat', 'fiveTwentyFiveByEight', 'fiveFiveByEightFive', 'demy', 'sixByNine', 'royal', 'b5', 'sevenByTen', 'crownQuarto', 'letter', 'a5', 'a4'] as PageSize[]).map((key) => {
+            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+              {(['fiveFiveByEightFive', 'sixByNine', 'a5', 'royal', 'letter', 'a4'] as PageSize[]).map((key) => {
                 const info = PAGE_SIZES[key]
                 const isActive = key === pageSize
                 return (
@@ -957,6 +957,35 @@ function FloatingHUD({
                 )
               })}
             </div>
+
+            {/* More book sizes */}
+            <details className="mt-3">
+              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-white/35 hover:text-white/50">
+                More book sizes
+              </summary>
+              <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+                {(['massMarket', 'aFormat', 'bFormat', 'fiveTwentyFiveByEight', 'demy', 'sevenByTen', 'b5', 'crownQuarto'] as PageSize[]).map((key) => {
+                  const info = PAGE_SIZES[key]
+                  const isActive = key === pageSize
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => onPageSizeChange(key)}
+                      className={`rounded-lg px-3 py-2 text-center transition-all duration-150 ${
+                        isActive
+                          ? 'bg-[#0033ff]/10 ring-1 ring-[#0033ff]/30'
+                          : 'bg-white/[0.02] hover:bg-white/[0.05]'
+                      }`}
+                    >
+                      <span className={`block text-[11px] font-medium ${isActive ? 'text-white' : 'text-white/50'}`}>
+                        {info.label}
+                      </span>
+                      <span className="block font-mono text-[8px] text-white/20">{info.desc}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </details>
 
             {/* Amazon KDP */}
             <details className="mt-3">
