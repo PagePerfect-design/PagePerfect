@@ -1220,7 +1220,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   const args = safeMode
     ? baseArgs
     : baseArgs.concat([
-        '--filter', 'pandoc-citeproc',
+        '--citeproc',
         `--bibliography=${BIB_PATH}`,
       ]);
 

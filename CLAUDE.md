@@ -207,7 +207,7 @@ User edits Markdown in browser
     → Backend: sanitize inputs, write to temp dir
     → GridSystem calculates geometry/typography
     → Spawn Pandoc with XeLaTeX + selected template
-    → (Optional) pandoc-citeproc for bibliography
+    → (Optional) --citeproc for bibliography processing
     → 45s timeout (COMPILE_TIMEOUT_MS)
     → Stream PDF back | Return JSON error with diagnostics
     → Frontend creates object URL, renders in iframe
