@@ -26,6 +26,8 @@ const KDP_TRIM_SIZES = {
   letter:                    { w: 8.5, h: 11,   label: 'US Letter' },
   a4:                        { w: 8.27, h: 11.69, label: 'A4' },
   a5:                        { w: 5.83, h: 8.27,  label: 'A5' },
+  royal:                     { w: 6.14, h: 9.21,  label: 'Royal' },
+  bFormat:                   { w: 5.08, h: 7.80,  label: 'B-format' },
 };
 
 /** Paper stock spine width factors (inches per page) */

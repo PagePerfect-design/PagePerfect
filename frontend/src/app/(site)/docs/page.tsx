@@ -415,7 +415,7 @@ export default function DocsPage() {
           <section id="all-sizes" className="scroll-mt-16 mb-10">
             <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">All Page Sizes</h3>
             <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
-              11 page sizes available. Standard sizes are shown by default; KDP sizes are under a collapsible menu in the editor.
+              13 page sizes available. Standard sizes are shown by default; KDP sizes are under a collapsible menu in the editor.
             </p>
             <table className="docs-table">
               <thead>
@@ -433,6 +433,8 @@ export default function DocsPage() {
                   ['210 \u00d7 297 mm', 'a4', 'A4'],
                   ['148 \u00d7 210 mm', 'a5', 'A5'],
                   ['7 \u00d7 10\u2033', 'sevenByTen', 'Textbook'],
+                  ['156 \u00d7 234 mm', 'royal', 'Royal'],
+                  ['129 \u00d7 198 mm', 'bFormat', 'B-format'],
                   ['5 \u00d7 8\u2033', 'amazonFiveByEight', 'KDP'],
                   ['6 \u00d7 9\u2033', 'amazonSixByNine', 'KDP'],
                   ['7 \u00d7 10\u2033', 'amazonSevenByTen', 'KDP'],

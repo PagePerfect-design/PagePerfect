@@ -91,6 +91,11 @@ class GridSystem {
         return `paperwidth=7in,paperheight=10in,margin=${in_(gridMargin)}`;
       case 'a5':
         return `paperwidth=148mm,paperheight=210mm,margin=${mm(gridMargin * 25.4)}`;
+      // UK book sizes
+      case 'royal':
+        return `paperwidth=156mm,paperheight=234mm,margin=${mm(gridMargin * 25.4)}`;
+      case 'bFormat':
+        return `paperwidth=129mm,paperheight=198mm,margin=${mm(gridMargin * 25.4)}`;
       // Amazon KDP sizes
       case 'amazonFiveByEight':
         return `paperwidth=5in,paperheight=8in,margin=${in_(gridMargin)}`;

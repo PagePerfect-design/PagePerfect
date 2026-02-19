@@ -26,7 +26,7 @@ import PublishingSystems from './PublishingSystems'
    ═══════════════════════════════════════════════════════════════════ */
 
 type TemplateKey = 'minimal' | 'symphony' | 'chronicle' | 'exhibit' | 'matrix' | 'avantgarde' | 'chicago' | 'paperback' | 'international' | 'cinema' | 'heirloom' | 'operator'
-type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
+type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'royal' | 'bFormat' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
 type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'generous' | 'compact'
 type CompileMode = 'fast' | 'full'
 type CompileError = { message: string }
@@ -110,6 +110,8 @@ const PAGE_SIZES: Record<string, { label: string; desc: string }> = {
   a4:                  { label: 'A4',           desc: '210x297mm' },
   a5:                  { label: 'A5',           desc: '148x210mm' },
   sevenByTen:          { label: '7 x 10"',     desc: 'Textbook' },
+  royal:               { label: 'Royal',       desc: '156x234mm' },
+  bFormat:             { label: 'B-format',    desc: '129x198mm' },
   amazonFiveByEight:   { label: '5 x 8"',      desc: 'KDP' },
   amazonSixByNine:     { label: '6 x 9"',      desc: 'KDP' },
   amazonSevenByTen:    { label: '7 x 10"',     desc: 'KDP' },
@@ -140,7 +142,8 @@ function slug(s: string) {
 function sizeCode(size: PageSize) {
   const map: Record<PageSize, string> = {
     letter: 'letter', a4: 'a4', a5: 'a5', sixByNine: '6x9', fiveFiveByEightFive: '5.5x8.5',
-    sevenByTen: '7x10', amazonFiveByEight: 'amazon-5x8', amazonSixByNine: 'amazon-6x9',
+    sevenByTen: '7x10', royal: 'royal', bFormat: 'b-format',
+    amazonFiveByEight: 'amazon-5x8', amazonSixByNine: 'amazon-6x9',
     amazonSevenByTen: 'amazon-7x10', amazonEightByTen: 'amazon-8x10', amazonEightFiveByEleven: 'amazon-8.5x11',
   }
   return map[size] || 'letter'
@@ -925,7 +928,7 @@ function FloatingHUD({
             {/* Page Size */}
             <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Page Size</p>
             <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
-              {(['fiveFiveByEightFive', 'sixByNine', 'letter', 'a4', 'a5', 'sevenByTen'] as PageSize[]).map((key) => {
+              {(['fiveFiveByEightFive', 'bFormat', 'sixByNine', 'royal', 'letter', 'a4', 'a5', 'sevenByTen'] as PageSize[]).map((key) => {
                 const info = PAGE_SIZES[key]
                 const isActive = key === pageSize
                 return (
