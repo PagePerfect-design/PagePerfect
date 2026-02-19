@@ -346,18 +346,24 @@ function resolveFont(fontName) {
 
 /**
  * Resolve all fonts for a template's compile arguments.
- * Takes the mainfont from the template registry and resolves it,
- * plus resolves the sans/mono fonts defined in the .latex file.
+ * Takes mainfont, sansfont, monofont from the template registry and resolves each.
  *
  * @param {string} templateKey
- * @param {{ mainfont: string }} templateEntry
- * @returns {{ mainfont: { resolved, original, isFallback, warning }, warnings: string[] }}
+ * @param {{ mainfont: string, sansfont?: string|null, monofont?: string|null }} templateEntry
+ * @returns {{ mainfont: object, sansfont: object|null, monofont: object|null, warnings: string[] }}
  */
 function resolveTemplateFont(templateKey, templateEntry) {
-  const result = resolveFont(templateEntry.mainfont);
   const warnings = [];
-  if (result.warning) warnings.push(result.warning);
-  return { mainfont: result, warnings };
+  const mainResult = resolveFont(templateEntry.mainfont);
+  if (mainResult.warning) warnings.push(mainResult.warning);
+
+  const sansResult = templateEntry.sansfont ? resolveFont(templateEntry.sansfont) : null;
+  if (sansResult?.warning) warnings.push(sansResult.warning);
+
+  const monoResult = templateEntry.monofont ? resolveFont(templateEntry.monofont) : null;
+  if (monoResult?.warning) warnings.push(monoResult.warning);
+
+  return { mainfont: mainResult, sansfont: sansResult, monofont: monoResult, warnings };
 }
 
 // ================================================================
