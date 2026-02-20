@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import CompositorMark from '@/components/CompositorMark'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft,
@@ -1293,11 +1295,19 @@ function TopBar({
   return (
     <div className="fixed left-0 right-0 top-0 z-30">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 md:px-8">
-        {/* Left: back + title */}
-        <div className="flex items-center gap-4">
+        {/* Left: home + back + title */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[#111111]/40 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/70"
+            title="Home"
+          >
+            <CompositorMark size={18} />
+          </Link>
+          <div className="h-4 w-px bg-[#111111]/10" />
           <button
             onClick={onBack}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#111111]/[0.04] text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.08] hover:text-[#111111]/60"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/60"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
           </button>
