@@ -311,7 +311,7 @@ function BookSkeleton() {
         <div className="absolute inset-0 rounded bg-white/[0.03] border border-white/[0.06]" />
         {/* Animated scan line */}
         <motion.div
-          className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#0033ff]/40 to-transparent"
+          className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF3333]/40 to-transparent"
           initial={{ top: '10%' }}
           animate={{ top: '90%' }}
           transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
@@ -616,14 +616,14 @@ function PortalStage({
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#0033ff]/20"
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#FF3333]/20"
               initial={{ width: 40, height: 40, opacity: 0.6 }}
               animate={{ width: 300 + i * 100, height: 300 + i * 100, opacity: 0 }}
               transition={{ duration: 1.5, delay: i * 0.3, repeat: Infinity }}
             />
           ))}
           <div className="relative z-10">
-            <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2 border-[#0033ff] border-t-transparent" />
+            <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
             <p className="font-mono text-[12px] text-white/50">Analyzing manuscript...</p>
           </div>
         </motion.div>
@@ -644,8 +644,8 @@ function PortalStage({
         <div className="border border-white/[0.08] bg-[#0a0a0a]/95 backdrop-blur-xl">
           <div className="border-b border-white/[0.06] px-6 py-5">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0033ff]/10">
-                <FileText className="h-4 w-4 text-[#0033ff]" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF3333]/10">
+                <FileText className="h-4 w-4 text-[#FF3333]" />
               </div>
               <div>
                 <p className="font-display text-base font-semibold text-white">
@@ -676,8 +676,8 @@ function PortalStage({
 
           {/* Genre detection message */}
           {analysis?.detected && (
-            <div className="flex items-start gap-3 border-t border-white/[0.06] px-6 py-4 bg-[#0033ff]/[0.03]">
-              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#0033ff]" />
+            <div className="flex items-start gap-3 border-t border-white/[0.06] px-6 py-4 bg-[#FF3333]/[0.03]">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#FF3333]" />
               <div>
                 <p className="text-[12px] font-medium text-white/70">
                   {analysis.detected.message}
@@ -700,7 +700,7 @@ function PortalStage({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="My Manuscript"
               autoFocus
-              className="w-full border-b border-white/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-white placeholder:text-white/30 focus:border-[#0033ff] focus:outline-none"
+              className="w-full border-b border-white/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-white placeholder:text-white/30 focus:border-[#FF3333] focus:outline-none"
             />
           </div>
 
@@ -714,7 +714,7 @@ function PortalStage({
             </button>
             <button
               onClick={() => onAccept(text, title, analysis?.detected?.template)}
-              className="group inline-flex h-11 items-center gap-3 bg-[#0033ff] px-7 font-display text-[14px] font-semibold text-white transition-all duration-200 hover:bg-[#2255ff]"
+              className="group inline-flex h-11 items-center gap-3 bg-[#FF3333] px-7 font-display text-[14px] font-semibold text-white transition-all duration-200 hover:bg-[#E52222]"
             >
               Start designing
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -806,7 +806,7 @@ function LevitatingBook({
                   className="absolute inset-0 z-10 flex items-center justify-center bg-[#050505]/70 backdrop-blur-[2px]"
                 >
                   <div className="flex flex-col items-center gap-3">
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#0033ff] border-t-transparent" />
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
                     <span className="font-mono text-[11px] text-white/30">Typesetting...</span>
                   </div>
                 </motion.div>
@@ -916,14 +916,14 @@ function FloatingHUD({
                       onMouseLeave={() => setHoveredTemplate(null)}
                       className={`group relative flex flex-col items-start rounded-xl px-3 py-3 text-left transition-all duration-150 ${
                         isActive
-                          ? 'bg-[#0033ff]/10 ring-1 ring-[#0033ff]/30'
+                          ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                           : 'hover:bg-white/[0.04]'
                       }`}
                     >
                       <span className={`text-[12px] font-semibold ${isActive ? 'text-white' : 'text-white/60'}`}>
                         {info.name}
                       </span>
-                      <span className={`text-[10px] ${isActive ? 'text-[#0033ff]/80' : 'text-white/25'}`}>
+                      <span className={`text-[10px] ${isActive ? 'text-[#FF3333]/80' : 'text-white/25'}`}>
                         {info.subtitle}
                       </span>
 
@@ -972,7 +972,7 @@ function FloatingHUD({
                     onClick={() => onPageSizeChange(key)}
                     className={`rounded-lg px-3 py-2 text-center transition-all duration-150 ${
                       isActive
-                        ? 'bg-[#0033ff]/10 ring-1 ring-[#0033ff]/30'
+                        ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                         : 'bg-white/[0.02] hover:bg-white/[0.05]'
                     }`}
                   >
@@ -1000,7 +1000,7 @@ function FloatingHUD({
                       onClick={() => onPageSizeChange(key)}
                       className={`rounded-lg px-3 py-2 text-center transition-all duration-150 ${
                         isActive
-                          ? 'bg-[#0033ff]/10 ring-1 ring-[#0033ff]/30'
+                          ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                           : 'bg-white/[0.02] hover:bg-white/[0.05]'
                       }`}
                     >
@@ -1029,7 +1029,7 @@ function FloatingHUD({
                       onClick={() => onPageSizeChange(key)}
                       className={`rounded-lg px-3 py-2 text-center transition-all ${
                         isActive
-                          ? 'bg-[#0033ff]/10 ring-1 ring-[#0033ff]/30'
+                          ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                           : 'bg-white/[0.02] hover:bg-white/[0.05]'
                       }`}
                     >
@@ -1055,7 +1055,7 @@ function FloatingHUD({
                     onClick={() => onMarginChange(key)}
                     className={`shrink-0 rounded-lg px-3 py-1.5 text-center transition-all duration-150 ${
                       isActive
-                        ? 'bg-[#0033ff]/10 ring-1 ring-[#0033ff]/30'
+                        ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                         : 'bg-white/[0.02] hover:bg-white/[0.05]'
                     }`}
                   >
@@ -1103,7 +1103,7 @@ function FloatingHUD({
                 type="checkbox"
                 checked={safeMode}
                 onChange={(e) => onSafeModeChange(e.target.checked)}
-                className="h-3.5 w-3.5 rounded accent-[#0033ff]"
+                className="h-3.5 w-3.5 rounded accent-[#FF3333]"
               />
               <span className="text-[11px] text-white/40">Safe mode (skip citations)</span>
             </label>
@@ -1175,13 +1175,13 @@ function FloatingHUD({
         <div className="mx-1.5 h-4 w-px bg-white/[0.06]" />
         <div className="flex items-center gap-1.5 px-2">
           <span className={`h-1.5 w-1.5 rounded-full transition-colors ${
-            status === 'compiling' ? 'bg-[#0033ff] animate-pulse' :
+            status === 'compiling' ? 'bg-[#FF3333] animate-pulse' :
             status === 'success' ? 'bg-emerald-400' :
             status === 'error' ? 'bg-red-400' :
             'bg-white/20'
           }`} />
           <span className={`font-mono text-[9px] uppercase tracking-[0.1em] ${
-            status === 'compiling' ? 'text-[#0033ff]' :
+            status === 'compiling' ? 'text-[#FF3333]' :
             status === 'success' ? 'text-emerald-400/70' :
             status === 'error' ? 'text-red-400/70' :
             'text-white/35'
@@ -1298,7 +1298,7 @@ function TopBar({
             onClick={onToggleSystems}
             className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-all ${
               showSystems
-                ? 'bg-[#0033ff]/10 text-[#0033ff] ring-1 ring-[#0033ff]/30'
+                ? 'bg-[#FF3333]/10 text-[#FF3333] ring-1 ring-[#FF3333]/30'
                 : 'text-white/25 hover:bg-white/[0.04] hover:text-white/40'
             }`}
           >
@@ -1309,7 +1309,7 @@ function TopBar({
           <button
             onClick={onPublish}
             disabled={status !== 'success'}
-            className="group inline-flex h-8 items-center gap-2 rounded-full bg-[#0033ff] px-5 text-[12px] font-semibold text-white transition-all hover:bg-[#2255ff] disabled:opacity-30"
+            className="group inline-flex h-8 items-center gap-2 rounded-full bg-[#FF3333] px-5 text-[12px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-30"
           >
             <Download className="h-3.5 w-3.5" />
             Export
@@ -1540,7 +1540,7 @@ function LaunchOverlay({
                   onClick={() => setPlatform('ingram')}
                   className={`flex-1 rounded-lg py-2 text-[11px] font-semibold transition-all ${
                     platform === 'ingram'
-                      ? 'bg-[#0033ff] text-white'
+                      ? 'bg-[#FF3333] text-white'
                       : 'border border-white/[0.08] text-white/40 hover:border-white/20'
                   }`}
                 >
@@ -1676,7 +1676,7 @@ function LaunchOverlay({
             <button
               onClick={() => onDownload(platform)}
               disabled={!canDownload}
-              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#0033ff] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#2255ff] disabled:opacity-30 disabled:cursor-not-allowed"
+              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#FF3333] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Download className="h-4 w-4" />
               {platform === 'ingram' ? 'Download PDF/X-1a' : 'Download Print PDF'}
@@ -1685,7 +1685,7 @@ function LaunchOverlay({
             <button
               onClick={handleEpubDownload}
               disabled={epubLoading}
-              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#0033ff] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#2255ff] disabled:opacity-50"
+              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#FF3333] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-50"
             >
               {epubLoading ? (
                 <><Loader2 className="h-4 w-4 animate-spin" />Generating EPUB&hellip;</>
@@ -1794,7 +1794,7 @@ function EditorOverlay({
         <textarea
           value={manuscript}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 resize-none bg-transparent p-6 font-mono text-sm leading-[1.8] text-white/60 caret-[#0033ff] focus:outline-none"
+          className="flex-1 resize-none bg-transparent p-6 font-mono text-sm leading-[1.8] text-white/60 caret-[#FF3333] focus:outline-none"
           placeholder="# Chapter One&#10;&#10;Write here..."
           autoFocus
         />

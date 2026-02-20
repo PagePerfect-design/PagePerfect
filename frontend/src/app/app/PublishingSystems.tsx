@@ -544,14 +544,14 @@ export default function PublishingSystems({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
         <div className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-[#0033ff]" />
+          <BarChart3 className="h-4 w-4 text-[#FF3333]" />
           <span className="font-display text-sm font-semibold text-white/80">Publishing Systems</span>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={runAnalysis}
             disabled={status === 'loading'}
-            className="flex h-7 items-center gap-1.5 rounded-full bg-[#0033ff]/10 px-3 text-[10px] font-medium text-[#0033ff] transition-colors hover:bg-[#0033ff]/20 disabled:opacity-50"
+            className="flex h-7 items-center gap-1.5 rounded-full bg-[#FF3333]/10 px-3 text-[10px] font-medium text-[#FF3333] transition-colors hover:bg-[#FF3333]/20 disabled:opacity-50"
           >
             {status === 'loading' ? <Loader2 className="h-3 w-3 animate-spin" /> : <BarChart3 className="h-3 w-3" />}
             {status === 'loading' ? 'Analyzing...' : 'Analyze'}

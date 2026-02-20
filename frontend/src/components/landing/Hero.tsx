@@ -26,7 +26,7 @@ export function Hero() {
             <div className="mt-10 flex flex-col items-start gap-6">
               <Link
                 href="/app"
-                className="inline-flex h-12 items-center bg-[#0033ff] px-10 font-mono text-[11px] uppercase tracking-[0.12em] text-white transition-all duration-75 hover:bg-[#0022cc]"
+                className="inline-flex h-12 items-center bg-[#FF3333] px-10 font-mono text-[11px] uppercase tracking-[0.12em] text-white transition-all duration-75 hover:bg-[#E52222]"
               >
                 Start Formatting
               </Link>
