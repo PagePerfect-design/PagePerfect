@@ -5,7 +5,7 @@
  *
  *   users (built-in auth collection) — extended with custom fields:
  *     - display_name: text
- *     - tier: select (drafter | publisher | studio), default "drafter"
+ *     - tier: select (drafter | single | publisher | studio), default "drafter"
  *     - stripe_customer_id: text
  *     - stripe_subscription_id: text
  *
@@ -30,7 +30,7 @@
  *     - error_message: text (optional)
  */
 
-export type Tier = 'drafter' | 'publisher' | 'studio'
+export type Tier = 'drafter' | 'single' | 'publisher' | 'studio'
 
 export interface UserRecord {
   id: string

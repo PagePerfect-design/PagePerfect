@@ -1,164 +1,109 @@
 'use client'
 
+import { Fragment, useRef } from 'react'
 import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
-import { useRef } from 'react'
-import { ArrowRight, Check } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
 const ease = [0.25, 0.4, 0.25, 1] as const
 
-type Tier = {
-  name: string
-  price: string
-  period: string
-  desc: string
-  cta: string
-  href: string
-  highlight: boolean
-  features: string[]
-}
-
-const TIERS: Tier[] = [
+const TIERS = [
   {
+    num: '01',
     name: 'Drafter',
     price: 'Free',
     period: 'forever',
-    desc: 'Everything you need to start.',
-    cta: 'Start Free',
-    href: '/app',
-    highlight: false,
-    features: [
-      'All 12 templates',
-      '3 page sizes',
-      'Real-time preview',
-      'Markdown auto-clean',
-      'Watermarked output',
-    ],
+    body: 'Everything you need to start. All 12 typographic systems, 6 page sizes, real-time preview. Unlimited manuscripts, unlimited compiles.',
+    aside: 'Watermarked output. Upgrade when your book is ready for print.',
   },
   {
+    num: '02',
     name: 'Single',
     price: '\u00a32.99',
     period: 'per PDF',
-    desc: 'One clean export, no subscription.',
-    cta: 'Buy One',
-    href: '/pricing',
-    highlight: false,
-    features: [
-      'No watermark',
-      'All 11 page sizes',
-      'Full quality compile',
-      'Print-ready output',
-      'No subscription',
-    ],
+    body: 'One clean, watermark-free export. All 19 page sizes including Amazon KDP formats. Full quality compile, print-ready output.',
+    aside: 'No subscription. Pay only when you need a clean export.',
   },
   {
+    num: '03',
     name: 'Publisher',
     price: '$9.99',
-    period: '/mo',
-    desc: 'Unlimited clean exports.',
-    cta: 'Go Pro',
-    href: '/pricing',
-    highlight: true,
-    features: [
-      'Everything in Drafter',
-      'Unlimited exports',
-      'All 11 page sizes',
-      'Citations & bibliography',
-      'Priority compile queue',
-    ],
+    period: '/month',
+    recommended: true,
+    body: 'Unlimited watermark-free exports for serious authors. Citations and bibliography support, priority compile queue, PDF/X compliance.',
+    aside: 'Cancel anytime. Most authors choose this.',
   },
   {
+    num: '04',
     name: 'Studio',
     price: '$199',
     period: 'once',
-    desc: 'Lifetime access. Pay once, own it.',
-    cta: 'Get Studio',
-    href: '/pricing',
-    highlight: false,
-    features: [
-      'Everything in Publisher',
-      'No monthly fees, ever',
-      'EPUB export (coming)',
-      'Custom fonts (coming)',
-      'Direct support',
-    ],
+    body: 'Lifetime Publisher access. No monthly fees, ever. EPUB export, custom font upload, batch export for series \u2014 all coming.',
+    aside: 'Pay once, own it forever. For publishers and prolific authors.',
   },
-]
+] as const
 
-function TierCard({ tier, index, inView }: { tier: Tier; index: number; inView: boolean }) {
+function TierRow({ tier, index }: { tier: typeof TIERS[number]; index: number }) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-60px' })
+
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 24 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay: index * 0.1, ease }}
-      className={`group relative border transition-colors duration-300 ${
-        tier.highlight
-          ? 'border-[#0033ff]/30 bg-[#0033ff]/[0.03]'
-          : 'border-white/[0.06] bg-white/[0.01]'
-      } hover:border-white/[0.12]`}
+      transition={{ duration: 0.7, delay: index * 0.08, ease }}
+      className="group"
     >
-      {/* Highlight label */}
-      {tier.highlight && (
-        <div className="absolute -top-px left-0 right-0 flex justify-center">
-          <div className="bg-[#0033ff] px-4 py-1 font-mono text-[10px] uppercase tracking-[0.1em] text-white">
-            Most popular
-          </div>
-        </div>
-      )}
+      <div className="grid grid-cols-1 gap-4 py-12 md:grid-cols-[6rem_1fr_1fr] md:items-baseline md:gap-12 md:py-16">
+        {/* Tier number — large, ghosted */}
+        <span className="font-display text-[4rem] font-extrabold leading-none tracking-tighter text-white/[0.07] transition-colors duration-500 group-hover:text-[#0033ff]/[0.15] md:text-[5rem]">
+          {tier.num}
+        </span>
 
-      <div className="p-6 md:p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/45">
-            {tier.name}
+        {/* Name + description — editorial */}
+        <div>
+          <div className="flex items-baseline gap-4">
+            <h3 className="font-mono text-[13px] uppercase tracking-[0.15em] text-white/70">
+              {tier.name}
+            </h3>
+            {'recommended' in tier && (
+              <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#0033ff]">
+                Recommended
+              </span>
+            )}
+          </div>
+          <p className="mt-4 font-body text-[15px] leading-relaxed text-white/55 md:text-base">
+            {tier.body}
           </p>
-          <div className="mt-3 flex items-baseline gap-1.5">
-            <span className="font-display text-5xl font-extrabold leading-[0.9] tracking-tighter text-white">
+        </div>
+
+        {/* Price + aside */}
+        <div className="border-l border-white/[0.08] pl-6">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-white md:text-[2.5rem]">
               {tier.price}
             </span>
-            <span className="font-mono text-[11px] text-white/40">{tier.period}</span>
+            <span className="font-mono text-[11px] text-white/35">{tier.period}</span>
           </div>
-          <p className="mt-3 font-body text-[15px] leading-relaxed text-white/55">{tier.desc}</p>
+          <p className="mt-3 font-body text-[14px] leading-relaxed text-white/40 italic md:text-[15px]">
+            {tier.aside}
+          </p>
         </div>
-
-        <div className={`mb-6 h-px ${tier.highlight ? 'bg-[#0033ff]/20' : 'bg-white/[0.06]'}`} />
-
-        {/* Features */}
-        <ul className="mb-8 space-y-3">
-          {tier.features.map((f) => (
-            <li key={f} className="flex items-start gap-3 font-body text-[14px] text-white/55">
-              <Check className={`mt-0.5 h-4 w-4 flex-shrink-0 ${tier.highlight ? 'text-[#0033ff]/70' : 'text-white/30'}`} />
-              <span>{f}</span>
-            </li>
-          ))}
-        </ul>
-
-        {/* CTA */}
-        <Link
-          href={tier.href}
-          className={`group/btn flex h-12 w-full items-center justify-center gap-2 font-mono text-[12px] uppercase tracking-[0.1em] transition-all duration-200 ${
-            tier.highlight
-              ? 'bg-[#0033ff] text-white hover:bg-[#2255ff]'
-              : 'border border-white/[0.12] text-white/60 hover:border-white/[0.25] hover:text-white/80'
-          }`}
-        >
-          {tier.cta}
-          <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover/btn:translate-x-0.5" />
-        </Link>
       </div>
     </motion.div>
   )
 }
 
 export function PricingPreview() {
-  const ref = useRef(null)
   const headerRef = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '-60px' })
+  const footerRef = useRef(null)
   const headerInView = useInView(headerRef, { once: true, margin: '-60px' })
+  const footerInView = useInView(footerRef, { once: true, margin: '-60px' })
 
   return (
     <section className="relative py-32 md:py-44">
-      <div className="relative mx-auto max-w-5xl px-6 md:px-8">
+      <div className="relative mx-auto max-w-6xl px-6 md:px-8">
 
         {/* ── HEADER — editorial ── */}
         <div ref={headerRef} className="mb-16 max-w-2xl md:mb-20">
@@ -177,9 +122,9 @@ export function PricingPreview() {
             transition={{ duration: 0.7, delay: 0.1, ease }}
             className="font-display text-display-lg font-extrabold leading-[0.9] tracking-tighter text-white"
           >
-            Simple pricing.
+            Start free.
             <br />
-            No surprises.
+            Upgrade when ready.
           </motion.h2>
 
           <motion.p
@@ -188,15 +133,45 @@ export function PricingPreview() {
             transition={{ duration: 0.7, delay: 0.2, ease }}
             className="mt-6 font-body text-lg leading-relaxed text-white/50"
           >
-            Start free. Upgrade when your book is ready.
+            The free tier is genuinely useful &mdash; not a demo.
+            All 12 typographic systems, unlimited manuscripts, real-time preview.
           </motion.p>
         </div>
 
-        <div ref={ref} className="grid grid-cols-1 gap-px bg-white/[0.06] md:grid-cols-4">
+        {/* ── TIER ROWS ── */}
+        <div>
           {TIERS.map((tier, i) => (
-            <TierCard key={tier.name} tier={tier} index={i} inView={inView} />
+            <Fragment key={tier.num}>
+              <div className="h-px bg-white/[0.06]" />
+              <TierRow tier={tier} index={i} />
+            </Fragment>
           ))}
+          <div className="h-px bg-white/[0.06]" />
         </div>
+
+        {/* ── FOOTER ── */}
+        <motion.div
+          ref={footerRef}
+          initial={{ opacity: 0 }}
+          animate={footerInView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.6, delay: 0.3, ease }}
+          className="mt-12 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <Link
+            href="/pricing"
+            className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40 transition-colors hover:text-white/70"
+          >
+            Compare all plans &amp; FAQ
+            <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+          </Link>
+          <Link
+            href="/app"
+            className="group inline-flex h-13 items-center gap-3 bg-[#0033ff] px-10 font-display text-[15px] font-semibold text-white transition-all duration-200 hover:bg-[#2255ff]"
+          >
+            Open the Editor
+            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+          </Link>
+        </motion.div>
       </div>
     </section>
   )
