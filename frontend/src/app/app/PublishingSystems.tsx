@@ -93,15 +93,15 @@ const SYSTEMS: SystemConfig[] = [
 function StatusBadge({ status }: { status: StatusIcon }) {
   switch (status) {
     case 'pass':
-      return <Check className="h-3 w-3 text-emerald-400" />
+      return <Check className="h-3 w-3 text-emerald-500" />
     case 'warn':
-      return <AlertTriangle className="h-3 w-3 text-amber-400" />
+      return <AlertTriangle className="h-3 w-3 text-amber-500" />
     case 'fail':
-      return <X className="h-3 w-3 text-red-400" />
+      return <X className="h-3 w-3 text-red-500" />
     case 'info':
-      return <Info className="h-3 w-3 text-blue-400" />
+      return <Info className="h-3 w-3 text-blue-500" />
     default:
-      return <span className="h-2 w-2 rounded-full bg-white/10" />
+      return <span className="h-2 w-2 rounded-full bg-[#111111]/10" />
   }
 }
 
@@ -113,7 +113,7 @@ function ScoreRing({ score, grade }: { score: number; grade: string }) {
   return (
     <div className="relative flex h-12 w-12 items-center justify-center">
       <svg className="absolute h-full w-full -rotate-90" viewBox="0 0 36 36">
-        <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
+        <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(17,17,17,0.08)" strokeWidth="2" />
         <circle
           cx="18" cy="18" r="16" fill="none"
           stroke={color} strokeWidth="2"
@@ -142,8 +142,8 @@ function CheckList({ checks }: { checks: CheckItem[] }) {
             <StatusBadge status={check.status as StatusIcon} />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-medium text-white/50">{check.name}</span>
-            <p className="text-[10px] leading-[1.5] text-white/30">{check.detail}</p>
+            <span className="text-[11px] font-medium text-[#111111]/50">{check.name}</span>
+            <p className="text-[10px] leading-[1.5] text-[#111111]/35">{check.detail}</p>
           </div>
         </div>
       ))}
@@ -157,18 +157,18 @@ function StructurePanel({ data }: { data: any }) {
   return (
     <div className="space-y-3">
       {/* Section map */}
-      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-white/[0.04]">
-        <div className="bg-[#0a0a0a] p-2.5">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-white/15">Front Matter</p>
-          <p className="mt-1 text-[11px] font-medium text-white/60">{structure.frontMatter.length || '—'}</p>
+      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
+        <div className="bg-white p-2.5">
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Front Matter</p>
+          <p className="mt-1 text-[11px] font-medium text-[#111111]/60">{structure.frontMatter.length || '—'}</p>
         </div>
-        <div className="bg-[#0a0a0a] p-2.5">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-white/15">Body</p>
-          <p className="mt-1 text-[11px] font-medium text-white/60">{structure.chapterCount} chapters</p>
+        <div className="bg-white p-2.5">
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Body</p>
+          <p className="mt-1 text-[11px] font-medium text-[#111111]/60">{structure.chapterCount} chapters</p>
         </div>
-        <div className="bg-[#0a0a0a] p-2.5">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-white/15">Back Matter</p>
-          <p className="mt-1 text-[11px] font-medium text-white/60">{structure.backMatter.length || '—'}</p>
+        <div className="bg-white p-2.5">
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Back Matter</p>
+          <p className="mt-1 text-[11px] font-medium text-[#111111]/60">{structure.backMatter.length || '—'}</p>
         </div>
       </div>
 
@@ -177,9 +177,9 @@ function StructurePanel({ data }: { data: any }) {
         <div className="space-y-1">
           {sections.map((s: any, i: number) => (
             <div key={i} className="flex items-center gap-2 text-[10px]">
-              <span className={`h-1.5 w-1.5 rounded-full ${s.matter === 'front' ? 'bg-blue-400' : s.matter === 'body' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-              <span className="text-white/40">{s.label}</span>
-              <span className="text-white/15">line {s.line}</span>
+              <span className={`h-1.5 w-1.5 rounded-full ${s.matter === 'front' ? 'bg-blue-500' : s.matter === 'body' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span className="text-[#111111]/40">{s.label}</span>
+              <span className="text-[#111111]/20">line {s.line}</span>
             </div>
           ))}
         </div>
@@ -187,21 +187,21 @@ function StructurePanel({ data }: { data: any }) {
 
       {/* Warnings & suggestions */}
       {warnings.length > 0 && (
-        <div className="space-y-1 border-t border-white/[0.06] pt-2">
+        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
           {warnings.map((w: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
-              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" />
-              <span className="text-amber-400/70">{w.message}</span>
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+              <span className="text-amber-500/70">{w.message}</span>
             </div>
           ))}
         </div>
       )}
       {suggestions.length > 0 && (
-        <div className="space-y-1 border-t border-white/[0.06] pt-2">
+        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
           {suggestions.map((s: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
-              <Info className="mt-0.5 h-3 w-3 shrink-0 text-blue-400" />
-              <span className="text-blue-400/70">{s.message}</span>
+              <Info className="mt-0.5 h-3 w-3 shrink-0 text-blue-500" />
+              <span className="text-blue-500/70">{s.message}</span>
             </div>
           ))}
         </div>
@@ -217,8 +217,8 @@ function TypographyPanel({ data }: { data: any }) {
       <div className="flex items-center gap-3">
         <ScoreRing score={data.score} grade={data.grade} />
         <div>
-          <p className="text-[12px] font-medium text-white/60">Typography Score</p>
-          <p className="text-[10px] text-white/25">{data.score}/100 — {data.checks.filter((c: any) => c.status === 'pass').length}/{data.checks.length} checks passed</p>
+          <p className="text-[12px] font-medium text-[#111111]/60">Typography Score</p>
+          <p className="text-[10px] text-[#111111]/30">{data.score}/100 — {data.checks.filter((c: any) => c.status === 'pass').length}/{data.checks.length} checks passed</p>
         </div>
       </div>
       <CheckList checks={data.checks} />
@@ -233,16 +233,16 @@ function PrintQAPanel({ data }: { data: any }) {
       <div className="flex items-center gap-3">
         <ScoreRing score={data.score} grade={data.grade} />
         <div>
-          <p className="text-[12px] font-medium text-white/60">Print Quality Score</p>
-          <p className="text-[10px] text-white/25">{data.score}/100</p>
+          <p className="text-[12px] font-medium text-[#111111]/60">Print Quality Score</p>
+          <p className="text-[10px] text-[#111111]/30">{data.score}/100</p>
         </div>
       </div>
       <CheckList checks={data.checks} />
       {data.recommendations?.length > 0 && (
-        <div className="space-y-1 border-t border-white/[0.06] pt-2">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-white/15">Recommendations</p>
+        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Recommendations</p>
           {data.recommendations.map((r: string, i: number) => (
-            <p key={i} className="text-[10px] leading-[1.5] text-white/30">• {r}</p>
+            <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/35">• {r}</p>
           ))}
         </div>
       )}
@@ -254,16 +254,16 @@ function AssetsPanel({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-4 gap-px rounded-lg overflow-hidden bg-white/[0.04]">
+      <div className="grid grid-cols-4 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
         {[
           { label: 'Figures', value: data.stats.figureCount },
           { label: 'Tables', value: data.stats.tableCount },
           { label: 'External', value: data.stats.externalImages },
           { label: 'No Caption', value: data.stats.missingCaptions },
         ].map(s => (
-          <div key={s.label} className="bg-[#0a0a0a] p-2">
-            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-white/15">{s.label}</p>
-            <p className="mt-0.5 text-[12px] font-bold text-white/60">{s.value}</p>
+          <div key={s.label} className="bg-white p-2">
+            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
+            <p className="mt-0.5 text-[12px] font-bold text-[#111111]/60">{s.value}</p>
           </div>
         ))}
       </div>
@@ -272,11 +272,11 @@ function AssetsPanel({ data }: { data: any }) {
           {data.issues.slice(0, 8).map((issue: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <StatusBadge status={issue.severity as StatusIcon} />
-              <span className="text-white/30">{issue.message}</span>
+              <span className="text-[#111111]/35">{issue.message}</span>
             </div>
           ))}
           {data.issues.length > 8 && (
-            <p className="text-[9px] text-white/15">+ {data.issues.length - 8} more issues</p>
+            <p className="text-[9px] text-[#111111]/20">+ {data.issues.length - 8} more issues</p>
           )}
         </div>
       )}
@@ -288,15 +288,15 @@ function LintPanel({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-white/[0.04]">
+      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
         {[
-          { label: 'Issues', value: data.stats.totalIssues, color: data.stats.totalIssues > 0 ? 'text-amber-400' : 'text-emerald-400' },
+          { label: 'Issues', value: data.stats.totalIssues, color: data.stats.totalIssues > 0 ? 'text-amber-500' : 'text-emerald-500' },
           { label: 'Warnings', value: data.stats.bySeverity?.warn || 0 },
           { label: 'Info', value: data.stats.bySeverity?.info || 0 },
         ].map(s => (
-          <div key={s.label} className="bg-[#0a0a0a] p-2">
-            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-white/15">{s.label}</p>
-            <p className={`mt-0.5 text-[12px] font-bold ${s.color || 'text-white/60'}`}>{s.value}</p>
+          <div key={s.label} className="bg-white p-2">
+            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
+            <p className={`mt-0.5 text-[12px] font-bold ${s.color || 'text-[#111111]/60'}`}>{s.value}</p>
           </div>
         ))}
       </div>
@@ -306,8 +306,8 @@ function LintPanel({ data }: { data: any }) {
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <StatusBadge status={issue.severity as StatusIcon} />
               <div>
-                <span className="text-white/40">{issue.message}</span>
-                {issue.fix && <p className="text-white/20">{issue.fix}</p>}
+                <span className="text-[#111111]/40">{issue.message}</span>
+                {issue.fix && <p className="text-[#111111]/25">{issue.fix}</p>}
               </div>
             </div>
           ))}
@@ -324,22 +324,22 @@ function MultilingualPanel({ data }: { data: any }) {
     <div className="space-y-3">
       <div className="flex flex-wrap gap-1.5">
         {scriptAnalysis.scripts.map((s: any) => (
-          <span key={s.script} className="inline-flex items-center gap-1 rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px]">
-            <span className={`h-1.5 w-1.5 rounded-full ${s.direction === 'rtl' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-            <span className="text-white/40">{s.label}</span>
-            <span className="text-white/15">{s.percentage}%</span>
+          <span key={s.script} className="inline-flex items-center gap-1 rounded-full bg-[#111111]/[0.04] px-2 py-0.5 text-[10px]">
+            <span className={`h-1.5 w-1.5 rounded-full ${s.direction === 'rtl' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+            <span className="text-[#111111]/40">{s.label}</span>
+            <span className="text-[#111111]/20">{s.percentage}%</span>
           </span>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-white/[0.04]">
+      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
         {[
           { label: 'RTL', value: scriptAnalysis.hasRTL ? 'Yes' : 'No' },
           { label: 'Mixed Dir', value: scriptAnalysis.hasMixedDirection ? 'Yes' : 'No' },
           { label: 'Diacritics', value: scriptAnalysis.hasDiacritics ? 'Yes' : 'No' },
         ].map(s => (
-          <div key={s.label} className="bg-[#0a0a0a] p-2">
-            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-white/15">{s.label}</p>
-            <p className="mt-0.5 text-[11px] font-medium text-white/60">{s.value}</p>
+          <div key={s.label} className="bg-white p-2">
+            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
+            <p className="mt-0.5 text-[11px] font-medium text-[#111111]/60">{s.value}</p>
           </div>
         ))}
       </div>
@@ -348,7 +348,7 @@ function MultilingualPanel({ data }: { data: any }) {
           {recommendations.map((r: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <StatusBadge status={r.severity as StatusIcon} />
-              <span className="text-white/30">{r.message}</span>
+              <span className="text-[#111111]/35">{r.message}</span>
             </div>
           ))}
         </div>
@@ -362,17 +362,17 @@ function PlatformPanel({ data }: { data: any }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Shield className={`h-4 w-4 ${data.passed ? 'text-emerald-400' : 'text-amber-400'}`} />
-        <p className="text-[12px] font-medium text-white/60">{data.platform}</p>
-        <span className={`rounded-full px-2 py-0.5 text-[9px] font-medium ${data.passed ? 'bg-emerald-400/10 text-emerald-400' : 'bg-amber-400/10 text-amber-400'}`}>
+        <Shield className={`h-4 w-4 ${data.passed ? 'text-emerald-500' : 'text-amber-500'}`} />
+        <p className="text-[12px] font-medium text-[#111111]/60">{data.platform}</p>
+        <span className={`rounded-full px-2 py-0.5 text-[9px] font-medium ${data.passed ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
           {data.passed ? 'PASSED' : 'ISSUES'}
         </span>
       </div>
       <CheckList checks={data.checks} />
       {data.recommendations?.length > 0 && (
-        <div className="space-y-1 border-t border-white/[0.06] pt-2">
+        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
           {data.recommendations.map((r: string, i: number) => (
-            <p key={i} className="text-[10px] leading-[1.5] text-white/30">• {r}</p>
+            <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/35">• {r}</p>
           ))}
         </div>
       )}
@@ -384,14 +384,14 @@ function ProvenancePanel({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="space-y-2">
-      <div className="rounded-lg bg-white/[0.02] p-3 font-mono text-[10px] leading-[1.8]">
-        <div className="flex justify-between"><span className="text-white/20">Build ID</span><span className="text-white/40">{data.buildId}</span></div>
-        <div className="flex justify-between"><span className="text-white/20">Content Hash</span><span className="text-white/40">{data.contentHash}</span></div>
-        <div className="flex justify-between"><span className="text-white/20">Settings Hash</span><span className="text-white/40">{data.settingsHash}</span></div>
-        <div className="flex justify-between"><span className="text-white/20">Template</span><span className="text-white/40">{data.config?.template}</span></div>
-        <div className="flex justify-between"><span className="text-white/20">Page Size</span><span className="text-white/40">{data.config?.pageSize}</span></div>
-        <div className="flex justify-between"><span className="text-white/20">Words</span><span className="text-white/40">{data.wordCount?.toLocaleString()}</span></div>
-        <div className="flex justify-between"><span className="text-white/20">Engine</span><span className="text-white/40">{data.system?.engine} {data.system?.version}</span></div>
+      <div className="rounded-lg bg-[#111111]/[0.02] p-3 font-mono text-[10px] leading-[1.8]">
+        <div className="flex justify-between"><span className="text-[#111111]/25">Build ID</span><span className="text-[#111111]/40">{data.buildId}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Content Hash</span><span className="text-[#111111]/40">{data.contentHash}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Settings Hash</span><span className="text-[#111111]/40">{data.settingsHash}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Template</span><span className="text-[#111111]/40">{data.config?.template}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Page Size</span><span className="text-[#111111]/40">{data.config?.pageSize}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Words</span><span className="text-[#111111]/40">{data.wordCount?.toLocaleString()}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Engine</span><span className="text-[#111111]/40">{data.system?.engine} {data.system?.version}</span></div>
       </div>
     </div>
   )
@@ -400,14 +400,14 @@ function ProvenancePanel({ data }: { data: any }) {
 function ExtensionsPanel({ data }: { data: any }) {
   // Show available tokens (from /api/template-tokens)
   if (!data) return (
-    <p className="text-[10px] text-white/25">Template extension tokens allow safe overrides of typography, spacing, and heading styles within the design system&apos;s constraints.</p>
+    <p className="text-[10px] text-[#111111]/30">Template extension tokens allow safe overrides of typography, spacing, and heading styles within the design system&apos;s constraints.</p>
   )
   return (
     <div className="space-y-2">
       {Object.entries(data).map(([key, schema]: [string, any]) => (
         <div key={key} className="flex items-center justify-between text-[10px]">
-          <span className="text-white/30">{schema.label}</span>
-          <span className="font-mono text-white/15">{schema.default}{schema.unit ? schema.unit : ''}</span>
+          <span className="text-[#111111]/35">{schema.label}</span>
+          <span className="font-mono text-[#111111]/20">{schema.default}{schema.unit ? schema.unit : ''}</span>
         </div>
       ))}
     </div>
@@ -496,7 +496,7 @@ export default function PublishingSystems({
   }
 
   function renderSystemContent(key: SystemKey) {
-    if (!analysis) return <p className="text-[10px] text-white/15">Run analysis to see results.</p>
+    if (!analysis) return <p className="text-[10px] text-[#111111]/20">Run analysis to see results.</p>
 
     switch (key) {
       case 'structure':    return <StructurePanel data={analysis.structure} />
@@ -539,13 +539,13 @@ export default function PublishingSystems({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.3 }}
-      className="fixed right-0 top-[3.5rem] bottom-0 z-40 w-[380px] border-l border-white/[0.06] bg-[#080808]/95 backdrop-blur-xl overflow-hidden flex flex-col"
+      className="fixed right-0 top-[3.5rem] bottom-0 z-40 w-[380px] border-l border-[#111111]/[0.06] bg-white/95 backdrop-blur-xl overflow-hidden flex flex-col"
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-4 py-3">
         <div className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4 text-[#FF3333]" />
-          <span className="font-display text-sm font-semibold text-white/80">Publishing Systems</span>
+          <span className="font-display text-sm font-semibold text-[#111111]/80">Publishing Systems</span>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -556,7 +556,7 @@ export default function PublishingSystems({
             {status === 'loading' ? <Loader2 className="h-3 w-3 animate-spin" /> : <BarChart3 className="h-3 w-3" />}
             {status === 'loading' ? 'Analyzing...' : 'Analyze'}
           </button>
-          <button onClick={onClose} className="text-white/20 hover:text-white/40">
+          <button onClick={onClose} className="text-[#111111]/25 hover:text-[#111111]/40">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -564,15 +564,15 @@ export default function PublishingSystems({
 
       {/* Summary bar */}
       {analysis?.summary && (
-        <div className="grid grid-cols-4 gap-px bg-white/[0.04] border-b border-white/[0.06]">
+        <div className="grid grid-cols-4 gap-px bg-[#111111]/[0.04] border-b border-[#111111]/[0.06]">
           {[
-            { label: 'Typo', value: analysis.summary.typographyGrade, color: analysis.summary.typographyGrade === 'A' ? 'text-emerald-400' : 'text-amber-400' },
-            { label: 'QA', value: analysis.summary.printQAGrade, color: analysis.summary.printQAGrade === 'A' ? 'text-emerald-400' : 'text-amber-400' },
-            { label: 'Lint', value: analysis.summary.lintIssues, color: analysis.summary.lintIssues === 0 ? 'text-emerald-400' : 'text-amber-400' },
-            { label: 'KDP', value: analysis.summary.platformPassed ? '✓' : '—', color: analysis.summary.platformPassed ? 'text-emerald-400' : 'text-white/20' },
+            { label: 'Typo', value: analysis.summary.typographyGrade, color: analysis.summary.typographyGrade === 'A' ? 'text-emerald-500' : 'text-amber-500' },
+            { label: 'QA', value: analysis.summary.printQAGrade, color: analysis.summary.printQAGrade === 'A' ? 'text-emerald-500' : 'text-amber-500' },
+            { label: 'Lint', value: analysis.summary.lintIssues, color: analysis.summary.lintIssues === 0 ? 'text-emerald-500' : 'text-amber-500' },
+            { label: 'KDP', value: analysis.summary.platformPassed ? '✓' : '—', color: analysis.summary.platformPassed ? 'text-emerald-500' : 'text-[#111111]/25' },
           ].map(s => (
-            <div key={s.label} className="bg-[#080808] px-2 py-2 text-center">
-              <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-white/15">{s.label}</p>
+            <div key={s.label} className="bg-white px-2 py-2 text-center">
+              <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
               <p className={`mt-0.5 font-display text-sm font-bold ${s.color}`}>{s.value}</p>
             </div>
           ))}
@@ -582,7 +582,7 @@ export default function PublishingSystems({
       {/* Error state */}
       {error && (
         <div className="mx-4 mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2">
-          <p className="font-mono text-[10px] text-red-400">{error}</p>
+          <p className="font-mono text-[10px] text-red-500">{error}</p>
         </div>
       )}
 
@@ -595,18 +595,18 @@ export default function PublishingSystems({
                 onClick={() => toggleSystem(sys.key)}
                 className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-all ${
                   expandedSystem === sys.key
-                    ? 'bg-white/[0.04]'
-                    : 'hover:bg-white/[0.02]'
+                    ? 'bg-[#111111]/[0.04]'
+                    : 'hover:bg-[#111111]/[0.02]'
                 }`}
               >
-                <span className="shrink-0 text-white/25">{sys.icon}</span>
+                <span className="shrink-0 text-[#111111]/30">{sys.icon}</span>
                 <div className="min-w-0 flex-1">
-                  <span className="text-[11px] font-medium text-white/50">{sys.label}</span>
+                  <span className="text-[11px] font-medium text-[#111111]/50">{sys.label}</span>
                 </div>
                 <StatusBadge status={getSystemStatus(sys.key)} />
                 {expandedSystem === sys.key
-                  ? <ChevronUp className="h-3 w-3 shrink-0 text-white/15" />
-                  : <ChevronDown className="h-3 w-3 shrink-0 text-white/15" />
+                  ? <ChevronUp className="h-3 w-3 shrink-0 text-[#111111]/20" />
+                  : <ChevronDown className="h-3 w-3 shrink-0 text-[#111111]/20" />
                 }
               </button>
 
@@ -620,11 +620,11 @@ export default function PublishingSystems({
                     className="overflow-hidden"
                   >
                     <div className="px-3 pb-3 pt-1">
-                      <p className="mb-2 text-[9px] text-white/15">{sys.description}</p>
+                      <p className="mb-2 text-[9px] text-[#111111]/20">{sys.description}</p>
                       {status === 'loading' ? (
                         <div className="flex items-center gap-2 py-3">
-                          <Loader2 className="h-3 w-3 animate-spin text-white/15" />
-                          <span className="text-[10px] text-white/15">Analyzing...</span>
+                          <Loader2 className="h-3 w-3 animate-spin text-[#111111]/20" />
+                          <span className="text-[10px] text-[#111111]/20">Analyzing...</span>
                         </div>
                       ) : (
                         renderSystemContent(sys.key)
