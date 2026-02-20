@@ -20,7 +20,7 @@ const TIERS = [
     name: 'Drafter',
     price: 'Free',
     period: 'forever',
-    body: 'Everything you need to start. All 12 typographic systems, 6 page sizes, real-time preview. Unlimited manuscripts, unlimited compiles.',
+    body: 'Everything you need to start. All 15 templates \u00d7 3 heading variants = 45 styles, 6 page sizes, real-time preview. Unlimited manuscripts, unlimited compiles.',
     aside: 'Watermarked output. Upgrade when your book is ready for print.',
     cta: 'Start Free',
     href: '/app',

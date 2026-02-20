@@ -28,7 +28,8 @@ import PublishingSystems from './PublishingSystems'
    TYPES & CONSTANTS
    ═══════════════════════════════════════════════════════════════════ */
 
-type TemplateKey = 'minimal' | 'symphony' | 'chronicle' | 'exhibit' | 'matrix' | 'avantgarde' | 'chicago' | 'paperback' | 'international' | 'cinema' | 'heirloom' | 'operator'
+type TemplateKey = 'minimal' | 'symphony' | 'chronicle' | 'exhibit' | 'matrix' | 'avantgarde' | 'chicago' | 'paperback' | 'international' | 'cinema' | 'heirloom' | 'operator' | 'verse' | 'thesis' | 'memoir'
+type HeadingVariant = 'classic' | 'modern' | 'bold'
 type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'royal' | 'bFormat' | 'massMarket' | 'aFormat' | 'demy' | 'fiveTwentyFiveByEight' | 'crownQuarto' | 'b5' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
 type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'generous' | 'compact'
 type CompileMode = 'fast' | 'full'
@@ -70,6 +71,7 @@ type Prefs = {
   marginPreset: MarginPreset
   safeMode: boolean
   title: string
+  headingVariant?: HeadingVariant
 }
 
 type Genre = 'fiction' | 'nonfiction' | 'specialist' | 'all'
@@ -83,18 +85,30 @@ type TemplateEntry = {
 }
 
 const TEMPLATE_INFO: Record<TemplateKey, TemplateEntry> = {
+  // Fiction
   symphony:      { name: 'Symphony',       subtitle: 'The Classic Novel',        vibe: 'Elegant serifs. Best for History, Romance, and Literary Fiction.',     genre: 'fiction',     font: 'EB Garamond' },
   paperback:     { name: 'Paperback',      subtitle: 'The Modern Bestseller',    vibe: 'Clean and fast. Best for Thrillers, Sci-Fi, and Airport Reads.',      genre: 'fiction',     font: 'Alegreya Sans' },
   exhibit:       { name: 'Exhibit',        subtitle: 'The Art Gallery',          vibe: 'Minimalist and airy. Best for Poetry, Photography, and Memoirs.',     genre: 'fiction',     font: 'Fira Sans' },
+  memoir:        { name: 'Memoir',         subtitle: 'The Personal Story',       vibe: 'Warm and intimate. Best for Memoir, Autobiography, and Travel.',      genre: 'fiction',     font: 'Libre Baskerville' },
+  // Non-Fiction
   chicago:       { name: 'Chicago',        subtitle: 'The University Press',     vibe: 'Scholarly authority. Best for Research, History, and Dissertations.', genre: 'nonfiction',  font: 'ETbb (Bembo)' },
+  thesis:        { name: 'Thesis',         subtitle: 'The Dissertation',         vibe: 'Double-spaced, numbered sections. University submission format.',     genre: 'nonfiction',  font: 'Latin Modern' },
   chronicle:     { name: 'Chronicle',      subtitle: 'The Journalist',           vibe: 'Bold and objective. Best for True Crime, Essays, and Magazines.',     genre: 'nonfiction',  font: 'TeX Gyre Heros' },
   matrix:        { name: 'Matrix',         subtitle: 'The Boardroom Report',     vibe: 'Structured and dense. Best for Business, Strategy, and Reports.',     genre: 'nonfiction',  font: 'Fira Sans' },
   international: { name: 'International',  subtitle: 'The Swiss Standard',       vibe: 'Pure grid logic. Best for Design, Architecture, and Monographs.',     genre: 'nonfiction',  font: 'TeX Gyre Heros' },
+  // Specialist
+  verse:         { name: 'Verse',          subtitle: 'The Poetry Collection',    vibe: 'Centered titles, generous leading. For Poetry and Verse Drama.',      genre: 'specialist',  font: 'EB Garamond' },
   cinema:        { name: 'Cinema',         subtitle: 'The Screenplay',           vibe: 'Hollywood Standard. 1 page = 1 minute. Courier, proper sluglines.',  genre: 'specialist',  font: 'TeX Gyre Cursor' },
   heirloom:      { name: 'Heirloom',       subtitle: 'The Cookbook',              vibe: 'Ingredient blocks, bold steps. Best for Recipes and Food Writing.',   genre: 'specialist',  font: 'Fira Sans' },
   operator:      { name: 'Operator',       subtitle: 'The Technical Manual',     vibe: 'Warning boxes, code blocks. Best for Docs, Guides, and Manuals.',    genre: 'specialist',  font: 'Fira Sans' },
   avantgarde:    { name: 'Avant-Garde',    subtitle: 'The Experimental',         vibe: 'Brutalist blockquotes, deconstructed grid. For rule-breakers.',       genre: 'specialist',  font: 'Source Sans 3' },
   minimal:       { name: 'Minimal',        subtitle: 'The Universal',            vibe: 'Zero dependencies. Compiles anywhere. Pure content, no fuss.',        genre: 'specialist',  font: 'Latin Modern' },
+}
+
+const HEADING_VARIANT_INFO: Record<HeadingVariant, { label: string; desc: string }> = {
+  classic: { label: 'Classic', desc: 'Signature style' },
+  modern:  { label: 'Modern',  desc: 'Clean & restrained' },
+  bold:    { label: 'Bold',    desc: 'Dramatic & heavy' },
 }
 
 const TEMPLATE_KEYS = Object.keys(TEMPLATE_INFO) as TemplateKey[]
@@ -826,6 +840,7 @@ function LevitatingBook({
 
 function FloatingHUD({
   template,
+  headingVariant,
   pageSize,
   marginPreset,
   compileMode,
@@ -836,6 +851,7 @@ function FloatingHUD({
   fontUploading,
   onTabChange,
   onTemplateChange,
+  onHeadingVariantChange,
   onPageSizeChange,
   onMarginChange,
   onCompileModeChange,
@@ -844,6 +860,7 @@ function FloatingHUD({
   onFontRemove,
 }: {
   template: TemplateKey
+  headingVariant: HeadingVariant
   pageSize: PageSize
   marginPreset: MarginPreset
   compileMode: CompileMode
@@ -854,6 +871,7 @@ function FloatingHUD({
   fontUploading: boolean
   onTabChange: (t: HudTab) => void
   onTemplateChange: (t: TemplateKey) => void
+  onHeadingVariantChange: (v: HeadingVariant) => void
   onPageSizeChange: (s: PageSize) => void
   onMarginChange: (m: MarginPreset) => void
   onCompileModeChange: (m: CompileMode) => void
@@ -947,6 +965,26 @@ function FloatingHUD({
                     </button>
                   )
                 })}
+              </div>
+            </div>
+
+            {/* Heading variant toggle — secondary choice */}
+            <div className="flex items-center justify-between border-t border-[#111111]/[0.06] px-4 py-2.5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/30">Headings</span>
+              <div className="flex gap-1">
+                {(['classic', 'modern', 'bold'] as HeadingVariant[]).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => onHeadingVariantChange(v)}
+                    className={`rounded-full px-3 py-1 font-mono text-[10px] transition-all ${
+                      headingVariant === v
+                        ? 'bg-[#111111] text-white'
+                        : 'text-[#111111]/35 hover:bg-[#111111]/[0.05] hover:text-[#111111]/60'
+                    }`}
+                  >
+                    {HEADING_VARIANT_INFO[v].label}
+                  </button>
+                ))}
               </div>
             </div>
           </motion.div>
@@ -1329,6 +1367,7 @@ function TopBar({
 function LaunchOverlay({
   title,
   template,
+  headingVariant,
   pageSize,
   marginPreset,
   wordCount,
@@ -1342,6 +1381,7 @@ function LaunchOverlay({
 }: {
   title: string
   template: TemplateKey
+  headingVariant: HeadingVariant
   pageSize: PageSize
   marginPreset: MarginPreset
   wordCount: number
@@ -1415,6 +1455,7 @@ function LaunchOverlay({
       const body: Record<string, unknown> = {
         manuscriptText: manuscript,
         template,
+        headingVariant,
         title: title || 'Manuscript',
         pageSize,
         marginPreset,
@@ -1815,6 +1856,7 @@ export default function CompileShell() {
   const [stage, setStage] = useState<Stage>('portal')
   const [manuscript, setManuscript] = useState('')
   const [template, setTemplate] = useState<TemplateKey>('symphony')
+  const [headingVariant, setHeadingVariant] = useState<HeadingVariant>('classic')
   const [title, setTitle] = useState<string>('')
   const [pageSize, setPageSize] = useState<PageSize>('sixByNine')
   const [marginPreset, setMarginPreset] = useState<MarginPreset>('normal')
@@ -1855,6 +1897,7 @@ export default function CompileShell() {
       if (!raw) return
       const p: Partial<Prefs> = JSON.parse(raw)
       if (p.template) setTemplate(p.template)
+      if (p.headingVariant) setHeadingVariant(p.headingVariant)
       if (p.pageSize) setPageSize(p.pageSize)
       if (p.marginPreset) setMarginPreset(p.marginPreset)
       if (typeof p.safeMode === 'boolean') setSafeMode(p.safeMode)
@@ -1865,9 +1908,9 @@ export default function CompileShell() {
   // Save preferences
   useEffect(() => {
     if (stage === 'portal') return
-    const prefs: Prefs = { template, pageSize, marginPreset, safeMode, title }
+    const prefs: Prefs = { template, pageSize, marginPreset, safeMode, title, headingVariant }
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)) } catch { /* ignore */ }
-  }, [template, pageSize, marginPreset, safeMode, title, stage])
+  }, [template, headingVariant, pageSize, marginPreset, safeMode, title, stage])
 
   // Debounced auto-compile in design stage
   useEffect(() => {
@@ -1876,7 +1919,7 @@ export default function CompileShell() {
     debounceRef.current = window.setTimeout(() => { void compile(false) }, 1000)
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscript, template, title, pageSize, marginPreset, safeMode, compileMode, stage])
+  }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, stage])
 
   // Keyboard shortcuts (design stage)
   useEffect(() => {
@@ -1961,6 +2004,7 @@ export default function CompileShell() {
       const body: Record<string, unknown> = {
         manuscriptText: effectiveMd,
         template,
+        headingVariant,
         title: title || 'Manuscript',
         pageSize,
         marginPreset,
@@ -2118,6 +2162,7 @@ export default function CompileShell() {
             <div data-hud>
               <FloatingHUD
                 template={template}
+                headingVariant={headingVariant}
                 pageSize={pageSize}
                 marginPreset={marginPreset}
                 compileMode={compileMode}
@@ -2128,6 +2173,7 @@ export default function CompileShell() {
                 fontUploading={fontUploading}
                 onTabChange={setHudTab}
                 onTemplateChange={setTemplate}
+                onHeadingVariantChange={setHeadingVariant}
                 onPageSizeChange={setPageSize}
                 onMarginChange={setMarginPreset}
                 onCompileModeChange={setCompileMode}
@@ -2209,6 +2255,7 @@ export default function CompileShell() {
           <LaunchOverlay
             title={title}
             template={template}
+            headingVariant={headingVariant}
             pageSize={pageSize}
             marginPreset={marginPreset}
             wordCount={wordCount}

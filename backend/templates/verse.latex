@@ -1,0 +1,105 @@
+% Verse — "This is a Poem"
+% Line-based layout for poetry, verse drama, and song lyrics
+% EB Garamond body, centered titles, no paragraph indent, generous leading
+% Target: Poetry collections, verse drama, lyric anthologies, song books
+
+\documentclass[11pt]{book}
+\usepackage{geometry}
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{verse}
+
+% ── TYPOGRAPHY — Classical Serif for Verse ────────────────────
+% EB Garamond: old-style figures, calligraphic elegance, poetry's natural home
+\setmainfont{EB Garamond}[
+  Ligatures=TeX,
+  Numbers=OldStyle
+]
+\setsansfont{Libertinus Sans}[Scale=MatchLowercase]
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+
+% ── SPACING — Generous breathing room for verse ───────────────
+\setstretch{1.4}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\hyphenpenalty=10000
+
+% ── COLORS ────────────────────────────────────────────────────
+\definecolor{titlegrey}{gray}{0.40}
+
+% ── CHAPTER HEADINGS — Centered, Delicate ─────────────────────
+% Poem titles as chapter openings — centered, small caps, thin rule
+\titleformat{\chapter}[display]
+  {\normalfont\centering}
+  {\vspace*{60pt}{\fontsize{10pt}{10pt}\selectfont\scshape\color{titlegrey}\chaptertitlename\ \thechapter}}
+  {10pt}
+  {\Large\itshape}
+  [\vspace{4pt}{\centering\rule{0.6cm}{0.3pt}}\vspace{12pt}]
+
+\titleformat{name=\chapter,numberless}[display]
+  {\normalfont\centering}
+  {\vspace*{60pt}}
+  {0pt}
+  {\Large\itshape}
+  [\vspace{4pt}{\centering\rule{0.6cm}{0.3pt}}\vspace{12pt}]
+
+\titlespacing*{\chapter}{0pt}{0pt}{24pt}
+
+% Section = poem title within a chapter/section
+\titleformat{\section}{\normalfont\large\itshape\centering}{}{0em}{}
+\titleformat{\subsection}{\normalfont\normalsize\scshape\centering}{}{0em}{}
+\titlespacing*{\section}{0pt}{30pt}{12pt}
+\titlespacing*{\subsection}{0pt}{18pt}{8pt}
+
+% ── HEADERS & FOOTERS — Discreet ─────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\footnotesize\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\footnotesize\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+% ── BLOCK QUOTES — Epigraph style ────────────────────────────
+\renewenvironment{quote}
+  {\list{}{\leftmargin=2em\rightmargin=2em}\item\relax\small\itshape\setstretch{1.2}}
+  {\endlist}
+
+\setlist{nosep,leftmargin=1.5em}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=black!60,citecolor=black}
+
+% ── Header includes (injected by compile pipeline) ───────────
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+% ── DOCUMENT ──────────────────────────────────────────────────
+\begin{document}
+
+$if(title)$
+\begin{titlepage}
+\vspace*{\fill}
+\begin{center}
+{\fontsize{24pt}{30pt}\selectfont\itshape $title$\par}
+\vspace{8pt}
+{\centering\rule{1.5cm}{0.3pt}\par}
+$if(author)$\vspace{12pt}{\normalsize\scshape $author$\par}$endif$
+$if(date)$\vspace{8pt}{\small\color{titlegrey} $date$\par}$endif$
+\end{center}
+\vspace*{\fill}
+\end{titlepage}
+$endif$
+
+$body$
+
+$if(bibliography)$
+\newpage
+\section*{Notes}
+$bibliography$
+$endif$
+
+\end{document}

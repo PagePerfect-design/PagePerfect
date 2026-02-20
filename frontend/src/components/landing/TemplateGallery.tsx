@@ -5,13 +5,17 @@ import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 
 const TEMPLATES = [
-  { key: 'symphony', name: 'Symphony', desc: 'Dissertations & scholarly papers', tag: 'Academic', gradient: 'from-blue-500/30 to-indigo-500/20' },
+  { key: 'symphony', name: 'Symphony', desc: 'Classical literary fiction', tag: 'Fiction', gradient: 'from-blue-500/30 to-indigo-500/20' },
+  { key: 'paperback', name: 'Paperback', desc: 'Modern bestseller format', tag: 'Fiction', gradient: 'from-cyan-500/30 to-sky-500/20' },
+  { key: 'memoir', name: 'Memoir', desc: 'Personal narrative & travel', tag: 'Fiction', gradient: 'from-amber-600/30 to-yellow-500/20' },
   { key: 'chronicle', name: 'Chronicle', desc: 'Reports & white papers', tag: 'Editorial', gradient: 'from-emerald-500/30 to-teal-500/20' },
-  { key: 'exhibit', name: 'Exhibit', desc: 'Trade books & nonfiction', tag: 'Trade', gradient: 'from-amber-500/30 to-orange-500/20' },
+  { key: 'chicago', name: 'Chicago', desc: 'University press monograph', tag: 'Academic', gradient: 'from-slate-400/30 to-zinc-500/20' },
+  { key: 'thesis', name: 'Thesis', desc: 'Dissertation submission', tag: 'Academic', gradient: 'from-slate-500/30 to-gray-500/20' },
+  { key: 'exhibit', name: 'Exhibit', desc: 'Art & photography books', tag: 'Trade', gradient: 'from-amber-500/30 to-orange-500/20' },
   { key: 'matrix', name: 'Matrix', desc: 'Corporate & business docs', tag: 'Business', gradient: 'from-violet-500/30 to-purple-500/20' },
+  { key: 'verse', name: 'Verse', desc: 'Poetry & verse drama', tag: 'Poetry', gradient: 'from-purple-400/30 to-violet-400/20' },
   { key: 'avantgarde', name: 'Avant-Garde', desc: 'Creative & experimental', tag: 'Creative', gradient: 'from-rose-500/30 to-pink-500/20' },
-  { key: 'paperback', name: 'Paperback', desc: 'Fiction & general audience', tag: 'Fiction', gradient: 'from-cyan-500/30 to-sky-500/20' },
-  { key: 'chicago', name: 'Chicago', desc: 'Classic academic format', tag: 'Academic', gradient: 'from-slate-400/30 to-zinc-500/20' },
+  { key: 'operator', name: 'Operator', desc: 'Technical manuals & docs', tag: 'Technical', gradient: 'from-sky-500/30 to-blue-500/20' },
   { key: 'minimal', name: 'Minimal', desc: 'Clean & lightweight', tag: 'Basic', gradient: 'from-gray-400/30 to-stone-500/20' },
 ]
 
@@ -42,16 +46,16 @@ export function TemplateGallery() {
         <div className="mb-16 text-center md:mb-20">
           <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/50">Templates</div>
           <h2 className="font-display text-display-lg font-bold tracking-tighter text-white">
-            Eight ways to look{' '}
-            <span className="gradient-accent-text">published</span>.
+            Fifteen templates. Forty-five{' '}
+            <span className="gradient-accent-text">looks</span>.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-xl text-white/35">
-            Every template is a complete typographic system.
+            Every template is a complete typographic system with three heading variants.
             Pick one. Your text does the rest.
           </p>
         </div>
 
-        <div ref={ref} className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div ref={ref} className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {TEMPLATES.map((t, i) => (
             <motion.div
               key={t.key}

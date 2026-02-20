@@ -9,7 +9,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const GridSystem = require('./grid-system');
 const publishing = require('./publishing');
 const lulu = require('./lulu');
@@ -26,10 +26,35 @@ const typographyAssurance = require('./typography-assurance');
 const multilingual = require('./multilingual');
 const printQA = require('./print-qa');
 const fontAvailability = require('./font-availability');
+const headingVariants = require('./heading-variants');
 
 // ---- limits (env overridable) ----
 const MAX_MD_BYTES = Number(process.env.MAX_MD_BYTES || 2_000_000); // ~2 MB
 const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000); // 45s
+
+// ---- Pandoc version detection ----
+// Pandoc 2.11+ has built-in --citeproc; older versions need --filter pandoc-citeproc
+let PANDOC_HAS_CITEPROC = false;
+try {
+  const versionOutput = execSync('pandoc --version', { encoding: 'utf8', timeout: 5000 });
+  const match = versionOutput.match(/pandoc(?:\.exe)?\s+(\d+)\.(\d+)/);
+  if (match) {
+    const major = parseInt(match[1], 10);
+    const minor = parseInt(match[2], 10);
+    PANDOC_HAS_CITEPROC = major > 2 || (major === 2 && minor >= 11);
+    console.log(`[startup] Pandoc ${match[1]}.${match[2]} detected — citeproc: ${PANDOC_HAS_CITEPROC ? 'built-in' : 'filter fallback'}`);
+  }
+} catch (e) {
+  console.warn('[startup] Could not detect Pandoc version:', e.message);
+}
+
+/** Returns the args needed to enable citation processing */
+function citeprocArgs(bibPath) {
+  if (PANDOC_HAS_CITEPROC) {
+    return ['--citeproc', `--bibliography=${bibPath}`];
+  }
+  return ['--filter', 'pandoc-citeproc', `--bibliography=${bibPath}`];
+}
 
 // ---- Allowed origins ----
 const ALLOWED_ORIGINS = [
@@ -513,7 +538,12 @@ app.get('/api/templates', (_req, res) => {
     characteristics: template.characteristics,
     gridType: template.gridType,
   }));
-  res.json({ templates });
+  res.json({
+    templates,
+    headingVariants: headingVariants.HEADING_VARIANTS,
+    variantLabels: headingVariants.VARIANT_LABELS,
+    variantDescriptions: headingVariants.VARIANT_DESCRIPTIONS,
+  });
 });
 
 // ================================================================
@@ -827,6 +857,39 @@ const DESIGN_TEMPLATES = {
     monofont: 'Fira Mono',
     gridType: 'editorial',
     characteristics: ['Fira Sans + Fira Mono', 'Warning/Info/Code admonition boxes', 'Navy blue headings', 'Technical hierarchy'],
+  },
+  verse: {
+    name: 'Verse',
+    description: 'Poetry collection — EB Garamond, centered titles, generous leading, line-based layout.',
+    category: 'Poetry',
+    templatePath: path.resolve(__dirname, 'templates/verse.latex'),
+    mainfont: 'EB Garamond',
+    sansfont: 'Libertinus Sans',
+    monofont: 'DejaVu Sans Mono',
+    gridType: 'creative',
+    characteristics: ['EB Garamond', 'Centered italic titles', 'Generous leading', 'No paragraph indent'],
+  },
+  thesis: {
+    name: 'Thesis',
+    description: 'University dissertation — Latin Modern, double-spaced, numbered sections, submission-ready.',
+    category: 'Academic',
+    templatePath: path.resolve(__dirname, 'templates/thesis.latex'),
+    mainfont: 'Latin Modern Roman',
+    sansfont: 'Latin Modern Sans',
+    monofont: 'Latin Modern Mono',
+    gridType: 'academic',
+    characteristics: ['Latin Modern Roman', 'Double-spaced', 'Numbered sections', 'University standard'],
+  },
+  memoir: {
+    name: 'Memoir',
+    description: 'Personal narrative — Libre Baskerville, warm amber accents, decorative scene breaks.',
+    category: 'Fiction',
+    templatePath: path.resolve(__dirname, 'templates/memoir.latex'),
+    mainfont: 'Libre Baskerville',
+    sansfont: 'TeX Gyre Heros',
+    monofont: 'DejaVu Sans Mono',
+    gridType: 'trade',
+    characteristics: ['Libre Baskerville', 'Warm amber accents', 'Decorative scene breaks', 'Intimate headings'],
   },
 };
 
@@ -1202,9 +1265,10 @@ const ALL_MARGINS = new Set(['normal','narrow','wide','minimal','academic','gene
 // ================================================================
 
 app.post('/api/compile', compileLimiter, async (req, res) => {
-  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts } = req.body || {};
+  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts, headingVariant } = req.body || {};
   safeMode = Boolean(safeMode);
   compileMode = (compileMode === 'full') ? 'full' : 'fast';
+  headingVariant = headingVariants.HEADING_VARIANTS.includes(headingVariant) ? headingVariant : 'classic';
   const wantPdfX = outputFormat === 'pdfx1a';
   const wantEpub = outputFormat === 'epub';
 
@@ -1258,7 +1322,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     ];
 
     if (!safeMode) {
-      epubArgs.push('--citeproc', `--bibliography=${BIB_PATH}`);
+      epubArgs.push(...citeprocArgs(BIB_PATH));
     }
 
     const startTs = Date.now();
@@ -1418,6 +1482,12 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         warnings.push(`Template extension errors: ${extResult.errors.map(e => e.error).join('; ')}`);
       }
     }
+
+    // 5. Heading variant (modern/bold override — classic is a no-op)
+    const variantPreamble = headingVariants.getVariantPreamble(tplKey, headingVariant);
+    if (variantPreamble) {
+      preambleParts.push(variantPreamble);
+    }
   } catch (preambleErr) {
     console.error('[compile] Preamble assembly error:', preambleErr);
     try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
@@ -1437,11 +1507,13 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     sansResolution?.isFallback ? `sans=${sansResolution.resolved} (fallback from ${tpl.sansfont})` : '',
     monoResolution?.isFallback ? `mono=${monoResolution.resolved} (fallback from ${tpl.monofont})` : '',
   ].filter(Boolean).join(' ');
-  console.log(`[compile] template=${tplKey} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
+  console.log(`[compile] template=${tplKey} variant=${headingVariant} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
 
+  const fromFormat = safeMode ? '--from=markdown'
+    : PANDOC_HAS_CITEPROC ? '--from=markdown+citations' : '--from=markdown';
   const baseArgs = [
     mdPath,
-    safeMode ? '--from=markdown' : '--from=markdown+citations',
+    fromFormat,
     '--pdf-engine=xelatex',
     '-M', `title=${title}`,
     `--template=${patchedTemplatePath}`,
@@ -1455,10 +1527,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
 
   const args = safeMode
     ? baseArgs
-    : baseArgs.concat([
-        '--citeproc',
-        `--bibliography=${BIB_PATH}`,
-      ]);
+    : baseArgs.concat(citeprocArgs(BIB_PATH));
 
   const startTs = Date.now();
   let pandoc;
@@ -1677,9 +1746,10 @@ app.post('/api/fonts/upload', fontUpload.single('font'), (req, res) => {
 // ================================================================
 
 app.post('/api/batch-compile', compileLimiter, async (req, res) => {
-  let { manuscriptText, template, title, marginPreset, safeMode, compileMode, pageSizes, customFonts } = req.body || {};
+  let { manuscriptText, template, title, marginPreset, safeMode, compileMode, pageSizes, customFonts, headingVariant: batchVariant } = req.body || {};
   safeMode = Boolean(safeMode);
   compileMode = (compileMode === 'full') ? 'full' : 'fast';
+  batchVariant = headingVariants.HEADING_VARIANTS.includes(batchVariant) ? batchVariant : 'classic';
 
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required.' });
@@ -1748,9 +1818,13 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
     return res.status(500).json({ error: 'preamble_error', message: 'Failed to assemble compile preamble.' });
   }
 
+  // Heading variant for batch
+  const batchVarPreamble = headingVariants.getVariantPreamble(tplKey, batchVariant);
+  if (batchVarPreamble) preambleParts.push(batchVarPreamble);
+
   const preambleStr = preambleParts.join('\n\n');
 
-  console.log(`[batch] Starting batch compile: ${validSizes.length} sizes for template=${tplKey}`);
+  console.log(`[batch] Starting batch compile: ${validSizes.length} sizes for template=${tplKey} variant=${batchVariant}`);
 
   // ── Compile each page size sequentially ──
   const pdfs = []; // { name, path, tmpBase }
@@ -1787,9 +1861,11 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
         }
       }
 
+      const batchFromFormat = safeMode ? '--from=markdown'
+        : PANDOC_HAS_CITEPROC ? '--from=markdown+citations' : '--from=markdown';
       const args = [
         mdPath,
-        safeMode ? '--from=markdown' : '--from=markdown+citations',
+        batchFromFormat,
         '--pdf-engine=xelatex',
         '-M', `title=${title}`,
         `--template=${tplPath}`,
@@ -1799,7 +1875,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
         ...(isFast ? [] : ['-V', 'microtype=true', '-V', 'csquotes=true']),
         '-o', pdfPath,
       ];
-      if (!safeMode) args.push('--citeproc', `--bibliography=${BIB_PATH}`);
+      if (!safeMode) args.push(...citeprocArgs(BIB_PATH));
 
       // Promisified compile
       const result = await new Promise((resolve) => {

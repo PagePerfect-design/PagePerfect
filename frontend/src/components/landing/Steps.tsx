@@ -10,8 +10,8 @@ const STEPS = [
   {
     num: '02',
     title: 'Pick your design system',
-    body: 'Twelve typographic systems — from academic Chicago to experimental Avant-Garde. Each uses M\u00fcller-Brockmann grid principles with calculated baselines and heading scales.',
-    detail: 'Not themes — mathematical systems where every line locks to a baseline grid.',
+    body: 'Fifteen typographic systems \u00d7 three heading variants = forty-five professional styles. Each uses M\u00fcller-Brockmann grid principles with calculated baselines and heading scales.',
+    detail: 'Not themes \u2014 mathematical systems. Classic, Modern, or Bold headings on every template.',
   },
   {
     num: '03',
