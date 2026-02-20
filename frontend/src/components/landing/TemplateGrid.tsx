@@ -122,6 +122,36 @@ const TEMPLATES = [
     leading: '15.4pt',
     scale: '2.25×',
   },
+  {
+    key: 'verse',
+    name: 'Verse',
+    category: 'Poetry',
+    font: 'EB Garamond',
+    sans: 'Libertinus Sans',
+    baseline: '11pt',
+    leading: '15.4pt',
+    scale: '2.25×',
+  },
+  {
+    key: 'thesis',
+    name: 'Thesis',
+    category: 'Academic',
+    font: 'Latin Modern',
+    sans: 'Latin Modern Sans',
+    baseline: '12pt',
+    leading: '24pt',
+    scale: '2.25×',
+  },
+  {
+    key: 'memoir',
+    name: 'Memoir',
+    category: 'Fiction',
+    font: 'Libre Baskerville',
+    sans: 'TeX Gyre Heros',
+    baseline: '11pt',
+    leading: '15.4pt',
+    scale: '2.25×',
+  },
 ]
 
 // ── Mini-Page Specimens ─────────────────────────────────────────
@@ -401,6 +431,58 @@ function OperatorSpecimen() {
   )
 }
 
+function VerseSpecimen() {
+  return (
+    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[18%] py-[14%] font-body text-[5px] leading-[1.8] text-[#111]/55">
+      <div className="mb-3 text-center">
+        <div className="font-body text-[7px] italic leading-tight text-[#111]">Aubade</div>
+        <div className="mx-auto mt-1 h-px w-3 bg-[#111]/10" />
+      </div>
+      <p className="text-center">I work all day, and get half-drunk at night.</p>
+      <p className="mt-[3px] text-center">Waking at four to soundless dark, I stare.</p>
+      <p className="mt-[3px] text-center">In time the curtain-edges will grow light.</p>
+      <p className="mt-[3px] text-center">Till then I see what&rsquo;s really always there:</p>
+      <div className="mt-auto text-center font-mono text-[3.5px] text-[#111]/15">3</div>
+    </div>
+  )
+}
+
+function ThesisSpecimen() {
+  return (
+    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[12%] py-[10%] font-body text-[5px] leading-[2] text-[#111]/55">
+      <div className="mb-2">
+        <div className="text-[6px] font-bold text-[#111]">2.1&ensp;Literature Review</div>
+      </div>
+      <p className="indent-[1em] text-justify">
+        Previous research has established a strong correlation between typographic quality and reader comprehension (Smith, 2019; Johnson &amp; Lee, 2021).
+      </p>
+      <p className="mt-[3px] indent-[1em] text-justify">
+        However, the relationship between baseline grids and readability remains underexplored in the existing literature.
+      </p>
+      <div className="mt-auto text-right font-mono text-[3.5px] text-[#111]/15">12</div>
+    </div>
+  )
+}
+
+function MemoirSpecimen() {
+  return (
+    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[14%] py-[12%] font-body text-[5px] leading-[1.6] text-[#111]/55">
+      <div className="mb-3 text-center">
+        <div className="font-mono text-[3.5px] text-[#111]/20">3</div>
+        <div className="mt-0.5 text-[7px] italic leading-tight text-[#111]">The House on Elm Street</div>
+        <div className="mx-auto mt-1 h-px w-4 bg-[#111]/10" />
+      </div>
+      <p className="indent-[1em]">
+        I remember the wallpaper more than anything&thinsp;&mdash;&thinsp;faded yellow roses that seemed to breathe in the afternoon light.
+      </p>
+      <p className="mt-[3px] indent-[1em]">
+        My grandmother would sit by the window, her tea growing cold, watching the street below.
+      </p>
+      <div className="mt-auto text-center font-mono text-[3.5px] text-[#111]/15">27</div>
+    </div>
+  )
+}
+
 // Map template keys to their specimen components
 const SPECIMENS: Record<string, () => React.JSX.Element> = {
   symphony: SymphonySpecimen,
@@ -415,6 +497,9 @@ const SPECIMENS: Record<string, () => React.JSX.Element> = {
   minimal: MinimalSpecimen,
   heirloom: HeirloomSpecimen,
   operator: OperatorSpecimen,
+  verse: VerseSpecimen,
+  thesis: ThesisSpecimen,
+  memoir: MemoirSpecimen,
 }
 
 // ── Main Component ──────────────────────────────────────────────
@@ -427,10 +512,10 @@ export function TemplateGrid() {
         {/* ── Header ── */}
         <div className="mb-12 max-w-3xl md:mb-16">
           <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
-            Plates 1&ndash;12 &mdash; Typographic Systems
+            Plates 1&ndash;15 &mdash; Typographic Systems
           </p>
           <h2 className="font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
-            Twelve systems.
+            Fifteen systems.
             <br />
             Not themes.
           </h2>

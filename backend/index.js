@@ -26,6 +26,7 @@ const typographyAssurance = require('./typography-assurance');
 const multilingual = require('./multilingual');
 const printQA = require('./print-qa');
 const fontAvailability = require('./font-availability');
+const headingVariants = require('./heading-variants');
 
 // ---- limits (env overridable) ----
 const MAX_MD_BYTES = Number(process.env.MAX_MD_BYTES || 2_000_000); // ~2 MB
@@ -537,7 +538,12 @@ app.get('/api/templates', (_req, res) => {
     characteristics: template.characteristics,
     gridType: template.gridType,
   }));
-  res.json({ templates });
+  res.json({
+    templates,
+    headingVariants: headingVariants.HEADING_VARIANTS,
+    variantLabels: headingVariants.VARIANT_LABELS,
+    variantDescriptions: headingVariants.VARIANT_DESCRIPTIONS,
+  });
 });
 
 // ================================================================
@@ -851,6 +857,39 @@ const DESIGN_TEMPLATES = {
     monofont: 'Fira Mono',
     gridType: 'editorial',
     characteristics: ['Fira Sans + Fira Mono', 'Warning/Info/Code admonition boxes', 'Navy blue headings', 'Technical hierarchy'],
+  },
+  verse: {
+    name: 'Verse',
+    description: 'Poetry collection — EB Garamond, centered titles, generous leading, line-based layout.',
+    category: 'Poetry',
+    templatePath: path.resolve(__dirname, 'templates/verse.latex'),
+    mainfont: 'EB Garamond',
+    sansfont: 'Libertinus Sans',
+    monofont: 'DejaVu Sans Mono',
+    gridType: 'creative',
+    characteristics: ['EB Garamond', 'Centered italic titles', 'Generous leading', 'No paragraph indent'],
+  },
+  thesis: {
+    name: 'Thesis',
+    description: 'University dissertation — Latin Modern, double-spaced, numbered sections, submission-ready.',
+    category: 'Academic',
+    templatePath: path.resolve(__dirname, 'templates/thesis.latex'),
+    mainfont: 'Latin Modern Roman',
+    sansfont: 'Latin Modern Sans',
+    monofont: 'Latin Modern Mono',
+    gridType: 'academic',
+    characteristics: ['Latin Modern Roman', 'Double-spaced', 'Numbered sections', 'University standard'],
+  },
+  memoir: {
+    name: 'Memoir',
+    description: 'Personal narrative — Libre Baskerville, warm amber accents, decorative scene breaks.',
+    category: 'Fiction',
+    templatePath: path.resolve(__dirname, 'templates/memoir.latex'),
+    mainfont: 'Libre Baskerville',
+    sansfont: 'TeX Gyre Heros',
+    monofont: 'DejaVu Sans Mono',
+    gridType: 'trade',
+    characteristics: ['Libre Baskerville', 'Warm amber accents', 'Decorative scene breaks', 'Intimate headings'],
   },
 };
 
@@ -1226,9 +1265,10 @@ const ALL_MARGINS = new Set(['normal','narrow','wide','minimal','academic','gene
 // ================================================================
 
 app.post('/api/compile', compileLimiter, async (req, res) => {
-  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts } = req.body || {};
+  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts, headingVariant } = req.body || {};
   safeMode = Boolean(safeMode);
   compileMode = (compileMode === 'full') ? 'full' : 'fast';
+  headingVariant = headingVariants.HEADING_VARIANTS.includes(headingVariant) ? headingVariant : 'classic';
   const wantPdfX = outputFormat === 'pdfx1a';
   const wantEpub = outputFormat === 'epub';
 
@@ -1442,6 +1482,12 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         warnings.push(`Template extension errors: ${extResult.errors.map(e => e.error).join('; ')}`);
       }
     }
+
+    // 5. Heading variant (modern/bold override — classic is a no-op)
+    const variantPreamble = headingVariants.getVariantPreamble(tplKey, headingVariant);
+    if (variantPreamble) {
+      preambleParts.push(variantPreamble);
+    }
   } catch (preambleErr) {
     console.error('[compile] Preamble assembly error:', preambleErr);
     try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
@@ -1461,7 +1507,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     sansResolution?.isFallback ? `sans=${sansResolution.resolved} (fallback from ${tpl.sansfont})` : '',
     monoResolution?.isFallback ? `mono=${monoResolution.resolved} (fallback from ${tpl.monofont})` : '',
   ].filter(Boolean).join(' ');
-  console.log(`[compile] template=${tplKey} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
+  console.log(`[compile] template=${tplKey} variant=${headingVariant} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
 
   const fromFormat = safeMode ? '--from=markdown'
     : PANDOC_HAS_CITEPROC ? '--from=markdown+citations' : '--from=markdown';
@@ -1700,9 +1746,10 @@ app.post('/api/fonts/upload', fontUpload.single('font'), (req, res) => {
 // ================================================================
 
 app.post('/api/batch-compile', compileLimiter, async (req, res) => {
-  let { manuscriptText, template, title, marginPreset, safeMode, compileMode, pageSizes, customFonts } = req.body || {};
+  let { manuscriptText, template, title, marginPreset, safeMode, compileMode, pageSizes, customFonts, headingVariant: batchVariant } = req.body || {};
   safeMode = Boolean(safeMode);
   compileMode = (compileMode === 'full') ? 'full' : 'fast';
+  batchVariant = headingVariants.HEADING_VARIANTS.includes(batchVariant) ? batchVariant : 'classic';
 
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required.' });
@@ -1771,9 +1818,13 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
     return res.status(500).json({ error: 'preamble_error', message: 'Failed to assemble compile preamble.' });
   }
 
+  // Heading variant for batch
+  const batchVarPreamble = headingVariants.getVariantPreamble(tplKey, batchVariant);
+  if (batchVarPreamble) preambleParts.push(batchVarPreamble);
+
   const preambleStr = preambleParts.join('\n\n');
 
-  console.log(`[batch] Starting batch compile: ${validSizes.length} sizes for template=${tplKey}`);
+  console.log(`[batch] Starting batch compile: ${validSizes.length} sizes for template=${tplKey} variant=${batchVariant}`);
 
   // ── Compile each page size sequentially ──
   const pdfs = []; // { name, path, tmpBase }

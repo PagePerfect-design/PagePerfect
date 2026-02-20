@@ -1,0 +1,106 @@
+% Memoir — "This is My Story"
+% Warm, literary personal narrative — softer than Paperback, more intimate
+% Libre Baskerville body, decorative scene breaks, warm amber accents
+% Target: Memoir, autobiography, personal essays, travel writing
+
+\documentclass[11pt]{book}
+\usepackage{geometry}
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+% ── TYPOGRAPHY — Warm Literary Serif ──────────────────────────
+% Libre Baskerville: generous x-height, warm curves, deeply readable
+\setmainfont{Libre Baskerville}[Ligatures=TeX]
+\setsansfont{TeX Gyre Heros}[Scale=MatchLowercase,Ligatures=TeX]
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+
+% ── SPACING — Comfortable reading ────────────────────────────
+\setstretch{1.35}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0pt}
+\hyphenpenalty=100
+
+% ── COLORS ────────────────────────────────────────────────────
+\definecolor{memoiramber}{HTML}{8B6914}
+\definecolor{chapgrey}{gray}{0.70}
+
+% ── CHAPTER HEADINGS — Intimate, Warm ─────────────────────────
+% Centered italic title with thin ornamental rule
+\titleformat{\chapter}[display]
+  {\normalfont\centering}
+  {\vspace*{36pt}{\fontsize{11pt}{11pt}\selectfont\color{chapgrey}\thechapter}}
+  {12pt}
+  {\Large\itshape\color{memoiramber}}
+  [\vspace{6pt}{\centering\rule{1.2cm}{0.3pt}}\vspace{10pt}]
+
+\titleformat{name=\chapter,numberless}[display]
+  {\normalfont\centering}
+  {\vspace*{36pt}}
+  {0pt}
+  {\Large\itshape\color{memoiramber}}
+  [\vspace{6pt}{\centering\rule{1.2cm}{0.3pt}}\vspace{10pt}]
+
+\titlespacing*{\chapter}{0pt}{0pt}{24pt}
+
+\titleformat{\section}{\normalfont\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalfont\normalsize\itshape}{}{0em}{}
+\titlespacing*{\section}{0pt}{20pt}{8pt}
+\titlespacing*{\subsection}{0pt}{14pt}{6pt}
+
+% ── SCENE BREAKS ──────────────────────────────────────────────
+\newcommand{\scenebreak}{\par\vspace{14pt}\noindent\hfil{\small\color{memoiramber}$\sim$\quad$\sim$\quad$\sim$}\hfil\par\vspace{14pt}}
+
+% ── HEADERS & FOOTERS ─────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\footnotesize\itshape $if(title)$$title$$endif$}
+\fancyhead[RO]{\footnotesize\itshape\leftmark}
+\fancyfoot[C]{\footnotesize\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\footnotesize\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+% ── BLOCK QUOTES — Warm, Intimate ─────────────────────────────
+\renewenvironment{quote}
+  {\list{}{\leftmargin=1.5em\rightmargin=1.5em}\item\relax\itshape\setstretch{1.2}}
+  {\endlist}
+
+\setlist{nosep,leftmargin=1.5em}
+\hypersetup{colorlinks=true,linkcolor=memoiramber,urlcolor=memoiramber!80,citecolor=memoiramber}
+
+% ── Header includes (injected by compile pipeline) ───────────
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+% ── DOCUMENT ──────────────────────────────────────────────────
+\begin{document}
+
+$if(title)$
+\begin{titlepage}
+\vspace*{\fill}
+\begin{center}
+{\fontsize{28pt}{34pt}\selectfont\itshape\color{memoiramber} $title$\par}
+\vspace{10pt}
+{\centering\rule{1.5cm}{0.3pt}\par}
+$if(author)$\vspace{14pt}{\large $author$\par}$endif$
+$if(date)$\vspace{8pt}{\small\color{chapgrey} $date$\par}$endif$
+\end{center}
+\vspace*{\fill}
+\end{titlepage}
+$endif$
+
+$body$
+
+$if(bibliography)$
+\newpage
+\section*{Bibliography}
+$bibliography$
+$endif$
+
+\end{document}
