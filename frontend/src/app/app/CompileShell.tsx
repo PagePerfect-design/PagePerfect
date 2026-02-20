@@ -277,23 +277,23 @@ function wordCategory(count: number): string {
 
 function VoidLayer({ gridVisible }: { gridVisible: boolean }) {
   return (
-    <div className="fixed inset-0 -z-10 bg-[#050505]">
-      {/* Brockmann grid pattern */}
+    <div className="fixed inset-0 -z-10 bg-[#FDFCF8]">
+      {/* Brockmann grid pattern — dark hairlines on warm paper */}
       <div
         className="absolute inset-0 transition-opacity duration-700"
         style={{
           opacity: gridVisible ? 0.06 : 0,
           backgroundImage:
-            'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
+            'linear-gradient(to right, #111111 1px, transparent 1px), linear-gradient(to bottom, #111111 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }}
       />
-      {/* Center radial spotlight */}
+      {/* Center radial spotlight — warm */}
       <div
         className="absolute inset-0 transition-opacity duration-1000"
         style={{
           opacity: gridVisible ? 1 : 0.4,
-          background: 'radial-gradient(ellipse 900px 700px at 50% 45%, rgba(255,255,255,0.03), transparent)',
+          background: 'radial-gradient(ellipse 900px 700px at 50% 45%, rgba(255,255,255,0.5), transparent)',
         }}
       />
     </div>
@@ -306,9 +306,9 @@ function VoidLayer({ gridVisible }: { gridVisible: boolean }) {
 
 function BookSkeleton() {
   return (
-    <div className="flex h-full w-full items-center justify-center">
+    <div className="flex h-full w-full items-center justify-center bg-white">
       <div className="relative h-[520px] w-[380px]">
-        <div className="absolute inset-0 rounded bg-white/[0.03] border border-white/[0.06]" />
+        <div className="absolute inset-0 rounded bg-[#111111]/[0.02] border border-[#111111]/[0.06]" />
         {/* Animated scan line */}
         <motion.div
           className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF3333]/40 to-transparent"
@@ -318,15 +318,15 @@ function BookSkeleton() {
         />
         {/* Skeleton lines */}
         <div className="absolute inset-x-[15%] top-[12%] space-y-3">
-          <div className="h-4 w-3/5 rounded-sm bg-white/[0.04]" />
-          <div className="h-2 w-4/5 rounded-sm bg-white/[0.03]" />
+          <div className="h-4 w-3/5 rounded-sm bg-[#111111]/[0.06]" />
+          <div className="h-2 w-4/5 rounded-sm bg-[#111111]/[0.04]" />
           <div className="mt-6 space-y-2">
             {Array.from({ length: 14 }).map((_, i) => (
-              <div key={i} className="h-1.5 rounded-sm bg-white/[0.025]" style={{ width: `${70 + Math.sin(i * 1.3) * 20}%` }} />
+              <div key={i} className="h-1.5 rounded-sm bg-[#111111]/[0.04]" style={{ width: `${70 + Math.sin(i * 1.3) * 20}%` }} />
             ))}
           </div>
         </div>
-        <p className="absolute bottom-[8%] left-0 right-0 text-center font-mono text-[10px] text-white/25">
+        <p className="absolute bottom-[8%] left-0 right-0 text-center font-mono text-[10px] text-[#111111]/30">
           Typesetting...
         </p>
       </div>
@@ -444,7 +444,7 @@ function PortalStage({
               className="absolute inset-0"
               style={{
                 backgroundImage:
-                  'linear-gradient(to right, rgba(0,51,255,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,51,255,0.08) 1px, transparent 1px)',
+                  'linear-gradient(to right, rgba(255,51,51,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,51,51,0.08) 1px, transparent 1px)',
                 backgroundSize: '40px 40px',
               }}
             />
@@ -457,10 +457,10 @@ function PortalStage({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease }}
           >
-            <h1 className="font-display text-[clamp(2.5rem,6vw,5rem)] font-extrabold leading-[0.9] tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60">
+            <h1 className="font-display text-[clamp(2.5rem,6vw,5rem)] font-extrabold leading-[0.9] tracking-tighter text-[#111111]">
               Drop your manuscript.
             </h1>
-            <p className="mt-6 font-body text-lg text-white/45">
+            <p className="mt-6 font-body text-lg text-[#111111]/40">
               .md, .txt, or .docx
             </p>
           </motion.div>
@@ -496,13 +496,13 @@ function PortalStage({
                     }
                   }}
                   placeholder="Paste or type your manuscript here..."
-                  className="w-full h-48 resize-none rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 font-mono text-sm text-white/80 placeholder:text-white/25 focus:border-[#4f8fff]/50 focus:outline-none focus:ring-1 focus:ring-[#4f8fff]/30"
+                  className="w-full h-48 resize-none rounded-lg border border-[#111111]/10 bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/25 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
                   autoFocus
                 />
                 <div className="mt-3 flex items-center justify-between">
                   <button
                     onClick={() => { setPasteMode(false); setPasteText('') }}
-                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/40 transition-colors hover:text-white/70"
+                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
                   >
                     Cancel
                   </button>
@@ -514,7 +514,7 @@ function PortalStage({
                       }
                     }}
                     disabled={!pasteText.trim()}
-                    className="inline-flex h-9 items-center gap-2 rounded-full bg-[#4f8fff] px-5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-white transition-all hover:bg-[#6ba1ff] disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="inline-flex h-9 items-center gap-2 rounded-full bg-[#FF3333] px-5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-white transition-all hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     Continue
                     <ChevronRight className="h-3.5 w-3.5" />
@@ -534,21 +534,21 @@ function PortalStage({
             >
               <button
                 onClick={() => { setPasteMode(true); setPasteText('') }}
-                className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/50 transition-colors hover:text-white/80"
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
               >
                 Paste text
               </button>
-              <span className="text-white/20">|</span>
+              <span className="text-[#111111]/15">|</span>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/50 transition-colors hover:text-white/80"
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
               >
                 Browse files
               </button>
-              <span className="text-white/20">|</span>
+              <span className="text-[#111111]/15">|</span>
               <button
                 onClick={onLoadSample}
-                className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/50 transition-colors hover:text-white/80"
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
               >
                 Try sample
               </button>
@@ -562,10 +562,10 @@ function PortalStage({
               animate={{ opacity: 1, y: 0 }}
               className="mt-8 mx-auto max-w-sm rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-left"
             >
-              <p className="font-mono text-[11px] text-red-400">{convertError}</p>
+              <p className="font-mono text-[11px] text-red-600">{convertError}</p>
               <button
                 onClick={() => setConvertError(null)}
-                className="mt-1 font-mono text-[10px] text-white/40 hover:text-white/70"
+                className="mt-1 font-mono text-[10px] text-[#111111]/30 hover:text-[#111111]/60"
               >
                 Dismiss
               </button>
@@ -579,10 +579,10 @@ function PortalStage({
               animate={{ opacity: 1, y: 0 }}
               className="mt-8 mx-auto max-w-sm rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-left"
             >
-              <p className="font-mono text-[11px] text-red-400">{convertError}</p>
+              <p className="font-mono text-[11px] text-red-600">{convertError}</p>
               <button
                 onClick={() => setConvertError(null)}
-                className="mt-1 font-mono text-[10px] text-white/20 hover:text-white/40"
+                className="mt-1 font-mono text-[10px] text-[#111111]/30 hover:text-[#111111]/60"
               >
                 Dismiss
               </button>
@@ -593,7 +593,7 @@ function PortalStage({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="mt-16 font-mono text-[10px] text-white/25"
+            className="mt-16 font-mono text-[10px] text-[#111111]/25"
           >
             Your text is never stored. Sent for compilation only, then immediately deleted.
           </motion.p>
@@ -624,7 +624,7 @@ function PortalStage({
           ))}
           <div className="relative z-10">
             <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
-            <p className="font-mono text-[12px] text-white/50">Analyzing manuscript...</p>
+            <p className="font-mono text-[12px] text-[#111111]/50">Analyzing manuscript...</p>
           </div>
         </motion.div>
       </div>
@@ -641,17 +641,17 @@ function PortalStage({
         className="w-full max-w-lg"
       >
         {/* Summary card */}
-        <div className="border border-white/[0.08] bg-[#0a0a0a]/95 backdrop-blur-xl">
-          <div className="border-b border-white/[0.06] px-6 py-5">
+        <div className="border border-[#111111]/10 bg-white shadow-lg">
+          <div className="border-b border-[#111111]/[0.06] px-6 py-5">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF3333]/10">
                 <FileText className="h-4 w-4 text-[#FF3333]" />
               </div>
               <div>
-                <p className="font-display text-base font-semibold text-white">
+                <p className="font-display text-base font-semibold text-[#111111]">
                   Manuscript analyzed
                 </p>
-                <p className="font-mono text-[10px] text-white/40">
+                <p className="font-mono text-[10px] text-[#111111]/40">
                   {analysis && wordCategory(analysis.words)}
                 </p>
               </div>
@@ -659,16 +659,16 @@ function PortalStage({
           </div>
 
           {analysis && (
-            <div className="grid grid-cols-2 gap-px bg-white/[0.04] sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-px bg-[#111111]/[0.04] sm:grid-cols-4">
               {[
                 { label: 'Chapters', value: analysis.chapters || '—' },
                 { label: 'Words', value: analysis.words.toLocaleString() },
                 { label: 'Images', value: analysis.images || '—' },
                 { label: 'Citations', value: analysis.hasReferences ? 'Found' : '—' },
               ].map((item) => (
-                <div key={item.label} className="bg-[#0a0a0a] px-4 py-3">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/40">{item.label}</p>
-                  <p className="mt-1 font-display text-lg font-bold text-white">{item.value}</p>
+                <div key={item.label} className="bg-white px-4 py-3">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/40">{item.label}</p>
+                  <p className="mt-1 font-display text-lg font-bold text-[#111111]">{item.value}</p>
                 </div>
               ))}
             </div>
@@ -676,13 +676,13 @@ function PortalStage({
 
           {/* Genre detection message */}
           {analysis?.detected && (
-            <div className="flex items-start gap-3 border-t border-white/[0.06] px-6 py-4 bg-[#FF3333]/[0.03]">
+            <div className="flex items-start gap-3 border-t border-[#111111]/[0.06] px-6 py-4 bg-[#FF3333]/[0.03]">
               <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#FF3333]" />
               <div>
-                <p className="text-[12px] font-medium text-white/70">
+                <p className="text-[12px] font-medium text-[#111111]/70">
                   {analysis.detected.message}
                 </p>
-                <p className="mt-0.5 font-mono text-[10px] text-white/40">
+                <p className="mt-0.5 font-mono text-[10px] text-[#111111]/40">
                   {analysis.detected.confidence === 'high' ? 'High confidence' : 'You can change this in the Style menu.'}
                 </p>
               </div>
@@ -690,8 +690,8 @@ function PortalStage({
           )}
 
           {/* Title input */}
-          <div className="border-t border-white/[0.06] px-6 py-5">
-            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-white/40">
+          <div className="border-t border-[#111111]/[0.06] px-6 py-5">
+            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">
               Working title
             </label>
             <input
@@ -700,15 +700,15 @@ function PortalStage({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="My Manuscript"
               autoFocus
-              className="w-full border-b border-white/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-white placeholder:text-white/30 focus:border-[#FF3333] focus:outline-none"
+              className="w-full border-b border-[#111111]/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-[#111111] placeholder:text-[#111111]/25 focus:border-[#FF3333] focus:outline-none"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-between border-t border-white/[0.06] px-6 py-4">
+          <div className="flex items-center justify-between border-t border-[#111111]/[0.06] px-6 py-4">
             <button
               onClick={() => { setText(''); setAnalysis(null); setPhase('idle') }}
-              className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/40 transition-colors hover:text-white/70"
+              className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
             >
               Start over
             </button>
@@ -773,24 +773,24 @@ function LevitatingBook({
             ) : loading ? (
               <BookSkeleton />
             ) : status === 'error' && errors.length > 0 ? (
-              <div className="flex h-full w-full items-center justify-center bg-[#0a0a0a] p-8">
+              <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3] p-8">
                 <div className="max-w-[360px] text-center">
-                  <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/20 bg-red-400/5">
-                    <AlertTriangle className="h-4 w-4 text-red-400/60" />
+                  <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/5">
+                    <AlertTriangle className="h-4 w-4 text-red-500/60" />
                   </div>
-                  <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-wider text-red-400/70">Typesetting Error</p>
+                  <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-wider text-red-600/70">Typesetting Error</p>
                   {errors.map((e, i) => (
-                    <p key={i} className="mb-1.5 font-mono text-[10px] leading-relaxed text-white/40">{e.message}</p>
+                    <p key={i} className="mb-1.5 font-mono text-[10px] leading-relaxed text-[#111111]/40">{e.message}</p>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[#0a0a0a]">
+              <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3]">
                 <div className="text-center">
-                  <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-white/[0.06]">
-                    <FileText className="h-5 w-5 text-white/25" />
+                  <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-[#111111]/[0.08]">
+                    <FileText className="h-5 w-5 text-[#111111]/20" />
                   </div>
-                  <p className="font-mono text-[11px] text-white/30">Preview appears here</p>
+                  <p className="font-mono text-[11px] text-[#111111]/30">Preview appears here</p>
                 </div>
               </div>
             )}
@@ -803,11 +803,11 @@ function LevitatingBook({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute inset-0 z-10 flex items-center justify-center bg-[#050505]/70 backdrop-blur-[2px]"
+                  className="absolute inset-0 z-10 flex items-center justify-center bg-[#FDFCF8]/70 backdrop-blur-[2px]"
                 >
                   <div className="flex flex-col items-center gap-3">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
-                    <span className="font-mono text-[11px] text-white/30">Typesetting...</span>
+                    <span className="font-mono text-[11px] text-[#111111]/40">Typesetting...</span>
                   </div>
                 </motion.div>
               )}
@@ -882,18 +882,18 @@ function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 w-[520px] rounded-2xl border border-white/[0.08] bg-[#111111]/95 shadow-elevated backdrop-blur-xl"
+            className="mb-3 w-[520px] rounded-2xl border border-[#111111]/10 bg-white shadow-elevated backdrop-blur-xl"
           >
             {/* Genre tabs */}
-            <div className="flex gap-0.5 border-b border-white/[0.06] px-3 pt-2">
+            <div className="flex gap-0.5 border-b border-[#111111]/[0.06] px-3 pt-2">
               {(['all', ...GENRE_ORDER] as Genre[]).map((g) => (
                 <button
                   key={g}
                   onClick={() => setGenreFilter(g)}
                   className={`rounded-t-lg px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] transition-all ${
                     genreFilter === g
-                      ? 'bg-white/[0.06] text-white/70'
-                      : 'text-white/20 hover:text-white/40'
+                      ? 'bg-[#111111]/[0.06] text-[#111111]/70'
+                      : 'text-[#111111]/25 hover:text-[#111111]/50'
                   }`}
                 >
                   {GENRE_LABELS[g]}
@@ -917,13 +917,13 @@ function FloatingHUD({
                       className={`group relative flex flex-col items-start rounded-xl px-3 py-3 text-left transition-all duration-150 ${
                         isActive
                           ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
-                          : 'hover:bg-white/[0.04]'
+                          : 'hover:bg-[#111111]/[0.04]'
                       }`}
                     >
-                      <span className={`text-[12px] font-semibold ${isActive ? 'text-white' : 'text-white/60'}`}>
+                      <span className={`text-[12px] font-semibold ${isActive ? 'text-[#111111]' : 'text-[#111111]/60'}`}>
                         {info.name}
                       </span>
-                      <span className={`text-[10px] ${isActive ? 'text-[#FF3333]/80' : 'text-white/25'}`}>
+                      <span className={`text-[10px] ${isActive ? 'text-[#FF3333]/80' : 'text-[#111111]/30'}`}>
                         {info.subtitle}
                       </span>
 
@@ -935,9 +935,9 @@ function FloatingHUD({
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 4 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute -top-12 left-0 z-50 w-48 rounded-lg border border-white/[0.08] bg-[#0a0a0a] px-3 py-2 shadow-elevated"
+                            className="absolute -top-12 left-0 z-50 w-48 rounded-lg border border-[#111111]/10 bg-white px-3 py-2 shadow-elevated"
                           >
-                            <p className="font-body text-[10px] leading-[1.5] text-white/40">
+                            <p className="font-body text-[10px] leading-[1.5] text-[#111111]/50">
                               {info.vibe}
                             </p>
                           </motion.div>
@@ -958,10 +958,10 @@ function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 rounded-2xl border border-white/[0.08] bg-[#111111]/95 p-4 shadow-elevated backdrop-blur-xl"
+            className="mb-3 rounded-2xl border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
           >
             {/* Page Size */}
-            <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Page Size</p>
+            <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Page Size</p>
             <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
               {(['fiveFiveByEightFive', 'sixByNine', 'a5', 'royal', 'letter', 'a4'] as PageSize[]).map((key) => {
                 const info = PAGE_SIZES[key]
@@ -973,13 +973,13 @@ function FloatingHUD({
                     className={`rounded-lg px-3 py-2 text-center transition-all duration-150 ${
                       isActive
                         ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
-                        : 'bg-white/[0.02] hover:bg-white/[0.05]'
+                        : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
                     }`}
                   >
-                    <span className={`block text-[11px] font-medium ${isActive ? 'text-white' : 'text-white/50'}`}>
+                    <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                       {info.label}
                     </span>
-                    <span className="block font-mono text-[8px] text-white/20">{info.desc}</span>
+                    <span className="block font-mono text-[8px] text-[#111111]/25">{info.desc}</span>
                   </button>
                 )
               })}
@@ -987,7 +987,7 @@ function FloatingHUD({
 
             {/* More book sizes */}
             <details className="mt-3">
-              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-white/35 hover:text-white/50">
+              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/35 hover:text-[#111111]/55">
                 More book sizes
               </summary>
               <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-4">
@@ -1001,13 +1001,13 @@ function FloatingHUD({
                       className={`rounded-lg px-3 py-2 text-center transition-all duration-150 ${
                         isActive
                           ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
-                          : 'bg-white/[0.02] hover:bg-white/[0.05]'
+                          : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
                       }`}
                     >
-                      <span className={`block text-[11px] font-medium ${isActive ? 'text-white' : 'text-white/50'}`}>
+                      <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                         {info.label}
                       </span>
-                      <span className="block font-mono text-[8px] text-white/20">{info.desc}</span>
+                      <span className="block font-mono text-[8px] text-[#111111]/25">{info.desc}</span>
                     </button>
                   )
                 })}
@@ -1016,7 +1016,7 @@ function FloatingHUD({
 
             {/* Amazon KDP */}
             <details className="mt-3">
-              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-white/35 hover:text-white/50">
+              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/35 hover:text-[#111111]/55">
                 Amazon KDP sizes
               </summary>
               <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-5">
@@ -1030,13 +1030,13 @@ function FloatingHUD({
                       className={`rounded-lg px-3 py-2 text-center transition-all ${
                         isActive
                           ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
-                          : 'bg-white/[0.02] hover:bg-white/[0.05]'
+                          : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
                       }`}
                     >
-                      <span className={`block text-[11px] font-medium ${isActive ? 'text-white' : 'text-white/50'}`}>
+                      <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                         {info.label}
                       </span>
-                      <span className="block font-mono text-[8px] text-white/20">{info.desc}</span>
+                      <span className="block font-mono text-[8px] text-[#111111]/25">{info.desc}</span>
                     </button>
                   )
                 })}
@@ -1044,7 +1044,7 @@ function FloatingHUD({
             </details>
 
             {/* Margins */}
-            <p className="mb-2 mt-4 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Margins</p>
+            <p className="mb-2 mt-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Margins</p>
             <div className="flex gap-1.5 overflow-x-auto">
               {(Object.keys(MARGIN_INFO) as MarginPreset[]).map((key) => {
                 const info = MARGIN_INFO[key]
@@ -1056,10 +1056,10 @@ function FloatingHUD({
                     className={`shrink-0 rounded-lg px-3 py-1.5 text-center transition-all duration-150 ${
                       isActive
                         ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
-                        : 'bg-white/[0.02] hover:bg-white/[0.05]'
+                        : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
                     }`}
                   >
-                    <span className={`text-[11px] font-medium ${isActive ? 'text-white' : 'text-white/50'}`}>
+                    <span className={`text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                       {info.label}
                     </span>
                   </button>
@@ -1076,20 +1076,20 @@ function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 w-72 rounded-2xl border border-white/[0.08] bg-[#111111]/95 p-4 shadow-elevated backdrop-blur-xl"
+            className="mb-3 w-72 rounded-2xl border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
           >
-            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Compile Options</p>
+            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Compile Options</p>
 
             {/* Quality toggle */}
-            <div className="mb-3 flex rounded-lg bg-white/[0.03] p-0.5">
+            <div className="mb-3 flex rounded-lg bg-[#111111]/[0.03] p-0.5">
               {(['fast', 'full'] as CompileMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => onCompileModeChange(mode)}
                   className={`flex-1 rounded-md px-3 py-1.5 text-center text-[11px] font-medium transition-all duration-150 ${
                     compileMode === mode
-                      ? 'bg-white/[0.08] text-white'
-                      : 'text-white/40 hover:text-white/60'
+                      ? 'bg-[#111111]/[0.08] text-[#111111]'
+                      : 'text-[#111111]/40 hover:text-[#111111]/60'
                   }`}
                 >
                   {mode === 'fast' ? 'Preview' : 'Full quality'}
@@ -1098,32 +1098,32 @@ function FloatingHUD({
             </div>
 
             {/* Safe mode */}
-            <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-1 py-1.5 transition-colors hover:bg-white/[0.02]">
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-1 py-1.5 transition-colors hover:bg-[#111111]/[0.02]">
               <input
                 type="checkbox"
                 checked={safeMode}
                 onChange={(e) => onSafeModeChange(e.target.checked)}
                 className="h-3.5 w-3.5 rounded accent-[#FF3333]"
               />
-              <span className="text-[11px] text-white/40">Safe mode (skip citations)</span>
+              <span className="text-[11px] text-[#111111]/50">Safe mode (skip citations)</span>
             </label>
 
             {/* Custom font upload */}
-            <div className="mt-3 border-t border-white/[0.06] pt-3">
-              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Custom Font</p>
+            <div className="mt-3 border-t border-[#111111]/[0.06] pt-3">
+              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Custom Font</p>
               {customFont ? (
-                <div className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2">
-                  <span className="flex-1 truncate text-[11px] text-white/50">{customFont.originalName}</span>
+                <div className="flex items-center gap-2 rounded-lg bg-[#111111]/[0.03] px-3 py-2">
+                  <span className="flex-1 truncate text-[11px] text-[#111111]/50">{customFont.originalName}</span>
                   <button
                     onClick={onFontRemove}
-                    className="text-white/20 transition-colors hover:text-red-400/60"
+                    className="text-[#111111]/25 transition-colors hover:text-red-500/60"
                   >
                     <X className="h-3 w-3" />
                   </button>
                 </div>
               ) : (
-                <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-white/[0.1] py-2.5 text-[11px] transition-all ${
-                  fontUploading ? 'text-white/30' : 'text-white/30 hover:border-white/20 hover:text-white/50'
+                <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-[#111111]/[0.12] py-2.5 text-[11px] transition-all ${
+                  fontUploading ? 'text-[#111111]/30' : 'text-[#111111]/30 hover:border-[#111111]/25 hover:text-[#111111]/50'
                 }`}>
                   {fontUploading ? (
                     <><Loader2 className="h-3 w-3 animate-spin" />Uploading&hellip;</>
@@ -1149,21 +1149,21 @@ function FloatingHUD({
       </AnimatePresence>
 
       {/* The Dock */}
-      <div className="flex items-center gap-1 rounded-full border border-white/[0.08] bg-[#0a0a0a]/95 p-1.5 shadow-elevated backdrop-blur-xl">
+      <div className="flex items-center gap-1 rounded-full border border-[#111111]/10 bg-white/95 p-1.5 shadow-elevated backdrop-blur-xl">
         <DockButton
           active={activeTab === 'style'}
           onClick={() => toggleTab('style')}
           icon={<Paintbrush className="h-3.5 w-3.5" />}
           label={TEMPLATE_INFO[template].subtitle}
         />
-        <div className="mx-0.5 h-4 w-px bg-white/[0.06]" />
+        <div className="mx-0.5 h-4 w-px bg-[#111111]/[0.08]" />
         <DockButton
           active={activeTab === 'layout'}
           onClick={() => toggleTab('layout')}
           icon={<Ruler className="h-3.5 w-3.5" />}
           label={PAGE_SIZES[pageSize]?.label || 'Size'}
         />
-        <div className="mx-0.5 h-4 w-px bg-white/[0.06]" />
+        <div className="mx-0.5 h-4 w-px bg-[#111111]/[0.08]" />
         <DockButton
           active={activeTab === 'settings'}
           onClick={() => toggleTab('settings')}
@@ -1172,19 +1172,19 @@ function FloatingHUD({
         />
 
         {/* Status dot */}
-        <div className="mx-1.5 h-4 w-px bg-white/[0.06]" />
+        <div className="mx-1.5 h-4 w-px bg-[#111111]/[0.08]" />
         <div className="flex items-center gap-1.5 px-2">
           <span className={`h-1.5 w-1.5 rounded-full transition-colors ${
             status === 'compiling' ? 'bg-[#FF3333] animate-pulse' :
-            status === 'success' ? 'bg-emerald-400' :
-            status === 'error' ? 'bg-red-400' :
-            'bg-white/20'
+            status === 'success' ? 'bg-emerald-500' :
+            status === 'error' ? 'bg-red-500' :
+            'bg-[#111111]/20'
           }`} />
           <span className={`font-mono text-[9px] uppercase tracking-[0.1em] ${
             status === 'compiling' ? 'text-[#FF3333]' :
-            status === 'success' ? 'text-emerald-400/70' :
-            status === 'error' ? 'text-red-400/70' :
-            'text-white/35'
+            status === 'success' ? 'text-emerald-600/70' :
+            status === 'error' ? 'text-red-500/70' :
+            'text-[#111111]/35'
           }`}>
             {status === 'compiling' ? 'Setting' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
           </span>
@@ -1210,8 +1210,8 @@ function DockButton({
       onClick={onClick}
       className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-medium transition-all duration-150 ${
         active
-          ? 'bg-white text-black shadow-lg'
-          : 'text-white/40 hover:bg-white/[0.05] hover:text-white/70'
+          ? 'bg-[#111111] text-white shadow-lg'
+          : 'text-[#111111]/40 hover:bg-[#111111]/[0.05] hover:text-[#111111]/70'
       }`}
     >
       {icon}
@@ -1256,7 +1256,7 @@ function TopBar({
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.04] text-white/30 transition-colors hover:bg-white/[0.08] hover:text-white/60"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#111111]/[0.04] text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.08] hover:text-[#111111]/60"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
           </button>
@@ -1264,10 +1264,10 @@ function TopBar({
             type="text"
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
-            className="bg-transparent font-display text-sm font-semibold text-white/60 placeholder:text-white/20 focus:text-white focus:outline-none"
+            className="bg-transparent font-display text-sm font-semibold text-[#111111]/60 placeholder:text-[#111111]/25 focus:text-[#111111] focus:outline-none"
             placeholder="Untitled"
           />
-          <span className="font-mono text-[10px] text-white/35">
+          <span className="font-mono text-[10px] text-[#111111]/35">
             {wordCount.toLocaleString()} words
           </span>
         </div>
@@ -1276,7 +1276,7 @@ function TopBar({
         <div className="flex items-center gap-3">
           {/* Errors */}
           {errors.length > 0 && (
-            <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-red-400/70">
+            <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-red-500/70">
               <AlertTriangle className="h-3 w-3" />
               {errors[0].message.slice(0, 50)}
             </span>
@@ -1286,8 +1286,8 @@ function TopBar({
             onClick={onToggleEditor}
             className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-all ${
               showEditor
-                ? 'bg-white/[0.08] text-white/60'
-                : 'text-white/25 hover:bg-white/[0.04] hover:text-white/40'
+                ? 'bg-[#111111]/[0.08] text-[#111111]/60'
+                : 'text-[#111111]/30 hover:bg-[#111111]/[0.04] hover:text-[#111111]/50'
             }`}
           >
             <FileText className="h-3 w-3" />
@@ -1299,7 +1299,7 @@ function TopBar({
             className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-all ${
               showSystems
                 ? 'bg-[#FF3333]/10 text-[#FF3333] ring-1 ring-[#FF3333]/30'
-                : 'text-white/25 hover:bg-white/[0.04] hover:text-white/40'
+                : 'text-[#111111]/30 hover:bg-[#111111]/[0.04] hover:text-[#111111]/50'
             }`}
           >
             <BarChart3 className="h-3 w-3" />
@@ -1493,17 +1493,17 @@ function LaunchOverlay({
   }
 
   const statusIcon = (s: PreflightCheck['status']) =>
-    s === 'pass'  ? <Check className="h-3 w-3 shrink-0 text-emerald-400" /> :
-    s === 'fail'  ? <X className="h-3 w-3 shrink-0 text-red-400" /> :
-    s === 'warn'  ? <AlertTriangle className="h-3 w-3 shrink-0 text-amber-400" /> :
-                    <span className="inline-block h-3 w-3 shrink-0 text-center font-mono text-[10px] text-white/25">·</span>
+    s === 'pass'  ? <Check className="h-3 w-3 shrink-0 text-emerald-500" /> :
+    s === 'fail'  ? <X className="h-3 w-3 shrink-0 text-red-500" /> :
+    s === 'warn'  ? <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" /> :
+                    <span className="inline-block h-3 w-3 shrink-0 text-center font-mono text-[10px] text-[#111111]/25">·</span>
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#050505]/80 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#FDFCF8]/80 backdrop-blur-md"
     >
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -1513,8 +1513,8 @@ function LaunchOverlay({
       >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-xl font-bold text-white">Export &amp; Publish</h2>
-          <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] text-white/30 transition-colors hover:bg-white/[0.1] hover:text-white/50">
+          <h2 className="font-display text-xl font-bold text-[#111111]">Export &amp; Publish</h2>
+          <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#111111]/[0.06] text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.1] hover:text-[#111111]/50">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -1523,15 +1523,15 @@ function LaunchOverlay({
           {/* Left column: export settings */}
           <div className="space-y-3">
             {/* Platform selector */}
-            <div className="rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-4">
-              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Target Platform</p>
+            <div className="rounded-xl border border-[#111111]/[0.08] bg-white p-4">
+              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Target Platform</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPlatform('kdp')}
                   className={`flex-1 rounded-lg py-2 text-[11px] font-semibold transition-all ${
                     platform === 'kdp'
-                      ? 'bg-white text-black'
-                      : 'border border-white/[0.08] text-white/40 hover:border-white/20'
+                      ? 'bg-[#111111] text-white'
+                      : 'border border-[#111111]/[0.08] text-[#111111]/40 hover:border-[#111111]/20'
                   }`}
                 >
                   Amazon KDP
@@ -1541,13 +1541,13 @@ function LaunchOverlay({
                   className={`flex-1 rounded-lg py-2 text-[11px] font-semibold transition-all ${
                     platform === 'ingram'
                       ? 'bg-[#FF3333] text-white'
-                      : 'border border-white/[0.08] text-white/40 hover:border-white/20'
+                      : 'border border-[#111111]/[0.08] text-[#111111]/40 hover:border-[#111111]/20'
                   }`}
                 >
                   IngramSpark
                 </button>
               </div>
-              <p className="mt-2 font-mono text-[10px] leading-relaxed text-white/20">
+              <p className="mt-2 font-mono text-[10px] leading-relaxed text-[#111111]/30">
                 {platform === 'kdp'
                   ? 'Standard PDF optimized for Amazon print.'
                   : 'PDF/X-1a with CMYK color profile.'}
@@ -1555,15 +1555,15 @@ function LaunchOverlay({
             </div>
 
             {/* Paper stock selector */}
-            <div className="rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-4">
-              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Paper Stock</p>
+            <div className="rounded-xl border border-[#111111]/[0.08] bg-white p-4">
+              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Paper Stock</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPaper('white')}
                   className={`flex-1 rounded-lg py-2 text-[11px] font-medium transition-all ${
                     paper === 'white'
-                      ? 'bg-white text-black'
-                      : 'border border-white/[0.08] text-white/40 hover:border-white/20'
+                      ? 'bg-[#111111] text-white'
+                      : 'border border-[#111111]/[0.08] text-[#111111]/40 hover:border-[#111111]/20'
                   }`}
                 >
                   White
@@ -1572,8 +1572,8 @@ function LaunchOverlay({
                   onClick={() => setPaper('cream')}
                   className={`flex-1 rounded-lg py-2 text-[11px] font-medium transition-all ${
                     paper === 'cream'
-                      ? 'bg-[#f5f0d0] text-black'
-                      : 'border border-white/[0.08] text-white/40 hover:border-white/20'
+                      ? 'bg-[#f5f0d0] text-[#111111]'
+                      : 'border border-[#111111]/[0.08] text-[#111111]/40 hover:border-[#111111]/20'
                   }`}
                 >
                   Cream
@@ -1583,15 +1583,15 @@ function LaunchOverlay({
           </div>
 
           {/* Right column: pre-flight terminal */}
-          <div className="flex flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0a]">
+          <div className="flex flex-col overflow-hidden rounded-xl border border-[#111111]/[0.08] bg-white">
             {/* Terminal chrome */}
-            <div className="flex items-center gap-2 border-b border-white/[0.06] bg-white/[0.02] px-4 py-2.5">
+            <div className="flex items-center gap-2 border-b border-[#111111]/[0.06] bg-[#111111]/[0.02] px-4 py-2.5">
               <div className={`h-2 w-2 rounded-full ${
-                checking ? 'bg-amber-400 animate-pulse'
+                checking ? 'bg-amber-500 animate-pulse'
                 : fetchError || hasFailure ? 'bg-red-500'
-                : 'bg-emerald-400'
+                : 'bg-emerald-500'
               }`} />
-              <span className="font-mono text-[10px] text-white/20">
+              <span className="font-mono text-[10px] text-[#111111]/30">
                 PRE-FLIGHT // {platform.toUpperCase()}
               </span>
             </div>
@@ -1599,12 +1599,12 @@ function LaunchOverlay({
             {/* Check results */}
             <div className="flex-1 p-4 font-mono text-[11px] leading-[1.9]">
               {checking ? (
-                <div className="flex items-center gap-2 text-white/25">
-                  <div className="h-3 w-3 animate-spin rounded-full border border-white/20 border-t-transparent" />
+                <div className="flex items-center gap-2 text-[#111111]/30">
+                  <div className="h-3 w-3 animate-spin rounded-full border border-[#111111]/20 border-t-transparent" />
                   Running pre-flight analysis...
                 </div>
               ) : fetchError ? (
-                <div className="text-red-400/70">[ERROR] {fetchError}</div>
+                <div className="text-red-500/70">[ERROR] {fetchError}</div>
               ) : preflight ? (
                 preflight.checks.map((check, i) => (
                   <motion.div
@@ -1618,14 +1618,14 @@ function LaunchOverlay({
                       <span className="mt-0.5">{statusIcon(check.status)}</span>
                       <div>
                         <span className={
-                          check.status === 'pass' ? 'text-white/40' :
-                          check.status === 'fail' ? 'text-red-400/90' :
-                          check.status === 'warn' ? 'text-amber-400/80' :
-                          'text-white/30'
+                          check.status === 'pass' ? 'text-[#111111]/50' :
+                          check.status === 'fail' ? 'text-red-600/90' :
+                          check.status === 'warn' ? 'text-amber-600/80' :
+                          'text-[#111111]/35'
                         }>
                           {check.name}
                         </span>
-                        <p className="text-[10px] text-white/35">{check.detail}</p>
+                        <p className="text-[10px] text-[#111111]/35">{check.detail}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -1635,18 +1635,18 @@ function LaunchOverlay({
 
             {/* Real stats from backend */}
             {!checking && preflight && (
-              <div className="grid grid-cols-3 gap-px border-t border-white/[0.06] bg-white/[0.03]">
-                <div className="bg-[#0a0a0a] p-2.5 text-center">
-                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/35">Pages</p>
-                  <p className="font-display text-sm font-bold text-white">~{preflight.stats.estimatedPages}</p>
+              <div className="grid grid-cols-3 gap-px border-t border-[#111111]/[0.06] bg-[#111111]/[0.03]">
+                <div className="bg-white p-2.5 text-center">
+                  <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Pages</p>
+                  <p className="font-display text-sm font-bold text-[#111111]">~{preflight.stats.estimatedPages}</p>
                 </div>
-                <div className="bg-[#0a0a0a] p-2.5 text-center">
-                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/35">Spine</p>
-                  <p className="font-display text-sm font-bold text-white">{preflight.stats.spineInches}&quot;</p>
+                <div className="bg-white p-2.5 text-center">
+                  <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Spine</p>
+                  <p className="font-display text-sm font-bold text-[#111111]">{preflight.stats.spineInches}&quot;</p>
                 </div>
-                <div className="bg-[#0a0a0a] p-2.5 text-center">
-                  <p className="font-mono text-[8px] uppercase tracking-wider text-white/35">Trim</p>
-                  <p className="font-display text-sm font-bold text-white">{preflight.stats.trimWidth}&times;{preflight.stats.trimHeight}&quot;</p>
+                <div className="bg-white p-2.5 text-center">
+                  <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Trim</p>
+                  <p className="font-display text-sm font-bold text-[#111111]">{preflight.stats.trimWidth}&times;{preflight.stats.trimHeight}&quot;</p>
                 </div>
               </div>
             )}
@@ -1654,15 +1654,15 @@ function LaunchOverlay({
         </div>
 
         {/* Format selector */}
-        <div className="mt-4 mb-3 flex rounded-lg bg-white/[0.03] p-0.5">
+        <div className="mt-4 mb-3 flex rounded-lg bg-[#111111]/[0.03] p-0.5">
           {(['pdf', 'epub'] as ExportFormat[]).map((fmt) => (
             <button
               key={fmt}
               onClick={() => setExportFormat(fmt)}
               className={`flex-1 rounded-md px-3 py-2 text-center text-[11px] font-medium transition-all duration-150 ${
                 exportFormat === fmt
-                  ? 'bg-white/[0.08] text-white'
-                  : 'text-white/40 hover:text-white/60'
+                  ? 'bg-[#111111]/[0.08] text-[#111111]'
+                  : 'text-[#111111]/40 hover:text-[#111111]/60'
               }`}
             >
               {fmt === 'pdf' ? 'PDF' : 'EPUB'}
@@ -1699,7 +1699,7 @@ function LaunchOverlay({
           <button
             onClick={handleBatchExport}
             disabled={batchLoading || !pdfUrl}
-            className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] text-[12px] font-medium text-white/40 transition-all hover:border-white/20 hover:text-white/60 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#111111]/[0.08] text-[12px] font-medium text-[#111111]/40 transition-all hover:border-[#111111]/20 hover:text-[#111111]/60 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {batchLoading ? (
               <><Loader2 className="h-3.5 w-3.5 animate-spin" />{batchProgress || 'Batch exporting...'}</>
@@ -1711,12 +1711,12 @@ function LaunchOverlay({
 
         {/* Failure message */}
         {exportFormat === 'pdf' && !checking && hasFailure && (
-          <p className="mt-3 text-center font-mono text-[10px] text-red-400/50">
+          <p className="mt-3 text-center font-mono text-[10px] text-red-500/60">
             One or more checks failed. Fix the issues above before downloading.
           </p>
         )}
 
-        <p className="mt-3 text-center font-mono text-[10px] text-white/25">
+        <p className="mt-3 text-center font-mono text-[10px] text-[#111111]/25">
           {TEMPLATE_INFO[template]?.name} / {PAGE_SIZES[pageSize]?.label} / {title || 'Untitled'}
         </p>
       </motion.div>
@@ -1735,11 +1735,11 @@ function ShortcutLegend({ visible, onClose }: { visible: boolean; onClose: () =>
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 8 }}
-      className="fixed bottom-24 right-6 z-50 rounded-xl border border-white/[0.08] bg-[#111111]/95 p-4 shadow-elevated backdrop-blur-xl"
+      className="fixed bottom-24 right-6 z-50 rounded-xl border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
     >
       <div className="mb-2 flex items-center justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/20">Shortcuts</span>
-        <button onClick={onClose} className="text-white/20 hover:text-white/40">
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/30">Shortcuts</span>
+        <button onClick={onClose} className="text-[#111111]/25 hover:text-[#111111]/50">
           <X className="h-3 w-3" />
         </button>
       </div>
@@ -1754,8 +1754,8 @@ function ShortcutLegend({ visible, onClose }: { visible: boolean; onClose: () =>
           ['Esc', 'Close panel'],
         ].map(([key, desc]) => (
           <div key={key} className="flex items-center gap-3">
-            <kbd className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">{key}</kbd>
-            <span className="text-white/25">{desc}</span>
+            <kbd className="rounded bg-[#111111]/[0.06] px-1.5 py-0.5 text-[10px] text-[#111111]/40">{key}</kbd>
+            <span className="text-[#111111]/30">{desc}</span>
           </div>
         ))}
       </div>
@@ -1784,17 +1784,17 @@ function EditorOverlay({
       className="fixed inset-0 z-30 flex"
     >
       {/* Left half: editor */}
-      <div className="flex w-1/2 flex-col border-r border-white/[0.06] bg-[#050505]">
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-2.5">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/20">Manuscript</span>
-          <button onClick={onClose} className="font-mono text-[11px] text-white/20 hover:text-white/40">
+      <div className="flex w-1/2 flex-col border-r border-[#111111]/[0.08] bg-white">
+        <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-5 py-2.5">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/30">Manuscript</span>
+          <button onClick={onClose} className="font-mono text-[11px] text-[#111111]/30 hover:text-[#111111]/50">
             Close
           </button>
         </div>
         <textarea
           value={manuscript}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 resize-none bg-transparent p-6 font-mono text-sm leading-[1.8] text-white/60 caret-[#FF3333] focus:outline-none"
+          className="flex-1 resize-none bg-transparent p-6 font-mono text-sm leading-[1.8] text-[#111111]/70 caret-[#FF3333] focus:outline-none"
           placeholder="# Chapter One&#10;&#10;Write here..."
           autoFocus
         />
@@ -2140,7 +2140,7 @@ export default function CompileShell() {
             <div className="fixed bottom-8 right-6 z-30">
               <button
                 onClick={() => setShowShortcuts(prev => !prev)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-white/30 transition-colors hover:bg-white/[0.10] hover:text-white/50"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#111111]/[0.06] text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.10] hover:text-[#111111]/50"
               >
                 <Keyboard className="h-3 w-3" />
               </button>
@@ -2181,11 +2181,11 @@ export default function CompileShell() {
                   const idx = TEMPLATE_KEYS.indexOf(template)
                   setTemplate(TEMPLATE_KEYS[(idx - 1 + TEMPLATE_KEYS.length) % TEMPLATE_KEYS.length])
                 }}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-white/30 transition-colors hover:bg-white/[0.10] hover:text-white/50"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#111111]/[0.06] text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.10] hover:text-[#111111]/50"
               >
                 <ChevronLeft className="h-3 w-3" />
               </button>
-              <span className="font-mono text-[10px] text-white/35">
+              <span className="font-mono text-[10px] text-[#111111]/35">
                 {TEMPLATE_INFO[template].subtitle}
               </span>
               <button
@@ -2193,7 +2193,7 @@ export default function CompileShell() {
                   const idx = TEMPLATE_KEYS.indexOf(template)
                   setTemplate(TEMPLATE_KEYS[(idx + 1) % TEMPLATE_KEYS.length])
                 }}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-white/30 transition-colors hover:bg-white/[0.10] hover:text-white/50"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#111111]/[0.06] text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.10] hover:text-[#111111]/50"
               >
                 <ChevronRight className="h-3 w-3" />
               </button>
