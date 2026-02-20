@@ -143,6 +143,39 @@ const TEMPLATE_DOCS = [
     features: ['Warning admonition box (red left border)', 'Info admonition box (blue left border)', 'Code admonition box (grey background)', 'Navy blue (#003366) heading palette', 'Numbered section hierarchy', 'Blockquotes automatically render as Info boxes'],
     bestFor: 'Developer docs, technical manuals, API references, engineering guides',
   },
+  {
+    key: 'verse',
+    name: 'Verse',
+    subtitle: 'The Poetry Collection',
+    category: 'Poetry',
+    description: 'EB Garamond at generous leading with centered italic chapter titles and thin ornamental rules. The verse environment preserves line breaks exactly as written — essential for poetry.',
+    fonts: { primary: 'EB Garamond', secondary: 'TeX Gyre Heros', mono: 'DejaVu Sans Mono' },
+    geometry: { baseSize: '11pt', leading: '1.4', indent: '0pt', parskip: '0pt' },
+    features: ['LaTeX verse environment for preserved line breaks', 'Centered italic chapter titles with ornamental rule', 'Deep violet (#4B0082) accent palette', 'Generous leading (1.4) for breathing room', 'Decorative scene breaks (fleuron)', 'No paragraph indent — stanza spacing instead'],
+    bestFor: 'Poetry collections, verse drama, song lyrics, chapbooks',
+  },
+  {
+    key: 'thesis',
+    name: 'Thesis',
+    subtitle: 'The Dissertation',
+    category: 'Academic',
+    description: 'Double-spaced, numbered sections, Latin Modern Roman — the institutional standard that every university committee expects. Built to satisfy formatting requirements, not fight them.',
+    fonts: { primary: 'Latin Modern Roman', secondary: 'Latin Modern Sans', mono: 'Latin Modern Mono' },
+    geometry: { baseSize: '12pt', leading: '2.0', indent: '1.5em', parskip: '0pt' },
+    features: ['Double-spaced (university requirement)', 'Numbered section hierarchy (1, 1.1, 1.1.1)', 'Latin Modern Roman — the institutional default', 'Indented single-spaced block quotes', 'Footnote separator rule (2-inch)', 'Page number only in header (right-aligned)'],
+    bestFor: 'PhD dissertations, Masters theses, capstone projects, university submissions',
+  },
+  {
+    key: 'memoir',
+    name: 'Memoir',
+    subtitle: 'This is My Story',
+    category: 'Fiction',
+    description: 'Warm, intimate personal narrative typography. Libre Baskerville carries the deeply readable warmth of literary memoir, with amber accents and decorative tilde scene breaks.',
+    fonts: { primary: 'Libre Baskerville', secondary: 'TeX Gyre Heros', mono: 'DejaVu Sans Mono' },
+    geometry: { baseSize: '11pt', leading: '1.35', indent: '1.5em', parskip: '0pt' },
+    features: ['Libre Baskerville — warm curves, generous x-height', 'Amber (#8B6914) accent palette', 'Centered italic chapter titles with ornamental rule', 'Decorative tilde scene breaks (~~~)', 'Italic blockquotes at reduced leading', 'Verso/recto running heads (title/chapter)'],
+    bestFor: 'Memoir, autobiography, personal essays, travel writing, literary nonfiction',
+  },
 ]
 
 const KDP_TRIM_SIZES = [
@@ -517,11 +550,11 @@ export default function DocsPage() {
           </section>
 
           {/* ══════════════════════════════════════════════════════════
-              04 — TWELVE TYPOGRAPHIC SYSTEMS
+              04 — FIFTEEN TYPOGRAPHIC SYSTEMS
               ══════════════════════════════════════════════════════════ */}
           <section id="templates" className="scroll-mt-16 mb-10">
             <SectionLabel number="04">Reference</SectionLabel>
-            <h2 className="docs-section-title">Twelve Typographic Systems</h2>
+            <h2 className="docs-section-title">Fifteen Typographic Systems</h2>
             <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               Every template is a complete typographic system — not a theme. Each implements specific design
               principles: baseline grids, proportional scales, calculated margins, and intentional font stacks.
