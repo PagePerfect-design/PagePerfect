@@ -6,6 +6,7 @@
  *   users (built-in auth collection) — extended with custom fields:
  *     - display_name: text
  *     - tier: select (drafter | single | publisher | studio), default "drafter"
+ *     - pdf_credits: number, default 0 (Single tier purchases increment this)
  *     - stripe_customer_id: text
  *     - stripe_subscription_id: text
  *
@@ -38,6 +39,7 @@ export interface UserRecord {
   name: string
   display_name: string | null
   tier: Tier
+  pdf_credits: number
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
   created: string

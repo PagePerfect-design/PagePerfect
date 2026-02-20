@@ -27,6 +27,7 @@ const multilingual = require('./multilingual');
 const printQA = require('./print-qa');
 const fontAvailability = require('./font-availability');
 const headingVariants = require('./heading-variants');
+const watermark = require('./watermark');
 
 // ---- limits (env overridable) ----
 const MAX_MD_BYTES = Number(process.env.MAX_MD_BYTES || 2_000_000); // ~2 MB
@@ -151,6 +152,7 @@ app.use(cors({
     : true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['X-PP-Watermarked', 'X-PP-Credits-Remaining', 'X-PP-Filename', 'X-PP-Format'],
   credentials: true,
   optionsSuccessStatus: 200,
 }));
@@ -287,16 +289,52 @@ app.post('/api/stripe/webhook',
       }
     }
 
+    // Helper: increment pdf_credits for a user (Single tier purchase)
+    async function incrementCredits(userId, customerId) {
+      if (!isPocketBaseConfigured) {
+        console.error('PocketBase not configured — cannot increment credits');
+        return;
+      }
+      try {
+        // Fetch current credits
+        const resp = await pbFetch(`/api/collections/users/records/${userId}`);
+        if (!resp || !resp.ok) {
+          console.error('Failed to fetch user for credit increment:', resp?.status);
+          return;
+        }
+        const user = await resp.json();
+        const currentCredits = Number(user.pdf_credits) || 0;
+        const update = {
+          pdf_credits: currentCredits + 1,
+          stripe_customer_id: customerId,
+        };
+        const patchResp = await pbFetch(`/api/collections/users/records/${userId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(update),
+        });
+        if (patchResp && patchResp.ok) {
+          console.log(`User ${userId} credited +1 PDF (total: ${currentCredits + 1})`);
+        } else {
+          console.error('Failed to increment credits:', patchResp?.status);
+        }
+      } catch (err) {
+        console.error('Failed to increment credits:', err.message);
+      }
+    }
+
     // Handle relevant events
     switch (event.type) {
-      // Payment Element flow: one-time payment succeeded (Studio $199)
+      // Payment Element flow: one-time payment succeeded (Studio $199 or Single £2.99)
       case 'payment_intent.succeeded': {
         const pi = event.data.object;
         const tier = pi.metadata?.tier;
         const userId = pi.metadata?.user_id;
         console.log(`PaymentIntent succeeded: customer=${pi.customer}, tier=${tier}, user=${userId}`);
 
-        if (userId && tier) {
+        if (userId && tier === 'single') {
+          // Single PDF purchase — increment pdf_credits by 1 (don't change tier)
+          await incrementCredits(userId, pi.customer);
+        } else if (userId && tier) {
           await upgradeTier(userId, tier, pi.customer, null);
         }
         break;
@@ -1265,12 +1303,74 @@ const ALL_MARGINS = new Set(['normal','narrow','wide','minimal','academic','gene
 // ================================================================
 
 app.post('/api/compile', compileLimiter, async (req, res) => {
-  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts, headingVariant } = req.body || {};
+  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts, headingVariant, download } = req.body || {};
   safeMode = Boolean(safeMode);
   compileMode = (compileMode === 'full') ? 'full' : 'fast';
   headingVariant = headingVariants.HEADING_VARIANTS.includes(headingVariant) ? headingVariant : 'classic';
+  const isDownload = Boolean(download);
   const wantPdfX = outputFormat === 'pdfx1a';
   const wantEpub = outputFormat === 'epub';
+
+  // ── Watermark Decision ──────────────────────────────────────
+  // Clean preview always (no watermark). On download, check tier/credits.
+  let needsWatermark = false;
+  let creditsRemaining = null;
+
+  if (isDownload && isPocketBaseConfigured) {
+    let userTier = 'drafter';
+    let userCredits = 0;
+    let userId = null;
+
+    // Try to authenticate via PocketBase token
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+      try {
+        // Verify token by requesting the authenticated user's record
+        const authResp = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-refresh`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (authResp && authResp.ok) {
+          const authData = await authResp.json();
+          const record = authData.record;
+          if (record) {
+            userId = record.id;
+            userTier = record.tier || 'drafter';
+            userCredits = Number(record.pdf_credits) || 0;
+          }
+        }
+      } catch (authErr) {
+        console.error('[compile] Auth verification failed:', authErr.message);
+      }
+    }
+
+    if (userTier === 'publisher' || userTier === 'studio') {
+      needsWatermark = false;
+    } else if (userCredits > 0 && userId) {
+      // Deduct one credit
+      try {
+        await pbFetch(`/api/collections/users/records/${userId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ pdf_credits: userCredits - 1 }),
+        });
+        creditsRemaining = userCredits - 1;
+        needsWatermark = false;
+        console.log(`[compile] Deducted 1 credit for user ${userId}, remaining: ${creditsRemaining}`);
+      } catch (creditErr) {
+        console.error('[compile] Credit deduction failed:', creditErr.message);
+        needsWatermark = true;
+      }
+    } else {
+      needsWatermark = true;
+    }
+  } else if (isDownload && !isPocketBaseConfigured) {
+    // PocketBase not configured — watermark all downloads as a safe default
+    needsWatermark = true;
+  }
 
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
@@ -1493,6 +1593,11 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     if (variantPreamble) {
       preambleParts.push(variantPreamble);
     }
+
+    // 6. Watermark (free-tier downloads only)
+    if (needsWatermark) {
+      preambleParts.push(watermark.generateWatermarkPreamble());
+    }
   } catch (preambleErr) {
     console.error('[compile] Preamble assembly error:', preambleErr);
     try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
@@ -1617,6 +1722,10 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
         res.setHeader('X-PP-Filename', filename);
         res.setHeader('X-PP-Format', 'PDF/X-1a:2001');
+        res.setHeader('X-PP-Watermarked', needsWatermark ? 'true' : 'false');
+        if (creditsRemaining !== null) {
+          res.setHeader('X-PP-Credits-Remaining', String(creditsRemaining));
+        }
         const stream = fs.createReadStream(pdfxPath);
         stream.on('close', () => {
           try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
@@ -1628,6 +1737,10 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
       res.setHeader('X-PP-Filename', filename);
+      res.setHeader('X-PP-Watermarked', needsWatermark ? 'true' : 'false');
+      if (creditsRemaining !== null) {
+        res.setHeader('X-PP-Credits-Remaining', String(creditsRemaining));
+      }
       const stream = fs.createReadStream(pdfPath);
       stream.on('close', () => {
         try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
