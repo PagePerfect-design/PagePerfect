@@ -1451,6 +1451,11 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   // ── Preamble Assembly ──────────────────────────────────────
   // Collect LaTeX preamble from all analysis modules → header.tex → Pandoc -H
   const preambleParts = [];
+
+  // 0. Geometry — must be injected via \geometry{} in header.tex because
+  //    custom templates \usepackage{geometry} without options and don't
+  //    reference Pandoc's $geometry$ variable.
+  preambleParts.push(`\\geometry{${geo}}`);
   let buildMeta;
 
   try {
@@ -1519,7 +1524,6 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     `--template=${patchedTemplatePath}`,
     '-H', headerPath,
     '-V', `mainfont=${effectiveMainfont}`,
-    '-V', `geometry:${geo}`,
     ...(enableMicrotype ? ['-V','microtype=true'] : []),
     ...(enableCsquotes  ? ['-V','csquotes=true']  : []),
     '-o', pdfPath,
@@ -1843,8 +1847,9 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
       const tplPath = path.join(tmpBase, 'template.latex');
       fs.writeFileSync(tplPath, templateContent, 'utf8');
 
+      // Inject per-size geometry into header.tex (templates don't use Pandoc's $geometry$ variable)
       const headerPath = path.join(tmpBase, 'header.tex');
-      fs.writeFileSync(headerPath, preambleStr, 'utf8');
+      fs.writeFileSync(headerPath, `\\geometry{${geo}}\n\n${preambleStr}`, 'utf8');
 
       // Handle custom fonts for batch
       if (customFonts && typeof customFonts === 'object') {
@@ -1871,7 +1876,6 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
         `--template=${tplPath}`,
         '-H', headerPath,
         '-V', `mainfont=${effectiveMainfont}`,
-        '-V', `geometry:${geo}`,
         ...(isFast ? [] : ['-V', 'microtype=true', '-V', 'csquotes=true']),
         '-o', pdfPath,
       ];
