@@ -80,7 +80,7 @@ function Footer() {
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div data-specimen="" className="flex min-h-dvh flex-col bg-[#FDFCF8] text-[#111111]">
+    <div data-specimen="" className="flex min-h-dvh flex-1 flex-col bg-[#FDFCF8] text-[#111111]">
       <a href="#main" className="skip-link">Skip to content</a>
       <Nav />
       <div className="flex-1">{children}</div>

@@ -140,7 +140,7 @@ const TEMPLATES = [
 
 export function TemplateGrid() {
   return (
-    <section className="relative py-20 md:py-28">
+    <section className="relative bg-[#FDFCF8] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
 
         {/* ── Header ── */}
@@ -160,28 +160,14 @@ export function TemplateGrid() {
           </p>
         </div>
 
-        {/* ── Ruled Grid — 4 columns with 2px black rules ── */}
-        <div className="border-2 border-[#111111]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            {TEMPLATES.map((t, i) => {
-              const isLastRow = i >= TEMPLATES.length - (TEMPLATES.length % 4 || 4)
-              const isRightEdge = (i + 1) % 4 === 0
-
-              return (
+        {/* ── Ruled Grid — gap trick: #111 bg shows through 2px gaps as rules ── */}
+        <div className="border-2 border-[#111111] bg-[#111111]">
+          <div className="grid grid-cols-1 gap-[2px] sm:grid-cols-2 lg:grid-cols-4">
+            {TEMPLATES.map((t, i) => (
                 <Link
                   key={t.key}
                   href={`/app?template=${t.key}`}
-                  className={[
-                    'group block p-5 transition-colors duration-75 hover:bg-[#111111]/[0.03]',
-                    // Right border on all except last column
-                    !isRightEdge ? 'lg:border-r-2 lg:border-[#111111]' : '',
-                    // Bottom border on all except last row
-                    !isLastRow ? 'border-b-2 border-[#111111]' : '',
-                    // SM: alternate right borders
-                    (i + 1) % 2 !== 0 ? 'sm:border-r-2 sm:border-[#111111]' : '',
-                    // Override SM right border on LG
-                    (i + 1) % 2 !== 0 && isRightEdge ? 'lg:border-r-0' : '',
-                  ].filter(Boolean).join(' ')}
+                  className="group block bg-[#FDFCF8] p-5 transition-colors duration-75 hover:bg-[#F5F4F0]"
                 >
                   {/* Category + Name */}
                   <div className="mb-3 flex items-baseline justify-between">
@@ -226,8 +212,7 @@ export function TemplateGrid() {
                     )}
                   </div>
                 </Link>
-              )
-            })}
+            ))}
           </div>
         </div>
 

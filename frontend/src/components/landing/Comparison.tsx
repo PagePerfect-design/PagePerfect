@@ -1,6 +1,6 @@
 export function Comparison() {
   return (
-    <section className="relative py-20 md:py-28">
+    <section className="relative bg-[#FDFCF8] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
 
         {/* ── Header ── */}

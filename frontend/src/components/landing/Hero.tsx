@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export function Hero() {
   return (
-    <section className="relative border-b border-[#111111]">
+    <section className="relative border-b border-[#111111] bg-[#FDFCF8]">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
 
         {/* ── Main hero area ── */}

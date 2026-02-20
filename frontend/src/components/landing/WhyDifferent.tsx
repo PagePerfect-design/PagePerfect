@@ -18,7 +18,7 @@ const STATEMENTS = [
 
 export function WhyDifferent() {
   return (
-    <section className="relative border-t-2 border-[#111111] py-20 md:py-28">
+    <section className="relative border-t-2 border-[#111111] bg-[#FDFCF8] py-20 md:py-28">
       <div className="mx-auto max-w-5xl px-6 md:px-8">
 
         {/* ── Heading ── */}

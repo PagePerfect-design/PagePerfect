@@ -50,7 +50,7 @@ const SPECS = [
 
 export function Engineering() {
   return (
-    <section className="relative border-t-2 border-[#111111] py-20 md:py-28">
+    <section className="relative border-t-2 border-[#111111] bg-[#FDFCF8] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
 
         {/* ── Header ── */}
@@ -67,16 +67,13 @@ export function Engineering() {
           </p>
         </div>
 
-        {/* ── Capabilities Grid ── */}
-        <div className="grid grid-cols-1 gap-0 border-2 border-[#111111] sm:grid-cols-2">
-          {CAPABILITIES.map((cap, i) => (
+        {/* ── Capabilities Grid — gap trick for clean rules ── */}
+        <div className="border-2 border-[#111111] bg-[#111111]">
+          <div className="grid grid-cols-1 gap-[2px] sm:grid-cols-2">
+          {CAPABILITIES.map((cap) => (
             <div
               key={cap.category}
-              className={[
-                'p-6 md:p-8',
-                i < 2 ? 'border-b-2 border-[#111111]' : '',
-                i % 2 === 0 ? 'sm:border-r-2 sm:border-[#111111]' : '',
-              ].filter(Boolean).join(' ')}
+              className="bg-[#FDFCF8] p-6 md:p-8"
             >
               <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
                 {cap.category}
@@ -91,6 +88,7 @@ export function Engineering() {
               </ul>
             </div>
           ))}
+          </div>
         </div>
 
         {/* ── Specification Table ── */}
