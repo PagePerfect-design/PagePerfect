@@ -71,9 +71,9 @@ const COMPARISON: { feature: string; values: [string, string, string, string] }[
   { feature: 'Citations & bibliography', values: ['\u2014',       '\u2014',         'Included',        'Included'] },
   { feature: 'PDF/X compliance',        values: ['\u2014',       '\u2014',         'Included',        'Included'] },
   { feature: 'Priority compile',        values: ['\u2014',       '\u2014',         'Included',        'Included'] },
-  { feature: 'EPUB export',             values: ['\u2014',       '\u2014',         '\u2014',          'Coming soon'] },
-  { feature: 'Custom font upload',      values: ['\u2014',       '\u2014',         '\u2014',          'Coming soon'] },
-  { feature: 'Batch export',            values: ['\u2014',       '\u2014',         '\u2014',          'Coming soon'] },
+  { feature: 'EPUB export',             values: ['\u2014',       '\u2014',         '\u2014',          'Included'] },
+  { feature: 'Custom font upload',      values: ['\u2014',       '\u2014',         '\u2014',          'Included'] },
+  { feature: 'Batch export',            values: ['\u2014',       '\u2014',         '\u2014',          'Included'] },
 ]
 
 const TIER_NAMES = ['Drafter', 'Single', 'Publisher', 'Studio'] as const
@@ -622,9 +622,7 @@ export default function PricingPage() {
                         className={`text-right font-mono text-[12px] ${
                           val === '\u2014'
                             ? 'text-white/20'
-                            : val === 'Coming soon'
-                              ? 'text-white/30 italic'
-                              : 'text-white/55'
+                            : 'text-white/55'
                         }`}
                       >
                         {val}

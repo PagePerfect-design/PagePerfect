@@ -3,6 +3,9 @@ const cors = require('cors');
 const morgan = require('morgan');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const multer = require('multer');
+const archiver = require('archiver');
+const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -1199,10 +1202,11 @@ const ALL_MARGINS = new Set(['normal','narrow','wide','minimal','academic','gene
 // ================================================================
 
 app.post('/api/compile', compileLimiter, async (req, res) => {
-  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat } = req.body || {};
+  let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts } = req.body || {};
   safeMode = Boolean(safeMode);
   compileMode = (compileMode === 'full') ? 'full' : 'fast';
   const wantPdfX = outputFormat === 'pdfx1a';
+  const wantEpub = outputFormat === 'epub';
 
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
@@ -1236,6 +1240,79 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
 
   const effectiveMd = safeMode ? stripCitations(manuscriptText) : manuscriptText;
   fs.writeFileSync(mdPath, effectiveMd, 'utf8');
+
+  // ── EPUB Export Path ────────────────────────────────────────
+  // EPUB uses Pandoc's HTML/CSS pipeline, not XeLaTeX. Skip all
+  // LaTeX-specific processing (fonts, preamble, grid geometry).
+  if (wantEpub) {
+    const epubPath = path.join(tmpBase, 'output.epub');
+    const epubCssPath = path.join(__dirname, 'templates', 'epub-style.css');
+
+    const epubArgs = [
+      mdPath,
+      '--to=epub3',
+      '-M', `title=${title}`,
+      '--epub-title-page=true',
+      ...(fs.existsSync(epubCssPath) ? ['--css', epubCssPath] : []),
+      '-o', epubPath,
+    ];
+
+    if (!safeMode) {
+      epubArgs.push('--citeproc', `--bibliography=${BIB_PATH}`);
+    }
+
+    const startTs = Date.now();
+    let epubProc;
+    try {
+      epubProc = spawn('pandoc', epubArgs, { cwd: tmpBase });
+    } catch (err) {
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+      return res.status(500).json({ error: 'spawn_failed', message: 'Failed to start EPUB engine.', detail: String(err) });
+    }
+
+    let stderr = '';
+    epubProc.stderr.on('data', (d) => { stderr += d.toString(); });
+    epubProc.on('error', (err) => {
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'spawn_failed', message: 'Failed to start EPUB engine.', detail: String(err) });
+      }
+    });
+
+    let timedOut = false;
+    const killer = setTimeout(() => { timedOut = true; try { epubProc.kill('SIGKILL'); } catch {} }, COMPILE_TIMEOUT_MS);
+
+    epubProc.on('close', (code) => {
+      if (res.headersSent) return;
+      clearTimeout(killer);
+      const elapsed = Date.now() - startTs;
+      res.setHeader('X-PP-Compile-Time', String(elapsed));
+
+      if (timedOut) {
+        try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+        return res.status(504).json({ error: 'compile_timeout', message: `EPUB compilation exceeded ${COMPILE_TIMEOUT_MS}ms.` });
+      }
+
+      if (code === 0 && fs.existsSync(epubPath)) {
+        const filename = `${slug(title) || 'manuscript'}.epub`;
+        res.setHeader('Content-Type', 'application/epub+zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('X-PP-Filename', filename);
+        res.setHeader('X-PP-Format', 'EPUB3');
+        const stream = fs.createReadStream(epubPath);
+        stream.on('close', () => { try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {} });
+        stream.pipe(res);
+      } else {
+        try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+        res.status(400).json({
+          error: 'epub_failed',
+          message: 'EPUB compilation failed.',
+          detail: stderr.split('\n').slice(-15).join('\n'),
+        });
+      }
+    });
+    return; // Don't continue to PDF path
+  }
 
   const templateType = tpl.gridType || 'academic';
   const geo = geometryFor(pageSize, marginPreset, templateType);
@@ -1279,6 +1356,31 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       );
     }
   }
+  // ── Custom Font Override ──────────────────────────────────
+  // If user uploaded a custom font, copy it to temp dir and patch
+  // the template to use fontspec's Path= directive.
+  const CUSTOM_FONTS_DIR = path.join(os.tmpdir(), 'pp-custom-fonts');
+  if (customFonts && typeof customFonts === 'object') {
+    for (const slot of ['main', 'sans', 'mono']) {
+      const fontId = customFonts[slot];
+      if (!fontId || typeof fontId !== 'string') continue;
+      const srcDir = path.join(CUSTOM_FONTS_DIR, fontId);
+      if (!fs.existsSync(srcDir)) continue;
+      const files = fs.readdirSync(srcDir).filter(f => /\.(ttf|otf|woff2?)$/i.test(f));
+      if (files.length === 0) continue;
+      // Copy font file to temp dir
+      const fontFile = files[0];
+      fs.copyFileSync(path.join(srcDir, fontFile), path.join(tmpBase, fontFile));
+      // Patch template: replace \set{main|sans|mono}font{...} with Path=./ version
+      const cmdName = slot === 'main' ? 'setmainfont' : slot === 'sans' ? 'setsansfont' : 'setmonofont';
+      templateContent = templateContent.replace(
+        new RegExp(`(\\\\${cmdName})(\\[.*?\\])?\\{[^}]+\\}`),
+        `$1[Path=./]{${fontFile}}`
+      );
+      warnings.push(`Custom ${slot} font applied: ${fontFile}`);
+    }
+  }
+
   const patchedTemplatePath = path.join(tmpBase, 'template.latex');
   fs.writeFileSync(patchedTemplatePath, templateContent, 'utf8');
 
@@ -1510,6 +1612,261 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
     }
   });
+});
+
+// ================================================================
+// Custom Font Upload
+// ================================================================
+
+const CUSTOM_FONTS_DIR_GLOBAL = path.join(os.tmpdir(), 'pp-custom-fonts');
+if (!fs.existsSync(CUSTOM_FONTS_DIR_GLOBAL)) {
+  fs.mkdirSync(CUSTOM_FONTS_DIR_GLOBAL, { recursive: true });
+}
+
+const fontStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const fontDir = path.join(CUSTOM_FONTS_DIR_GLOBAL, crypto.randomUUID());
+    fs.mkdirSync(fontDir, { recursive: true });
+    cb(null, fontDir);
+  },
+  filename: (_req, file, cb) => {
+    // Sanitize filename — keep only alphanumeric, dots, hyphens, underscores
+    const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    cb(null, safe);
+  },
+});
+
+const fontUpload = multer({
+  storage: fontStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (['.ttf', '.otf', '.woff', '.woff2'].includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .ttf, .otf, .woff, and .woff2 files are allowed.'));
+    }
+  },
+});
+
+app.post('/api/fonts/upload', fontUpload.single('font'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'no_file', message: 'No font file provided.' });
+  }
+
+  const fontId = path.basename(path.dirname(req.file.path));
+  const fontName = path.parse(req.file.originalname).name;
+
+  // Schedule cleanup after 1 hour
+  setTimeout(() => {
+    try { fs.rmSync(path.dirname(req.file.path), { recursive: true, force: true }); } catch {}
+  }, 60 * 60 * 1000);
+
+  console.log(`[fonts] Uploaded custom font: ${req.file.originalname} (${req.file.size} bytes) → ${fontId}`);
+
+  res.json({
+    fontId,
+    fontName,
+    originalName: req.file.originalname,
+    size: req.file.size,
+  });
+});
+
+// ================================================================
+// Batch Compile — Multiple page sizes → ZIP
+// ================================================================
+
+app.post('/api/batch-compile', compileLimiter, async (req, res) => {
+  let { manuscriptText, template, title, marginPreset, safeMode, compileMode, pageSizes, customFonts } = req.body || {};
+  safeMode = Boolean(safeMode);
+  compileMode = (compileMode === 'full') ? 'full' : 'fast';
+
+  if (!manuscriptText || typeof manuscriptText !== 'string') {
+    return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required.' });
+  }
+  if (!Array.isArray(pageSizes) || pageSizes.length === 0) {
+    return res.status(400).json({ error: 'invalid_request', message: 'pageSizes array is required.' });
+  }
+  if (pageSizes.length > 10) {
+    return res.status(400).json({ error: 'too_many', message: 'Maximum 10 page sizes per batch.' });
+  }
+
+  const mdBytes = Buffer.byteLength(manuscriptText, 'utf8');
+  if (mdBytes > MAX_MD_BYTES) {
+    return res.status(413).json({ error: 'payload_too_large', message: `Manuscript exceeds limit.` });
+  }
+
+  const tplKey = DESIGN_TEMPLATES[String(template)] ? String(template) : 'symphony';
+  const tpl = DESIGN_TEMPLATES[tplKey];
+  if (typeof title !== 'string' || !title.trim()) title = 'Manuscript';
+  title = title.replace(/[\r\n]/g, ' ').slice(0, 200);
+
+  const validSizes = pageSizes.filter(s => ALL_SIZES.has(s));
+  if (validSizes.length === 0) {
+    return res.status(400).json({ error: 'invalid_sizes', message: 'No valid page sizes provided.' });
+  }
+
+  // ── Shared preparation (fonts, preamble) — done once ──
+  const templateType = tpl.gridType || 'academic';
+  const effectiveMd = safeMode ? stripCitations(manuscriptText) : manuscriptText;
+  const warnings = styleWarnings(manuscriptText);
+  const isFast = compileMode === 'fast';
+
+  const fontResolution = fontAvailability.resolveFont(tpl.mainfont);
+  const effectiveMainfont = fontResolution.resolved;
+  const sansResolution = tpl.sansfont ? fontAvailability.resolveFont(tpl.sansfont) : null;
+  const monoResolution = tpl.monofont ? fontAvailability.resolveFont(tpl.monofont) : null;
+
+  let templateContent = fs.readFileSync(tpl.templatePath, 'utf8');
+  const fontReplacements = [
+    { original: tpl.mainfont, resolved: effectiveMainfont },
+    ...(sansResolution ? [{ original: tpl.sansfont, resolved: sansResolution.resolved }] : []),
+    ...(monoResolution ? [{ original: tpl.monofont, resolved: monoResolution.resolved }] : []),
+  ];
+  for (const { original, resolved } of fontReplacements) {
+    if (original !== resolved) {
+      const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      templateContent = templateContent.replace(
+        new RegExp(`(\\\\set(?:main|sans|mono)font\\{)${escaped}(\\})`, 'g'),
+        `$1${resolved}$2`
+      );
+    }
+  }
+
+  const preambleParts = [];
+  try {
+    preambleParts.push(bookEngineering.generateEngineeringPreamble(templateType));
+    const scriptAnalysis = multilingual.detectScripts(effectiveMd);
+    if (scriptAnalysis.isMultiscript || scriptAnalysis.hasRTL) {
+      preambleParts.push(multilingual.generateMultilingualPreamble(scriptAnalysis));
+    }
+    const buildMeta = provenance.generateBuildMetadata({
+      manuscriptText, template: tplKey, pageSize: validSizes[0], marginPreset, safeMode, compileMode, title,
+    });
+    preambleParts.push(provenance.generateMetadataPreamble(buildMeta));
+  } catch (err) {
+    return res.status(500).json({ error: 'preamble_error', message: 'Failed to assemble compile preamble.' });
+  }
+
+  const preambleStr = preambleParts.join('\n\n');
+
+  console.log(`[batch] Starting batch compile: ${validSizes.length} sizes for template=${tplKey}`);
+
+  // ── Compile each page size sequentially ──
+  const pdfs = []; // { name, path, tmpBase }
+  const errors = [];
+
+  for (const size of validSizes) {
+    if (!ALL_MARGINS.has(marginPreset)) marginPreset = 'normal';
+    const geo = geometryFor(size, marginPreset, templateType);
+    const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-batch-'));
+
+    try {
+      const mdPath = path.join(tmpBase, 'input.md');
+      const pdfPath = path.join(tmpBase, 'output.pdf');
+      fs.writeFileSync(mdPath, effectiveMd, 'utf8');
+
+      const tplPath = path.join(tmpBase, 'template.latex');
+      fs.writeFileSync(tplPath, templateContent, 'utf8');
+
+      const headerPath = path.join(tmpBase, 'header.tex');
+      fs.writeFileSync(headerPath, preambleStr, 'utf8');
+
+      // Handle custom fonts for batch
+      if (customFonts && typeof customFonts === 'object') {
+        const CUSTOM_FONTS_DIR = path.join(os.tmpdir(), 'pp-custom-fonts');
+        for (const slot of ['main', 'sans', 'mono']) {
+          const fontId = customFonts[slot];
+          if (!fontId || typeof fontId !== 'string') continue;
+          const srcDir = path.join(CUSTOM_FONTS_DIR, fontId);
+          if (!fs.existsSync(srcDir)) continue;
+          const files = fs.readdirSync(srcDir).filter(f => /\.(ttf|otf|woff2?)$/i.test(f));
+          if (files.length > 0) {
+            fs.copyFileSync(path.join(srcDir, files[0]), path.join(tmpBase, files[0]));
+          }
+        }
+      }
+
+      const args = [
+        mdPath,
+        safeMode ? '--from=markdown' : '--from=markdown+citations',
+        '--pdf-engine=xelatex',
+        '-M', `title=${title}`,
+        `--template=${tplPath}`,
+        '-H', headerPath,
+        '-V', `mainfont=${effectiveMainfont}`,
+        '-V', `geometry:${geo}`,
+        ...(isFast ? [] : ['-V', 'microtype=true', '-V', 'csquotes=true']),
+        '-o', pdfPath,
+      ];
+      if (!safeMode) args.push('--citeproc', `--bibliography=${BIB_PATH}`);
+
+      // Promisified compile
+      const result = await new Promise((resolve) => {
+        const proc = spawn('pandoc', args, { cwd: tmpBase });
+        let stderr = '';
+        proc.stderr.on('data', (d) => { stderr += d.toString(); });
+        proc.on('error', () => resolve({ success: false, error: 'Pandoc spawn failed' }));
+
+        const kill = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} resolve({ success: false, error: 'Timeout' }); }, COMPILE_TIMEOUT_MS);
+        proc.on('close', (code) => {
+          clearTimeout(kill);
+          if (code === 0 && fs.existsSync(pdfPath)) {
+            resolve({ success: true });
+          } else {
+            resolve({ success: false, error: stderr.split('\n').slice(-5).join('\n') });
+          }
+        });
+      });
+
+      if (result.success) {
+        const sizeSlug = size.replace(/([A-Z])/g, '-$1').toLowerCase();
+        pdfs.push({ name: `${slug(title) || 'manuscript'}-${sizeSlug}.pdf`, path: pdfPath, tmpBase });
+      } else {
+        errors.push({ pageSize: size, error: result.error });
+        try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+      }
+    } catch (err) {
+      errors.push({ pageSize: size, error: String(err) });
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+    }
+  }
+
+  if (pdfs.length === 0) {
+    return res.status(400).json({ error: 'batch_failed', message: 'All compilations failed.', errors });
+  }
+
+  // ── ZIP and stream ──
+  const zipFilename = `${slug(title) || 'manuscript'}-batch.zip`;
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`);
+  res.setHeader('X-PP-Format', 'batch-zip');
+  res.setHeader('X-PP-Batch-Count', String(pdfs.length));
+
+  const archive = archiver('zip', { zlib: { level: 1 } });
+  archive.pipe(res);
+
+  for (const pdf of pdfs) {
+    archive.file(pdf.path, { name: pdf.name });
+  }
+
+  archive.on('end', () => {
+    for (const pdf of pdfs) {
+      try { fs.rmSync(pdf.tmpBase, { recursive: true, force: true }); } catch {}
+    }
+    console.log(`[batch] Completed: ${pdfs.length}/${validSizes.length} sizes, ${errors.length} errors`);
+  });
+
+  archive.on('error', (err) => {
+    for (const pdf of pdfs) {
+      try { fs.rmSync(pdf.tmpBase, { recursive: true, force: true }); } catch {}
+    }
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'zip_failed', message: 'Failed to create ZIP archive.' });
+    }
+  });
+
+  archive.finalize();
 });
 
 // ================================================================

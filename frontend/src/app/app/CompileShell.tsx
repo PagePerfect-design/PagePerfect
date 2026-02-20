@@ -16,6 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   BarChart3,
+  Upload,
+  Package,
+  Loader2,
 } from 'lucide-react'
 
 import { SAMPLE_MD } from './sample'
@@ -35,6 +38,8 @@ type Stage = 'portal' | 'design' | 'launch'
 type HudTab = 'style' | 'layout' | 'settings' | null
 type Platform = 'kdp' | 'ingram'
 type PaperStock = 'white' | 'cream'
+type ExportFormat = 'pdf' | 'epub'
+type CustomFont = { fontId: string; fontName: string; originalName: string } | null
 
 type PreflightCheck = {
   name: string
@@ -163,8 +168,8 @@ function timestamp() {
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`
 }
 
-function buildFilename(title: string, t: TemplateKey, size: PageSize) {
-  return `${slug(title) || 'manuscript'}_${t}_${sizeCode(size)}_${timestamp()}.pdf`
+function buildFilename(title: string, t: TemplateKey, size: PageSize, ext = 'pdf') {
+  return `${slug(title) || 'manuscript'}_${t}_${sizeCode(size)}_${timestamp()}.${ext}`
 }
 
 function cleanFromWord(input: string): string {
@@ -826,12 +831,16 @@ function FloatingHUD({
   safeMode,
   status,
   activeTab,
+  customFont,
+  fontUploading,
   onTabChange,
   onTemplateChange,
   onPageSizeChange,
   onMarginChange,
   onCompileModeChange,
   onSafeModeChange,
+  onFontUpload,
+  onFontRemove,
 }: {
   template: TemplateKey
   pageSize: PageSize
@@ -840,12 +849,16 @@ function FloatingHUD({
   safeMode: boolean
   status: Status
   activeTab: HudTab
+  customFont: CustomFont
+  fontUploading: boolean
   onTabChange: (t: HudTab) => void
   onTemplateChange: (t: TemplateKey) => void
   onPageSizeChange: (s: PageSize) => void
   onMarginChange: (m: MarginPreset) => void
   onCompileModeChange: (m: CompileMode) => void
   onSafeModeChange: (s: boolean) => void
+  onFontUpload: (file: File) => void
+  onFontRemove: () => void
 }) {
   const [genreFilter, setGenreFilter] = useState<Genre>('all')
   const [hoveredTemplate, setHoveredTemplate] = useState<TemplateKey | null>(null)
@@ -1094,6 +1107,43 @@ function FloatingHUD({
               />
               <span className="text-[11px] text-white/40">Safe mode (skip citations)</span>
             </label>
+
+            {/* Custom font upload */}
+            <div className="mt-3 border-t border-white/[0.06] pt-3">
+              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-white/20">Custom Font</p>
+              {customFont ? (
+                <div className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2">
+                  <span className="flex-1 truncate text-[11px] text-white/50">{customFont.originalName}</span>
+                  <button
+                    onClick={onFontRemove}
+                    className="text-white/20 transition-colors hover:text-red-400/60"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-white/[0.1] py-2.5 text-[11px] transition-all ${
+                  fontUploading ? 'text-white/30' : 'text-white/30 hover:border-white/20 hover:text-white/50'
+                }`}>
+                  {fontUploading ? (
+                    <><Loader2 className="h-3 w-3 animate-spin" />Uploading&hellip;</>
+                  ) : (
+                    <><Upload className="h-3 w-3" />Upload .ttf / .otf</>
+                  )}
+                  <input
+                    type="file"
+                    accept=".ttf,.otf,.woff,.woff2"
+                    className="hidden"
+                    disabled={fontUploading}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0]
+                      if (f) onFontUpload(f)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1281,7 +1331,11 @@ function LaunchOverlay({
   pageSize,
   marginPreset,
   wordCount,
+  manuscript,
+  safeMode,
+  compileMode,
   pdfUrl,
+  customFont,
   onBack,
   onDownload,
 }: {
@@ -1290,12 +1344,20 @@ function LaunchOverlay({
   pageSize: PageSize
   marginPreset: MarginPreset
   wordCount: number
+  manuscript: string
+  safeMode: boolean
+  compileMode: CompileMode
   pdfUrl: string | null
+  customFont: CustomFont
   onBack: () => void
   onDownload: (platform: Platform) => void
 }) {
   const [platform, setPlatform] = useState<Platform>('kdp')
   const [paper, setPaper] = useState<PaperStock>('white')
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf')
+  const [epubLoading, setEpubLoading] = useState(false)
+  const [batchLoading, setBatchLoading] = useState(false)
+  const [batchProgress, setBatchProgress] = useState('')
   const [preflight, setPreflight] = useState<PreflightResult | null>(null)
   const [checking, setChecking] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -1345,6 +1407,90 @@ function LaunchOverlay({
 
   const hasFailure = preflight?.checks.some(c => c.status === 'fail')
   const canDownload = !checking && !hasFailure && !fetchError && pdfUrl
+
+  async function handleEpubDownload() {
+    setEpubLoading(true)
+    try {
+      const body: Record<string, unknown> = {
+        manuscriptText: manuscript,
+        template,
+        title: title || 'Manuscript',
+        pageSize,
+        marginPreset,
+        safeMode,
+        compileMode,
+        outputFormat: 'epub',
+      }
+      if (customFont) body.customFonts = { main: customFont.fontId }
+
+      const resp = await fetch('/api/compile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => null)
+        alert(data?.message || 'EPUB export failed.')
+        return
+      }
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${slug(title) || 'manuscript'}.epub`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('EPUB export failed. Please try again.')
+    } finally {
+      setEpubLoading(false)
+    }
+  }
+
+  async function handleBatchExport() {
+    setBatchLoading(true)
+    setBatchProgress('Compiling...')
+    try {
+      const allSizes = Object.keys(PAGE_SIZES)
+      const body: Record<string, unknown> = {
+        manuscriptText: manuscript,
+        template,
+        title: title || 'Manuscript',
+        marginPreset,
+        safeMode,
+        compileMode,
+        pageSizes: allSizes,
+      }
+      if (customFont) body.customFonts = { main: customFont.fontId }
+
+      const resp = await fetch('/api/batch-compile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => null)
+        alert(data?.message || 'Batch export failed.')
+        return
+      }
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${slug(title) || 'manuscript'}-batch.zip`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('Batch export failed. Please try again.')
+    } finally {
+      setBatchLoading(false)
+      setBatchProgress('')
+    }
+  }
 
   const statusIcon = (s: PreflightCheck['status']) =>
     s === 'pass'  ? <Check className="h-3 w-3 shrink-0 text-emerald-400" /> :
@@ -1507,20 +1653,64 @@ function LaunchOverlay({
           </div>
         </div>
 
-        {/* Download button */}
-        <div className="mt-4">
+        {/* Format selector */}
+        <div className="mt-4 mb-3 flex rounded-lg bg-white/[0.03] p-0.5">
+          {(['pdf', 'epub'] as ExportFormat[]).map((fmt) => (
+            <button
+              key={fmt}
+              onClick={() => setExportFormat(fmt)}
+              className={`flex-1 rounded-md px-3 py-2 text-center text-[11px] font-medium transition-all duration-150 ${
+                exportFormat === fmt
+                  ? 'bg-white/[0.08] text-white'
+                  : 'text-white/40 hover:text-white/60'
+              }`}
+            >
+              {fmt === 'pdf' ? 'PDF' : 'EPUB'}
+            </button>
+          ))}
+        </div>
+
+        {/* Download buttons */}
+        <div className="space-y-2">
+          {exportFormat === 'pdf' ? (
+            <button
+              onClick={() => onDownload(platform)}
+              disabled={!canDownload}
+              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#0033ff] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#2255ff] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <Download className="h-4 w-4" />
+              {platform === 'ingram' ? 'Download PDF/X-1a' : 'Download Print PDF'}
+            </button>
+          ) : (
+            <button
+              onClick={handleEpubDownload}
+              disabled={epubLoading}
+              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#0033ff] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#2255ff] disabled:opacity-50"
+            >
+              {epubLoading ? (
+                <><Loader2 className="h-4 w-4 animate-spin" />Generating EPUB&hellip;</>
+              ) : (
+                <><Download className="h-4 w-4" />Download EPUB</>
+              )}
+            </button>
+          )}
+
+          {/* Batch export */}
           <button
-            onClick={() => onDownload(platform)}
-            disabled={!canDownload}
-            className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#0033ff] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#2255ff] disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={handleBatchExport}
+            disabled={batchLoading || !pdfUrl}
+            className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] text-[12px] font-medium text-white/40 transition-all hover:border-white/20 hover:text-white/60 disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <Download className="h-4 w-4" />
-            {platform === 'ingram' ? 'Download PDF/X-1a' : 'Download Print PDF'}
+            {batchLoading ? (
+              <><Loader2 className="h-3.5 w-3.5 animate-spin" />{batchProgress || 'Batch exporting...'}</>
+            ) : (
+              <><Package className="h-3.5 w-3.5" />Batch Export — All Sizes (ZIP)</>
+            )}
           </button>
         </div>
 
         {/* Failure message */}
-        {!checking && hasFailure && (
+        {exportFormat === 'pdf' && !checking && hasFailure && (
           <p className="mt-3 text-center font-mono text-[10px] text-red-400/50">
             One or more checks failed. Fix the issues above before downloading.
           </p>
@@ -1638,6 +1828,8 @@ export default function CompileShell() {
   const [showEditor, setShowEditor] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showSystems, setShowSystems] = useState(false)
+  const [customFont, setCustomFont] = useState<CustomFont>(null)
+  const [fontUploading, setFontUploading] = useState(false)
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -1777,6 +1969,9 @@ export default function CompileShell() {
       if (exportPlatform === 'ingram') {
         body.outputFormat = 'pdfx1a'
       }
+      if (customFont) {
+        body.customFonts = { main: customFont.fontId }
+      }
       const resp = await fetch('/api/compile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1843,6 +2038,30 @@ export default function CompileShell() {
     compile(true, exportPlatform)
   }
 
+  async function handleFontUpload(file: File) {
+    setFontUploading(true)
+    try {
+      const form = new FormData()
+      form.append('font', file)
+      const resp = await fetch('/api/fonts/upload', { method: 'POST', body: form })
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => null)
+        alert(data?.error || 'Font upload failed.')
+        return
+      }
+      const data = await resp.json()
+      setCustomFont({ fontId: data.fontId, fontName: data.fontName, originalName: data.originalName })
+    } catch {
+      alert('Font upload failed. Please try again.')
+    } finally {
+      setFontUploading(false)
+    }
+  }
+
+  function handleFontRemove() {
+    setCustomFont(null)
+  }
+
   // ── Render: The Layer Cake ──
 
   return (
@@ -1904,12 +2123,16 @@ export default function CompileShell() {
                 safeMode={safeMode}
                 status={status}
                 activeTab={hudTab}
+                customFont={customFont}
+                fontUploading={fontUploading}
                 onTabChange={setHudTab}
                 onTemplateChange={setTemplate}
                 onPageSizeChange={setPageSize}
                 onMarginChange={setMarginPreset}
                 onCompileModeChange={setCompileMode}
                 onSafeModeChange={setSafeMode}
+                onFontUpload={handleFontUpload}
+                onFontRemove={handleFontRemove}
               />
             </div>
 
@@ -1988,7 +2211,11 @@ export default function CompileShell() {
             pageSize={pageSize}
             marginPreset={marginPreset}
             wordCount={wordCount}
+            manuscript={manuscript}
+            safeMode={safeMode}
+            compileMode={compileMode}
             pdfUrl={pdfUrl}
+            customFont={customFont}
             onBack={() => setStage('design')}
             onDownload={handleDownload}
           />
