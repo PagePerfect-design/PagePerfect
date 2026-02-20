@@ -10,12 +10,6 @@
   <line x1="38" y1="50" x2="62" y2="50" stroke="#FDFCF8" stroke-width="1.4" opacity="0.9"/>
   <circle cx="50" cy="50" r="9" stroke="#FDFCF8" stroke-width="1" opacity="0.7"/>
 
-  <!-- PAGE -->
-  <text x="50" y="28" text-anchor="middle" fill="#FDFCF8" font-size="7.5" font-family="system-ui, sans-serif" font-weight="700" letter-spacing="4" opacity="0.95">PAGE</text>
-
-  <!-- PERFECT -->
-  <text x="50" y="79" text-anchor="middle" fill="#FDFCF8" font-size="7.5" font-family="system-ui, sans-serif" font-weight="700" letter-spacing="3" opacity="0.95">PERFECT</text>
-
   <!-- Baseline grid fragments — left -->
   <line x1="5" y1="45" x2="16" y2="45" stroke="#FDFCF8" stroke-width="0.5" opacity="0.25" stroke-dasharray="2 1.5"/>
   <line x1="5" y1="50" x2="16" y2="50" stroke="#FDFCF8" stroke-width="0.5" opacity="0.25" stroke-dasharray="2 1.5"/>
