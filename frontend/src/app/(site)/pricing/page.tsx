@@ -133,14 +133,14 @@ function TierRow({
     >
       <div className="grid grid-cols-1 gap-4 py-12 md:grid-cols-[6rem_1fr_1fr] md:items-baseline md:gap-12 md:py-16">
         {/* Tier number — large, ghosted */}
-        <span className="font-display text-[4rem] font-extrabold leading-none tracking-tighter text-white/[0.07] transition-colors duration-500 group-hover:text-[#0033ff]/[0.15] md:text-[5rem]">
+        <span className="font-display text-[4rem] font-extrabold leading-none tracking-tighter text-[#111111]/[0.06] transition-colors duration-500 group-hover:text-[#0033ff]/20 md:text-[5rem]">
           {tier.num}
         </span>
 
         {/* Name + description — editorial */}
         <div>
           <div className="flex items-baseline gap-4">
-            <h3 className="font-mono text-[13px] uppercase tracking-[0.15em] text-white/70">
+            <h3 className="font-mono text-[13px] uppercase tracking-[0.15em] text-[#111111]/70">
               {tier.name}
             </h3>
             {'recommended' in tier && (
@@ -149,20 +149,20 @@ function TierRow({
               </span>
             )}
           </div>
-          <p className="mt-4 font-body text-[15px] leading-relaxed text-white/55 md:text-base">
+          <p className="mt-4 font-body text-[15px] leading-relaxed text-[#111111]/45 md:text-base">
             {tier.body}
           </p>
         </div>
 
         {/* Price + aside + CTA */}
-        <div className="border-l border-white/[0.08] pl-6">
+        <div className="border-l border-[#111111]/10 pl-6">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-white md:text-[2.5rem]">
+            <span className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-[#111111] md:text-[2.5rem]">
               {tier.price}
             </span>
-            <span className="font-mono text-[11px] text-white/35">{tier.period}</span>
+            <span className="font-mono text-[11px] text-[#111111]/30">{tier.period}</span>
           </div>
-          <p className="mt-3 font-body text-[14px] leading-relaxed text-white/40 italic md:text-[15px]">
+          <p className="mt-3 font-body text-[14px] leading-relaxed text-[#111111]/35 italic md:text-[15px]">
             {tier.aside}
           </p>
 
@@ -174,8 +174,8 @@ function TierRow({
                 aria-disabled={cta.disabled}
                 className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${
                   cta.disabled
-                    ? 'cursor-default border border-white/[0.06] text-white/25'
-                    : 'border border-white/[0.12] text-white/60 hover:border-white/[0.25] hover:text-white/80'
+                    ? 'cursor-default border border-[#111111]/[0.06] text-[#111111]/20'
+                    : 'border border-[#111111]/15 text-[#111111]/55 hover:border-[#111111]/30 hover:text-[#111111]'
                 }`}
               >
                 {cta.label}
@@ -189,10 +189,10 @@ function TierRow({
                 onClick={() => onUpgrade(tier.key as 'single' | 'publisher' | 'studio')}
                 className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${
                   cta.disabled
-                    ? 'cursor-default border border-white/[0.06] text-white/25'
+                    ? 'cursor-default border border-[#111111]/[0.06] text-[#111111]/20'
                     : tier.key === 'publisher'
                       ? 'bg-[#0033ff] text-white hover:bg-[#2255ff]'
-                      : 'border border-white/[0.12] text-white/60 hover:border-white/[0.25] hover:text-white/80'
+                      : 'border border-[#111111]/15 text-[#111111]/55 hover:border-[#111111]/30 hover:text-[#111111]'
                 }`}
               >
                 {isLoading ? (
@@ -396,17 +396,17 @@ function SuccessBanner({ tier }: { tier: string }) {
       transition={{ duration: 0.5, ease }}
       className="mx-auto mb-8 max-w-6xl px-6 md:px-8"
     >
-      <div className="flex items-center gap-4 border border-emerald-500/20 bg-emerald-500/[0.05] px-6 py-4">
-        <div className="flex h-8 w-8 items-center justify-center bg-emerald-500/20">
-          <Check className="h-4 w-4 text-emerald-400" />
+      <div className="flex items-center gap-4 border border-emerald-600/20 bg-emerald-600/[0.05] px-6 py-4">
+        <div className="flex h-8 w-8 items-center justify-center bg-emerald-600/15">
+          <Check className="h-4 w-4 text-emerald-700" />
         </div>
         <div>
-          <p className="font-display text-[15px] font-semibold text-white">
+          <p className="font-display text-[15px] font-semibold text-[#111111]">
             {tier === 'single'
               ? 'PDF purchased'
               : `Welcome to ${tier === 'publisher' ? 'Publisher' : 'Studio'}`}
           </p>
-          <p className="font-body text-[13px] text-white/50">
+          <p className="font-body text-[13px] text-[#111111]/50">
             {tier === 'single'
               ? 'Your watermark-free PDF is ready to download.'
               : 'Your account has been upgraded. All features are now unlocked.'}
@@ -511,7 +511,7 @@ export default function PricingPage() {
             initial={{ opacity: 0 }}
             animate={headerInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.5, ease }}
-            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40"
+            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]/30"
           >
             Pricing
           </motion.p>
@@ -520,7 +520,7 @@ export default function PricingPage() {
             initial={{ opacity: 0, y: 24 }}
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.1, ease }}
-            className="max-w-3xl font-display text-display-lg font-extrabold leading-[0.9] tracking-tighter text-white"
+            className="max-w-3xl font-display text-display-lg font-extrabold leading-[0.9] tracking-tighter text-[#111111]"
           >
             Simple pricing.
             <br />
@@ -531,7 +531,7 @@ export default function PricingPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.2, ease }}
-            className="mt-6 max-w-xl font-body text-lg leading-relaxed text-white/50"
+            className="mt-6 max-w-xl font-body text-lg leading-relaxed text-[#111111]/45"
           >
             The free tier is genuinely useful &mdash; not a demo. Upgrade when your book is ready for print.
           </motion.p>
@@ -542,9 +542,9 @@ export default function PricingPage() {
 
       {error && (
         <div className="mx-auto mb-6 max-w-6xl px-6 md:px-8">
-          <div className="flex items-center justify-between border border-red-500/20 bg-red-500/[0.05] px-5 py-3">
-            <p className="font-mono text-[13px] text-red-400">{error}</p>
-            <button onClick={() => setError(null)} className="text-red-400/60 hover:text-red-400">
+          <div className="flex items-center justify-between border border-red-600/20 bg-red-600/[0.05] px-5 py-3">
+            <p className="font-mono text-[13px] text-red-700">{error}</p>
+            <button onClick={() => setError(null)} className="text-red-700/60 hover:text-red-700">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -557,7 +557,7 @@ export default function PricingPage() {
           <div>
             {TIERS.map((tier, i) => (
               <Fragment key={tier.key}>
-                <div className="h-px bg-white/[0.06]" />
+                <div className="h-px bg-[#111111]/10" />
                 <TierRow
                   tier={tier}
                   index={i}
@@ -567,7 +567,7 @@ export default function PricingPage() {
                 />
               </Fragment>
             ))}
-            <div className="h-px bg-white/[0.06]" />
+            <div className="h-px bg-[#111111]/10" />
           </div>
         </div>
       </section>
@@ -581,10 +581,10 @@ export default function PricingPage() {
             transition={{ duration: 0.7, ease }}
             className="mb-16 max-w-2xl md:mb-20"
           >
-            <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40">
+            <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]/30">
               Compare
             </p>
-            <h2 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tighter text-white md:text-5xl">
+            <h2 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tighter text-[#111111] md:text-5xl">
               What&apos;s included
             </h2>
           </motion.div>
@@ -601,7 +601,7 @@ export default function PricingPage() {
                 <div />
                 {TIER_NAMES.map((name, i) => (
                   <div key={name} className="text-right">
-                    <span className={`font-mono text-[11px] uppercase tracking-[0.15em] ${i === 2 ? 'text-[#0033ff]' : 'text-white/50'}`}>
+                    <span className={`font-mono text-[11px] uppercase tracking-[0.15em] ${i === 2 ? 'text-[#0033ff]' : 'text-[#111111]/50'}`}>
                       {name}
                     </span>
                   </div>
@@ -611,9 +611,9 @@ export default function PricingPage() {
               {/* Feature rows */}
               {COMPARISON.map((row) => (
                 <Fragment key={row.feature}>
-                  <div className="h-px bg-white/[0.06]" />
+                  <div className="h-px bg-[#111111]/10" />
                   <div className="grid grid-cols-[1fr_repeat(4,_minmax(0,_8rem))] items-baseline gap-x-4 py-4 md:gap-x-6">
-                    <span className="font-body text-[14px] text-white/60 md:text-[15px]">
+                    <span className="font-body text-[14px] text-[#111111]/55 md:text-[15px]">
                       {row.feature}
                     </span>
                     {row.values.map((val, i) => (
@@ -621,8 +621,8 @@ export default function PricingPage() {
                         key={i}
                         className={`text-right font-mono text-[12px] ${
                           val === '\u2014'
-                            ? 'text-white/20'
-                            : 'text-white/55'
+                            ? 'text-[#111111]/20'
+                            : 'text-[#111111]/55'
                         }`}
                       >
                         {val}
@@ -631,7 +631,7 @@ export default function PricingPage() {
                   </div>
                 </Fragment>
               ))}
-              <div className="h-px bg-white/[0.06]" />
+              <div className="h-px bg-[#111111]/10" />
             </div>
           </motion.div>
         </div>
@@ -639,7 +639,7 @@ export default function PricingPage() {
 
       {/* Hairline */}
       <div className="mx-auto max-w-6xl px-6 md:px-8">
-        <div className="h-px bg-white/[0.06]" />
+        <div className="h-px bg-[#111111]/10" />
       </div>
 
       {/* ── FAQ ── */}
@@ -651,10 +651,10 @@ export default function PricingPage() {
             transition={{ duration: 0.7, ease }}
             className="mb-16 max-w-2xl md:mb-20"
           >
-            <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40">
+            <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]/30">
               FAQ
             </p>
-            <h2 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tighter text-white md:text-5xl">
+            <h2 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tighter text-[#111111] md:text-5xl">
               Common questions
             </h2>
           </motion.div>
@@ -662,30 +662,30 @@ export default function PricingPage() {
           <div>
             {FAQ.map((item, i) => (
               <Fragment key={item.q}>
-                <div className="h-px bg-white/[0.06]" />
+                <div className="h-px bg-[#111111]/10" />
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={faqInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.5, delay: 0.1 + i * 0.05, ease }}
                   className="grid grid-cols-1 gap-4 py-10 md:grid-cols-[1fr_1fr] md:gap-12 md:py-12"
                 >
-                  <h3 className="font-display text-[17px] font-bold leading-snug text-white/90">
+                  <h3 className="font-display text-[17px] font-bold leading-snug text-[#111111]">
                     {item.q}
                   </h3>
-                  <p className="font-body text-[15px] leading-relaxed text-white/45">
+                  <p className="font-body text-[15px] leading-relaxed text-[#111111]/45">
                     {item.a}
                   </p>
                 </motion.div>
               </Fragment>
             ))}
-            <div className="h-px bg-white/[0.06]" />
+            <div className="h-px bg-[#111111]/10" />
           </div>
         </div>
       </section>
 
       {/* Hairline */}
       <div className="mx-auto max-w-6xl px-6 md:px-8">
-        <div className="h-px bg-white/[0.06]" />
+        <div className="h-px bg-[#111111]/10" />
       </div>
 
       {/* ── FINAL CTA ── */}
@@ -697,30 +697,30 @@ export default function PricingPage() {
             transition={{ duration: 0.7, ease }}
             className="max-w-2xl"
           >
-            <h2 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tighter text-white md:text-5xl">
+            <h2 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tighter text-[#111111] md:text-5xl">
               Try it now.
               <br />
               No signup required.
             </h2>
-            <p className="mt-6 font-body text-lg leading-relaxed text-white/50">
+            <p className="mt-6 font-body text-lg leading-relaxed text-[#111111]/45">
               Open the editor, paste your manuscript, and see professional typesetting in seconds.
             </p>
             <div className="mt-10 flex items-center gap-6">
               <Link
                 href="/app"
-                className="group inline-flex h-13 items-center gap-3 bg-[#0033ff] px-10 font-display text-[15px] font-semibold text-white transition-all duration-200 hover:bg-[#2255ff]"
+                className="group inline-flex h-13 items-center gap-3 border border-[#111111] bg-[#111111] px-10 font-display text-[15px] font-semibold text-white transition-all duration-75 hover:bg-transparent hover:text-[#111111]"
               >
                 Open the Editor
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
               <Link
                 href="/docs"
-                className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/45 transition-colors hover:text-white/70"
+                className="font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]/35 transition-colors hover:text-[#111111]"
               >
                 Read the docs
               </Link>
             </div>
-            <p className="mt-6 font-mono text-[11px] text-white/30">
+            <p className="mt-6 font-mono text-[11px] text-[#111111]/25">
               No account required &middot; Works in any browser
             </p>
           </motion.div>
