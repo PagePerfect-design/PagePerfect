@@ -38,7 +38,7 @@ const TIERS = [
     name: 'Studio',
     price: '$199',
     period: 'once',
-    body: 'Lifetime Publisher access. No monthly fees, ever. EPUB export, custom font upload, batch export for series \u2014 all coming.',
+    body: 'Lifetime Publisher access. No monthly fees, ever. EPUB export, custom font upload, and batch export for series \u2014 all included.',
     aside: 'Pay once, own it forever. For publishers and prolific authors.',
   },
 ] as const
