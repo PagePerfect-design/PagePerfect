@@ -35,7 +35,7 @@ const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000); // 
 
 // ---- Pandoc version detection ----
 // Pandoc 2.11+ has built-in --citeproc; older versions need --filter pandoc-citeproc
-let PANDOC_HAS_CITEPROC = false;
+let PANDOC_HAS_CITEPROC = true; // Default true — pandoc-citeproc was removed in 2020; any modern install has --citeproc
 try {
   const versionOutput = execSync('pandoc --version', { encoding: 'utf8', timeout: 5000 });
   const match = versionOutput.match(/pandoc(?:\.exe)?\s+(\d+)\.(\d+)/);
@@ -46,7 +46,7 @@ try {
     console.log(`[startup] Pandoc ${match[1]}.${match[2]} detected — citeproc: ${PANDOC_HAS_CITEPROC ? 'built-in' : 'filter fallback'}`);
   }
 } catch (e) {
-  console.warn('[startup] Could not detect Pandoc version:', e.message);
+  console.warn('[startup] Could not detect Pandoc version, assuming built-in --citeproc');
 }
 
 /** Returns the args needed to enable citation processing */
