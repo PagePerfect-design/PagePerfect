@@ -1,12 +1,8 @@
 /**
  * CompositorMark — The PagePerfect logo mark
  *
- * A Müller-Brockmann-inspired registration mark:
- *   - Registration crosshair inside a circle
- *   - Golden rectangle outline (φ proportions)
- *   - Baseline grid fragments (dashed lines)
- *   - Corner crop marks (L-brackets)
- *   - φ indicator
+ * A bold P letterform with baseline grid lines descending from the bowl,
+ * echoing the typographic grid system at the heart of PagePerfect.
  */
 
 export default function CompositorMark({
@@ -18,7 +14,6 @@ export default function CompositorMark({
   color?: string
   className?: string
 }) {
-  // Viewbox: 100×100 centered at 50,50
   return (
     <svg
       width={size}
@@ -29,68 +24,18 @@ export default function CompositorMark({
       className={className}
       aria-hidden="true"
     >
-      {/* Golden rectangle outline (φ ≈ 1.618 → 62×38.3) centered */}
-      <rect
-        x="19" y="30.8"
-        width="62" height="38.3"
-        rx="0"
-        stroke={color}
-        strokeWidth="0.8"
-        opacity="0.5"
-      />
-
-      {/* Registration crosshair — vertical */}
-      <line
-        x1="50" y1="38" x2="50" y2="62"
-        stroke={color}
-        strokeWidth="1.2"
-        opacity="0.85"
-      />
-      {/* Registration crosshair — horizontal */}
-      <line
-        x1="38" y1="50" x2="62" y2="50"
-        stroke={color}
-        strokeWidth="1.2"
-        opacity="0.85"
-      />
-      {/* Registration circle */}
-      <circle
-        cx="50" cy="50" r="9"
-        stroke={color}
-        strokeWidth="0.9"
-        opacity="0.7"
-      />
-
-      {/* Baseline grid fragments — left */}
-      <line x1="5" y1="45" x2="16" y2="45" stroke={color} strokeWidth="0.5" opacity="0.3" strokeDasharray="2 1.5" />
-      <line x1="5" y1="50" x2="16" y2="50" stroke={color} strokeWidth="0.5" opacity="0.3" strokeDasharray="2 1.5" />
-      <line x1="5" y1="55" x2="16" y2="55" stroke={color} strokeWidth="0.5" opacity="0.3" strokeDasharray="2 1.5" />
-
-      {/* Baseline grid fragments — right */}
-      <line x1="84" y1="45" x2="95" y2="45" stroke={color} strokeWidth="0.5" opacity="0.3" strokeDasharray="2 1.5" />
-      <line x1="84" y1="50" x2="95" y2="50" stroke={color} strokeWidth="0.5" opacity="0.3" strokeDasharray="2 1.5" />
-      <line x1="84" y1="55" x2="95" y2="55" stroke={color} strokeWidth="0.5" opacity="0.3" strokeDasharray="2 1.5" />
-
-      {/* Corner crop marks — top-left */}
-      <polyline points="8,18 8,10 16,10" stroke={color} strokeWidth="0.7" opacity="0.4" fill="none" />
-      {/* Corner crop marks — top-right */}
-      <polyline points="84,10 92,10 92,18" stroke={color} strokeWidth="0.7" opacity="0.4" fill="none" />
-      {/* Corner crop marks — bottom-left */}
-      <polyline points="8,82 8,90 16,90" stroke={color} strokeWidth="0.7" opacity="0.4" fill="none" />
-      {/* Corner crop marks — bottom-right */}
-      <polyline points="84,90 92,90 92,82" stroke={color} strokeWidth="0.7" opacity="0.4" fill="none" />
-
-      {/* φ (phi) indicator */}
-      <text
-        x="75" y="34"
+      {/* Bold P letterform */}
+      <path
+        fillRule="evenodd"
+        d="M24 12h30c14.5 0 26 11.2 26 25s-11.5 25-26 25H38v24H24V12zM38 49h14c7 0 13-5.6 13-12s-6-12-13-12H38v24z"
         fill={color}
-        fontSize="6"
-        fontFamily="Georgia, 'Times New Roman', serif"
-        fontStyle="italic"
-        opacity="0.35"
-      >
-        φ
-      </text>
+      />
+
+      {/* Baseline grid lines descending from bowl */}
+      <rect x="43" y="65" width="2.5" height="22" fill={color} opacity="0.45" />
+      <rect x="51" y="65" width="2.5" height="22" fill={color} opacity="0.35" />
+      <rect x="59" y="65" width="2.5" height="22" fill={color} opacity="0.25" />
+      <rect x="67" y="65" width="2.5" height="22" fill={color} opacity="0.15" />
     </svg>
   )
 }
