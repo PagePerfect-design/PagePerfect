@@ -1,10 +1,9 @@
 /**
- * CompositorMark — The PagePerfect logo
+ * CompositorMark — The PagePerfect logo mark
  *
  * A Müller-Brockmann-inspired registration mark:
  *   - Registration crosshair inside a circle
  *   - Golden rectangle outline (φ proportions)
- *   - "PAGE" above, "PERFECT" below — letterspaced small-caps
  *   - Baseline grid fragments (dashed lines)
  *   - Corner crop marks (L-brackets)
  *   - φ indicator
@@ -61,34 +60,6 @@ export default function CompositorMark({
         strokeWidth="0.9"
         opacity="0.7"
       />
-
-      {/* "PAGE" above crosshair */}
-      <text
-        x="50" y="28"
-        textAnchor="middle"
-        fill={color}
-        fontSize="7.5"
-        fontFamily="system-ui, -apple-system, sans-serif"
-        fontWeight="600"
-        letterSpacing="4"
-        opacity="0.9"
-      >
-        PAGE
-      </text>
-
-      {/* "PERFECT" below crosshair */}
-      <text
-        x="50" y="79"
-        textAnchor="middle"
-        fill={color}
-        fontSize="7.5"
-        fontFamily="system-ui, -apple-system, sans-serif"
-        fontWeight="600"
-        letterSpacing="3"
-        opacity="0.9"
-      >
-        PERFECT
-      </text>
 
       {/* Baseline grid fragments — left */}
       <line x1="5" y1="45" x2="16" y2="45" stroke={color} strokeWidth="0.5" opacity="0.3" strokeDasharray="2 1.5" />
