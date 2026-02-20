@@ -5,7 +5,29 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-[#111111] bg-[#FDFCF8]">
 
-      {/* ── Screenback — ghosted image, right-aligned ── */}
+      {/* ── Screenback — mobile: bottom-rising, desktop: right-aligned ── */}
+
+      {/* Mobile: ghost rises from the bottom */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[55%] md:hidden"
+        aria-hidden="true"
+      >
+        <Image
+          src="/images/hero-book-laptop.webp"
+          alt=""
+          fill
+          priority
+          className="object-cover object-bottom grayscale"
+          style={{
+            opacity: 0.07,
+            mixBlendMode: 'multiply',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 55%)',
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 55%)',
+          }}
+        />
+      </div>
+
+      {/* Desktop: ghost drifts in from the right */}
       <div
         className="pointer-events-none absolute inset-y-0 right-0 hidden w-[60%] md:block"
         aria-hidden="true"
@@ -14,7 +36,6 @@ export function Hero() {
           src="/images/hero-book-laptop.webp"
           alt=""
           fill
-          priority
           className="object-cover object-center grayscale"
           style={{
             opacity: 0.09,
