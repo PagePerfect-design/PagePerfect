@@ -68,7 +68,10 @@ export function HowItWorks() {
               <div className="h-px bg-[#111111]/10" />
               <div className="grid grid-cols-1 gap-4 py-10 md:grid-cols-[5rem_1fr_1fr] md:items-baseline md:gap-10 md:py-14">
                 {/* Step number */}
-                <span className="font-display text-[3rem] font-extrabold leading-none tracking-tighter text-[#111111]/[0.06] md:text-[4rem]">
+                <span
+                  className="font-display text-[3rem] font-extrabold leading-none tracking-tighter text-transparent md:text-[4rem]"
+                  style={{ WebkitTextStroke: '1px rgba(255, 51, 51, 0.25)' }}
+                >
                   {step.num}
                 </span>
 
