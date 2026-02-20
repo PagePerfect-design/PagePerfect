@@ -61,7 +61,7 @@ export function HowItWorks() {
                 </div>
 
                 {/* Detail aside */}
-                <p className="border-l border-[#111111]/10 pl-5 font-body text-[12px] italic leading-[1.7] text-[#111111]/35">
+                <p className="border-l-2 border-[#0033ff]/20 pl-5 font-body text-[12px] italic leading-[1.7] text-[#111111]/35">
                   {step.detail}
                 </p>
               </div>
