@@ -9,7 +9,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const GridSystem = require('./grid-system');
 const publishing = require('./publishing');
 const lulu = require('./lulu');
@@ -30,6 +30,30 @@ const fontAvailability = require('./font-availability');
 // ---- limits (env overridable) ----
 const MAX_MD_BYTES = Number(process.env.MAX_MD_BYTES || 2_000_000); // ~2 MB
 const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000); // 45s
+
+// ---- Pandoc version detection ----
+// Pandoc 2.11+ has built-in --citeproc; older versions need --filter pandoc-citeproc
+let PANDOC_HAS_CITEPROC = false;
+try {
+  const versionOutput = execSync('pandoc --version', { encoding: 'utf8', timeout: 5000 });
+  const match = versionOutput.match(/pandoc(?:\.exe)?\s+(\d+)\.(\d+)/);
+  if (match) {
+    const major = parseInt(match[1], 10);
+    const minor = parseInt(match[2], 10);
+    PANDOC_HAS_CITEPROC = major > 2 || (major === 2 && minor >= 11);
+    console.log(`[startup] Pandoc ${match[1]}.${match[2]} detected — citeproc: ${PANDOC_HAS_CITEPROC ? 'built-in' : 'filter fallback'}`);
+  }
+} catch (e) {
+  console.warn('[startup] Could not detect Pandoc version:', e.message);
+}
+
+/** Returns the args needed to enable citation processing */
+function citeprocArgs(bibPath) {
+  if (PANDOC_HAS_CITEPROC) {
+    return ['--citeproc', `--bibliography=${bibPath}`];
+  }
+  return ['--filter', 'pandoc-citeproc', `--bibliography=${bibPath}`];
+}
 
 // ---- Allowed origins ----
 const ALLOWED_ORIGINS = [
@@ -1258,7 +1282,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     ];
 
     if (!safeMode) {
-      epubArgs.push('--citeproc', `--bibliography=${BIB_PATH}`);
+      epubArgs.push(...citeprocArgs(BIB_PATH));
     }
 
     const startTs = Date.now();
@@ -1439,9 +1463,11 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   ].filter(Boolean).join(' ');
   console.log(`[compile] template=${tplKey} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
 
+  const fromFormat = safeMode ? '--from=markdown'
+    : PANDOC_HAS_CITEPROC ? '--from=markdown+citations' : '--from=markdown';
   const baseArgs = [
     mdPath,
-    safeMode ? '--from=markdown' : '--from=markdown+citations',
+    fromFormat,
     '--pdf-engine=xelatex',
     '-M', `title=${title}`,
     `--template=${patchedTemplatePath}`,
@@ -1455,10 +1481,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
 
   const args = safeMode
     ? baseArgs
-    : baseArgs.concat([
-        '--citeproc',
-        `--bibliography=${BIB_PATH}`,
-      ]);
+    : baseArgs.concat(citeprocArgs(BIB_PATH));
 
   const startTs = Date.now();
   let pandoc;
@@ -1787,9 +1810,11 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
         }
       }
 
+      const batchFromFormat = safeMode ? '--from=markdown'
+        : PANDOC_HAS_CITEPROC ? '--from=markdown+citations' : '--from=markdown';
       const args = [
         mdPath,
-        safeMode ? '--from=markdown' : '--from=markdown+citations',
+        batchFromFormat,
         '--pdf-engine=xelatex',
         '-M', `title=${title}`,
         `--template=${tplPath}`,
@@ -1799,7 +1824,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
         ...(isFast ? [] : ['-V', 'microtype=true', '-V', 'csquotes=true']),
         '-o', pdfPath,
       ];
-      if (!safeMode) args.push('--citeproc', `--bibliography=${BIB_PATH}`);
+      if (!safeMode) args.push(...citeprocArgs(BIB_PATH));
 
       // Promisified compile
       const result = await new Promise((resolve) => {
