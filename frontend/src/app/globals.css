@@ -186,6 +186,11 @@ html::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radiu
 [data-specimen] { scrollbar-color: rgba(0,0,0,0.10) transparent; }
 [data-specimen] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.10); }
 
+/* Noise overlay: hidden on specimen/light pages.
+   .bg-noise lives in root layout OUTSIDE [data-specimen],
+   so we target it via :has() on the body. */
+body:has([data-specimen]) > .bg-noise { display: none; }
+
 /* ===== Layout ===== */
 .container-grid { @apply mx-auto max-w-7xl px-6 md:px-8; }
 
