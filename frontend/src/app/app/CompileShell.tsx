@@ -760,14 +760,15 @@ function LevitatingBook({
             className="relative h-full w-full overflow-hidden bg-white transition-shadow duration-500"
             style={{
               boxShadow: status === 'success'
-                ? '0 8px 40px rgba(0,0,0,0.5), 0 30px 80px -20px rgba(0,0,0,0.6)'
-                : '0 4px 24px rgba(0,0,0,0.4), 0 20px 60px -16px rgba(0,0,0,0.5)',
+                ? '0 2px 8px rgba(0,0,0,0.08), 0 12px 40px -8px rgba(0,0,0,0.12)'
+                : '0 1px 4px rgba(0,0,0,0.06), 0 8px 30px -6px rgba(0,0,0,0.10)',
+              border: '1px solid rgba(17,17,17,0.08)',
             }}
           >
             {pdfUrl ? (
               <iframe
                 title="PDF preview"
-                src={pdfUrl}
+                src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
                 className="h-full w-full"
               />
             ) : loading ? (
