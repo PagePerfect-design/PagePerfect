@@ -24,7 +24,7 @@ const TIERS = [
     features: [
       'Unlimited manuscripts',
       'All 12 design templates',
-      '3 page sizes (Letter, A4, 6\u00d79)',
+      '6 page sizes',
       'Real-time PDF preview',
       'Fast compile mode',
       'Markdown auto-clean',
@@ -43,7 +43,7 @@ const TIERS = [
     features: [
       'Everything in Drafter',
       'No watermark on this export',
-      'All 11 page sizes',
+      'All 19 page sizes',
       'Full quality compile',
       'Print-ready PDF output',
       'No subscription required',
@@ -61,7 +61,7 @@ const TIERS = [
     features: [
       'Everything in Drafter',
       'Unlimited watermark-free exports',
-      'All 11 page sizes including Amazon KDP',
+      'All 19 page sizes including Amazon KDP',
       'Full quality compile mode',
       'Print-ready PDF (PDF/X compliance)',
       'Citation & bibliography support',
