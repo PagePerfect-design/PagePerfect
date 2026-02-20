@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 export function Hero() {
   return (
@@ -6,10 +7,10 @@ export function Hero() {
       <div className="mx-auto max-w-7xl px-6 md:px-8">
 
         {/* ── Main hero area ── */}
-        <div className="grid grid-cols-1 gap-0 md:grid-cols-[1fr_1px_auto] md:items-end">
+        <div className="grid grid-cols-1 gap-0 md:grid-cols-[1fr_1px_1fr] md:items-end">
 
           {/* Left: headline + CTA */}
-          <div className="pb-16 pt-20 md:pb-20 md:pt-32 lg:pt-40">
+          <div className="pb-8 pt-20 md:pb-20 md:pt-32 lg:pt-40">
             <h1 className="font-display text-[clamp(3rem,8vw,7rem)] font-extrabold leading-[0.85] tracking-tighter text-[#111111]">
               Paste text.
               <br />
@@ -39,34 +40,41 @@ export function Hero() {
           {/* Vertical rule */}
           <div className="hidden bg-[#111111]/15 md:block" />
 
-          {/* Right: specimen type sample */}
-          <div className="hidden border-t border-[#111111]/15 pb-20 pt-10 md:block md:border-t-0 md:pb-20 md:pl-12 md:pt-32 lg:pl-16 lg:pt-40">
-            <div className="w-64 lg:w-72">
-              <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
-                Specimen &mdash; EB Garamond
-              </p>
-              <div className="mt-4 border-t-2 border-[#111111] pt-4">
-                <p className="font-body text-[28px] leading-[1.25] tracking-tight text-[#111111]/80 lg:text-[32px]">
-                  The morning light filtered through the old windows of the library
-                </p>
-                <div className="mt-4 flex items-baseline justify-between border-t border-[#111111]/10 pt-3">
-                  <span className="font-mono text-[9px] text-[#111111]/30">12pt / 18pt leading</span>
-                  <span className="font-mono text-[9px] text-[#111111]/30">Scale 2.25&times;</span>
-                </div>
+          {/* Right: hero image — book emerging from laptop */}
+          <div className="pb-16 md:pb-20 md:pl-12 md:pt-32 lg:pl-16 lg:pt-40">
+
+            {/* Figure plate — editorial framing */}
+            <div className="border-t-2 border-[#111111]">
+              <div className="flex items-baseline justify-between pb-4 pt-3">
+                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+                  Plate 01
+                </span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+                  Digital &rarr; Print
+                </span>
               </div>
 
-              <div className="mt-6 border-t border-[#111111]/10 pt-4">
-                <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
-                  Baseline Grid
-                </p>
-                <div className="mt-2 space-y-[12px]">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="h-px bg-[#111111]/8" />
-                  ))}
-                </div>
-                <p className="mt-2 font-mono text-[8px] text-[#111111]/20">
-                  12pt intervals &middot; M&uuml;ller-Brockmann grid
-                </p>
+              {/* Image — monochrome via CSS filters */}
+              <div className="relative aspect-[16/10] overflow-hidden">
+                <Image
+                  src="/images/hero-book-laptop.webp"
+                  alt="A laptop transforming into an open book — digital meets print"
+                  fill
+                  priority
+                  className="object-cover grayscale sepia-[0.12] contrast-[1.05]"
+                />
+                {/* Inset frame edge */}
+                <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-[#111111]/10" />
+              </div>
+
+              {/* Figure caption */}
+              <div className="flex items-baseline justify-between border-t border-[#111111]/10 pt-3">
+                <span className="font-mono text-[8px] text-[#111111]/20">
+                  Fig. 01 &mdash; Manuscript to typeset PDF
+                </span>
+                <span className="font-mono text-[8px] text-[#111111]/20">
+                  XeLaTeX &middot; Pandoc
+                </span>
               </div>
             </div>
           </div>
