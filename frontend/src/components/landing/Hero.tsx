@@ -1,116 +1,77 @@
-'use client'
-
-import { motion, useScroll, useTransform } from 'framer-motion'
 import Link from 'next/link'
-import Image from 'next/image'
-import { useRef } from 'react'
-import { ArrowRight } from 'lucide-react'
-
-const ease = [0.25, 0.4, 0.25, 1] as const
 
 export function Hero() {
-  const sectionRef = useRef(null)
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ['start start', 'end start'],
-  })
-
-  const imageY = useTransform(scrollYProgress, [0, 1], [0, 60])
-  const textOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0])
-
   return (
-    <section
-      ref={sectionRef}
-      className="relative flex min-h-[100vh] w-full items-center overflow-hidden bg-[#050505]"
-    >
-      {/* ── THE IMAGE — right half, hard crop, no gradients ── */}
-      <motion.div
-        style={{ y: imageY }}
-        className="absolute inset-y-0 right-0 w-full lg:w-[55%]"
-      >
-        <Image
-          src="/images/hero-book-laptop.webp"
-          alt="Professional typesetting"
-          fill
-          className="object-cover"
-          style={{
-            filter: 'grayscale(30%) contrast(1.1) brightness(0.7)',
-          }}
-          priority
-        />
-        {/* Hard left edge fade only — no ambient glow */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(to right, #050505 0%, #050505 5%, rgba(5,5,5,0.7) 30%, rgba(5,5,5,0.1) 60%, transparent 100%)',
-          }}
-        />
-        {/* Bottom fade */}
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#050505] to-transparent" />
-      </motion.div>
+    <section className="relative border-b border-[#111111]">
+      <div className="mx-auto max-w-7xl px-6 md:px-8">
 
-      {/* ── THE TYPOGRAPHY — left side, raised ── */}
-      <motion.div
-        style={{ opacity: textOpacity }}
-        className="relative z-10 mx-auto w-full max-w-7xl px-6 md:px-8"
-      >
-        <div className="max-w-2xl pt-20 lg:pt-0">
+        {/* ── Main hero area ── */}
+        <div className="grid grid-cols-1 gap-0 md:grid-cols-[1fr_1px_auto] md:items-end">
 
-          {/* H1 — massive, solid white. Like a book cover. */}
-          <motion.h1
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1, ease }}
-            className="font-display text-hero font-extrabold leading-[0.88] tracking-tighter text-white"
-          >
-            Paste text.
-            <br />
-            <span className="text-[#f2f2f0]">Get a book.</span>
-          </motion.h1>
+          {/* Left: headline + CTA */}
+          <div className="pb-16 pt-20 md:pb-20 md:pt-32 lg:pt-40">
+            <h1 className="font-display text-[clamp(3rem,8vw,7rem)] font-extrabold leading-[0.85] tracking-tighter text-[#111111]">
+              Paste text.
+              <br />
+              Get a book.
+            </h1>
 
-          {/* Subhead — Serif. Literary, not startup. */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.35, ease }}
-            className="mt-8 max-w-lg font-body text-xl leading-relaxed text-white/65 md:text-[22px] md:leading-[1.6]"
-          >
-            Stop fighting Word. We turn your raw manuscript into{' '}
-            <em className="text-white/90">precision typography</em>{' '}
-            and print-ready PDFs.
-          </motion.p>
+            <p className="mt-8 max-w-md font-body text-sm leading-[1.7] text-[#111111]/50 md:text-base md:leading-[1.7]">
+              Stop fighting Word. PagePerfect turns your raw manuscript
+              into precision typography and print-ready PDFs &mdash; powered
+              by XeLaTeX with baseline grids and golden-ratio type scales.
+            </p>
 
-          {/* CTA — solid registration blue. One button. Confident. */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.55, ease }}
-            className="mt-12 flex flex-col items-start gap-8"
-          >
-            <div className="flex items-center gap-6">
+            <div className="mt-10 flex flex-col items-start gap-6">
               <Link
                 href="/app"
-                className="group inline-flex h-13 items-center gap-3 bg-[#0033ff] px-10 font-display text-[15px] font-semibold text-white transition-all duration-200 hover:bg-[#2255ff]"
+                className="inline-flex h-12 items-center border border-[#111111] bg-[#111111] px-10 font-mono text-[11px] uppercase tracking-[0.12em] text-white transition-all duration-75 hover:bg-transparent hover:text-[#111111]"
               >
                 Start Formatting
-                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
 
-              <Link
-                href="#how-it-works"
-                className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/45 transition-colors hover:text-white/70"
-              >
-                How it works
-              </Link>
+              <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/25">
+                No account required &middot; Works in any browser
+              </p>
             </div>
+          </div>
 
-            <p className="font-mono text-[11px] text-white/30">
-              No account required &middot; Works in any browser
-            </p>
-          </motion.div>
+          {/* Vertical rule */}
+          <div className="hidden bg-[#111111]/15 md:block" />
 
+          {/* Right: specimen type sample */}
+          <div className="hidden border-t border-[#111111]/15 pb-20 pt-10 md:block md:border-t-0 md:pb-20 md:pl-12 md:pt-32 lg:pl-16 lg:pt-40">
+            <div className="w-64 lg:w-72">
+              <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+                Specimen &mdash; EB Garamond
+              </p>
+              <div className="mt-4 border-t-2 border-[#111111] pt-4">
+                <p className="font-body text-[28px] leading-[1.25] tracking-tight text-[#111111]/80 lg:text-[32px]">
+                  The morning light filtered through the old windows of the library
+                </p>
+                <div className="mt-4 flex items-baseline justify-between border-t border-[#111111]/10 pt-3">
+                  <span className="font-mono text-[9px] text-[#111111]/30">12pt / 18pt leading</span>
+                  <span className="font-mono text-[9px] text-[#111111]/30">Scale 2.25&times;</span>
+                </div>
+              </div>
+
+              <div className="mt-6 border-t border-[#111111]/10 pt-4">
+                <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+                  Baseline Grid
+                </p>
+                <div className="mt-2 space-y-[12px]">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="h-px bg-[#111111]/8" />
+                  ))}
+                </div>
+                <p className="mt-2 font-mono text-[8px] text-[#111111]/20">
+                  12pt intervals &middot; M&uuml;ller-Brockmann grid
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </section>
   )
 }

@@ -1,11 +1,3 @@
-'use client'
-
-import { Fragment, useRef } from 'react'
-import Image from 'next/image'
-import { motion, useInView } from 'framer-motion'
-
-const ease = [0.25, 0.4, 0.25, 1] as const
-
 const STEPS = [
   {
     num: '01',
@@ -16,116 +8,66 @@ const STEPS = [
   {
     num: '02',
     title: 'Pick your design system',
-    body: 'Eight typographic systems — from academic Chicago to experimental Avantgarde. Each uses Muller-Brockmann grid principles with calculated baselines and golden-ratio heading scales.',
-    detail: 'Not themes — mathematical typographic systems where every line locks to a baseline grid.',
+    body: 'Twelve typographic systems — from academic Chicago to experimental Avant-Garde. Each uses M\u00fcller-Brockmann grid principles with calculated baselines and heading scales.',
+    detail: 'Not themes — mathematical systems where every line locks to a baseline grid.',
   },
   {
     num: '03',
     title: 'Export print-ready PDF',
     body: 'Professional output with embedded fonts, correct bleed, and proper trim. Upload directly to Amazon KDP, IngramSpark, Lulu, or any print-on-demand service.',
-    detail: 'Compiles in seconds via XeLaTeX. Download, upload to your distributor — done.',
+    detail: 'Compiles via XeLaTeX. Download, upload to your distributor — done.',
   },
 ]
 
-function StepRow({ step, index }: { step: typeof STEPS[number]; index: number }) {
-  const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '-60px' })
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 24 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.7, delay: index * 0.1, ease }}
-      className="group"
-    >
-      <div className="grid grid-cols-1 gap-4 py-12 md:grid-cols-[6rem_1fr_1fr] md:items-baseline md:gap-12 md:py-16">
-        {/* Step number — large, ghosted */}
-        <span className="font-display text-[4rem] font-extrabold leading-none tracking-tighter text-white/[0.08] transition-colors duration-500 group-hover:text-[#0033ff]/[0.15] md:text-[5rem]">
-          {step.num}
-        </span>
-
-        {/* Title + body — serif body */}
-        <div>
-          <h3 className="font-display text-xl font-bold leading-[1.1] tracking-tight text-white md:text-2xl lg:text-[1.75rem]">
-            {step.title}
-          </h3>
-          <p className="mt-4 font-body text-[15px] leading-relaxed text-white/55 md:text-base">
-            {step.body}
-          </p>
-        </div>
-
-        {/* Detail — italic aside */}
-        <p className="border-l border-white/[0.08] pl-6 font-body text-[14px] leading-relaxed text-white/40 italic md:text-[15px]">
-          {step.detail}
-        </p>
-      </div>
-    </motion.div>
-  )
-}
-
 export function HowItWorks() {
-  const headerRef = useRef(null)
-  const headerInView = useInView(headerRef, { once: true, margin: '-60px' })
-
   return (
-    <section id="how-it-works" className="relative py-32 md:py-44 overflow-hidden">
-      {/* Background image — scattered open books */}
-      <div className="absolute inset-0">
-        <Image
-          src="/images/books-scattered.webp"
-          alt=""
-          fill
-          className="object-cover"
-          sizes="100vw"
-          style={{ filter: 'grayscale(40%) brightness(0.15)' }}
-        />
-        <div className="absolute inset-0 bg-[#050505]/80" />
-      </div>
+    <section id="how-it-works" className="relative border-t-2 border-[#111111] py-20 md:py-28">
+      <div className="mx-auto max-w-6xl px-6 md:px-8">
 
-      <div className="relative mx-auto max-w-6xl px-6 md:px-8">
-
-        {/* ── HEADER — editorial, left-aligned ── */}
-        <div ref={headerRef} className="mb-16 max-w-2xl md:mb-20">
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={headerInView ? { opacity: 1 } : {}}
-            transition={{ duration: 0.5, ease }}
-            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-white/40"
-          >
+        {/* ── Header ── */}
+        <div className="mb-12 max-w-2xl md:mb-16">
+          <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
             Process
-          </motion.p>
-
-          <motion.h2
-            initial={{ opacity: 0, y: 24 }}
-            animate={headerInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.1, ease }}
-            className="font-display text-display-lg font-extrabold leading-[0.9] tracking-tighter text-white"
-          >
+          </p>
+          <h2 className="font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
             Three steps.
             <br />
             That&apos;s it.
-          </motion.h2>
-
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={headerInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.2, ease }}
-            className="mt-6 font-body text-lg leading-relaxed text-white/50"
-          >
-            From raw manuscript to print-ready PDF in under a minute.
-          </motion.p>
+          </h2>
+          <p className="mt-5 font-body text-sm leading-[1.7] text-[#111111]/45">
+            From raw manuscript to print-ready PDF.
+          </p>
         </div>
 
-        {/* ── STEPS ── */}
+        {/* ── Steps ── */}
         <div>
-          {STEPS.map((step, i) => (
-            <Fragment key={step.num}>
-              <div className="h-px bg-white/[0.06]" />
-              <StepRow step={step} index={i} />
-            </Fragment>
+          {STEPS.map((step) => (
+            <div key={step.num}>
+              <div className="h-px bg-[#111111]/10" />
+              <div className="grid grid-cols-1 gap-4 py-10 md:grid-cols-[5rem_1fr_1fr] md:items-baseline md:gap-10 md:py-14">
+                {/* Step number */}
+                <span className="font-display text-[3rem] font-extrabold leading-none tracking-tighter text-[#111111]/[0.06] md:text-[4rem]">
+                  {step.num}
+                </span>
+
+                {/* Title + body */}
+                <div>
+                  <h3 className="font-display text-lg font-bold leading-[1.1] tracking-tight text-[#111111] md:text-xl">
+                    {step.title}
+                  </h3>
+                  <p className="mt-3 font-body text-[13px] leading-[1.7] text-[#111111]/45">
+                    {step.body}
+                  </p>
+                </div>
+
+                {/* Detail aside */}
+                <p className="border-l border-[#111111]/10 pl-5 font-body text-[12px] italic leading-[1.7] text-[#111111]/35">
+                  {step.detail}
+                </p>
+              </div>
+            </div>
           ))}
-          <div className="h-px bg-white/[0.06]" />
+          <div className="h-px bg-[#111111]/10" />
         </div>
       </div>
     </section>
