@@ -503,7 +503,7 @@ export default function PricingPage() {
   }
 
   return (
-    <main id="main">
+    <main id="main" className="bg-[#FDFCF8]">
       {/* ── HEADER ── */}
       <section className="pt-32 pb-16 md:pt-44 md:pb-20">
         <div ref={headerRef} className="mx-auto max-w-6xl px-6 md:px-8">
