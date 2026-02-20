@@ -573,7 +573,7 @@ export default function DocsPage() {
                   <div className="grid gap-1.5 sm:grid-cols-2">
                     {t.features.map((f, fi) => (
                       <p key={fi} className="flex items-start gap-2 font-display text-[13px] text-[#3a3a3a]">
-                        <span className="mt-1.5 h-1 w-1 rounded-full bg-[#0033ff] shrink-0" />
+                        <span className="mt-1.5 h-1 w-1 rounded-full bg-[#FF3333] shrink-0" />
                         {f}
                       </p>
                     ))}
@@ -892,7 +892,7 @@ export default function DocsPage() {
                   href="https://ia902309.us.archive.org/4/items/GridSystemsInGraphicDesignJosefMullerBrockmann/Grid%20systems%20in%20graphic%20design%20-%20Josef%20Muller-Brockmann.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#0033ff] hover:text-[#2255ff] transition-colors"
+                  className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#FF3333] hover:text-[#E52222] transition-colors"
                 >
                   Read the PDF
                   <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>

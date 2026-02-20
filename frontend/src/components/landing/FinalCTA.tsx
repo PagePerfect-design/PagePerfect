@@ -6,7 +6,7 @@ export function FinalCTA() {
       <div className="mx-auto max-w-3xl px-6 md:px-8">
 
         {/* Decorative rule */}
-        <div className="mx-auto mb-16 h-[2px] w-16 bg-[#111111]/10" />
+        <div className="mx-auto mb-16 h-[2px] w-16 bg-[#FF3333]" />
 
         <p className="mb-5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
           Try it now
@@ -28,7 +28,7 @@ export function FinalCTA() {
         <div className="mt-12 flex flex-col items-center gap-5">
           <Link
             href="/app"
-            className="inline-flex h-12 items-center border border-[#111111] bg-[#111111] px-12 font-mono text-[11px] uppercase tracking-[0.12em] text-white transition-all duration-75 hover:bg-transparent hover:text-[#111111]"
+            className="inline-flex h-12 items-center bg-[#FF3333] px-12 font-mono text-[11px] uppercase tracking-[0.12em] text-white transition-all duration-75 hover:bg-[#E52222]"
           >
             Open the Editor
           </Link>

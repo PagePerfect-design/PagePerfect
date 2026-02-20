@@ -133,7 +133,7 @@ function TierRow({
     >
       <div className="grid grid-cols-1 gap-4 py-12 md:grid-cols-[6rem_1fr_1fr] md:items-baseline md:gap-12 md:py-16">
         {/* Tier number — large, ghosted */}
-        <span className="font-display text-[4rem] font-extrabold leading-none tracking-tighter text-[#111111]/[0.06] transition-colors duration-500 group-hover:text-[#0033ff]/20 md:text-[5rem]">
+        <span className="font-display text-[4rem] font-extrabold leading-none tracking-tighter text-[#111111]/[0.06] transition-colors duration-500 group-hover:text-[#FF3333]/20 md:text-[5rem]">
           {tier.num}
         </span>
 
@@ -144,7 +144,7 @@ function TierRow({
               {tier.name}
             </h3>
             {'recommended' in tier && (
-              <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#0033ff]">
+              <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#FF3333]">
                 Recommended
               </span>
             )}
@@ -191,7 +191,7 @@ function TierRow({
                   cta.disabled
                     ? 'cursor-default border border-[#111111]/[0.06] text-[#111111]/20'
                     : tier.key === 'publisher'
-                      ? 'bg-[#0033ff] text-white hover:bg-[#2255ff]'
+                      ? 'bg-[#FF3333] text-white hover:bg-[#E52222]'
                       : 'border border-[#111111]/15 text-[#111111]/55 hover:border-[#111111]/30 hover:text-[#111111]'
                 }`}
               >
@@ -271,7 +271,7 @@ function PaymentForm({
         <button
           type="submit"
           disabled={!stripe || processing}
-          className="flex h-12 w-full items-center justify-center gap-2 bg-[#0033ff] font-mono text-[12px] uppercase tracking-[0.1em] text-white transition-all duration-200 hover:bg-[#2255ff] disabled:opacity-50"
+          className="flex h-12 w-full items-center justify-center gap-2 bg-[#FF3333] font-mono text-[12px] uppercase tracking-[0.1em] text-white transition-all duration-200 hover:bg-[#E52222] disabled:opacity-50"
         >
           {processing ? (
             <>
@@ -313,7 +313,7 @@ function CheckoutOverlay({
     appearance: {
       theme: 'stripe',
       variables: {
-        colorPrimary: '#0033ff',
+        colorPrimary: '#FF3333',
         borderRadius: '0px',
         fontFamily: 'system-ui, -apple-system, sans-serif',
       },
@@ -503,7 +503,7 @@ export default function PricingPage() {
   }
 
   return (
-    <main id="main">
+    <main id="main" className="bg-[#FDFCF8]">
       {/* ── HEADER ── */}
       <section className="pt-32 pb-16 md:pt-44 md:pb-20">
         <div ref={headerRef} className="mx-auto max-w-6xl px-6 md:px-8">
@@ -601,7 +601,7 @@ export default function PricingPage() {
                 <div />
                 {TIER_NAMES.map((name, i) => (
                   <div key={name} className="text-right">
-                    <span className={`font-mono text-[11px] uppercase tracking-[0.15em] ${i === 2 ? 'text-[#0033ff]' : 'text-[#111111]/50'}`}>
+                    <span className={`font-mono text-[11px] uppercase tracking-[0.15em] ${i === 2 ? 'text-[#FF3333]' : 'text-[#111111]/50'}`}>
                       {name}
                     </span>
                   </div>

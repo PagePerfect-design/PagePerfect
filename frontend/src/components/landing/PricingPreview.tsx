@@ -75,7 +75,7 @@ export function PricingPreview() {
                       {tier.name}
                     </h3>
                     {'recommended' in tier && (
-                      <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#0033ff]">
+                      <span className="border-b border-[#FF3333]/40 pb-px font-mono text-[9px] uppercase tracking-[0.15em] text-[#FF3333]">
                         Recommended
                       </span>
                     )}
