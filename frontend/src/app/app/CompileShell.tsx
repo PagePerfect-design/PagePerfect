@@ -23,6 +23,8 @@ import {
 
 import { SAMPLE_MD } from './sample'
 import PublishingSystems from './PublishingSystems'
+import { useAuth } from '@/lib/auth-context'
+import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
 
 /* ═══════════════════════════════════════════════════════════════════
    TYPES & CONSTANTS
@@ -1378,6 +1380,9 @@ function LaunchOverlay({
   customFont,
   onBack,
   onDownload,
+  lastDownloadWatermarked,
+  userTier,
+  userCredits,
 }: {
   title: string
   template: TemplateKey
@@ -1392,6 +1397,9 @@ function LaunchOverlay({
   customFont: CustomFont
   onBack: () => void
   onDownload: (platform: Platform) => void
+  lastDownloadWatermarked: boolean
+  userTier: string
+  userCredits: number
 }) {
   const [platform, setPlatform] = useState<Platform>('kdp')
   const [paper, setPaper] = useState<PaperStock>('white')
@@ -1758,6 +1766,23 @@ function LaunchOverlay({
           </p>
         )}
 
+        {/* Watermark / credit notice */}
+        {lastDownloadWatermarked && (
+          <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-3 py-2 text-center">
+            <p className="font-mono text-[10px] text-amber-700/70">
+              Free tier — PDF includes watermark.{' '}
+              <a href="/pricing" className="underline hover:text-amber-800">Upgrade</a>{' '}
+              or buy a single clean PDF for £2.99.
+            </p>
+          </div>
+        )}
+        {userTier === 'drafter' && userCredits > 0 && (
+          <p className="mt-2 text-center font-mono text-[10px] text-emerald-600/60">
+            {userCredits} clean PDF credit{userCredits !== 1 ? 's' : ''} remaining
+          </p>
+        )}
+
+
         <p className="mt-3 text-center font-mono text-[10px] text-[#111111]/25">
           {TEMPLATE_INFO[template]?.name} / {PAGE_SIZES[pageSize]?.label} / {title || 'Untitled'}
         </p>
@@ -1873,6 +1898,9 @@ export default function CompileShell() {
   const [showSystems, setShowSystems] = useState(false)
   const [customFont, setCustomFont] = useState<CustomFont>(null)
   const [fontUploading, setFontUploading] = useState(false)
+  const [lastDownloadWatermarked, setLastDownloadWatermarked] = useState(false)
+
+  const { session, tier, pdfCredits, refreshUser } = useAuth()
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -2011,15 +2039,26 @@ export default function CompileShell() {
         safeMode,
         compileMode,
       }
+      if (downloadAfter) {
+        body.download = true
+      }
       if (exportPlatform === 'ingram') {
         body.outputFormat = 'pdfx1a'
       }
       if (customFont) {
         body.customFonts = { main: customFont.fontId }
       }
+      // Build headers — include auth token for download tier/credit checks
+      const fetchHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (downloadAfter && isPocketBaseConfigured) {
+        const pb = createClient()
+        if (pb.authStore.isValid && pb.authStore.token) {
+          fetchHeaders['Authorization'] = `Bearer ${pb.authStore.token}`
+        }
+      }
       const resp = await fetch('/api/compile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: fetchHeaders,
         body: JSON.stringify(body),
         signal: controller.signal,
       })
@@ -2039,6 +2078,17 @@ export default function CompileShell() {
           document.body.appendChild(a)
           a.click()
           a.remove()
+
+          // Check watermark/credit response headers
+          const wasWatermarked = resp.headers.get('x-pp-watermarked') === 'true'
+          setLastDownloadWatermarked(wasWatermarked)
+          const remaining = resp.headers.get('x-pp-credits-remaining')
+          if (remaining !== null) {
+            // Credit was used — refresh user data to update pdfCredits
+            refreshUser()
+          }
+        } else {
+          setLastDownloadWatermarked(false)
         }
       } else {
         let payload: { message?: string; error?: string; detail?: string } | null = null
@@ -2266,6 +2316,9 @@ export default function CompileShell() {
             customFont={customFont}
             onBack={() => setStage('design')}
             onDownload={handleDownload}
+            lastDownloadWatermarked={lastDownloadWatermarked}
+            userTier={tier}
+            userCredits={pdfCredits}
           />
         )}
       </AnimatePresence>

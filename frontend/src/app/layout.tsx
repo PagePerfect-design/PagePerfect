@@ -12,11 +12,12 @@ export const metadata: Metadata = {
   description: 'Transform Markdown into beautifully typeset, print-ready PDFs. Powered by XeLaTeX with Muller-Brockmann grid systems, golden-ratio typography, and baseline grids.',
   icons: {
     icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: 'any' },
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico',
+    shortcut: '/favicon.svg',
     apple: '/apple-touch-icon.png',
   },
   manifest: '/site.webmanifest',

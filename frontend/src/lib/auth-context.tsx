@@ -10,6 +10,7 @@ type Profile = {
   email: string
   display_name: string | null
   tier: Tier
+  pdf_credits: number
 }
 
 type AuthState = {
@@ -18,12 +19,14 @@ type AuthState = {
   profile: Profile | null
   loading: boolean
   tier: Tier
+  pdfCredits: number
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>
   signInWithOAuth: (provider: 'google' | 'github') => Promise<void>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: Error | null }>
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
@@ -34,6 +37,7 @@ function userToProfile(user: RecordModel): Profile {
     email: user.email,
     display_name: user.display_name ?? user.name ?? null,
     tier: (user.tier as Tier) || 'drafter',
+    pdf_credits: Number(user.pdf_credits) || 0,
   }
 }
 
@@ -50,6 +54,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(record)
       setProfile(userToProfile(record))
     } else {
+      setUser(null)
+      setProfile(null)
+    }
+  }, [])
+
+  // Re-fetch the user record from PocketBase to get fresh data (credits, tier)
+  const refreshUser = useCallback(async () => {
+    if (!isPocketBaseConfigured) return
+    const pb = createClient()
+    if (!pb.authStore.isValid || !pb.authStore.record) return
+    try {
+      const fresh = await pb.collection('users').authRefresh()
+      setUser(fresh.record)
+      setProfile(userToProfile(fresh.record))
+    } catch {
+      // Token expired or invalid — clear auth
+      pb.authStore.clear()
       setUser(null)
       setProfile(null)
     }
@@ -134,10 +155,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const pb = createClient()
     if (!pb.authStore.record) return { error: new Error('Not authenticated') }
     try {
-      // PocketBase requires the old password to change password via client.
-      // For password-reset flows the user is already re-authenticated via the reset token.
-      // We use the admin-less approach: confirm the new password via requestPasswordReset.
-      // If the user reached this page via a reset link, PB already verified the token.
       await pb.collection('users').update(pb.authStore.record.id, {
         password: newPassword,
         passwordConfirm: newPassword,
@@ -150,10 +167,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const session = user ? { token: createClient().authStore.token } : null
   const tier: Tier = profile?.tier ?? 'drafter'
+  const pdfCredits = profile?.pdf_credits ?? 0
 
   return (
     <AuthContext.Provider
-      value={{ user, session, profile, loading, tier, signIn, signUp, signInWithOAuth, signOut, resetPassword, updatePassword }}
+      value={{ user, session, profile, loading, tier, pdfCredits, signIn, signUp, signInWithOAuth, signOut, resetPassword, updatePassword, refreshUser }}
     >
       {children}
     </AuthContext.Provider>
