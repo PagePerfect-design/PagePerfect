@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import NavAuth from '@/components/NavAuth'
+import CompositorMark from '@/components/CompositorMark'
 
 function Nav() {
   return (
     <nav className="sticky top-0 z-40 border-b border-[#111111] bg-[#FDFCF8]">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
         <div className="flex h-12 items-center justify-between">
-          <Link href="/" className="font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">
+          <Link href="/" className="flex items-center gap-2.5 font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">
+            <CompositorMark size={26} />
             PagePerfect
           </Link>
           <div className="flex items-center gap-6">
@@ -33,7 +35,10 @@ function Footer() {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-[1fr_auto_auto_auto] md:gap-20">
           {/* Brand */}
           <div>
-            <span className="font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">PagePerfect</span>
+            <div className="flex items-center gap-2.5">
+              <CompositorMark size={26} />
+              <span className="font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">PagePerfect</span>
+            </div>
             <p className="mt-4 max-w-xs font-body text-sm leading-relaxed text-[#111111]/40">
               Professional typesetting in your browser. Built on XeLaTeX. Inspired by M&uuml;ller-Brockmann.
             </p>
