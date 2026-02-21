@@ -216,28 +216,26 @@ export default function PhilosophyPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="py-16">
-        <div className="mx-auto max-w-7xl px-6 text-center md:px-8">
-          <p className="mb-4 font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50">
-            Put the engine to work
-          </p>
+      <section className="py-16 md:py-20">
+        <div className="mx-auto max-w-7xl px-6 md:px-8">
+          <SectionLabel>Put the engine to work</SectionLabel>
           <h2
             className="font-display font-extrabold tracking-tighter text-[#111111]"
             style={{ lineHeight: 0.95, fontSize: 'clamp(1.5rem, 2.5vw, 2.5rem)' }}
           >
-            Start formatting
+            Open the engine
           </h2>
-          <p className="mx-auto mt-4 max-w-lg font-body text-base text-[#444444]">
+          <p className="mt-4 max-w-lg font-body text-base text-[#111111]">
             Every principle on this page is built into PagePerfect — baseline
             grids, golden-ratio scales, and 15 templates engineered for
             readability and authority.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-4">
+          <div className="mt-8 flex items-center gap-4">
             <Link
               href="/app"
-              className="border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222]"
+              className="border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222] hover:border-[#E52222]"
             >
-              Start Formatting
+              Open the Editor &rarr;
             </Link>
             <Link
               href="/docs"
