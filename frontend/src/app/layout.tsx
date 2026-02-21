@@ -21,13 +21,13 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
   },
   manifest: '/site.webmanifest',
-  themeColor: '#050505',
+  themeColor: '#FDFCF8',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
-      <body className="flex min-h-dvh flex-col bg-[#050505] text-white antialiased">
+      <body className="flex min-h-dvh flex-col bg-[#FDFCF8] text-[#111111] antialiased">
         <div className="bg-noise" />
         <Providers>
           {children}

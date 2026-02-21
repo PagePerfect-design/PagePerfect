@@ -12,8 +12,8 @@ function Nav() {
             PagePerfect
           </Link>
           <div className="flex items-center gap-6">
-            <Link href="/pricing" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Pricing</Link>
-            <Link href="/journal" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Journal</Link>
+            <Link href="/pricing" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Pricing</Link>
+            <Link href="/journal" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Journal</Link>
             <NavAuth />
             <Link
               href="/app"

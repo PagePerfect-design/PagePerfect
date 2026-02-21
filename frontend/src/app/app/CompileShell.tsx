@@ -158,6 +158,34 @@ const MARGIN_INFO: Record<MarginPreset, { label: string; desc: string }> = {
   generous: { label: 'Generous', desc: 'Airy' },
 }
 
+/** Translate raw pandoc/XeLaTeX errors into plain English. */
+function translateError(raw: string): string {
+  const s = raw.trim()
+  const patterns: [RegExp, string][] = [
+    [/Missing \$ inserted/i, 'Your text contains a special character (like _ or ^) that needs escaping. Wrap math symbols in $...$ or remove them.'],
+    [/Undefined control sequence.*\\(\w+)/i, 'Unknown command "\\$1" in your manuscript. Remove it or check the spelling.'],
+    [/Undefined control sequence/i, 'Your manuscript contains an unrecognized command. Check for stray backslashes.'],
+    [/Missing \\begin\{document\}/i, 'Template configuration error. Try a different template or contact support.'],
+    [/Runaway argument/i, 'Unmatched bracket or brace in your text. Check for missing } or ].'],
+    [/Emergency stop/i, 'The typesetter encountered a critical error and stopped. Simplify your manuscript and try again.'],
+    [/I can't find file.*`([^']+)'/i, 'Referenced file "$1" was not found. Check your file references.'],
+    [/Package fontspec Error.*"([^"]+)"/i, 'The font "$1" is not available on the server. Try a different template.'],
+    [/Font.*not found/i, 'A required font is not installed. Try a different template.'],
+    [/Undefined citation.*`([^']+)'/i, 'Citation "$1" not found in your bibliography. Check the key or enable Safe Mode.'],
+    [/I couldn.t open.*\.bib/i, 'Bibliography file not found. Enable Safe Mode to skip citations.'],
+    [/Package .* Error/i, 'A LaTeX package reported an error. Try a different template.'],
+    [/! LaTeX Error:\s*(.*)/i, '$1'],
+    [/xelatex.*not found/i, 'Server configuration error. The typesetting engine is not available.'],
+    [/pandoc.*not found/i, 'Server configuration error. The document converter is not available.'],
+    [/timed?\s*out/i, 'Compilation timed out. Your manuscript may be too large — try splitting it into smaller sections.'],
+    [/Compile failed \(status (\d+)\)/i, 'The server returned an error (code $1). Please try again.'],
+  ]
+  for (const [re, replacement] of patterns) {
+    if (re.test(s)) return s.replace(re, replacement)
+  }
+  return s
+}
+
 const ease = [0.25, 0.4, 0.25, 1] as const
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -478,7 +506,7 @@ function PortalStage({
             <h1 className="font-display text-[clamp(2.5rem,6vw,5rem)] font-extrabold leading-[0.9] tracking-tighter text-[#111111]">
               Drop your manuscript.
             </h1>
-            <p className="mt-6 font-body text-lg text-[#111111]/40">
+            <p className="mt-6 font-body text-lg text-[#111111]/60">
               .md, .txt, or .docx
             </p>
           </motion.div>
@@ -520,7 +548,7 @@ function PortalStage({
                 <div className="mt-3 flex items-center justify-between">
                   <button
                     onClick={() => { setPasteMode(false); setPasteText('') }}
-                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
+                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
                   >
                     Cancel
                   </button>
@@ -532,7 +560,7 @@ function PortalStage({
                       }
                     }}
                     disabled={!pasteText.trim()}
-                    className="inline-flex h-9 items-center gap-2 rounded-full bg-[#FF3333] px-5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-white transition-all hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="inline-flex h-9 items-center gap-2 bg-[#FF3333] px-5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-white transition-all hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     Continue
                     <ChevronRight className="h-3.5 w-3.5" />
@@ -552,21 +580,21 @@ function PortalStage({
             >
               <button
                 onClick={() => { setPasteMode(true); setPasteText('') }}
-                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
               >
                 Paste text
               </button>
-              <span className="text-[#111111]/15">|</span>
+              <span className="text-[#111111]/40">|</span>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
               >
                 Browse files
               </button>
-              <span className="text-[#111111]/15">|</span>
+              <span className="text-[#111111]/40">|</span>
               <button
                 onClick={onLoadSample}
-                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
               >
                 Try sample
               </button>
@@ -583,7 +611,7 @@ function PortalStage({
               <p className="font-mono text-[11px] text-red-600">{convertError}</p>
               <button
                 onClick={() => setConvertError(null)}
-                className="mt-1 font-mono text-[10px] text-[#111111]/30 hover:text-[#111111]/60"
+                className="mt-1 font-mono text-[10px] text-[#111111]/50 hover:text-[#111111]"
               >
                 Dismiss
               </button>
@@ -600,7 +628,7 @@ function PortalStage({
               <p className="font-mono text-[11px] text-red-600">{convertError}</p>
               <button
                 onClick={() => setConvertError(null)}
-                className="mt-1 font-mono text-[10px] text-[#111111]/30 hover:text-[#111111]/60"
+                className="mt-1 font-mono text-[10px] text-[#111111]/50 hover:text-[#111111]"
               >
                 Dismiss
               </button>
@@ -611,7 +639,7 @@ function PortalStage({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="mt-16 font-mono text-[10px] text-[#111111]/25"
+            className="mt-16 font-mono text-[10px] text-[#111111]/50"
           >
             Your text is never stored. Sent for compilation only, then immediately deleted.
           </motion.p>
@@ -799,7 +827,7 @@ function LevitatingBook({
                   </div>
                   <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-wider text-red-600/70">Typesetting Error</p>
                   {errors.map((e, i) => (
-                    <p key={i} className="mb-1.5 font-mono text-[10px] leading-relaxed text-[#111111]/40">{e.message}</p>
+                    <p key={i} className="mb-1.5 font-mono text-[10px] leading-relaxed text-[#111111]/70">{translateError(e.message)}</p>
                   ))}
                 </div>
               </div>
@@ -905,7 +933,7 @@ function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 w-[520px] rounded-2xl border border-[#111111]/10 bg-white shadow-elevated backdrop-blur-xl"
+            className="mb-3 w-[520px] border border-[#111111]/10 bg-white shadow-elevated backdrop-blur-xl"
           >
             {/* Genre tabs */}
             <div className="flex gap-0.5 border-b border-[#111111]/[0.06] px-3 pt-2">
@@ -1001,7 +1029,7 @@ function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 rounded-2xl border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
+            className="mb-3 border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
           >
             {/* Page Size */}
             <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Page Size</p>
@@ -1119,7 +1147,7 @@ function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 w-72 rounded-2xl border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
+            className="mb-3 w-72 border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
           >
             <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Compile Options</p>
 
@@ -1192,7 +1220,7 @@ function FloatingHUD({
       </AnimatePresence>
 
       {/* The Dock */}
-      <div className="flex items-center gap-1 rounded-full border border-[#111111]/10 bg-white/95 p-1.5 shadow-elevated backdrop-blur-xl">
+      <div className="flex items-center gap-1 border border-[#111111]/10 bg-white/95 p-1.5 shadow-elevated backdrop-blur-xl">
         <DockButton
           active={activeTab === 'style'}
           onClick={() => toggleTab('style')}
@@ -1251,7 +1279,7 @@ function DockButton({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-medium transition-all duration-150 ${
+      className={`inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium transition-all duration-150 ${
         active
           ? 'bg-[#111111] text-white shadow-lg'
           : 'text-[#111111]/40 hover:bg-[#111111]/[0.05] hover:text-[#111111]/70'
@@ -1329,13 +1357,13 @@ function TopBar({
           {errors.length > 0 && (
             <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-red-500/70">
               <AlertTriangle className="h-3 w-3" />
-              {errors[0].message.slice(0, 50)}
+              {translateError(errors[0].message).slice(0, 50)}
             </span>
           )}
 
           <button
             onClick={onToggleEditor}
-            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-all ${
+            className={`flex h-8 items-center gap-1.5 px-3 text-[11px] font-medium transition-all ${
               showEditor
                 ? 'bg-[#111111]/[0.08] text-[#111111]/60'
                 : 'text-[#111111]/30 hover:bg-[#111111]/[0.04] hover:text-[#111111]/50'
@@ -1347,7 +1375,7 @@ function TopBar({
 
           <button
             onClick={onToggleSystems}
-            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-medium transition-all ${
+            className={`flex h-8 items-center gap-1.5 px-3 text-[11px] font-medium transition-all ${
               showSystems
                 ? 'bg-[#FF3333]/10 text-[#FF3333] ring-1 ring-[#FF3333]/30'
                 : 'text-[#111111]/30 hover:bg-[#111111]/[0.04] hover:text-[#111111]/50'
@@ -1360,7 +1388,7 @@ function TopBar({
           <button
             onClick={onPublish}
             disabled={status !== 'success'}
-            className="group inline-flex h-8 items-center gap-2 rounded-full bg-[#FF3333] px-5 text-[12px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-30"
+            className="group inline-flex h-8 items-center gap-2 bg-[#FF3333] px-5 text-[12px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-30"
           >
             <Download className="h-3.5 w-3.5" />
             Export
@@ -1736,7 +1764,7 @@ function LaunchOverlay({
             <button
               onClick={() => onDownload(platform)}
               disabled={!canDownload}
-              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#FF3333] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
+              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 bg-[#FF3333] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Download className="h-4 w-4" />
               {platform === 'ingram' ? 'Download PDF/X-1a' : 'Download Print PDF'}
@@ -1745,7 +1773,7 @@ function LaunchOverlay({
             <button
               onClick={handleEpubDownload}
               disabled={epubLoading}
-              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#FF3333] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-50"
+              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 bg-[#FF3333] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-50"
             >
               {epubLoading ? (
                 <><Loader2 className="h-4 w-4 animate-spin" />Generating EPUB&hellip;</>
@@ -1759,7 +1787,7 @@ function LaunchOverlay({
           <button
             onClick={handleBatchExport}
             disabled={batchLoading || !pdfUrl}
-            className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#111111]/[0.08] text-[12px] font-medium text-[#111111]/40 transition-all hover:border-[#111111]/20 hover:text-[#111111]/60 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="group inline-flex h-10 w-full items-center justify-center gap-2 border border-[#111111]/[0.08] text-[12px] font-medium text-[#111111]/40 transition-all hover:border-[#111111]/20 hover:text-[#111111]/60 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {batchLoading ? (
               <><Loader2 className="h-3.5 w-3.5 animate-spin" />{batchProgress || 'Batch exporting...'}</>
@@ -1812,7 +1840,7 @@ function ShortcutLegend({ visible, onClose }: { visible: boolean; onClose: () =>
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 8 }}
-      className="fixed bottom-24 right-6 z-50 rounded-xl border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
+      className="fixed bottom-24 right-6 z-50 border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/30">Shortcuts</span>
