@@ -388,7 +388,7 @@ app.post('/api/stripe/webhook',
 
     // Handle relevant events
     switch (event.type) {
-      // Payment Element flow: one-time payment succeeded (Publisher $9.99 or Studio $199)
+      // Payment Element flow: one-time payment succeeded (Publisher $14.99 or Studio $199)
       case 'payment_intent.succeeded': {
         const pi = event.data.object;
         const tier = pi.metadata?.tier;
@@ -510,8 +510,8 @@ app.post('/api/stripe/create-payment', async (req, res) => {
     }
 
     if (tier === 'publisher') {
-      // Publisher — $9.99 one-time PaymentIntent per manuscript
-      const amount = 999; // $9.99 in cents
+      // Publisher — $14.99 one-time PaymentIntent per manuscript
+      const amount = 1499; // $14.99 in cents
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
         currency: 'usd',

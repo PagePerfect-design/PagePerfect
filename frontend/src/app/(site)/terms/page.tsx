@@ -123,7 +123,7 @@ export default function TermsPage() {
             promise={
               <>
                 Three tiers. No hidden fees. No bait-and-switch.<br /><br />
-                Drafter is free forever. Publisher is $9.99/month. Studio is $199 once, for life.
+                Drafter is free forever. Publisher is $14.99/month. Studio is $199 once, for life.
                 Prices change only with 60 days&rsquo; notice.
               </>
             }

@@ -29,7 +29,7 @@ const TIERS = [
     num: '02',
     key: 'publisher' as const,
     name: 'Publisher',
-    price: '$9.99',
+    price: '$14.99',
     period: 'per manuscript',
     recommended: true,
     body: 'One flawless, print-ready manuscript. Unlocks PDF/X-1a compliance for Amazon KDP and IngramSpark. All 19 page sizes, citations, and bibliography support. Includes 14 days of unlimited re-exports to fix final typos.',
@@ -221,7 +221,7 @@ function PaymentForm({
   const [processing, setProcessing] = useState(false)
 
   const buttonLabel = {
-    publisher: 'Pay $9.99 \u2014 One Manuscript',
+    publisher: 'Pay $14.99 \u2014 One Manuscript',
     studio: 'Pay $199 \u2014 Lifetime',
   }[tier]
 
@@ -342,7 +342,7 @@ function CheckoutOverlay({
               {{ publisher: 'Publisher', studio: 'Studio' }[tier]}
             </p>
             <p className="mt-1 font-mono text-[11px] text-white/35">
-              {{ publisher: '$9.99 \u00b7 one print-ready manuscript', studio: '$199 one-time \u00b7 lifetime access' }[tier]}
+              {{ publisher: '$14.99 \u00b7 one print-ready manuscript', studio: '$199 one-time \u00b7 lifetime access' }[tier]}
             </p>
           </div>
           <button

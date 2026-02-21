@@ -16,7 +16,7 @@ const TIERS = [
     num: '02',
     key: 'publisher',
     name: 'Publisher',
-    price: '$9.99',
+    price: '$14.99',
     period: 'per manuscript',
     recommended: true,
     body: 'One flawless, print-ready manuscript. PDF/X-1a compliance for Amazon KDP and IngramSpark. All 19 page sizes, citations, bibliography. 14 days of unlimited re-exports.',
