@@ -2063,6 +2063,105 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
 });
 
 // ================================================================
+// Contact / Request Format (Resend)
+// ================================================================
+
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,                    // 5 messages per 15 min per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'rate_limited', message: 'Too many contact requests. Please try again later.' },
+});
+
+app.post('/api/contact', contactLimiter, async (req, res) => {
+  // ── Honeypot check ──
+  if (req.body.website) {
+    // Bot filled the hidden field — return 200 to avoid tipping it off
+    return res.json({ ok: true });
+  }
+
+  // ── Timestamp check — reject submissions faster than 2 seconds ──
+  const ts = Number(req.body._t);
+  if (!ts || Date.now() - ts < 2000) {
+    return res.json({ ok: true });
+  }
+
+  // ── Input validation ──
+  const email = String(req.body.email || '').trim().slice(0, 320);
+  const message = String(req.body.message || '').trim().slice(0, 5000);
+
+  if (!email || !message) {
+    return res.status(400).json({ error: 'missing_fields', message: 'Email and message are required.' });
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'invalid_email', message: 'Invalid email address.' });
+  }
+
+  // ── Send via Resend ──
+  const resendKey = process.env.RESEND_API_KEY;
+  if (!resendKey) {
+    console.warn('[contact] RESEND_API_KEY not configured — cannot send email');
+    return res.status(503).json({ error: 'not_configured', message: 'Contact service is not configured.' });
+  }
+
+  try {
+    const { Resend } = require('resend');
+    const resend = new Resend(resendKey);
+
+    // Send notification to support
+    await resend.emails.send({
+      from: 'PagePerfect <noreply@pageperfect.studio>',
+      to: ['support@pageperfect.studio'],
+      replyTo: email,
+      subject: `Format Request from ${email}`,
+      text: [
+        'NEW FORMAT REQUEST',
+        '═'.repeat(40),
+        '',
+        `From: ${email}`,
+        `Time: ${new Date().toISOString()}`,
+        `IP:   ${req.ip}`,
+        '',
+        '── Message ──',
+        message,
+        '',
+        '═'.repeat(40),
+        'Sent via PagePerfect /api/contact',
+      ].join('\n'),
+    });
+
+    // Send confirmation to the user
+    await resend.emails.send({
+      from: 'PagePerfect <noreply@pageperfect.studio>',
+      to: [email],
+      subject: 'We received your format request — PagePerfect',
+      text: [
+        'Thank you for your format request.',
+        '',
+        'We have received the following message:',
+        '',
+        '───',
+        message,
+        '───',
+        '',
+        'Our team will review your requirements and follow up at this address.',
+        '',
+        '— PagePerfect',
+        'https://pageperfect.studio',
+      ].join('\n'),
+    });
+
+    console.log(`[contact] Format request from ${email} sent successfully`);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[contact] Resend error:', err.message || err);
+    res.status(500).json({ error: 'send_failed', message: 'Failed to send message. Please try again.' });
+  }
+});
+
+// ================================================================
 // Start Server
 // ================================================================
 
@@ -2071,6 +2170,7 @@ app.listen(PORT, () => {
   console.log(`  CORS: ${process.env.NODE_ENV === 'production' ? ALLOWED_ORIGINS.join(', ') : 'permissive (dev)'}`);
   console.log(`  Stripe: ${stripe ? 'configured' : 'not configured'}`);
   console.log(`  Lulu: ${lulu.isConfigured() ? `configured (${lulu.getBaseUrl()})` : 'not configured'}`);
+  console.log(`  Resend: ${process.env.RESEND_API_KEY ? 'configured' : 'not configured'}`);
   console.log(`  Templates: ${Object.keys(DESIGN_TEMPLATES).length}`);
   console.log(`  Rate limit: 20 compiles/min, 120 requests/min`);
 
