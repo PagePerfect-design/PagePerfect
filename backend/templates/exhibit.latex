@@ -14,6 +14,9 @@
 \usepackage{hyperref}
 \usepackage{enumitem}
 \usepackage{ragged2e}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
 
 % ── TYPOGRAPHY — Museum Geometric Humanist ──────────────────
 % Body: Fira Sans — high x-height, open counters, reads cleanly at small sizes

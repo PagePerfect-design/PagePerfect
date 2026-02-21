@@ -8,6 +8,9 @@
 \usepackage{setspace}
 \usepackage{hyperref}
 \usepackage{lmodern}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
 
 % ── TYPOGRAPHY — Latin Modern (Computer Modern perfected) ───
 % No fontspec required — works on pdflatex, xelatex, lualatex

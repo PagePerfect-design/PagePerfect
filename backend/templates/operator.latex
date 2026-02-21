@@ -15,6 +15,9 @@
 \usepackage{enumitem}
 \usepackage{tcolorbox}
 \tcbuselibrary{skins,breakable}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
 
 % ── TYPOGRAPHY — Machine Precision ──────────────────────────
 % Fira Sans: the font of mankind and machines

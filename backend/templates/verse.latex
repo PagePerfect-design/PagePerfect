@@ -14,6 +14,9 @@
 \usepackage{hyperref}
 \usepackage{enumitem}
 \usepackage{verse}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
 
 % ── TYPOGRAPHY — Classical Serif for Verse ────────────────────
 % EB Garamond: old-style figures, calligraphic elegance, poetry's natural home

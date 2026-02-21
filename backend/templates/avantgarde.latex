@@ -15,6 +15,9 @@
 \usepackage{enumitem}
 \usepackage{ragged2e}
 \usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
 
 % ── TYPOGRAPHY — Art School Tension ─────────────────────────
 % Source Sans 3: idiosyncratic humanist sans with attitude

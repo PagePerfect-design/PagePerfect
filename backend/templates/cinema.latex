@@ -17,6 +17,9 @@
 \usepackage{fancyhdr}
 \usepackage{xcolor}
 \usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
 
 % ── TYPOGRAPHY — Courier 12pt is non-negotiable ─────────────
 % TeX Gyre Cursor: Courier clone, industry standard for screenplays
