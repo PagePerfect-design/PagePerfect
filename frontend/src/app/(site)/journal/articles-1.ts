@@ -477,4 +477,52 @@ export const ARTICLES_PART1: Article[] = [
       ],
     },
   },
+  {
+    slug: 'one-red-signal',
+    title: 'One Red Signal: The Discipline of Functional Color in Typographic Systems',
+    description:
+      'Why the most effective documents use the least color — and how a single accent, deployed with surgical precision, outperforms every rainbow palette in directing attention and driving action.',
+    category: 'Design Systems',
+    date: '2026-02-15',
+    readTime: '5 min',
+    hook:
+      'In 1933, Hedwig von Restorff published a study at the University of Berlin demonstrating what would become one of the most replicated findings in cognitive psychology: when a single item in a homogeneous list differs from its neighbors — in color, size, or shape — that item is remembered with disproportionate accuracy. The "isolation effect," as it came to be known, is not a preference. It is a perceptual mechanism hardwired into the human visual system. For typographic design, the implication is absolute: a single color deployed against a monochrome field commands attention more effectively than any polychromatic scheme. More color does not mean more emphasis. It means more noise.',
+    sections: [
+      {
+        heading: 'Pre-Attentive Processing: Why One Color Wins',
+        paragraphs: [
+          'Anne Treisman\'s feature integration theory, published in 1980, established that the human visual system processes certain attributes — color, orientation, size, motion — in a pre-attentive stage, before conscious attention is engaged. A red element in a field of black elements is detected in under 200 milliseconds, regardless of the number of surrounding items. The detection time is constant whether the field contains 5 elements or 500. This is parallel processing: the visual cortex identifies the color anomaly simultaneously across the entire visual field.',
+          'The moment you introduce a second accent color, the pre-attentive system must distinguish between three classes of element (black, red, blue) rather than two (black, red). The task shifts from detection — effortless, instantaneous — to discrimination, which requires serial processing and conscious attention. Anne Treisman\'s conjunction search experiments demonstrated that search time increases linearly with the number of feature classes. Every additional color in your palette degrades the speed at which the reader identifies the most important element on the page.',
+        ],
+      },
+      {
+        heading: 'The Rubric Tradition: Six Centuries of Red and Black',
+        paragraphs: [
+          'The word "rubric" derives from the Latin "rubrica" — red earth, red ochre. In medieval manuscripts, scribes wrote body text in black ink and reserved red for headings, liturgical instructions, and structural markers. The Gutenberg Bible (1455) was printed in black, with red applied by hand for chapter initials and annotations. This was not aesthetic whimsy. Red ink cost more, required a separate press run or manual application, and was therefore deployed only where the scribe or printer judged the information to be structurally critical.',
+          'The economics of medieval printing enforced the discipline that modern designers must choose voluntarily. When your second color doubles the production cost, you use it only for elements that justify the expense: chapter openings, cross-references, liturgical directives. The result is a functional color system — red means "this is different; attend to it" — that readers internalize without instruction. Jan Tschichold, in "The New Typography" (1928), explicitly advocated this two-color discipline: black for text, a single accent color for emphasis and navigation. He argued that every additional color dilutes the signaling power of all colors present.',
+        ],
+      },
+      {
+        heading: 'The Swiss Restraint: Brockmann and Vignelli',
+        paragraphs: [
+          'Josef Muller-Brockmann\'s poster work for the Zurich Tonhalle concert series — produced from the 1950s through the 1970s — demonstrates what a restricted palette can achieve. Many of his most celebrated posters use only two or three colors: black, white, and a single chromatic accent. The accent color does not decorate. It divides the visual field, creating a figure-ground relationship that directs the eye to the essential information. The restraint is the mechanism: because color appears rarely, its appearance carries maximum signal.',
+          'Massimo Vignelli operated under the same discipline. His graphic standards manual for the New York City Transit Authority (1970) assigned specific colors to specific subway lines — not for aesthetic variety but for wayfinding function. Each color meant one thing only. When Vignelli designed corporate identities, he typically restricted the palette to black, white, and a single brand color, arguing that visual consistency at scale requires chromatic discipline. "A very few colors can do the whole thing," he stated. The Unigrid system he designed for the United States National Park Service used a similarly constrained palette across hundreds of publications, ensuring that a visitor in Yosemite and a visitor in Acadia encountered the same visual language.',
+        ],
+      },
+      {
+        heading: 'Red as Action Trigger: The Conversion Data',
+        paragraphs: [
+          'David Ogilvy did not discuss color in the abstract. He measured it. In "Ogilvy on Advertising," he reported that color advertisements were recalled by significantly more readers than black-and-white advertisements — but he immediately qualified this with the observation that color is effective only when it serves the selling proposition. A full-color advertisement with no clear focal point performs no better than a monochrome one. Color must be concentrated at the point of action.',
+          'Modern conversion research confirms this principle. Andrew Elliot and Markus Maier\'s 2012 "color-in-context" theory demonstrated that red specifically triggers approach motivation in achievement contexts — when the viewer is presented with an opportunity to act (a button, a link, a call to action), red accelerates the decision to engage. This effect is context-dependent: red signals avoidance in threat contexts but approach in opportunity contexts. A red "Buy Now" button in a predominantly monochrome layout exploits both the Von Restorff isolation effect (perceptual salience) and the Elliot-Maier approach response (motivational salience). Nielsen Norman Group\'s design guidelines recommend limiting accent colors and using them to highlight the single most valuable action on the page — the principle that PagePerfect codifies as "contrast triggers action."',
+        ],
+      },
+    ],
+    conclusion: {
+      heading: 'The Actionable Rule',
+      paragraphs: [
+        'Restrict your document to two ink values: black (or near-black) for all text and structural elements, and a single chromatic accent for the one element per page that demands immediate attention. In a book interior, this means red for chapter numbers or drop-caps, black for everything else. In a marketing page, this means red for the primary call to action, black for secondary actions, and no color anywhere else. Do not introduce a third color unless you can identify a third functional role that the existing two cannot fulfill.',
+        'This is not minimalism for its own sake. It is signal engineering. The Von Restorff effect guarantees that a lone color accent will be detected pre-attentively. Treisman\'s research guarantees that adding more colors will slow that detection. Six centuries of printing practice confirm that a two-color system communicates hierarchy more efficiently than any polychromatic alternative. Use one red signal. Make it count.',
+      ],
+    },
+  },
 ]
