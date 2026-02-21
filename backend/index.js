@@ -1852,10 +1852,11 @@ const fontUpload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (['.ttf', '.otf', '.woff', '.woff2'].includes(ext)) {
+    // Only .ttf and .otf work with LuaLaTeX/fontspec — .woff/.woff2 are web-only formats
+    if (['.ttf', '.otf'].includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Only .ttf, .otf, .woff, and .woff2 files are allowed.'));
+      cb(new Error('Only .ttf and .otf font files are supported. Web fonts (.woff/.woff2) cannot be used for PDF typesetting.'));
     }
   },
 });
@@ -1899,8 +1900,8 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
   if (!Array.isArray(pageSizes) || pageSizes.length === 0) {
     return res.status(400).json({ error: 'invalid_request', message: 'pageSizes array is required.' });
   }
-  if (pageSizes.length > 10) {
-    return res.status(400).json({ error: 'too_many', message: 'Maximum 10 page sizes per batch.' });
+  if (pageSizes.length > 20) {
+    return res.status(400).json({ error: 'too_many', message: 'Maximum 20 page sizes per batch.' });
   }
 
   const mdBytes = Buffer.byteLength(manuscriptText, 'utf8');

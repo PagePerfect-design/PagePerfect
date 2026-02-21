@@ -1215,7 +1215,7 @@ function FloatingHUD({
                   )}
                   <input
                     type="file"
-                    accept=".ttf,.otf,.woff,.woff2"
+                    accept=".ttf,.otf"
                     className="hidden"
                     disabled={fontUploading}
                     onChange={(e) => {
@@ -1520,12 +1520,22 @@ function LaunchOverlay({
         safeMode,
         compileMode,
         outputFormat: 'epub',
+        download: true,
       }
       if (customFont) body.customFonts = { main: customFont.fontId }
 
+      // Include auth token for tier/credit checks (same as PDF download)
+      const epubHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (isPocketBaseConfigured) {
+        const pb = createClient()
+        if (pb.authStore.isValid && pb.authStore.token) {
+          epubHeaders['Authorization'] = `Bearer ${pb.authStore.token}`
+        }
+      }
+
       const resp = await fetch('/api/compile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: epubHeaders,
         body: JSON.stringify(body),
       })
       if (!resp.ok) {
@@ -1562,12 +1572,22 @@ function LaunchOverlay({
         safeMode,
         compileMode,
         pageSizes: allSizes,
+        download: true,
       }
       if (customFont) body.customFonts = { main: customFont.fontId }
 
+      // Include auth token for tier/credit checks
+      const batchHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (isPocketBaseConfigured) {
+        const pb = createClient()
+        if (pb.authStore.isValid && pb.authStore.token) {
+          batchHeaders['Authorization'] = `Bearer ${pb.authStore.token}`
+        }
+      }
+
       const resp = await fetch('/api/batch-compile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: batchHeaders,
         body: JSON.stringify(body),
       })
       if (!resp.ok) {
