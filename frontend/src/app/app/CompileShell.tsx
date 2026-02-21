@@ -2020,6 +2020,7 @@ export default function CompileShell() {
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const compileGenRef = useRef(0)
 
   // Read template from URL params
   useEffect(() => {
@@ -2055,6 +2056,20 @@ export default function CompileShell() {
     const prefs: Prefs = { template, pageSize, marginPreset, safeMode, title, headingVariant }
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)) } catch { /* ignore */ }
   }, [template, headingVariant, pageSize, marginPreset, safeMode, title, stage])
+
+  // Clear PDF preview immediately when design parameters change
+  // so the user sees visual feedback that a new compile is coming
+  const prevTemplateRef = useRef(template)
+  const prevVariantRef = useRef(headingVariant)
+  useEffect(() => {
+    if (stage !== 'design') return
+    if (prevTemplateRef.current !== template || prevVariantRef.current !== headingVariant) {
+      prevTemplateRef.current = template
+      prevVariantRef.current = headingVariant
+      // Show loading state immediately — don't wait for debounce
+      if (pdfUrl) setStatus('compiling')
+    }
+  }, [template, headingVariant, stage, pdfUrl])
 
   // Debounced auto-compile in design stage
   useEffect(() => {
@@ -2139,6 +2154,9 @@ export default function CompileShell() {
     const controller = new AbortController()
     abortRef.current = controller
 
+    // Track compile generation to discard stale responses
+    const gen = ++compileGenRef.current
+
     setLoading(true)
     setStatus('compiling')
     setErrors([])
@@ -2182,6 +2200,8 @@ export default function CompileShell() {
 
       if (resp.ok && ct.includes('application/pdf')) {
         const blob = await resp.blob()
+        // Discard stale response — a newer compile has started
+        if (gen !== compileGenRef.current) return
         pdfBlobRef.current = blob
         const url = URL.createObjectURL(blob)
         setPdfUrl(prev => { if (prev) URL.revokeObjectURL(prev); return url })

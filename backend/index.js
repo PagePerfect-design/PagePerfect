@@ -1805,7 +1805,9 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         const filename = buildFilename(title, tplKey, pageSize).replace('.pdf', '-pdfx1a.pdf');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.setHeader('Cache-Control', 'no-store');
         res.setHeader('X-PP-Filename', filename);
+        res.setHeader('X-PP-Template', tplKey);
         res.setHeader('X-PP-Format', 'PDF/X-1a:2001');
         res.setHeader('X-PP-Watermarked', needsWatermark ? 'true' : 'false');
         if (creditsRemaining !== null) {
@@ -1821,7 +1823,9 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       const filename = buildFilename(title, tplKey, pageSize);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'no-store');
       res.setHeader('X-PP-Filename', filename);
+      res.setHeader('X-PP-Template', tplKey);
       res.setHeader('X-PP-Watermarked', needsWatermark ? 'true' : 'false');
       if (creditsRemaining !== null) {
         res.setHeader('X-PP-Credits-Remaining', String(creditsRemaining));
