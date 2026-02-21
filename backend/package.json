@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "archiver": "^7.0.1",
+    "bullmq": "^5.70.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
