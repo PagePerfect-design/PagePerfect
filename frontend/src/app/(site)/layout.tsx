@@ -13,6 +13,7 @@ function Nav() {
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/pricing" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Pricing</Link>
+            <Link href="/journal" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Journal</Link>
             <Link href="/docs" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Docs</Link>
             <NavAuth />
             <Link
@@ -50,6 +51,7 @@ function Footer() {
             <div className="flex flex-col gap-2.5">
               <Link href="/app" className="font-mono text-[11px] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Editor</Link>
               <Link href="/pricing" className="font-mono text-[11px] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Pricing</Link>
+              <Link href="/journal" className="font-mono text-[11px] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Journal</Link>
               <Link href="/docs" className="font-mono text-[11px] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Documentation</Link>
             </div>
           </div>
