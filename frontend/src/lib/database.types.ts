@@ -5,10 +5,12 @@
  *
  *   users (built-in auth collection) — extended with custom fields:
  *     - display_name: text
- *     - tier: select (drafter | single | publisher | studio), default "drafter"
- *     - pdf_credits: number, default 0 (Single tier purchases increment this)
+ *     - tier: select (drafter | publisher | studio), default "drafter"
+ *     - pdf_credits: number, default 0 (Publisher purchases increment this)
  *     - stripe_customer_id: text
  *     - stripe_subscription_id: text
+ *
+ *     - publisher_window_end: datetime (nullable) — 14-day export window expiry
  *
  *   manuscripts — user manuscripts:
  *     - user: relation → users
@@ -42,6 +44,7 @@ export interface UserRecord {
   pdf_credits: number
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
+  publisher_window_end: string | null
   created: string
   updated: string
 }

@@ -20,42 +20,31 @@ const TIERS = [
     name: 'Drafter',
     price: 'Free',
     period: 'forever',
-    body: 'Everything you need to start. All 15 templates \u00d7 3 heading variants = 45 styles, 6 page sizes, real-time preview. Unlimited manuscripts, unlimited compiles.',
-    aside: 'Watermarked output. Upgrade when your book is ready for print.',
-    cta: 'Start Free',
+    body: 'Everything you need to draft and test. All 15 templates, unlimited manuscripts, real-time preview. Watermarked output.',
+    aside: 'Zero friction. See the grid in action before you pay a cent.',
+    cta: 'Start Drafting',
     href: '/app',
   },
   {
     num: '02',
-    key: 'single' as const,
-    name: 'Single',
-    price: '$2.99',
-    period: 'per PDF',
-    body: 'One clean, watermark-free export. All 19 page sizes including Amazon KDP formats. Full quality compile, print-ready output.',
-    aside: 'No subscription. Pay only when you need a clean export.',
-    cta: 'Buy One PDF',
+    key: 'publisher' as const,
+    name: 'Publisher',
+    price: '$19.99',
+    period: 'per manuscript',
+    recommended: true,
+    body: 'One flawless, print-ready manuscript. Unlocks PDF/X-1a compliance for Amazon KDP and IngramSpark. All 19 page sizes, citations, and bibliography support. Includes 14 days of unlimited re-exports to fix final typos.',
+    aside: 'No subscription. Pay only when the book is finished.',
+    cta: 'Typeset My Book',
     href: '/app',
   },
   {
     num: '03',
-    key: 'publisher' as const,
-    name: 'Publisher',
-    price: '$9.99',
-    period: '/month',
-    recommended: true,
-    body: 'Unlimited watermark-free exports for serious authors. Citations and bibliography support, priority compile queue, PDF/X compliance.',
-    aside: 'Cancel anytime. Most authors choose this.',
-    cta: 'Start Publishing',
-    href: '/app',
-  },
-  {
-    num: '04',
     key: 'studio' as const,
     name: 'Studio',
     price: '$199',
     period: 'once',
-    body: 'Lifetime Publisher access. No monthly fees, ever. EPUB export, custom font upload, batch export for series \u2014 all coming.',
-    aside: 'Pay once, own it forever. For publishers and prolific authors.',
+    body: 'Lifetime access to the engine. Unlimited watermark-free exports, automated EPUB generation, custom OpenType font uploads, and batch exporting for multi-book series.',
+    aside: 'Pay once, own it forever. For prolific authors and publishers.',
     cta: 'Get Studio',
     href: '/app',
   },
@@ -63,25 +52,29 @@ const TIERS = [
 
 // ── Feature comparison — text values, not checkmarks ──
 
-const COMPARISON: { feature: string; values: [string, string, string, string] }[] = [
-  { feature: 'PDF output',              values: ['Watermarked',  '1 clean export', 'Unlimited clean', 'Unlimited clean'] },
-  { feature: 'Page sizes',              values: ['6 standard',   'All 19',         'All 19',          'All 19'] },
-  { feature: 'Compile quality',         values: ['Fast mode',    'Full quality',   'Full quality',    'Full quality'] },
-  { feature: 'Amazon KDP formats',      values: ['\u2014',       'Included',       'Included',        'Included'] },
-  { feature: 'Citations & bibliography', values: ['\u2014',       '\u2014',         'Included',        'Included'] },
-  { feature: 'PDF/X compliance',        values: ['\u2014',       '\u2014',         'Included',        'Included'] },
-  { feature: 'Priority compile',        values: ['\u2014',       '\u2014',         'Included',        'Included'] },
-  { feature: 'EPUB export',             values: ['\u2014',       '\u2014',         '\u2014',          'Included'] },
-  { feature: 'Custom font upload',      values: ['\u2014',       '\u2014',         '\u2014',          'Included'] },
-  { feature: 'Batch export',            values: ['\u2014',       '\u2014',         '\u2014',          'Included'] },
+const COMPARISON: { feature: string; values: [string, string, string] }[] = [
+  { feature: 'PDF output',              values: ['Watermarked',  '1 manuscript',    'Unlimited'] },
+  { feature: 'Page sizes',              values: ['6 standard',   'All 19',          'All 19'] },
+  { feature: 'Compile quality',         values: ['Fast mode',    'Full quality',    'Full quality'] },
+  { feature: 'Amazon KDP formats',      values: ['\u2014',       'Included',        'Included'] },
+  { feature: 'Citations & bibliography', values: ['\u2014',       'Included',        'Included'] },
+  { feature: 'PDF/X-1a compliance',     values: ['\u2014',       'Included',        'Included'] },
+  { feature: 'Re-export window',        values: ['\u2014',       '14 days',         'Unlimited'] },
+  { feature: 'EPUB export',             values: ['\u2014',       '\u2014',          'Included'] },
+  { feature: 'Custom font upload',      values: ['\u2014',       '\u2014',          'Included'] },
+  { feature: 'Batch export',            values: ['\u2014',       '\u2014',          'Included'] },
 ]
 
-const TIER_NAMES = ['Drafter', 'Single', 'Publisher', 'Studio'] as const
+const TIER_NAMES = ['Drafter', 'Publisher', 'Studio'] as const
 
 const FAQ = [
   {
     q: 'Can I use the free tier for real books?',
-    a: 'Yes. The free tier is fully functional \u2014 unlimited manuscripts, all templates, real-time preview. The only limitation is a small PagePerfect watermark on exported PDFs and fewer page size options.',
+    a: 'Yes. The free tier is fully functional \u2014 unlimited manuscripts, all 15 templates, real-time preview. The only limitation is a small PagePerfect watermark on exported PDFs and 6 standard page sizes.',
+  },
+  {
+    q: 'What happens after I pay for one manuscript?',
+    a: 'You get 14 days of unlimited re-exports for that manuscript. Fix typos, adjust margins, change templates \u2014 re-export as many times as you need. No surprises, no recurring charges.',
   },
   {
     q: 'How does this compare to Vellum ($500)?',
@@ -92,12 +85,8 @@ const FAQ = [
     a: 'Atticus has known performance issues \u2014 typing lag on long documents, import corruption, no offline mode. PagePerfect is faster (server-side compilation), produces higher-quality typography, and has a free tier.',
   },
   {
-    q: 'Do I need to know Markdown?',
-    a: 'Basic Markdown is simple: # for headings, **bold**, *italic*. If you can write an email, you can write Markdown. We also auto-clean pasted text from Word.',
-  },
-  {
-    q: 'What about EPUB support?',
-    a: 'EPUB export is in development and will be available to Studio tier members first. Our EPUB output will use the same typographic principles as our PDF engine.',
+    q: 'Does Studio include EPUB export?',
+    a: 'Yes. Studio includes automated EPUB3 generation, custom OpenType font uploads, and batch exporting to compile your entire series across all 19 page sizes in one click.',
   },
   {
     q: 'Is my manuscript data safe?',
@@ -118,10 +107,22 @@ function TierRow({
   index: number
   cta: { label: string; disabled: boolean }
   isLoading: boolean
-  onUpgrade: (key: 'single' | 'publisher' | 'studio') => void
+  onUpgrade: (key: 'publisher' | 'studio') => void
 }) {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-60px' })
+
+  // Button styles per tier:
+  // Drafter — black text, 1px solid black border (utility)
+  // Publisher — solid red (primary conversion target)
+  // Studio — solid black (heavy, authoritative)
+  const buttonClass = cta.disabled
+    ? 'cursor-default border border-[#111111]/[0.06] text-[#111111]/20'
+    : tier.key === 'publisher'
+      ? 'bg-[#FF3333] text-white hover:bg-[#E52222]'
+      : tier.key === 'studio'
+        ? 'bg-[#111111] text-white hover:bg-[#111111]/90'
+        : 'border border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white'
 
   return (
     <motion.div
@@ -172,11 +173,7 @@ function TierRow({
               <Link
                 href={cta.disabled ? '#' : tier.href}
                 aria-disabled={cta.disabled}
-                className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${
-                  cta.disabled
-                    ? 'cursor-default border border-[#111111]/[0.06] text-[#111111]/20'
-                    : 'bg-[#111111] text-white hover:bg-transparent hover:text-[#111111] border border-[#111111]'
-                }`}
+                className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${buttonClass}`}
               >
                 {cta.label}
                 {!cta.disabled && (
@@ -186,14 +183,8 @@ function TierRow({
             ) : (
               <button
                 disabled={cta.disabled || isLoading}
-                onClick={() => onUpgrade(tier.key as 'single' | 'publisher' | 'studio')}
-                className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${
-                  cta.disabled
-                    ? 'cursor-default border border-[#111111]/[0.06] text-[#111111]/20'
-                    : tier.key === 'publisher'
-                      ? 'bg-[#FF3333] text-white hover:bg-[#E52222]'
-                      : 'border border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white'
-                }`}
+                onClick={() => onUpgrade(tier.key as 'publisher' | 'studio')}
+                className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${buttonClass}`}
               >
                 {isLoading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -221,7 +212,7 @@ function PaymentForm({
   onSuccess,
   onError,
 }: {
-  tier: 'single' | 'publisher' | 'studio'
+  tier: 'publisher' | 'studio'
   onSuccess: () => void
   onError: (msg: string) => void
 }) {
@@ -230,8 +221,7 @@ function PaymentForm({
   const [processing, setProcessing] = useState(false)
 
   const buttonLabel = {
-    single: 'Pay $2.99 \u2014 One PDF',
-    publisher: 'Subscribe \u2014 $9.99/mo',
+    publisher: 'Pay $19.99 \u2014 One Manuscript',
     studio: 'Pay $199 \u2014 Lifetime',
   }[tier]
 
@@ -286,7 +276,7 @@ function PaymentForm({
           )}
         </button>
         <p className="mt-3 text-center font-mono text-[10px] text-neutral-400">
-          Secure payment via Stripe. Cancel anytime.
+          Secure payment via Stripe. No subscription.
         </p>
       </div>
     </form>
@@ -302,7 +292,7 @@ function CheckoutOverlay({
   onSuccess,
   onError,
 }: {
-  tier: 'single' | 'publisher' | 'studio'
+  tier: 'publisher' | 'studio'
   clientSecret: string
   onClose: () => void
   onSuccess: () => void
@@ -349,10 +339,10 @@ function CheckoutOverlay({
               Upgrade to
             </p>
             <p className="font-display text-xl font-extrabold tracking-tight text-white">
-              {{ single: 'Single PDF', publisher: 'Publisher', studio: 'Studio' }[tier]}
+              {{ publisher: 'Publisher', studio: 'Studio' }[tier]}
             </p>
             <p className="mt-1 font-mono text-[11px] text-white/35">
-              {{ single: '$2.99 \u00b7 one watermark-free PDF', publisher: '$9.99/month \u00b7 cancel anytime', studio: '$199 one-time \u00b7 lifetime access' }[tier]}
+              {{ publisher: '$19.99 \u00b7 one print-ready manuscript', studio: '$199 one-time \u00b7 lifetime access' }[tier]}
             </p>
           </div>
           <button
@@ -402,14 +392,14 @@ function SuccessBanner({ tier }: { tier: string }) {
         </div>
         <div>
           <p className="font-display text-[15px] font-semibold text-[#111111]">
-            {tier === 'single'
-              ? 'PDF purchased'
-              : `Welcome to ${tier === 'publisher' ? 'Publisher' : 'Studio'}`}
+            {tier === 'publisher'
+              ? 'Manuscript unlocked'
+              : 'Welcome to Studio'}
           </p>
           <p className="font-body text-[13px] text-[#111111]/50">
-            {tier === 'single'
-              ? 'Your watermark-free PDF is ready to download.'
-              : 'Your account has been upgraded. All features are now unlocked.'}
+            {tier === 'publisher'
+              ? 'Your print-ready export is unlocked. You have 14 days of unlimited re-exports.'
+              : 'Lifetime access activated. All features are now unlocked.'}
           </p>
         </div>
       </div>
@@ -420,8 +410,8 @@ function SuccessBanner({ tier }: { tier: string }) {
 // ── Page ──
 
 export default function PricingPage() {
-  const { user, tier: currentTier } = useAuth()
-  const [checkoutTier, setCheckoutTier] = useState<'single' | 'publisher' | 'studio' | null>(null)
+  const { user, tier: currentTier, hasActiveWindow, publisherWindowEnd } = useAuth()
+  const [checkoutTier, setCheckoutTier] = useState<'publisher' | 'studio' | null>(null)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -446,7 +436,7 @@ export default function PricingPage() {
     }
   }, [])
 
-  async function handleUpgrade(tierKey: 'single' | 'publisher' | 'studio') {
+  async function handleUpgrade(tierKey: 'publisher' | 'studio') {
     if (!user) {
       window.location.href = '/auth/login?redirect=/pricing'
       return
@@ -487,16 +477,16 @@ export default function PricingPage() {
 
   function getCtaForTier(tier: typeof TIERS[number]) {
     if (tier.key === 'drafter') {
-      if (currentTier === 'drafter' && user) return { label: 'Current Plan', disabled: true }
+      if (currentTier === 'drafter' && user && !hasActiveWindow) return { label: 'Current Plan', disabled: true }
       return { label: tier.cta, disabled: false }
     }
-    if (tier.key === 'single') {
-      return { label: user ? tier.cta : 'Sign in to Buy', disabled: false }
-    }
     if (tier.key === 'publisher') {
-      if (currentTier === 'publisher') return { label: 'Current Plan', disabled: true }
       if (currentTier === 'studio') return { label: 'Included', disabled: true }
-      return { label: user ? tier.cta : 'Sign in to Upgrade', disabled: false }
+      if (hasActiveWindow && publisherWindowEnd) {
+        const daysLeft = Math.ceil((new Date(publisherWindowEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        return { label: `Active — ${daysLeft}d left`, disabled: true }
+      }
+      return { label: user ? tier.cta : 'Sign in to Buy', disabled: false }
     }
     if (currentTier === 'studio') return { label: 'Current Plan', disabled: true }
     return { label: user ? tier.cta : 'Sign in to Upgrade', disabled: false }
@@ -597,11 +587,11 @@ export default function PricingPage() {
           >
             <div className="min-w-[640px]">
               {/* Header row */}
-              <div className="grid grid-cols-[1fr_repeat(4,_minmax(0,_8rem))] gap-x-4 pb-4 md:gap-x-6">
+              <div className="grid grid-cols-[1fr_repeat(3,_minmax(0,_8rem))] gap-x-4 pb-4 md:gap-x-6">
                 <div />
                 {TIER_NAMES.map((name, i) => (
                   <div key={name} className="text-right">
-                    <span className={`font-mono text-[11px] uppercase tracking-[0.15em] ${i === 2 ? 'text-[#FF3333]' : 'text-[#111111]'}`}>
+                    <span className={`font-mono text-[11px] uppercase tracking-[0.15em] ${i === 1 ? 'text-[#FF3333]' : 'text-[#111111]'}`}>
                       {name}
                     </span>
                   </div>
@@ -612,7 +602,7 @@ export default function PricingPage() {
               {COMPARISON.map((row) => (
                 <Fragment key={row.feature}>
                   <div className="h-px bg-[#111111]/10" />
-                  <div className="grid grid-cols-[1fr_repeat(4,_minmax(0,_8rem))] items-baseline gap-x-4 py-4 md:gap-x-6">
+                  <div className="grid grid-cols-[1fr_repeat(3,_minmax(0,_8rem))] items-baseline gap-x-4 py-4 md:gap-x-6">
                     <span className="font-body text-[14px] text-[#111111]/70 md:text-[15px]">
                       {row.feature}
                     </span>

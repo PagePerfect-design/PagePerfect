@@ -259,10 +259,10 @@ const isPocketBaseConfigured = !!(POCKETBASE_URL && process.env.POCKETBASE_ADMIN
 // Verifies a PocketBase auth token and returns user tier info.
 // Returns { userId, tier, credits } or { userId: null, tier: 'anonymous', credits: 0 }
 async function verifyUserTier(req) {
-  if (!isPocketBaseConfigured) return { userId: null, tier: 'anonymous', credits: 0 };
+  if (!isPocketBaseConfigured) return { userId: null, tier: 'anonymous', credits: 0, publisherWindowEnd: null };
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { userId: null, tier: 'anonymous', credits: 0 };
+    return { userId: null, tier: 'anonymous', credits: 0, publisherWindowEnd: null };
   }
   const token = authHeader.slice(7);
   try {
@@ -274,21 +274,33 @@ async function verifyUserTier(req) {
       const authData = await authResp.json();
       const record = authData.record;
       if (record) {
+        let effectiveTier = record.tier || 'drafter';
+        const publisherWindowEnd = record.publisher_window_end || null;
+
+        // Active publisher window elevates drafter to publisher-level access
+        if (effectiveTier === 'drafter' && publisherWindowEnd) {
+          const windowEnd = new Date(publisherWindowEnd);
+          if (windowEnd > new Date()) {
+            effectiveTier = 'publisher';
+          }
+        }
+
         return {
           userId: record.id,
-          tier: record.tier || 'drafter',
+          tier: effectiveTier,
           credits: Number(record.pdf_credits) || 0,
+          publisherWindowEnd,
         };
       }
     }
   } catch (err) {
     console.error('[auth] Tier verification failed:', err.message);
   }
-  return { userId: null, tier: 'anonymous', credits: 0 };
+  return { userId: null, tier: 'anonymous', credits: 0, publisherWindowEnd: null };
 }
 
 // Tier hierarchy for feature gating
-const TIER_LEVEL = { anonymous: 0, drafter: 1, single: 2, publisher: 3, studio: 4 };
+const TIER_LEVEL = { anonymous: 0, drafter: 1, publisher: 2, studio: 3 };
 function hasTier(userTier, requiredTier) {
   return (TIER_LEVEL[userTier] || 0) >= (TIER_LEVEL[requiredTier] || 0);
 }
@@ -386,9 +398,47 @@ app.post('/api/stripe/webhook',
       }
     }
 
+    // Helper: activate 14-day Publisher export window for a user
+    // If the user already has an active window, extends from the current end date.
+    async function activatePublisherWindow(userId, customerId) {
+      if (!isPocketBaseConfigured) {
+        console.error('PocketBase not configured — cannot activate publisher window');
+        return;
+      }
+      try {
+        const resp = await pbFetch(`/api/collections/users/records/${userId}`);
+        if (!resp || !resp.ok) {
+          console.error('Failed to fetch user for window activation:', resp?.status);
+          return;
+        }
+        const user = await resp.json();
+
+        // Start new 14-day window from max(current_end, now)
+        const now = new Date();
+        const currentEnd = user.publisher_window_end ? new Date(user.publisher_window_end) : null;
+        const windowStart = (currentEnd && currentEnd > now) ? currentEnd : now;
+        const windowEnd = new Date(windowStart.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+        const patchResp = await pbFetch(`/api/collections/users/records/${userId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            publisher_window_end: windowEnd.toISOString(),
+            stripe_customer_id: customerId,
+          }),
+        });
+        if (patchResp && patchResp.ok) {
+          console.log(`User ${userId} Publisher window activated until ${windowEnd.toISOString()}`);
+        } else {
+          console.error('Failed to activate Publisher window:', patchResp?.status);
+        }
+      } catch (err) {
+        console.error('Failed to activate Publisher window:', err.message);
+      }
+    }
+
     // Handle relevant events
     switch (event.type) {
-      // Payment Element flow: one-time payment succeeded (Studio $199 or Single £2.99)
+      // Payment Element flow: one-time payment succeeded (Publisher $19.99 or Studio $199)
       case 'payment_intent.succeeded': {
         const pi = event.data.object;
         const tier = pi.metadata?.tier;
@@ -396,29 +446,14 @@ app.post('/api/stripe/webhook',
         console.log(`PaymentIntent succeeded: customer=${pi.customer}, tier=${tier}, user=${userId}`);
 
         if (userId && tier === 'single') {
-          // Single PDF purchase — increment pdf_credits by 1 (don't change tier)
+          // Single PDF — $2.99 one-time: increment pdf_credits by 1
           await incrementCredits(userId, pi.customer);
+        } else if (userId && tier === 'publisher') {
+          // Publisher — $19.99 per-manuscript: activate 14-day export window
+          await activatePublisherWindow(userId, pi.customer);
         } else if (userId && tier) {
+          // Studio — lifetime upgrade
           await upgradeTier(userId, tier, pi.customer, null);
-        }
-        break;
-      }
-      // Payment Element flow: subscription invoice paid (Publisher $9.99/mo)
-      case 'invoice.paid': {
-        const invoice = event.data.object;
-        // Only process the first invoice (subscription activation), not renewals
-        if (invoice.billing_reason === 'subscription_create') {
-          const sub = invoice.subscription;
-          const customerId = invoice.customer;
-          // Retrieve the subscription to get metadata
-          const subscription = await stripe.subscriptions.retrieve(sub);
-          const tier = subscription.metadata?.tier;
-          const userId = subscription.metadata?.user_id;
-          console.log(`Subscription activated: customer=${customerId}, tier=${tier}, user=${userId}`);
-
-          if (userId && tier) {
-            await upgradeTier(userId, tier, customerId, sub);
-          }
         }
         break;
       }
@@ -528,7 +563,7 @@ app.post('/api/stripe/create-payment', async (req, res) => {
     }
 
     if (tier === 'single') {
-      // Single PDF — $2.99 one-time PaymentIntent
+      // Single PDF — $2.99 one-time PaymentIntent (one clean export credit)
       const amount = 299; // $2.99 in cents
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
@@ -543,32 +578,22 @@ app.post('/api/stripe/create-payment', async (req, res) => {
         customerId,
       });
     } else if (tier === 'publisher') {
-      // Subscription — create with payment_behavior: 'default_incomplete'
-      // so the client can confirm via Payment Element
-      const priceId = process.env.STRIPE_PRICE_PUBLISHER;
-      if (!priceId) {
-        return res.status(500).json({ error: 'Publisher price not configured' });
-      }
-
-      const subscription = await stripe.subscriptions.create({
+      // Publisher — $19.99 one-time PaymentIntent per manuscript (14-day window)
+      const amount = 1999; // $19.99 in cents
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'usd',
         customer: customerId,
-        items: [{ price: priceId }],
-        payment_behavior: 'default_incomplete',
-        payment_settings: { save_default_payment_method: 'on_subscription' },
         metadata: { tier, user_id },
-        expand: ['latest_invoice.payment_intent'],
+        automatic_payment_methods: { enabled: true },
       });
 
-      const invoice = subscription.latest_invoice;
-      const paymentIntent = invoice?.payment_intent;
-
       res.json({
-        clientSecret: paymentIntent?.client_secret,
-        subscriptionId: subscription.id,
+        clientSecret: paymentIntent.client_secret,
         customerId,
       });
     } else {
-      // Studio — one-time PaymentIntent
+      // Studio — $199 one-time PaymentIntent (lifetime)
       const amount = 19900; // $199.00 in cents
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
@@ -1388,7 +1413,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   if (wantEpub && !hasTier(userTier, 'studio')) {
     return res.status(403).json({
       error: 'tier_required',
-      message: 'EPUB export requires a Studio subscription.',
+      message: 'EPUB export requires Studio.',
       requiredTier: 'studio',
     });
   }
@@ -1397,7 +1422,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   if (wantPdfX && !hasTier(userTier, 'publisher')) {
     return res.status(403).json({
       error: 'tier_required',
-      message: 'PDF/X-1a export requires a Publisher or Studio subscription.',
+      message: 'PDF/X-1a export requires Publisher or Studio.',
       requiredTier: 'publisher',
     });
   }
@@ -1407,7 +1432,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     if (!hasTier(userTier, 'studio')) {
       return res.status(403).json({
         error: 'tier_required',
-        message: 'Custom font upload requires a Studio subscription.',
+        message: 'Custom font upload requires Studio.',
         requiredTier: 'studio',
       });
     }
@@ -1418,7 +1443,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     return res.status(403).json({
       error: 'tier_required',
       message: `Page size "${pageSize}" requires a paid plan. Free tier includes 6 standard sizes.`,
-      requiredTier: 'single',
+      requiredTier: 'publisher',
     });
   }
 
@@ -1946,7 +1971,7 @@ app.post('/api/fonts/upload', fontUpload.single('font'), async (req, res) => {
     if (req.file) {
       try { fs.rmSync(path.dirname(req.file.path), { recursive: true, force: true }); } catch {}
     }
-    return res.status(403).json({ error: 'tier_required', message: 'Custom font upload requires a Studio subscription.', requiredTier: 'studio' });
+    return res.status(403).json({ error: 'tier_required', message: 'Custom font upload requires Studio.', requiredTier: 'studio' });
   }
 
   if (!req.file) {
@@ -1979,7 +2004,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
   // ── Tier gate: Batch export requires Studio ──
   const user = await verifyUserTier(req);
   if (!hasTier(user.tier, 'studio')) {
-    return res.status(403).json({ error: 'tier_required', message: 'Batch export requires a Studio subscription.', requiredTier: 'studio' });
+    return res.status(403).json({ error: 'tier_required', message: 'Batch export requires Studio.', requiredTier: 'studio' });
   }
 
   let { manuscriptText, template, title, marginPreset, safeMode, compileMode, pageSizes, customFonts, headingVariant: batchVariant } = req.body || {};

@@ -7,42 +7,31 @@ const TIERS = [
     name: 'Drafter',
     price: 'Free',
     period: 'forever',
-    body: 'Everything you need to start. All 15 templates \u00d7 3 heading variants = 45 styles, 6 page sizes, real-time preview. Unlimited manuscripts, unlimited compiles.',
-    aside: 'Watermarked output. Upgrade when your book is ready for print.',
-    cta: 'Start Free',
+    body: 'Everything you need to draft and test. All 15 templates, unlimited manuscripts, real-time preview. Watermarked output.',
+    aside: 'Zero friction. See the grid in action before you pay a cent.',
+    cta: 'Start Drafting',
     href: '/app',
   },
   {
     num: '02',
-    key: 'single',
-    name: 'Single',
-    price: '$2.99',
-    period: 'per PDF',
-    body: 'One clean, watermark-free export. All 19 page sizes including Amazon KDP formats. Full quality compile, print-ready output.',
-    aside: 'No subscription. Pay only when you need a clean export.',
-    cta: 'Buy One PDF',
+    key: 'publisher',
+    name: 'Publisher',
+    price: '$19.99',
+    period: 'per manuscript',
+    recommended: true,
+    body: 'One flawless, print-ready manuscript. PDF/X-1a compliance for Amazon KDP and IngramSpark. All 19 page sizes, citations, bibliography. 14 days of unlimited re-exports.',
+    aside: 'No subscription. Pay only when the book is finished.',
+    cta: 'Typeset My Book',
     href: '/pricing',
   },
   {
     num: '03',
-    key: 'publisher',
-    name: 'Publisher',
-    price: '$9.99',
-    period: '/month',
-    recommended: true,
-    body: 'Unlimited watermark-free exports for serious authors. Citations and bibliography support, priority compile queue, PDF/X compliance.',
-    aside: 'Cancel anytime. Most authors choose this.',
-    cta: 'Start Publishing',
-    href: '/pricing',
-  },
-  {
-    num: '04',
     key: 'studio',
     name: 'Studio',
     price: '$199',
     period: 'once',
-    body: 'Lifetime Publisher access. No monthly fees, ever. EPUB export, custom font upload, batch export for series \u2014 all included.',
-    aside: 'Pay once, own it forever. For publishers and prolific authors.',
+    body: 'Lifetime access to the engine. Unlimited exports, automated EPUB generation, custom OpenType font uploads, and batch exporting for multi-book series.',
+    aside: 'Pay once, own it forever. For prolific authors and publishers.',
     cta: 'Get Studio',
     href: '/pricing',
   },
@@ -116,8 +105,8 @@ export function PricingPreview() {
                       className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${
                         tier.key === 'publisher'
                           ? 'bg-[#FF3333] text-white hover:bg-[#E52222]'
-                          : tier.key === 'drafter'
-                            ? 'border border-[#111111] bg-[#111111] text-white hover:bg-transparent hover:text-[#111111]'
+                          : tier.key === 'studio'
+                            ? 'bg-[#111111] text-white hover:bg-[#111111]/90'
                             : 'border border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white'
                       }`}
                     >
