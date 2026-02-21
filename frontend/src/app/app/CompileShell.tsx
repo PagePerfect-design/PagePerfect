@@ -39,7 +39,7 @@ type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | '
 type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'generous' | 'compact'
 type CompileMode = 'fast' | 'full'
 type CompileError = { message: string }
-type Status = 'idle' | 'compiling' | 'success' | 'error'
+type Status = 'idle' | 'compiling' | 'queued' | 'success' | 'error'
 type Stage = 'portal' | 'design' | 'launch'
 type HudTab = 'style' | 'layout' | 'settings' | null
 type Platform = 'kdp' | 'ingram'
@@ -1289,18 +1289,18 @@ function FloatingHUD({
         <div className="mx-1.5 h-4 w-px bg-[#111111]/[0.08]" />
         <div className="flex items-center gap-1.5 px-2">
           <span className={`h-1.5 w-1.5 rounded-full transition-colors ${
-            status === 'compiling' ? 'bg-[#FF3333] animate-pulse' :
+            status === 'compiling' || status === 'queued' ? 'bg-[#FF3333] animate-pulse' :
             status === 'success' ? 'bg-emerald-500' :
             status === 'error' ? 'bg-red-500' :
             'bg-[#111111]/20'
           }`} />
           <span className={`font-mono text-[9px] uppercase tracking-[0.1em] ${
-            status === 'compiling' ? 'text-[#FF3333]' :
+            status === 'compiling' || status === 'queued' ? 'text-[#FF3333]' :
             status === 'success' ? 'text-emerald-600/70' :
             status === 'error' ? 'text-red-500/70' :
             'text-[#111111]/35'
           }`}>
-            {status === 'compiling' ? 'Setting' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
+            {status === 'queued' ? 'Queued' : status === 'compiling' ? 'Setting' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
           </span>
         </div>
       </div>
@@ -2232,9 +2232,9 @@ export default function CompileShell() {
       if (customFont) {
         body.customFonts = { main: customFont.fontId }
       }
-      // Build headers — include auth token for download tier/credit checks
+      // Build headers — include auth token for tier/credit checks
       const fetchHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (downloadAfter && isPocketBaseConfigured) {
+      if (isPocketBaseConfigured) {
         const pb = createClient()
         if (pb.authStore.isValid && pb.authStore.token) {
           fetchHeaders['Authorization'] = `Bearer ${pb.authStore.token}`
@@ -2246,36 +2246,60 @@ export default function CompileShell() {
         body: JSON.stringify(body),
         signal: controller.signal,
       })
-      const ct = resp.headers.get('content-type') || ''
 
-      if (resp.ok && ct.includes('application/pdf')) {
-        const blob = await resp.blob()
-        // Discard stale response — a newer compile has started
+      // ── Async path: 202 Accepted → poll status → fetch result ──
+      if (resp.status === 202) {
+        const { statusUrl, resultUrl } = await resp.json()
         if (gen !== compileGenRef.current) return
-        pdfBlobRef.current = blob
-        const url = URL.createObjectURL(blob)
-        setPdfUrl(prev => { if (prev) URL.revokeObjectURL(prev); return url })
-        setStatus('success')
-        setErrors([])
-        if (downloadAfter) {
-          const a = document.createElement('a')
-          a.href = url
-          a.download = buildFilename(title, template, pageSize)
-          document.body.appendChild(a)
-          a.click()
-          a.remove()
+        setStatus('queued')
 
-          // Check watermark/credit response headers
-          const wasWatermarked = resp.headers.get('x-pp-watermarked') === 'true'
-          setLastDownloadWatermarked(wasWatermarked)
-          const remaining = resp.headers.get('x-pp-credits-remaining')
-          if (remaining !== null) {
-            // Credit was used — refresh user data to update pdfCredits
-            refreshUser()
-          }
-        } else {
-          setLastDownloadWatermarked(false)
+        // Poll until completed or failed
+        const pollResult = await pollJobStatus(statusUrl, gen, controller.signal)
+        if (!pollResult) return // stale or aborted
+        if (gen !== compileGenRef.current) return
+
+        if (pollResult.status === 'failed') {
+          pdfBlobRef.current = null
+          const msgs: CompileError[] = []
+          if (pollResult.message) msgs.push({ message: pollResult.message })
+          if (!msgs.length) msgs.push({ message: 'Compilation failed.' })
+          if (pollResult.detail) msgs.push({ message: `__detail__${pollResult.detail}` })
+          setErrors(msgs)
+          setStatus('error')
+          return
         }
+
+        // Fetch PDF from result endpoint
+        setStatus('compiling')
+        const pdfResp = await fetch(resultUrl, {
+          headers: fetchHeaders,
+          signal: controller.signal,
+        })
+        if (gen !== compileGenRef.current) return
+
+        if (pdfResp.ok) {
+          const blob = await pdfResp.blob()
+          if (gen !== compileGenRef.current) return
+          handlePdfBlob(blob, pdfResp, downloadAfter)
+        } else {
+          let payload: { message?: string; detail?: string } | null = null
+          try { payload = await pdfResp.json() } catch { /* noop */ }
+          pdfBlobRef.current = null
+          const msgs: CompileError[] = []
+          if (payload?.message) msgs.push({ message: payload.message })
+          if (!msgs.length) msgs.push({ message: `Failed to fetch result (status ${pdfResp.status}).` })
+          setErrors(msgs)
+          setStatus('error')
+        }
+        return
+      }
+
+      // ── Sync fallback path: direct PDF response ──
+      const ct = resp.headers.get('content-type') || ''
+      if (resp.ok && (ct.includes('application/pdf') || ct.includes('application/epub'))) {
+        const blob = await resp.blob()
+        if (gen !== compileGenRef.current) return
+        handlePdfBlob(blob, resp, downloadAfter)
       } else {
         let payload: { message?: string; error?: string; detail?: string } | null = null
         try { payload = await resp.json() } catch { /* noop */ }
@@ -2283,7 +2307,6 @@ export default function CompileShell() {
         const msgs: CompileError[] = []
         if (payload?.message) msgs.push({ message: payload.message })
         if (!msgs.length) msgs.push({ message: `Compile failed (status ${resp.status}).` })
-        // Attach raw detail for optional "Show details" — but do NOT display as a primary error
         if (payload?.detail) msgs.push({ message: `__detail__${payload.detail}` })
         setErrors(msgs)
         setStatus('error')
@@ -2296,6 +2319,65 @@ export default function CompileShell() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  /** Poll job status until completed/failed. Returns null if aborted or stale. */
+  async function pollJobStatus(
+    statusUrl: string,
+    gen: number,
+    signal: AbortSignal,
+  ): Promise<{ status: string; message?: string; detail?: string } | null> {
+    const POLL_INTERVAL = 1500 // 1.5s between polls
+    const MAX_POLLS = 80      // ~2 minutes max
+    for (let i = 0; i < MAX_POLLS; i++) {
+      if (signal.aborted || gen !== compileGenRef.current) return null
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, POLL_INTERVAL)
+        signal.addEventListener('abort', () => { clearTimeout(timer); resolve() }, { once: true })
+      })
+      if (signal.aborted || gen !== compileGenRef.current) return null
+      try {
+        const resp = await fetch(statusUrl, { signal })
+        if (!resp.ok) continue // retry on transient errors
+        const data = await resp.json()
+        if (data.status === 'completed') return data
+        if (data.status === 'failed') return data
+        // 'active' → show compiling
+        if (data.status === 'active' || data.status === 'processing') {
+          setStatus('compiling')
+        }
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') return null
+        // Retry on network errors
+      }
+    }
+    // Timeout after max polls
+    return { status: 'failed', message: 'Compilation timed out. Please try again.' }
+  }
+
+  /** Shared handler for setting PDF blob/URL from a successful response. */
+  function handlePdfBlob(blob: Blob, resp: Response, downloadAfter: boolean) {
+    pdfBlobRef.current = blob
+    const url = URL.createObjectURL(blob)
+    setPdfUrl(prev => { if (prev) URL.revokeObjectURL(prev); return url })
+    setStatus('success')
+    setErrors([])
+    if (downloadAfter) {
+      const a = document.createElement('a')
+      a.href = url
+      a.download = buildFilename(title, template, pageSize)
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      const wasWatermarked = resp.headers.get('x-pp-watermarked') === 'true'
+      setLastDownloadWatermarked(wasWatermarked)
+      const remaining = resp.headers.get('x-pp-credits-remaining')
+      if (remaining !== null) {
+        refreshUser()
+      }
+    } else {
+      setLastDownloadWatermarked(false)
     }
   }
 
