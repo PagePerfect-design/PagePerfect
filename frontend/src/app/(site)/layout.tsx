@@ -62,6 +62,7 @@ function Footer() {
               <Link href="/privacy" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Data &amp; Privacy</Link>
               <Link href="/terms" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Operating Agreement</Link>
               <Link href="/cookies" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Tracking &amp; Telemetry</Link>
+              <Link href="/philosophy" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Philosophy</Link>
               <Link href="/status" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Status</Link>
             </div>
           </div>
