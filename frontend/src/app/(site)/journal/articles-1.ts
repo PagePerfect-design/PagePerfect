@@ -525,4 +525,52 @@ export const ARTICLES_PART1: Article[] = [
       ],
     },
   },
+  {
+    slug: 'geometry-of-authority',
+    title: 'The Geometry of Authority: How Mathematical Page Proportions Build Trust Before a Word Is Read',
+    description:
+      'Four scholars across four centuries independently arrived at the same proportional system for placing text on a page. The convergence is the argument — and the mathematics is the mechanism by which a document earns authority at first glance.',
+    category: 'Layout',
+    date: '2026-02-21',
+    readTime: '6 min',
+    hook:
+      'When Gutenberg printed his 42-line Bible around 1455, he did not improvise the layout. The type area measured 292 by 198 millimeters — a ratio of 3:2 — positioned on the page by a ninth-division system that would not be formally described for another five hundred years. Between the 40-line pages (printed first) and the 42-line pages (printed later), Gutenberg changed the interline spacing to fit more text. But he never altered the type area dimensions. The proportions were sacred. What Gutenberg knew by craft, four scholars would independently rediscover through geometry: that the placement of the text block on the page is not a design decision. It is a mathematical one — and getting it right is what separates a document that commands authority from one that merely contains words.',
+    sections: [
+      {
+        heading: 'Four Canons, One Convergence',
+        paragraphs: [
+          'In the thirteenth century, the French architect Villard de Honnecourt recorded in his portfolio — thirty-three sheets of parchment now preserved in the Bibliotheque nationale de France — a geometric system for dividing a straight line into harmonious parts: thirds, fourths, fifths, and beyond. Villard\'s Figure, as it came to be known, required no measuring units. It was pure geometric recursion — building complex proportional structures from a straight edge and nothing more. When applied to a page with a 2:3 proportion, Villard\'s system produces margin ratios of 2:3:4:6 (inner, top, outer, bottom) and a text block whose proportions mirror the page itself.',
+          'In the 1940s, the Dutch book designer Johan A. Van de Graaf studied incunabula — books printed in the fifty-year period beginning with Gutenberg\'s Bible — and discovered that many used a consistent geometric construction to position the text block. His method, known as the Van de Graaf canon, uses only diagonals struck across a two-page spread: no measurements, no arithmetic, no units. It works for any page ratio. And it produces the same result as Villard\'s Figure: margin proportions of 2:3:4:6 on a 2:3 page. The Argentine typographer Raul Rosarivo, working independently in 1947, analyzed the Gutenberg Bible with compass, ruler, and typometer. He divided the page into a 9-by-9 grid of 81 small rectangles and found that only 36 were occupied by the type area — less than 44% of the page surface. His margin ratios: 2:3:4:6. Jan Tschichold, examining medieval manuscripts and incunabula throughout the 1950s, formalized what he called "the Golden Canon of book page construction." His result was identical. Tschichold wrote: "What I uncovered as the canon of the manuscript writers, Raul Rosarivo proved to have been Gutenberg\'s canon as well."',
+        ],
+      },
+      {
+        heading: 'The Mathematics of Proportion',
+        paragraphs: [
+          'Tschichold classified page ratios into two categories in "The Form of the Book": clear and accidental. The clear ratios — 1:1.618 (the golden section), 1:root-2, 2:3, 5:8, 5:9 — he called "intentional and definite." Everything else he called "unclear and accidental." "The difference between a clear and an unclear ratio, though frequently slight, is noticeable," he wrote. This is not mysticism. The 1:root-2 ratio, used in the ISO 216 A-series paper sizes, was first identified by the physicist Georg Christoph Lichtenberg in a letter dated 25 October 1786: "the short side of the rectangle must relate to the large one like 1:root-2, or like the side of a square to its diagonal." Its defining property is self-similarity — fold the sheet in half and both halves retain the same ratio. The 2:3 ratio, central to the Van de Graaf canon, produces the margin system that Gutenberg used. The golden section (1:1.618) generates infinite harmonic subdivisions.',
+          'Le Corbusier understood this. His Modulor system, developed between 1943 and 1955, derived a cascading series of measurements from the golden section applied to the human body: a standing man 1.83 meters tall with arm raised to 2.26 meters, each dimension multiplied and divided by phi. Einstein said of it: "It is a tool that makes the good easy and the bad difficult." Robert Bringhurst extended the same principle to typography. In "The Elements of Typographic Style," he proposed a two-stranded Fibonacci type scale — 6, 8, 10, 13, 16, 21, 26, 34, 42, 55, 68, 89, 110 points — where each size stands in golden-ratio relationship to its neighbors. "A modular scale, like a musical scale," Bringhurst wrote, "is a prearranged set of harmonious proportions."',
+        ],
+      },
+      {
+        heading: 'The Page as Musical Instrument',
+        paragraphs: [
+          'Bringhurst\'s "Shaping the Page" — Chapter 8 of "The Elements of Typographic Style," spanning pages 143 to 178 — catalogs twenty-seven explicit page layout canons. It is the largest known compendium of proportional systems for the printed page. His central metaphor is music: "Space in typography is like time in music. It is infinitely divisible, but a few proportional intervals can be much more useful than a limitless choice of arbitrary quantities." He draws a parallel between the Pythagorean scale of musical tones and variations in page proportions — both based on numerical ratios that produce consonance rather than dissonance.',
+          'His most consequential observation concerns margins: "Perhaps fifty per cent of the character and integrity of a printed page lies in its letterforms. Much of the other fifty per cent resides in its margins." This is a radical claim. It means that the whitespace surrounding the text — its quantity, its proportion, its relationship to the text block — carries as much communicative weight as the typography itself. "The page is a piece of paper," Bringhurst writes. "It is also a visible and tangible proportion, silently sounding the thoroughbass of the book. On it lies the textblock, which must answer to the page. The two together — page and textblock — produce an antiphonal geometry. That geometry alone can bond the reader to the book. Or conversely, it can put the reader to sleep, or put the reader\'s nerves on edge, or drive the reader away."',
+        ],
+      },
+      {
+        heading: 'The Evidence: Typography Shapes Belief',
+        paragraphs: [
+          'In July 2012, filmmaker Errol Morris published a disguised experiment on the New York Times website. Readers were shown a passage arguing that "we live in an era of unprecedented safety," randomly rendered in one of six typefaces: Baskerville, Computer Modern, Georgia, Helvetica, Comic Sans, or Trebuchet. The experiment, designed with Cornell psychologist David Dunning, collected 45,000 responses. Baskerville produced a statistically significant increase in agreement — approximately 1.5 percentage points over Helvetica, with a p-value of 0.0068. Readers were more likely to believe a statement was true when it was set in a typeface associated with institutional authority. Morris reflected: "It is absurd to think that we would be nudged by one typeface over another, into believing something to be true. Something disturbing about it."',
+          'Kevin Larson at Microsoft Advanced Reading Technologies, working with Rosalind Picard at the MIT Media Lab, found in 2007 that the effects of good typography extend beyond comprehension into cognition itself. Subjects reading well-typeset text performed better on subsequent creative problem-solving tasks and showed reduced activation of the corrugator muscle — the muscle associated with frowning. Well-set type did not just transmit information more efficiently. It left the reader in a measurably better cognitive and emotional state. No study has yet tested the specific effect of mathematical page proportions on perceived authority. But the convergence of four independent scholars on the same margin system — across seven centuries, three continents, and four languages — constitutes its own form of evidence. As Tschichold wrote: "Though largely forgotten today, methods and rules upon which it is impossible to improve have been developed for centuries. To produce perfect books these rules have to be brought to life and applied."',
+        ],
+      },
+    ],
+    conclusion: {
+      heading: 'The Actionable Rule',
+      paragraphs: [
+        'Choose a clear page proportion — 2:3, the golden section, or 1:root-2 — and derive your margins from the ninth-division canon: inner margin equals one-ninth of the page width, outer margin equals two-ninths. Top margin equals one-ninth of the page height, bottom margin equals two-ninths. The resulting text block will share the same proportions as the page, and its height will equal the page width. These are not arbitrary numbers. They are the proportions that Villard de Honnecourt drew in the thirteenth century, that Gutenberg used in 1455, that Rosarivo measured in 1947, and that Tschichold formalized in 1953.',
+        'A page whose proportions are mathematically derived communicates authority before a single word is read. The reader cannot articulate why — but the corrugator muscle relaxes, the eye settles, and the document is granted the benefit of the doubt. This is what separates professional typesetting from desktop publishing: not the choice of typeface, not the selection of ornaments, but the invisible geometry that governs where the text block sits on the page. Get the proportions right, and every subsequent decision — type size, leading, column width — falls into place. Get them wrong, and no amount of typographic refinement can compensate for a text block that floats in the wrong position on a page whose ratios are accidental.',
+      ],
+    },
+  },
 ]
