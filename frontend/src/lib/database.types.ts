@@ -5,8 +5,8 @@
  *
  *   users (built-in auth collection) — extended with custom fields:
  *     - display_name: text
- *     - tier: select (drafter | single | publisher | studio), default "drafter"
- *     - pdf_credits: number, default 0 (Single tier purchases increment this)
+ *     - tier: select (drafter | publisher | studio), default "drafter"
+ *     - pdf_credits: number, default 0 (Publisher purchases increment this)
  *     - stripe_customer_id: text
  *     - stripe_subscription_id: text
  *

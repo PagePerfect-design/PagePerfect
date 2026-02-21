@@ -288,7 +288,7 @@ async function verifyUserTier(req) {
 }
 
 // Tier hierarchy for feature gating
-const TIER_LEVEL = { anonymous: 0, drafter: 1, single: 2, publisher: 3, studio: 4 };
+const TIER_LEVEL = { anonymous: 0, drafter: 1, publisher: 2, studio: 3 };
 function hasTier(userTier, requiredTier) {
   return (TIER_LEVEL[userTier] || 0) >= (TIER_LEVEL[requiredTier] || 0);
 }
@@ -388,37 +388,19 @@ app.post('/api/stripe/webhook',
 
     // Handle relevant events
     switch (event.type) {
-      // Payment Element flow: one-time payment succeeded (Studio $199 or Single £2.99)
+      // Payment Element flow: one-time payment succeeded (Publisher $9.99 or Studio $199)
       case 'payment_intent.succeeded': {
         const pi = event.data.object;
         const tier = pi.metadata?.tier;
         const userId = pi.metadata?.user_id;
         console.log(`PaymentIntent succeeded: customer=${pi.customer}, tier=${tier}, user=${userId}`);
 
-        if (userId && tier === 'single') {
-          // Single PDF purchase — increment pdf_credits by 1 (don't change tier)
+        if (userId && tier === 'publisher') {
+          // Publisher — per-manuscript purchase: increment pdf_credits by 1
           await incrementCredits(userId, pi.customer);
         } else if (userId && tier) {
+          // Studio — lifetime upgrade
           await upgradeTier(userId, tier, pi.customer, null);
-        }
-        break;
-      }
-      // Payment Element flow: subscription invoice paid (Publisher $9.99/mo)
-      case 'invoice.paid': {
-        const invoice = event.data.object;
-        // Only process the first invoice (subscription activation), not renewals
-        if (invoice.billing_reason === 'subscription_create') {
-          const sub = invoice.subscription;
-          const customerId = invoice.customer;
-          // Retrieve the subscription to get metadata
-          const subscription = await stripe.subscriptions.retrieve(sub);
-          const tier = subscription.metadata?.tier;
-          const userId = subscription.metadata?.user_id;
-          console.log(`Subscription activated: customer=${customerId}, tier=${tier}, user=${userId}`);
-
-          if (userId && tier) {
-            await upgradeTier(userId, tier, customerId, sub);
-          }
         }
         break;
       }
@@ -489,7 +471,7 @@ app.post('/api/stripe/create-payment', async (req, res) => {
   }
 
   const { tier, user_id, email } = req.body;
-  if (!['single', 'publisher', 'studio'].includes(tier)) {
+  if (!['publisher', 'studio'].includes(tier)) {
     return res.status(400).json({ error: 'Invalid tier' });
   }
   if (!user_id) {
@@ -527,9 +509,9 @@ app.post('/api/stripe/create-payment', async (req, res) => {
       }
     }
 
-    if (tier === 'single') {
-      // Single PDF — $2.99 one-time PaymentIntent
-      const amount = 299; // $2.99 in cents
+    if (tier === 'publisher') {
+      // Publisher — $9.99 one-time PaymentIntent per manuscript
+      const amount = 999; // $9.99 in cents
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
         currency: 'usd',
@@ -542,41 +524,8 @@ app.post('/api/stripe/create-payment', async (req, res) => {
         clientSecret: paymentIntent.client_secret,
         customerId,
       });
-    } else if (tier === 'publisher') {
-      // Subscription — create with payment_behavior: 'default_incomplete'
-      // so the client can confirm via Payment Element
-      const priceId = process.env.STRIPE_PRICE_PUBLISHER;
-
-      const subscriptionItems = priceId
-        ? [{ price: priceId }]
-        : [{
-            price_data: {
-              currency: 'usd',
-              product_data: { name: 'PagePerfect Publisher' },
-              recurring: { interval: 'month' },
-              unit_amount: 999,
-            },
-          }];
-
-      const subscription = await stripe.subscriptions.create({
-        customer: customerId,
-        items: subscriptionItems,
-        payment_behavior: 'default_incomplete',
-        payment_settings: { save_default_payment_method: 'on_subscription' },
-        metadata: { tier, user_id },
-        expand: ['latest_invoice.payment_intent'],
-      });
-
-      const invoice = subscription.latest_invoice;
-      const paymentIntent = invoice?.payment_intent;
-
-      res.json({
-        clientSecret: paymentIntent?.client_secret,
-        subscriptionId: subscription.id,
-        customerId,
-      });
     } else {
-      // Studio — one-time PaymentIntent
+      // Studio — $199 one-time PaymentIntent (lifetime)
       const amount = 19900; // $199.00 in cents
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
@@ -1396,7 +1345,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   if (wantEpub && !hasTier(userTier, 'studio')) {
     return res.status(403).json({
       error: 'tier_required',
-      message: 'EPUB export requires a Studio subscription.',
+      message: 'EPUB export requires Studio.',
       requiredTier: 'studio',
     });
   }
@@ -1405,7 +1354,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   if (wantPdfX && !hasTier(userTier, 'publisher')) {
     return res.status(403).json({
       error: 'tier_required',
-      message: 'PDF/X-1a export requires a Publisher or Studio subscription.',
+      message: 'PDF/X-1a export requires Publisher or Studio.',
       requiredTier: 'publisher',
     });
   }
@@ -1415,7 +1364,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     if (!hasTier(userTier, 'studio')) {
       return res.status(403).json({
         error: 'tier_required',
-        message: 'Custom font upload requires a Studio subscription.',
+        message: 'Custom font upload requires Studio.',
         requiredTier: 'studio',
       });
     }
@@ -1426,7 +1375,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     return res.status(403).json({
       error: 'tier_required',
       message: `Page size "${pageSize}" requires a paid plan. Free tier includes 6 standard sizes.`,
-      requiredTier: 'single',
+      requiredTier: 'publisher',
     });
   }
 
@@ -1954,7 +1903,7 @@ app.post('/api/fonts/upload', fontUpload.single('font'), async (req, res) => {
     if (req.file) {
       try { fs.rmSync(path.dirname(req.file.path), { recursive: true, force: true }); } catch {}
     }
-    return res.status(403).json({ error: 'tier_required', message: 'Custom font upload requires a Studio subscription.', requiredTier: 'studio' });
+    return res.status(403).json({ error: 'tier_required', message: 'Custom font upload requires Studio.', requiredTier: 'studio' });
   }
 
   if (!req.file) {
@@ -1987,7 +1936,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
   // ── Tier gate: Batch export requires Studio ──
   const user = await verifyUserTier(req);
   if (!hasTier(user.tier, 'studio')) {
-    return res.status(403).json({ error: 'tier_required', message: 'Batch export requires a Studio subscription.', requiredTier: 'studio' });
+    return res.status(403).json({ error: 'tier_required', message: 'Batch export requires Studio.', requiredTier: 'studio' });
   }
 
   let { manuscriptText, template, title, marginPreset, safeMode, compileMode, pageSizes, customFonts, headingVariant: batchVariant } = req.body || {};

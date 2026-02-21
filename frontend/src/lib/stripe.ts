@@ -14,14 +14,14 @@ export const stripePromise = stripePublishableKey
   : null
 
 /**
- * Create a PaymentIntent (Studio) or Subscription (Publisher)
- * on the backend and return the client secret for the Payment Element.
+ * Create a PaymentIntent on the backend and return the client secret
+ * for the Payment Element. Both tiers are one-time payments.
  */
 export async function createPayment(
-  tier: 'single' | 'publisher' | 'studio',
+  tier: 'publisher' | 'studio',
   userId: string,
   email?: string,
-): Promise<{ clientSecret: string; subscriptionId?: string }> {
+): Promise<{ clientSecret: string }> {
   const res = await fetch('/api/stripe/create-payment', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -36,6 +36,5 @@ export async function createPayment(
 
   return {
     clientSecret: data.clientSecret,
-    subscriptionId: data.subscriptionId,
   }
 }
