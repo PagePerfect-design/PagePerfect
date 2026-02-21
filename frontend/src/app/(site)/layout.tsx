@@ -58,6 +58,7 @@ function Footer() {
           <div>
             <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">System</p>
             <div className="flex flex-col gap-2.5">
+              <Link href="/philosophy" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Philosophy</Link>
               <Link href="/status" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Status</Link>
             </div>
           </div>
