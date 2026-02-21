@@ -60,7 +60,7 @@ function JsonLd({ article }: { article: (typeof ARTICLES)[number] }) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#999] mb-3">
+    <p className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50 mb-3">
       {children}
     </p>
   )
@@ -86,12 +86,12 @@ export default async function ArticlePage({ params }: Props) {
               <div className="flex items-center gap-3 mb-4">
                 <Link
                   href="/journal"
-                  className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#999] transition-colors hover:text-[#111]"
+                  className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50 transition-colors hover:text-[#111]"
                 >
                   &larr; Journal
                 </Link>
-                <span className="font-mono text-[0.625rem] text-[#ddd]">/</span>
-                <span className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#999]">
+                <span className="font-mono text-[0.625rem] text-[#111111]/20">/</span>
+                <span className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50">
                   {String(index + 1).padStart(2, '0')} / {String(ARTICLES.length).padStart(2, '0')}
                 </span>
               </div>
@@ -144,10 +144,10 @@ export default async function ArticlePage({ params }: Props) {
                 <div>
                   {prev && (
                     <Link href={`/journal/${prev.slug}`} className="group block">
-                      <span className="font-mono text-[0.5625rem] uppercase tracking-[0.15em] text-[#999]">
+                      <span className="font-mono text-[0.5625rem] uppercase tracking-[0.15em] text-[#111111]/50">
                         &larr; Previous
                       </span>
-                      <p className="mt-1 font-display text-[0.875rem] font-semibold text-[#444] transition-colors group-hover:text-[#111] leading-tight">
+                      <p className="mt-1 font-display text-[0.875rem] font-semibold text-[#333333] transition-colors group-hover:text-[#111] leading-tight">
                         {prev.title}
                       </p>
                     </Link>
@@ -156,10 +156,10 @@ export default async function ArticlePage({ params }: Props) {
                 <div className="text-right">
                   {next && (
                     <Link href={`/journal/${next.slug}`} className="group block">
-                      <span className="font-mono text-[0.5625rem] uppercase tracking-[0.15em] text-[#999]">
+                      <span className="font-mono text-[0.5625rem] uppercase tracking-[0.15em] text-[#111111]/50">
                         Next &rarr;
                       </span>
-                      <p className="mt-1 font-display text-[0.875rem] font-semibold text-[#444] transition-colors group-hover:text-[#111] leading-tight">
+                      <p className="mt-1 font-display text-[0.875rem] font-semibold text-[#333333] transition-colors group-hover:text-[#111] leading-tight">
                         {next.title}
                       </p>
                     </Link>
@@ -170,13 +170,13 @@ export default async function ArticlePage({ params }: Props) {
 
             {/* CTA */}
             <div className="mt-12 border border-[#e5e5e0] bg-[#f5f5f0] p-8 text-center">
-              <p className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#999] mb-3">
+              <p className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50 mb-3">
                 Put this into practice
               </p>
               <p className="font-display text-lg font-bold text-[#111]">
                 Every principle above is built into PagePerfect.
               </p>
-              <p className="mx-auto mt-2 max-w-md font-body text-sm text-[#777]">
+              <p className="mx-auto mt-2 max-w-md font-body text-sm text-[#555555]">
                 Baseline grids, golden-ratio type scales, and 12 templates — engineered
                 for the legibility and conversion metrics discussed in this essay.
               </p>

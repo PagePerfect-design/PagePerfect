@@ -36,7 +36,7 @@ export default function AuthorGuideTools() {
         </p>
       </div>
       <div className="flex gap-2">
-        <button id="copy-guide" className="btn-pill btn-primary" onClick={copyGuide}>
+        <button id="copy-guide" className="btn-pill btn-secondary" onClick={copyGuide}>
           Copy guide
         </button>
         <button className="btn-pill btn-secondary" onClick={downloadGuide}>

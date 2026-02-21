@@ -140,7 +140,7 @@ function TierRow({
         {/* Name + description — editorial */}
         <div>
           <div className="flex items-baseline gap-4">
-            <h3 className="font-mono text-[13px] uppercase tracking-[0.15em] text-[#111111]/70">
+            <h3 className="font-mono text-[13px] uppercase tracking-[0.15em] text-[#111111]">
               {tier.name}
             </h3>
             {'recommended' in tier && (
@@ -149,20 +149,20 @@ function TierRow({
               </span>
             )}
           </div>
-          <p className="mt-4 font-body text-[15px] leading-relaxed text-[#111111]/45 md:text-base">
+          <p className="mt-4 font-body text-[15px] leading-relaxed text-[#111111]/60 md:text-base">
             {tier.body}
           </p>
         </div>
 
         {/* Price + aside + CTA */}
-        <div className="border-l border-[#111111]/10 pl-6">
+        <div className="border-l border-[#111111] pl-6">
           <div className="flex items-baseline gap-2">
             <span className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-[#111111] md:text-[2.5rem]">
               {tier.price}
             </span>
-            <span className="font-mono text-[11px] text-[#111111]/30">{tier.period}</span>
+            <span className="font-mono text-[11px] text-[#111111]/50">{tier.period}</span>
           </div>
-          <p className="mt-3 font-body text-[14px] leading-relaxed text-[#111111]/35 italic md:text-[15px]">
+          <p className="mt-3 font-mono text-[12px] leading-relaxed text-[#111111]/50">
             {tier.aside}
           </p>
 
@@ -175,7 +175,7 @@ function TierRow({
                 className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${
                   cta.disabled
                     ? 'cursor-default border border-[#111111]/[0.06] text-[#111111]/20'
-                    : 'border border-[#111111]/15 text-[#111111]/55 hover:border-[#111111]/30 hover:text-[#111111]'
+                    : 'bg-[#111111] text-white hover:bg-transparent hover:text-[#111111] border border-[#111111]'
                 }`}
               >
                 {cta.label}
@@ -192,7 +192,7 @@ function TierRow({
                     ? 'cursor-default border border-[#111111]/[0.06] text-[#111111]/20'
                     : tier.key === 'publisher'
                       ? 'bg-[#FF3333] text-white hover:bg-[#E52222]'
-                      : 'border border-[#111111]/15 text-[#111111]/55 hover:border-[#111111]/30 hover:text-[#111111]'
+                      : 'border border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white'
                 }`}
               >
                 {isLoading ? (
@@ -511,7 +511,7 @@ export default function PricingPage() {
             initial={{ opacity: 0 }}
             animate={headerInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.5, ease }}
-            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]/30"
+            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]"
           >
             Pricing
           </motion.p>
@@ -522,16 +522,16 @@ export default function PricingPage() {
             transition={{ duration: 0.7, delay: 0.1, ease }}
             className="max-w-3xl font-display text-display-lg font-extrabold leading-[0.9] tracking-tighter text-[#111111]"
           >
-            Simple pricing.
+            Draft for free.
             <br />
-            No surprises.
+            Pay for the print.
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.2, ease }}
-            className="mt-6 max-w-xl font-body text-lg leading-relaxed text-[#111111]/45"
+            className="mt-6 max-w-xl font-body text-lg leading-relaxed text-[#111111]/60"
           >
             The free tier is genuinely useful &mdash; not a demo. Upgrade when your book is ready for print.
           </motion.p>
@@ -581,7 +581,7 @@ export default function PricingPage() {
             transition={{ duration: 0.7, ease }}
             className="mb-16 max-w-2xl md:mb-20"
           >
-            <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]/30">
+            <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]">
               Compare
             </p>
             <h2 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tighter text-[#111111] md:text-5xl">
@@ -601,7 +601,7 @@ export default function PricingPage() {
                 <div />
                 {TIER_NAMES.map((name, i) => (
                   <div key={name} className="text-right">
-                    <span className={`font-mono text-[11px] uppercase tracking-[0.15em] ${i === 2 ? 'text-[#FF3333]' : 'text-[#111111]/50'}`}>
+                    <span className={`font-mono text-[11px] uppercase tracking-[0.15em] ${i === 2 ? 'text-[#FF3333]' : 'text-[#111111]'}`}>
                       {name}
                     </span>
                   </div>
@@ -613,7 +613,7 @@ export default function PricingPage() {
                 <Fragment key={row.feature}>
                   <div className="h-px bg-[#111111]/10" />
                   <div className="grid grid-cols-[1fr_repeat(4,_minmax(0,_8rem))] items-baseline gap-x-4 py-4 md:gap-x-6">
-                    <span className="font-body text-[14px] text-[#111111]/55 md:text-[15px]">
+                    <span className="font-body text-[14px] text-[#111111]/70 md:text-[15px]">
                       {row.feature}
                     </span>
                     {row.values.map((val, i) => (
@@ -621,8 +621,8 @@ export default function PricingPage() {
                         key={i}
                         className={`text-right font-mono text-[12px] ${
                           val === '\u2014'
-                            ? 'text-[#111111]/20'
-                            : 'text-[#111111]/55'
+                            ? 'text-[#111111]/25'
+                            : 'text-[#111111]/70'
                         }`}
                       >
                         {val}
@@ -651,7 +651,7 @@ export default function PricingPage() {
             transition={{ duration: 0.7, ease }}
             className="mb-16 max-w-2xl md:mb-20"
           >
-            <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]/30">
+            <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]">
               FAQ
             </p>
             <h2 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tighter text-[#111111] md:text-5xl">
@@ -672,7 +672,7 @@ export default function PricingPage() {
                   <h3 className="font-display text-[17px] font-bold leading-snug text-[#111111]">
                     {item.q}
                   </h3>
-                  <p className="font-body text-[15px] leading-relaxed text-[#111111]/45">
+                  <p className="font-body text-[15px] leading-relaxed text-[#111111]/60">
                     {item.a}
                   </p>
                 </motion.div>
@@ -702,7 +702,7 @@ export default function PricingPage() {
               <br />
               No signup required.
             </h2>
-            <p className="mt-6 font-body text-lg leading-relaxed text-[#111111]/45">
+            <p className="mt-6 font-body text-lg leading-relaxed text-[#111111]/60">
               Open the editor, paste your manuscript, and see professional typesetting in seconds.
             </p>
             <div className="mt-10 flex items-center gap-6">
@@ -715,12 +715,12 @@ export default function PricingPage() {
               </Link>
               <Link
                 href="/docs"
-                className="font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]/35 transition-colors hover:text-[#111111]"
+                className="font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]/50 transition-colors hover:text-[#111111]"
               >
                 Read the docs
               </Link>
             </div>
-            <p className="mt-6 font-mono text-[11px] text-[#111111]/25">
+            <p className="mt-6 font-mono text-[11px] text-[#111111]/50">
               No account required &middot; Works in any browser
             </p>
           </motion.div>

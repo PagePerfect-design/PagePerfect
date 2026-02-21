@@ -23,10 +23,10 @@ export default function CopyCitation() {
         <code className="rounded bg-surface-subtle px-2 py-1 text-accent text-sm font-mono">[@Finch2023]</code>
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <button id="copy-cite-btn" className="btn-pill btn-primary" onClick={copy}>
+        <Button variant="primary" href="/app">Go to Editor</Button>
+        <button id="copy-cite-btn" className="btn-pill btn-secondary" onClick={copy}>
           Copy citation
         </button>
-        <Button variant="secondary" href="/app">Go to Editor</Button>
       </div>
     </div>
   )

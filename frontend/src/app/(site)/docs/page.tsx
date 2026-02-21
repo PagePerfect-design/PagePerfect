@@ -4,8 +4,8 @@ import RequirementsCheck from './RequirementsCheck'
 import DocsNav from './DocsNav'
 
 export const metadata = {
-  title: 'Documentation — PagePerfect',
-  description: 'Template reference, KDP publishing guide, troubleshooting, and citation help for PagePerfect.',
+  title: 'Operating the Engine — PagePerfect',
+  description: 'Template reference, KDP publishing guide, troubleshooting, and the complete manual for PagePerfect.',
 }
 
 /* ─── Template data ─── */
@@ -229,7 +229,7 @@ function ApiEndpoint({ method, path, note }: { method: string; path: string; not
       <span className="docs-badge docs-badge-api shrink-0 mt-0.5">{method}</span>
       <div>
         <code className="text-sm">{path}</code>
-        <p className="font-body text-xs text-[#999] mt-0.5">{note}</p>
+        <p className="font-body text-xs text-[#555] mt-0.5">{note}</p>
       </div>
     </div>
   )
@@ -255,12 +255,13 @@ export default function DocsPage() {
           <section id="quickstart" className="scroll-mt-16 mb-20">
             <SectionLabel number="01">Getting Started</SectionLabel>
             <h1 className="docs-section-title" style={{ fontSize: '2.25rem', borderBottomWidth: '2px' }}>
-              Documentation
+              Operating the Engine
             </h1>
 
             <p className="font-body text-lg leading-8 text-[#3a3a3a] mb-8 max-w-xl">
-              Quick tips to get your manuscript compiling smoothly. Use the helpers below to copy a valid
-              citation and test that your bibliography is set up.
+              The system is designed for immediate compilation. Do not format your text.
+              Paste your raw manuscript into the Editor, select a typographic system,
+              and let XeLaTeX handle the typesetting.
             </p>
 
             <div className="space-y-4">
@@ -325,14 +326,14 @@ export default function DocsPage() {
             <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Compile Modes</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="docs-template-card">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#999] mb-1">Preview (Fast)</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">Preview (Fast)</p>
                 <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
                   Skips <code>microtype</code> and <code>csquotes</code> packages. Faster compilation for iterative editing.
                   Use this while drafting.
                 </p>
               </div>
               <div className="docs-template-card">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#999] mb-1">Full Quality</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">Full Quality</p>
                 <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
                   Enables <code>microtype</code> (optical margin alignment, character protrusion) and <code>csquotes</code> (context-sensitive quotation marks).
                   Use for final output.
@@ -459,7 +460,7 @@ export default function DocsPage() {
                 </tr>
               </thead>
               <tbody>
-                <tr><td colSpan={3} className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#999] pt-3 pb-1" style={{ borderBottom: 'none' }}>Default Sizes</td></tr>
+                <tr><td colSpan={3} className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555] pt-3 pb-1" style={{ borderBottom: 'none' }}>Default Sizes</td></tr>
                 {[
                   ['5.5 \u00d7 8.5\u2033', '140 \u00d7 216 mm', 'US digest'],
                   ['6 \u00d7 9\u2033', '152 \u00d7 229 mm', 'US trade / academic'],
@@ -474,7 +475,7 @@ export default function DocsPage() {
                     <td className="muted">{use}</td>
                   </tr>
                 ))}
-                <tr><td colSpan={3} className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#999] pt-5 pb-1" style={{ borderBottom: 'none' }}>More Book Sizes</td></tr>
+                <tr><td colSpan={3} className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555] pt-5 pb-1" style={{ borderBottom: 'none' }}>More Book Sizes</td></tr>
                 {[
                   ['Mass Market', '108 \u00d7 175 mm', 'US pocket paperback'],
                   ['A-format', '111 \u00d7 178 mm', 'UK mass-market'],
@@ -491,7 +492,7 @@ export default function DocsPage() {
                     <td className="muted">{use}</td>
                   </tr>
                 ))}
-                <tr><td colSpan={3} className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#999] pt-5 pb-1" style={{ borderBottom: 'none' }}>Amazon KDP</td></tr>
+                <tr><td colSpan={3} className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555] pt-5 pb-1" style={{ borderBottom: 'none' }}>Amazon KDP</td></tr>
                 {[
                   ['5 \u00d7 8\u2033', '127 \u00d7 203 mm', 'KDP small'],
                   ['6 \u00d7 9\u2033', '152 \u00d7 229 mm', 'KDP trade'],
@@ -567,12 +568,12 @@ export default function DocsPage() {
                 {/* Header row */}
                 <div className="flex items-baseline justify-between mb-1">
                   <div className="flex items-baseline gap-3">
-                    <span className="font-mono text-[10px] text-[#999]">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="font-mono text-[10px] text-[#555]">{String(i + 1).padStart(2, '0')}</span>
                     <h3 className="font-display text-lg font-bold tracking-tight text-[#1a1a1a]">{t.name}</h3>
                   </div>
                   <span className="docs-badge">{t.category}</span>
                 </div>
-                <p className="font-mono text-[11px] text-[#999] mb-4">{t.subtitle}</p>
+                <p className="font-mono text-[11px] text-[#555] mb-4">{t.subtitle}</p>
 
                 {/* Description */}
                 <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-6">{t.description}</p>
@@ -580,13 +581,13 @@ export default function DocsPage() {
                 {/* Spec grid */}
                 <div className="grid gap-6 md:grid-cols-3 mb-6">
                   <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#999] mb-2">Font Stack</p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#555] mb-2">Font Stack</p>
                     <p className="font-display text-sm font-medium text-[#1a1a1a]">{t.fonts.primary}</p>
                     {t.fonts.secondary && <p className="font-display text-sm text-[#6a6a64]">+ {t.fonts.secondary}</p>}
                     {t.fonts.mono && <p className="font-mono text-xs text-[#6a6a64]">{t.fonts.mono}</p>}
                   </div>
                   <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#999] mb-2">Geometry</p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#555] mb-2">Geometry</p>
                     <div className="space-y-0.5 font-display text-sm text-[#3a3a3a]">
                       <p>Base: {t.geometry.baseSize}</p>
                       <p>Leading: {t.geometry.leading}</p>
@@ -595,14 +596,14 @@ export default function DocsPage() {
                     </div>
                   </div>
                   <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#999] mb-2">Best For</p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#555] mb-2">Best For</p>
                     <p className="font-body text-sm text-[#3a3a3a]">{t.bestFor}</p>
                   </div>
                 </div>
 
                 {/* Features — hairline top */}
                 <div className="border-t border-[#e5e5e0] pt-4">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#999] mb-3">Key Features</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#555] mb-3">Key Features</p>
                   <div className="grid gap-1.5 sm:grid-cols-2">
                     {t.features.map((f, fi) => (
                       <p key={fi} className="flex items-start gap-2 font-display text-[13px] text-[#3a3a3a]">
@@ -683,14 +684,14 @@ export default function DocsPage() {
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="docs-template-card">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#999] mb-1">White Paper (55#)</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">White Paper (55#)</p>
                 <p className="font-display text-sm font-medium text-[#1a1a1a]">Page count &times; 0.002252&quot;</p>
-                <p className="font-mono text-xs text-[#999] mt-1">300 pages = 0.676&quot; spine</p>
+                <p className="font-mono text-xs text-[#555] mt-1">300 pages = 0.676&quot; spine</p>
               </div>
               <div className="docs-template-card">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#999] mb-1">Cream Paper (60#)</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">Cream Paper (60#)</p>
                 <p className="font-display text-sm font-medium text-[#1a1a1a]">Page count &times; 0.0025&quot;</p>
-                <p className="font-mono text-xs text-[#999] mt-1">300 pages = 0.750&quot; spine</p>
+                <p className="font-mono text-xs text-[#555] mt-1">300 pages = 0.750&quot; spine</p>
               </div>
             </div>
 
@@ -917,7 +918,7 @@ export default function DocsPage() {
 
             {/* Recommended Reading */}
             <div className="mt-12 border-t-2 border-[#1a1a1a] pt-8">
-              <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#999] mb-4">Recommended Reading</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#555] mb-4">Recommended Reading</p>
               <div className="docs-template-card">
                 <p className="font-display text-sm font-bold text-[#1a1a1a] mb-0.5">Grid Systems in Graphic Design</p>
                 <p className="font-body text-sm text-[#6a6a64] mb-3">Josef Muller-Brockmann</p>
@@ -935,7 +936,7 @@ export default function DocsPage() {
 
             {/* Colophon */}
             <div className="mt-16 border-t border-[#e5e5e0] pt-6">
-              <p className="font-mono text-[10px] text-[#c0c0c0]">
+              <p className="font-mono text-[10px] text-[#888]">
                 PagePerfect Documentation &middot; Built on XeLaTeX + Pandoc &middot; Typography is the foundation of graphic design.
               </p>
             </div>
