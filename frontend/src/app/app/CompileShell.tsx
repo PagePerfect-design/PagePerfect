@@ -2010,6 +2010,18 @@ function EditorOverlay({
   )
 }
 
+/** Abortable delay — resolves after `ms` or rejects with AbortError when signal fires. */
+function abortableDelay(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'))
+    const timer = setTimeout(resolve, ms)
+    signal.addEventListener('abort', () => {
+      clearTimeout(timer)
+      reject(new DOMException('Aborted', 'AbortError'))
+    }, { once: true })
+  })
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    MAIN SHELL — THE LAYER CAKE ORCHESTRATOR
    ═══════════════════════════════════════════════════════════════════ */
@@ -2240,6 +2252,8 @@ export default function CompileShell() {
           fetchHeaders['Authorization'] = `Bearer ${pb.authStore.token}`
         }
       }
+
+      // Phase 1: Submit to Queue or Sync Engine
       const resp = await fetch('/api/compile', {
         method: 'POST',
         headers: fetchHeaders,
@@ -2247,71 +2261,129 @@ export default function CompileShell() {
         signal: controller.signal,
       })
 
-      // ── Async path: 202 Accepted → poll status → fetch result ──
-      if (resp.status === 202) {
-        const { statusUrl, resultUrl } = await resp.json()
-        if (gen !== compileGenRef.current) return
-        setStatus('queued')
+      if (gen !== compileGenRef.current) return
 
-        // Poll until completed or failed
-        const pollResult = await pollJobStatus(statusUrl, gen, controller.signal)
-        if (!pollResult) return // stale or aborted
-        if (gen !== compileGenRef.current) return
-
-        if (pollResult.status === 'failed') {
-          pdfBlobRef.current = null
-          const msgs: CompileError[] = []
-          if (pollResult.message) msgs.push({ message: pollResult.message })
-          if (!msgs.length) msgs.push({ message: 'Compilation failed.' })
-          if (pollResult.detail) msgs.push({ message: `__detail__${pollResult.detail}` })
-          setErrors(msgs)
-          setStatus('error')
-          return
-        }
-
-        // Fetch PDF from result endpoint
-        setStatus('compiling')
-        const pdfResp = await fetch(resultUrl, {
-          headers: fetchHeaders,
-          signal: controller.signal,
-        })
-        if (gen !== compileGenRef.current) return
-
-        if (pdfResp.ok) {
-          const blob = await pdfResp.blob()
-          if (gen !== compileGenRef.current) return
-          handlePdfBlob(blob, pdfResp, downloadAfter)
-        } else {
-          let payload: { message?: string; detail?: string } | null = null
-          try { payload = await pdfResp.json() } catch { /* noop */ }
-          pdfBlobRef.current = null
-          const msgs: CompileError[] = []
-          if (payload?.message) msgs.push({ message: payload.message })
-          if (!msgs.length) msgs.push({ message: `Failed to fetch result (status ${pdfResp.status}).` })
-          setErrors(msgs)
-          setStatus('error')
-        }
-        return
-      }
-
-      // ── Sync fallback path: direct PDF response ──
-      const ct = resp.headers.get('content-type') || ''
-      if (resp.ok && (ct.includes('application/pdf') || ct.includes('application/epub'))) {
+      // ── Sync fallback: Engine returned PDF directly (Redis down) ──
+      if (resp.ok && resp.headers.get('content-type')?.includes('application/pdf')) {
         const blob = await resp.blob()
         if (gen !== compileGenRef.current) return
         handlePdfBlob(blob, resp, downloadAfter)
-      } else {
-        let payload: { message?: string; error?: string; detail?: string } | null = null
-        try { payload = await resp.json() } catch { /* noop */ }
+        return
+      }
+      if (resp.ok && resp.headers.get('content-type')?.includes('application/epub')) {
+        const blob = await resp.blob()
+        if (gen !== compileGenRef.current) return
+        handlePdfBlob(blob, resp, downloadAfter)
+        return
+      }
+
+      // ── Handle immediate rejection (e.g., 403 Tier Required, 413, 400) ──
+      if (!resp.ok && resp.status !== 202) {
+        const payload = await resp.json().catch(() => null)
         pdfBlobRef.current = null
         const msgs: CompileError[] = []
         if (payload?.message) msgs.push({ message: payload.message })
-        if (!msgs.length) msgs.push({ message: `Compile failed (status ${resp.status}).` })
+        if (!msgs.length) msgs.push({ message: `Compile failed (${resp.status}).` })
         if (payload?.detail) msgs.push({ message: `__detail__${payload.detail}` })
         setErrors(msgs)
         setStatus('error')
+        return
+      }
+
+      // ── Phase 2: Async Polling (202 Accepted) ──
+      const { jobId } = await resp.json()
+      setStatus('queued')
+
+      const delays = [500, 1000, 2000, 3000, 5000] // Escalating, caps at 5s
+      let pollIndex = 0
+      let networkErrors = 0
+
+      while (true) {
+        if (gen !== compileGenRef.current) return
+
+        const delay = delays[Math.min(pollIndex, delays.length - 1)]
+        await abortableDelay(delay, controller.signal)
+        pollIndex++
+
+        try {
+          const statusResp = await fetch(`/api/compile/status/${jobId}`, {
+            signal: controller.signal,
+          })
+          if (gen !== compileGenRef.current) return
+
+          if (!statusResp.ok) {
+            networkErrors++
+            if (networkErrors > 3) throw new Error('Lost connection to compile server.')
+            continue // Transient error, loop around
+          }
+
+          networkErrors = 0 // Reset on successful ping
+          const statusData = await statusResp.json()
+
+          if (statusData.status === 'waiting' || statusData.status === 'delayed') {
+            setStatus('queued')
+            continue
+          }
+
+          if (statusData.status === 'active') {
+            setStatus('compiling') // Worker picked it up
+            continue
+          }
+
+          if (statusData.status === 'failed') {
+            pdfBlobRef.current = null
+            const msgs: CompileError[] = []
+            if (statusData.message) msgs.push({ message: statusData.message })
+            if (statusData.error && statusData.error !== 'worker_error') msgs.push({ message: statusData.error })
+            if (!msgs.length) msgs.push({ message: 'Compilation failed.' })
+            if (statusData.detail) msgs.push({ message: `__detail__${statusData.detail}` })
+            setErrors(msgs)
+            setStatus('error')
+            return
+          }
+
+          if (statusData.status === 'completed') {
+            setStatus('compiling') // Show spinner during final PDF transport
+
+            // Phase 3: Fetch final PDF
+            const pdfResp = await fetch(`/api/compile/result/${jobId}`, {
+              headers: fetchHeaders,
+              signal: controller.signal,
+            })
+            if (gen !== compileGenRef.current) return
+
+            if (!pdfResp.ok) {
+              let payload: { message?: string; detail?: string } | null = null
+              try { payload = await pdfResp.json() } catch { /* noop */ }
+              pdfBlobRef.current = null
+              const msgs: CompileError[] = []
+              if (payload?.message) msgs.push({ message: payload.message })
+              if (!msgs.length) msgs.push({ message: 'Failed to retrieve compiled PDF.' })
+              setErrors(msgs)
+              setStatus('error')
+              return
+            }
+
+            // Safe Blob Assignment — prevent URL leak if user cancelled mid-download
+            const blob = await pdfResp.blob()
+            if (gen !== compileGenRef.current) return
+
+            handlePdfBlob(blob, pdfResp, downloadAfter)
+            return
+          }
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') return
+          networkErrors++
+          if (networkErrors > 3) {
+            pdfBlobRef.current = null
+            setErrors([{ message: 'Network disconnected.' }])
+            setStatus('error')
+            return
+          }
+        }
       }
     } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === 'AbortError') return
       if (e instanceof Error && e.name !== 'AbortError') {
         pdfBlobRef.current = null
         setErrors([{ message: 'Network or server error. Please try again.' }])
@@ -2320,40 +2392,6 @@ export default function CompileShell() {
     } finally {
       setLoading(false)
     }
-  }
-
-  /** Poll job status until completed/failed. Returns null if aborted or stale. */
-  async function pollJobStatus(
-    statusUrl: string,
-    gen: number,
-    signal: AbortSignal,
-  ): Promise<{ status: string; message?: string; detail?: string } | null> {
-    const POLL_INTERVAL = 1500 // 1.5s between polls
-    const MAX_POLLS = 80      // ~2 minutes max
-    for (let i = 0; i < MAX_POLLS; i++) {
-      if (signal.aborted || gen !== compileGenRef.current) return null
-      await new Promise<void>((resolve) => {
-        const timer = setTimeout(resolve, POLL_INTERVAL)
-        signal.addEventListener('abort', () => { clearTimeout(timer); resolve() }, { once: true })
-      })
-      if (signal.aborted || gen !== compileGenRef.current) return null
-      try {
-        const resp = await fetch(statusUrl, { signal })
-        if (!resp.ok) continue // retry on transient errors
-        const data = await resp.json()
-        if (data.status === 'completed') return data
-        if (data.status === 'failed') return data
-        // 'active' → show compiling
-        if (data.status === 'active' || data.status === 'processing') {
-          setStatus('compiling')
-        }
-      } catch (e) {
-        if (e instanceof Error && e.name === 'AbortError') return null
-        // Retry on network errors
-      }
-    }
-    // Timeout after max polls
-    return { status: 'failed', message: 'Compilation timed out. Please try again.' }
   }
 
   /** Shared handler for setting PDF blob/URL from a successful response. */
