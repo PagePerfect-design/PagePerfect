@@ -546,13 +546,21 @@ app.post('/api/stripe/create-payment', async (req, res) => {
       // Subscription — create with payment_behavior: 'default_incomplete'
       // so the client can confirm via Payment Element
       const priceId = process.env.STRIPE_PRICE_PUBLISHER;
-      if (!priceId) {
-        return res.status(500).json({ error: 'Publisher price not configured' });
-      }
+
+      const subscriptionItems = priceId
+        ? [{ price: priceId }]
+        : [{
+            price_data: {
+              currency: 'usd',
+              product_data: { name: 'PagePerfect Publisher' },
+              recurring: { interval: 'month' },
+              unit_amount: 999,
+            },
+          }];
 
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
-        items: [{ price: priceId }],
+        items: subscriptionItems,
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
         metadata: { tier, user_id },
