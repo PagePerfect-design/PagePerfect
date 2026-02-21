@@ -252,6 +252,44 @@ async function pbFetch(path, options = {}) {
 
 const isPocketBaseConfigured = !!(POCKETBASE_URL && process.env.POCKETBASE_ADMIN_EMAIL);
 
+// ── Tier Verification Helper ─────────────────────────────────
+// Verifies a PocketBase auth token and returns user tier info.
+// Returns { userId, tier, credits } or { userId: null, tier: 'anonymous', credits: 0 }
+async function verifyUserTier(req) {
+  if (!isPocketBaseConfigured) return { userId: null, tier: 'anonymous', credits: 0 };
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { userId: null, tier: 'anonymous', credits: 0 };
+  }
+  const token = authHeader.slice(7);
+  try {
+    const authResp = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-refresh`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+    if (authResp && authResp.ok) {
+      const authData = await authResp.json();
+      const record = authData.record;
+      if (record) {
+        return {
+          userId: record.id,
+          tier: record.tier || 'drafter',
+          credits: Number(record.pdf_credits) || 0,
+        };
+      }
+    }
+  } catch (err) {
+    console.error('[auth] Tier verification failed:', err.message);
+  }
+  return { userId: null, tier: 'anonymous', credits: 0 };
+}
+
+// Tier hierarchy for feature gating
+const TIER_LEVEL = { anonymous: 0, drafter: 1, single: 2, publisher: 3, studio: 4 };
+function hasTier(userTier, requiredTier) {
+  return (TIER_LEVEL[userTier] || 0) >= (TIER_LEVEL[requiredTier] || 0);
+}
+
 // NOTE: PocketBase emails are sent via Resend HTTP API hooks in the custom
 // Go binary (pageperfect-pb-custom/main.go), bypassing SMTP entirely.
 // DO's outbound SMTP ports are blocked, so SMTP relay won't work.
@@ -1306,7 +1344,8 @@ app.post('/api/analyze/full', (req, res) => {
 // ================================================================
 // Free tier page size restrictions
 // ================================================================
-const FREE_TIER_SIZES = new Set(['letter', 'a4', 'sixByNine']);
+// 6 default page sizes for free tier (matches pricing page and editor default section)
+const FREE_TIER_SIZES = new Set(['letter', 'a4', 'sixByNine', 'fiveFiveByEightFive', 'a5', 'royal']);
 const ALL_SIZES = new Set(['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','royal','bFormat','massMarket','aFormat','demy','fiveTwentyFiveByEight','crownQuarto','b5','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven']);
 const ALL_MARGINS = new Set(['normal','narrow','wide','minimal','academic','generous','compact']);
 
@@ -1323,44 +1362,63 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   const wantPdfX = outputFormat === 'pdfx1a';
   const wantEpub = outputFormat === 'epub';
 
+  // ── Auth & Tier Verification ─────────────────────────────────
+  const user = await verifyUserTier(req);
+  const userTier = user.tier;
+  const userId = user.userId;
+  const userCredits = user.credits;
+
+  // ── Feature Gates (download paths only) ──────────────────────
+  // EPUB export — Studio only
+  if (wantEpub && !hasTier(userTier, 'studio')) {
+    return res.status(403).json({
+      error: 'tier_required',
+      message: 'EPUB export requires a Studio subscription.',
+      requiredTier: 'studio',
+    });
+  }
+
+  // PDF/X-1a export — Publisher+ only
+  if (wantPdfX && !hasTier(userTier, 'publisher')) {
+    return res.status(403).json({
+      error: 'tier_required',
+      message: 'PDF/X-1a export requires a Publisher or Studio subscription.',
+      requiredTier: 'publisher',
+    });
+  }
+
+  // Custom fonts — Studio only
+  if (customFonts && typeof customFonts === 'object' && Object.keys(customFonts).length > 0) {
+    if (!hasTier(userTier, 'studio')) {
+      return res.status(403).json({
+        error: 'tier_required',
+        message: 'Custom font upload requires a Studio subscription.',
+        requiredTier: 'studio',
+      });
+    }
+  }
+
+  // Page size restriction — Drafter limited to 6 default sizes on download
+  if (isDownload && userTier === 'drafter' && pageSize && !FREE_TIER_SIZES.has(pageSize)) {
+    return res.status(403).json({
+      error: 'tier_required',
+      message: `Page size "${pageSize}" requires a paid plan. Free tier includes 6 standard sizes.`,
+      requiredTier: 'single',
+    });
+  }
+
+  // Citations — Publisher+ only; force safe mode for lower tiers
+  if (!safeMode && !hasTier(userTier, 'publisher')) {
+    safeMode = true;
+  }
+
   // ── Watermark Decision ──────────────────────────────────────
   // Clean preview always (no watermark). On download, check tier/credits.
   let needsWatermark = false;
   let creditsRemaining = null;
 
   if (isDownload && isPocketBaseConfigured) {
-    let userTier = 'drafter';
-    let userCredits = 0;
-    let userId = null;
-
-    // Try to authenticate via PocketBase token
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.slice(7);
-      try {
-        // Verify token by requesting the authenticated user's record
-        const authResp = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-refresh`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (authResp && authResp.ok) {
-          const authData = await authResp.json();
-          const record = authData.record;
-          if (record) {
-            userId = record.id;
-            userTier = record.tier || 'drafter';
-            userCredits = Number(record.pdf_credits) || 0;
-          }
-        }
-      } catch (authErr) {
-        console.error('[compile] Auth verification failed:', authErr.message);
-      }
-    }
-
-    if (userTier === 'publisher' || userTier === 'studio') {
+    if (hasTier(userTier, 'publisher')) {
       needsWatermark = false;
     } else if (userCredits > 0 && userId) {
       // Deduct one credit
@@ -1861,7 +1919,17 @@ const fontUpload = multer({
   },
 });
 
-app.post('/api/fonts/upload', fontUpload.single('font'), (req, res) => {
+app.post('/api/fonts/upload', fontUpload.single('font'), async (req, res) => {
+  // ── Tier gate: Custom font upload requires Studio ──
+  const user = await verifyUserTier(req);
+  if (!hasTier(user.tier, 'studio')) {
+    // Clean up uploaded file if tier check fails
+    if (req.file) {
+      try { fs.rmSync(path.dirname(req.file.path), { recursive: true, force: true }); } catch {}
+    }
+    return res.status(403).json({ error: 'tier_required', message: 'Custom font upload requires a Studio subscription.', requiredTier: 'studio' });
+  }
+
   if (!req.file) {
     return res.status(400).json({ error: 'no_file', message: 'No font file provided.' });
   }
@@ -1889,6 +1957,12 @@ app.post('/api/fonts/upload', fontUpload.single('font'), (req, res) => {
 // ================================================================
 
 app.post('/api/batch-compile', compileLimiter, async (req, res) => {
+  // ── Tier gate: Batch export requires Studio ──
+  const user = await verifyUserTier(req);
+  if (!hasTier(user.tier, 'studio')) {
+    return res.status(403).json({ error: 'tier_required', message: 'Batch export requires a Studio subscription.', requiredTier: 'studio' });
+  }
+
   let { manuscriptText, template, title, marginPreset, safeMode, compileMode, pageSizes, customFonts, headingVariant: batchVariant } = req.body || {};
   safeMode = Boolean(safeMode);
   compileMode = (compileMode === 'full') ? 'full' : 'fast';
