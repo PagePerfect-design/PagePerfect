@@ -31,24 +31,116 @@ const headingVariants = require('./heading-variants');
 const watermark = require('./watermark');
 
 // ── Redis (optional — gracefully degrades if not configured) ──
+// BullMQ requires connection OPTIONS (not an instance) so it can create
+// its own dedicated connections for Queue, Worker, and QueueEvents.
+// We keep a separate "general" redis instance for rate-limit, health, Stripe idem.
 let redis = null;
 let redisHealthy = false;
+let redisConnectionOpts = null; // { host, port } or { url } for BullMQ
 try {
   if (process.env.REDIS_URL || process.env.REDIS_HOST) {
     const Redis = require('ioredis');
-    const redisOpts = process.env.REDIS_URL
-      ? process.env.REDIS_URL
-      : { host: process.env.REDIS_HOST || 'localhost', port: Number(process.env.REDIS_PORT || 6379) };
-    redis = new Redis(redisOpts, {
-      maxRetriesPerRequest: null, // Required by BullMQ — retry indefinitely
-      enableOfflineQueue: false,   // Fail fast on Queue.add() when Redis is down
-    });
+    if (process.env.REDIS_URL) {
+      redis = new Redis(process.env.REDIS_URL, {
+        maxRetriesPerRequest: null,
+        enableOfflineQueue: false,
+      });
+      // BullMQ needs connection options object, not an instance
+      redisConnectionOpts = { url: process.env.REDIS_URL, maxRetriesPerRequest: null };
+    } else {
+      const host = process.env.REDIS_HOST || 'localhost';
+      const port = Number(process.env.REDIS_PORT || 6379);
+      redis = new Redis({ host, port, maxRetriesPerRequest: null, enableOfflineQueue: false });
+      redisConnectionOpts = { host, port, maxRetriesPerRequest: null };
+    }
     redis.on('connect', () => { redisHealthy = true; console.log('[redis] Connected'); });
     redis.on('error', (err) => { redisHealthy = false; console.error('[redis] Error:', err.message); });
     redis.on('close', () => { redisHealthy = false; });
   }
 } catch (err) {
   console.warn('[redis] Not available:', err.message);
+}
+
+// ── BullMQ Compile Queue (only when Redis is available) ──
+const { processCompileJob } = require('./compile-worker');
+let compileQueue = null;
+let compileWorker = null;
+let compileQueueEvents = null;
+
+// In-memory map: jobId → result metadata (populated by worker completion callback).
+// This avoids hammering Redis with Job.fromId() on every poll.
+const jobResults = new Map();
+
+// Sync fallback semaphore — caps concurrent compiles when Redis is down (D7/graceful degradation).
+const MAX_SYNC_CONCURRENT = Number(process.env.MAX_SYNC_CONCURRENT || 2);
+let activeSyncCompiles = 0;
+
+// Result cleanup: remove delivered/expired results after 10 minutes
+const RESULT_TTL_MS = 10 * 60 * 1000;
+const resultCleanupInterval = setInterval(() => {
+  const now = Date.now();
+  for (const [id, res] of jobResults) {
+    if (res._storedAt && now - res._storedAt > RESULT_TTL_MS) {
+      // Clean up temp files if result was never fetched
+      if (res.tmpBase) { fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {}); }
+      jobResults.delete(id);
+    }
+  }
+}, 60_000);
+resultCleanupInterval.unref(); // Don't keep process alive
+
+if (redisConnectionOpts) {
+  try {
+    const { Queue, Worker, QueueEvents } = require('bullmq');
+
+    // Queue: used by the HTTP handler to enqueue jobs
+    compileQueue = new Queue('pp-compile', { connection: { ...redisConnectionOpts } });
+
+    // Worker: processes jobs with bounded concurrency
+    // IMPORTANT: Pass connection OPTIONS, not an instance. BullMQ creates its own connections.
+    compileWorker = new Worker('pp-compile', async (job) => {
+      // DESIGN_TEMPLATES is defined later in this file — worker references it at runtime
+      return processCompileJob(job, DESIGN_TEMPLATES);
+    }, {
+      connection: { ...redisConnectionOpts },
+      concurrency: Number(process.env.COMPILE_CONCURRENCY || 3),
+      lockDuration: 60_000,      // 60s lock — lualatex can take 30-45s
+      stalledInterval: 30_000,   // Check for stalled jobs every 30s
+      maxStalledCount: 0,        // Do NOT retry stalled jobs — lualatex may still be running (D2)
+      removeOnComplete: { count: 200 },  // Keep last 200 completed for debugging
+      removeOnFail: { count: 500 },      // Keep last 500 failed for diagnostics
+    });
+
+    compileWorker.on('completed', (job, result) => {
+      result._storedAt = Date.now();
+      jobResults.set(job.id, result);
+      console.log(`[queue] Job ${job.id} completed in ${result.elapsed || '?'}ms`);
+    });
+
+    compileWorker.on('failed', (job, err) => {
+      jobResults.set(job.id, {
+        _storedAt: Date.now(),
+        success: false,
+        error: 'worker_error',
+        message: err.message || 'Compilation failed unexpectedly.',
+      });
+      console.error(`[queue] Job ${job?.id} failed:`, err.message);
+    });
+
+    compileWorker.on('error', (err) => {
+      console.error('[queue:worker] Error:', err.message);
+    });
+
+    // QueueEvents: push-based notifications via Redis Streams (D5 — avoids polling Redis)
+    compileQueueEvents = new QueueEvents('pp-compile', { connection: { ...redisConnectionOpts } });
+
+    console.log('[queue] BullMQ compile queue initialized (concurrency: ' +
+      (process.env.COMPILE_CONCURRENCY || 3) + ')');
+  } catch (err) {
+    console.warn('[queue] BullMQ setup failed, using sync fallback:', err.message);
+    compileQueue = null;
+    compileWorker = null;
+  }
 }
 
 // ---- limits (env overridable) ----
@@ -251,27 +343,34 @@ try {
 } catch { /* stripe not configured */ }
 
 // Track processed Stripe event IDs to prevent duplicate webhook handling.
-// Persisted to disk so idempotency survives container restarts.
-const STRIPE_EVENTS_PATH = path.join(os.tmpdir(), 'pp-stripe-events.json');
+// Primary: Redis SETNX with 72h TTL (survives container rebuilds).
+// Fallback: in-memory Set (when Redis is unavailable).
 const processedStripeEvents = new Set();
 const MAX_STRIPE_EVENTS = 10000;
+const STRIPE_IDEM_TTL = 72 * 60 * 60; // 72 hours in seconds
 
-// Load persisted events on startup
-try {
-  if (fs.existsSync(STRIPE_EVENTS_PATH)) {
-    const saved = JSON.parse(fs.readFileSync(STRIPE_EVENTS_PATH, 'utf8'));
-    if (Array.isArray(saved)) {
-      for (const id of saved.slice(-MAX_STRIPE_EVENTS)) processedStripeEvents.add(id);
+/**
+ * Check if a Stripe event was already processed. Returns true if duplicate.
+ * Uses Redis SETNX when available; falls back to in-memory Set.
+ */
+async function isStripeEventProcessed(eventId) {
+  if (redis && redisHealthy) {
+    try {
+      // SETNX returns 1 if key was set (new event), 0 if already existed (duplicate)
+      const wasSet = await redis.set(`pp:stripe:${eventId}`, '1', 'EX', STRIPE_IDEM_TTL, 'NX');
+      return wasSet === null; // null means key already existed = duplicate
+    } catch (err) {
+      console.warn('[stripe:idem] Redis SETNX failed, falling back to memory:', err.message);
     }
-    console.log(`[startup] Loaded ${processedStripeEvents.size} persisted Stripe event IDs`);
   }
-} catch { /* ignore corrupt file */ }
-
-function persistStripeEvents() {
-  try {
-    const arr = [...processedStripeEvents].slice(-MAX_STRIPE_EVENTS);
-    fs.writeFileSync(STRIPE_EVENTS_PATH, JSON.stringify(arr), 'utf8');
-  } catch { /* best-effort — don't crash on write failure */ }
+  // Fallback: in-memory
+  if (processedStripeEvents.has(eventId)) return true;
+  processedStripeEvents.add(eventId);
+  if (processedStripeEvents.size > MAX_STRIPE_EVENTS) {
+    const first = processedStripeEvents.values().next().value;
+    processedStripeEvents.delete(first);
+  }
+  return false;
 }
 
 // ── PocketBase Admin Client (server-side only) ──
@@ -400,19 +499,11 @@ app.post('/api/stripe/webhook',
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
-    // Idempotency — skip already-processed events (Stripe may retry webhooks)
-    if (processedStripeEvents.has(event.id)) {
+    // Idempotency — skip already-processed events (Redis SETNX + in-memory fallback)
+    if (await isStripeEventProcessed(event.id)) {
       console.log(`Stripe webhook already processed: ${event.id}, skipping`);
       return res.json({ received: true, duplicate: true });
     }
-    processedStripeEvents.add(event.id);
-    // Cap set size to prevent unbounded memory growth
-    if (processedStripeEvents.size > MAX_STRIPE_EVENTS) {
-      const first = processedStripeEvents.values().next().value;
-      processedStripeEvents.delete(first);
-    }
-    // Persist to disk so idempotency survives restarts
-    persistStripeEvents();
 
     // Helper: upgrade a user's tier in PocketBase
     async function upgradeTier(userId, tier, customerId, subscriptionId) {
@@ -1474,8 +1565,18 @@ const ALL_SIZES = new Set(['letter','a4','sixByNine','fiveFiveByEightFive','a5',
 const ALL_MARGINS = new Set(['normal','narrow','wide','minimal','academic','generous','compact']);
 
 // ================================================================
-// Compile Endpoint
+// Compile Endpoint — Async (202 + polling) with sync fallback
 // ================================================================
+//
+// When Redis/BullMQ is available:
+//   POST /api/compile → 202 { jobId, status: 'queued' }
+//   GET  /api/compile/status/:id → { status: 'queued'|'active'|'completed'|'failed', ... }
+//   GET  /api/compile/result/:id → PDF stream (with auth re-check + credit deduction)
+//
+// When Redis is DOWN:
+//   POST /api/compile → synchronous PDF stream (semaphore-capped, same as v1)
+
+const MAX_QUEUE_DEPTH = Number(process.env.MAX_QUEUE_DEPTH || 50);
 
 app.post('/api/compile', compileLimiter, async (req, res) => {
   let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts, headingVariant, download } = req.body || {};
@@ -1483,544 +1584,299 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   compileMode = (compileMode === 'full') ? 'full' : 'fast';
   headingVariant = headingVariants.HEADING_VARIANTS.includes(headingVariant) ? headingVariant : 'classic';
   const isDownload = Boolean(download);
-  const wantPdfX = outputFormat === 'pdfx1a';
-  const wantEpub = outputFormat === 'epub';
 
-  // ── Auth & Tier Verification ─────────────────────────────────
-  const user = await verifyUserTier(req);
-  const userTier = user.tier;
-  const userId = user.userId;
-  const userCredits = user.credits;
-
-  // ── Feature Gates (download paths only) ──────────────────────
-  // EPUB export — Studio only
-  if (wantEpub && !hasTier(userTier, 'studio')) {
-    return res.status(403).json({
-      error: 'tier_required',
-      message: 'EPUB export requires Studio.',
-      requiredTier: 'studio',
-    });
-  }
-
-  // PDF/X-1a export — Publisher+ only
-  if (wantPdfX && !hasTier(userTier, 'publisher')) {
-    return res.status(403).json({
-      error: 'tier_required',
-      message: 'PDF/X-1a export requires Publisher or Studio.',
-      requiredTier: 'publisher',
-    });
-  }
-
-  // Custom fonts — Studio only
-  if (customFonts && typeof customFonts === 'object' && Object.keys(customFonts).length > 0) {
-    if (!hasTier(userTier, 'studio')) {
-      return res.status(403).json({
-        error: 'tier_required',
-        message: 'Custom font upload requires Studio.',
-        requiredTier: 'studio',
-      });
-    }
-  }
-
-  // Page size restriction — Drafter limited to 6 default sizes on download (unless they have credits)
-  if (isDownload && userTier === 'drafter' && userCredits <= 0 && pageSize && !FREE_TIER_SIZES.has(pageSize)) {
-    return res.status(403).json({
-      error: 'tier_required',
-      message: `Page size "${pageSize}" requires a paid plan. Free tier includes 6 standard sizes.`,
-      requiredTier: 'publisher',
-    });
-  }
-
-  // Citations — Publisher+ only; force safe mode for lower tiers
-  if (!safeMode && !hasTier(userTier, 'publisher')) {
-    safeMode = true;
-  }
-
-  // ── Watermark Decision ──────────────────────────────────────
-  // Clean preview always (no watermark). On download, check tier/credits.
-  // IMPORTANT: Credits are deducted AFTER successful compilation, not before.
-  // This prevents users from losing credits when Pandoc fails.
-  let needsWatermark = false;
-  let creditsRemaining = null;
-  let shouldDeductCredit = false;
-
-  if (isDownload && isPocketBaseConfigured) {
-    if (hasTier(userTier, 'publisher')) {
-      needsWatermark = false;
-    } else if (userCredits > 0 && userId) {
-      // Mark for deduction — actual deduction happens after successful compile
-      shouldDeductCredit = true;
-      needsWatermark = false;
-    } else {
-      needsWatermark = true;
-    }
-  } else if (isDownload && !isPocketBaseConfigured) {
-    // PocketBase not configured — watermark all downloads as a safe default
-    needsWatermark = true;
-  }
-
+  // ── Early validation (before enqueue — fail fast) ──
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
   }
-
-  // Enforce payload size before spawning Pandoc
   const mdBytes = Buffer.byteLength(manuscriptText, 'utf8');
   if (mdBytes > MAX_MD_BYTES) {
     return res.status(413).json({
       error: 'payload_too_large',
-      message: `Manuscript exceeds limit (${mdBytes} > ${MAX_MD_BYTES} bytes). Try splitting chapters or removing images.`,
+      message: `Manuscript exceeds limit (${mdBytes} > ${MAX_MD_BYTES} bytes).`,
     });
   }
 
-  const tplKey = DESIGN_TEMPLATES[String(template)] ? String(template) : 'symphony';
-  const tpl = DESIGN_TEMPLATES[tplKey];
+  // ── Auth & Tier (initial check — re-verified in worker) ──
+  const user = await verifyUserTier(req);
+  const userTier = user.tier;
 
-  // Sanitize title
+  // Feature gates checked early to avoid needless enqueue
+  const wantPdfX = outputFormat === 'pdfx1a';
+  const wantEpub = outputFormat === 'epub';
+  if (wantEpub && !hasTier(userTier, 'studio'))
+    return res.status(403).json({ error: 'tier_required', message: 'EPUB export requires Studio.', requiredTier: 'studio' });
+  if (wantPdfX && !hasTier(userTier, 'publisher'))
+    return res.status(403).json({ error: 'tier_required', message: 'PDF/X-1a requires Publisher or Studio.', requiredTier: 'publisher' });
+  if (customFonts && typeof customFonts === 'object' && Object.keys(customFonts).length > 0)
+    if (!hasTier(userTier, 'studio'))
+      return res.status(403).json({ error: 'tier_required', message: 'Custom fonts require Studio.', requiredTier: 'studio' });
+  if (isDownload && userTier === 'drafter' && user.credits <= 0 && pageSize && !FREE_TIER_SIZES.has(pageSize))
+    return res.status(403).json({ error: 'tier_required', message: `Page size "${pageSize}" requires a paid plan.`, requiredTier: 'publisher' });
+  if (!safeMode && !hasTier(userTier, 'publisher')) safeMode = true;
+
+  // Sanitize inputs
   if (typeof title !== 'string' || !title.trim()) title = 'Manuscript';
   title = title.replace(/[\r\n]/g, ' ').slice(0, 200);
-
-  // Sanitize pageSize
   if (!ALL_SIZES.has(pageSize)) pageSize = 'letter';
-
-  // Sanitize marginPreset
   if (!ALL_MARGINS.has(marginPreset)) marginPreset = 'normal';
 
-  const tmpBase = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-'));
-  const mdPath  = path.join(tmpBase, 'input.md');
-  const pdfPath = path.join(tmpBase, 'output.pdf');
+  // Extract auth token to pass to worker for re-verification
+  const authHeader = req.headers.authorization;
+  const authToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-  const effectiveMd = safeMode ? stripCitations(manuscriptText) : manuscriptText;
-  await fsp.writeFile(mdPath, effectiveMd, 'utf8');
-
-  // ── EPUB Export Path ────────────────────────────────────────
-  // EPUB uses Pandoc's HTML/CSS pipeline, not XeLaTeX. Skip all
-  // LaTeX-specific processing (fonts, preamble, grid geometry).
-  if (wantEpub) {
-    const epubPath = path.join(tmpBase, 'output.epub');
-    const epubCssPath = path.join(__dirname, 'templates', 'epub-style.css');
-
-    const epubArgs = [
-      mdPath,
-      '--to=epub3',
-      '-M', `title=${title}`,
-      '--epub-title-page=true',
-      ...(fs.existsSync(epubCssPath) ? ['--css', epubCssPath] : []),
-      '-o', epubPath,
-    ];
-
-    if (!safeMode) {
-      epubArgs.push(...citeprocArgs(BIB_PATH));
-    }
-
-    const startTs = Date.now();
-    let epubProc;
+  // ── Async path: enqueue to BullMQ ──────────────────────────
+  if (compileQueue && redisHealthy) {
     try {
-      epubProc = spawn('pandoc', epubArgs, { cwd: tmpBase });
+      // Queue depth limit — reject if too many jobs waiting (D4)
+      const waiting = await compileQueue.getWaitingCount();
+      if (waiting >= MAX_QUEUE_DEPTH) {
+        return res.status(503).json({
+          error: 'queue_full',
+          message: 'Server is at capacity. Please try again in a moment.',
+        });
+      }
+
+      // Write manuscript to temp file BEFORE enqueue — keep payload out of Redis
+      const manuscriptDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-enqueue-'));
+      const manuscriptPath = path.join(manuscriptDir, 'manuscript.md');
+      await fsp.writeFile(manuscriptPath, manuscriptText, 'utf8');
+
+      const jobId = `pp-${crypto.randomUUID()}`;
+      await compileQueue.add('compile', {
+        manuscriptPath,
+        template, title, pageSize, marginPreset,
+        safeMode, compileMode, outputFormat,
+        customFonts: customFonts || null,
+        headingVariant,
+        isDownload,
+        authToken,
+        extensions: req.body.extensions || null,
+      }, {
+        jobId,
+        // Publisher/Studio get higher priority (lower number = higher priority)
+        priority: hasTier(userTier, 'publisher') ? 1 : 5,
+      });
+
+      console.log(`[compile] Enqueued job ${jobId} (tier=${userTier}, download=${isDownload})`);
+      return res.status(202).json({
+        jobId,
+        status: 'queued',
+        message: 'Compilation queued.',
+        statusUrl: `/api/compile/status/${jobId}`,
+        resultUrl: `/api/compile/result/${jobId}`,
+      });
     } catch (err) {
-      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-      return res.status(500).json({ error: 'spawn_failed', message: 'Failed to start EPUB engine.', detail: String(err) });
+      console.error('[compile] Enqueue failed, falling through to sync:', err.message);
+      // Fall through to sync path
+    }
+  }
+
+  // ── Sync fallback (Redis down or enqueue failed) ──────────
+  if (activeSyncCompiles >= MAX_SYNC_CONCURRENT) {
+    return res.status(503).json({
+      error: 'server_busy',
+      message: 'Server is at capacity. Please try again in a moment.',
+    });
+  }
+  activeSyncCompiles++;
+
+  try {
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-sync-'));
+    const manuscriptPath = path.join(tmpDir, 'manuscript.md');
+    await fsp.writeFile(manuscriptPath, manuscriptText, 'utf8');
+
+    const fakeJob = {
+      data: {
+        manuscriptPath, template, title, pageSize, marginPreset,
+        safeMode, compileMode, outputFormat,
+        customFonts: customFonts || null,
+        headingVariant, isDownload, authToken,
+        extensions: req.body.extensions || null,
+      },
+    };
+
+    const result = await processCompileJob(fakeJob, DESIGN_TEMPLATES);
+
+    if (!result.success) {
+      fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+      return res.status(400).json(result);
     }
 
-    let stderr = '';
-    epubProc.stderr.on('data', (d) => { stderr += d.toString(); });
-    epubProc.on('error', (err) => {
-      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'spawn_failed', message: 'Failed to start EPUB engine.', detail: String(err) });
-      }
-    });
+    // Stream PDF directly (sync fallback = same as v1)
+    const isEpub = result.outputFormat === 'EPUB3';
+    const contentType = isEpub ? 'application/epub+zip' : 'application/pdf';
+    const filename = isEpub
+      ? `${slug(title) || 'manuscript'}.epub`
+      : buildFilename(title, template, pageSize);
 
-    let timedOut = false;
-    const killer = setTimeout(() => { timedOut = true; try { epubProc.kill('SIGKILL'); } catch {} }, COMPILE_TIMEOUT_MS);
+    if (result.buildId) res.setHeader('X-PP-Build-Id', result.buildId);
+    if (result.contentHash) res.setHeader('X-PP-Content-Hash', result.contentHash);
+    if (result.elapsed) res.setHeader('X-PP-Compile-Time', String(result.elapsed));
+    if (result.fontFallback) res.setHeader('X-PP-Font-Fallback', result.fontFallback);
+    res.setHeader('X-PP-Watermarked', result.needsWatermark ? 'true' : 'false');
+    res.setHeader('X-PP-Template', result.template || template);
+    res.setHeader('X-PP-Format', result.outputFormat || 'PDF');
+    res.setHeader('X-PP-Filename', filename);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'no-store');
 
-    epubProc.on('close', (code) => {
-      if (res.headersSent) return;
-      clearTimeout(killer);
-      const elapsed = Date.now() - startTs;
-      res.setHeader('X-PP-Compile-Time', String(elapsed));
-
-      if (timedOut) {
-        try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-        return res.status(504).json({ error: 'compile_timeout', message: `EPUB compilation exceeded ${COMPILE_TIMEOUT_MS}ms.` });
-      }
-
-      if (code === 0 && fs.existsSync(epubPath)) {
-        const filename = `${slug(title) || 'manuscript'}.epub`;
-        res.setHeader('Content-Type', 'application/epub+zip');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.setHeader('X-PP-Filename', filename);
-        res.setHeader('X-PP-Format', 'EPUB3');
-        const stream = fs.createReadStream(epubPath);
-        stream.on('close', () => { try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {} });
-        stream.pipe(res);
-      } else {
-        try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-        res.status(400).json({
-          error: 'epub_failed',
-          message: 'EPUB compilation failed.',
-          detail: sanitizeStderr(stderr.split('\n').slice(-15).join('\n')),
+    // Credit deduction for sync path
+    if (result.isDownload && result.userId && result.userCredits > 0
+      && !hasTier(result.userTier, 'publisher') && isPocketBaseConfigured) {
+      try {
+        await pbFetch(`/api/collections/users/records/${result.userId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ pdf_credits: result.userCredits - 1 }),
         });
-      }
+        res.setHeader('X-PP-Credits-Remaining', String(result.userCredits - 1));
+      } catch (e) { console.error('[compile:sync] Credit deduction failed:', e.message); }
+    }
+
+    const stream = fs.createReadStream(result.pdfPath);
+    stream.on('close', () => {
+      fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
+      fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
     });
-    return; // Don't continue to PDF path
-  }
-
-  const templateType = tpl.gridType || 'academic';
-  const geo = geometryFor(pageSize, marginPreset, templateType);
-
-  const isFast = compileMode === 'fast';
-  const enableMicrotype = !isFast;
-  const enableCsquotes  = !isFast;
-
-  // Style warnings (must be declared before font resolution uses it)
-  const warnings = styleWarnings(manuscriptText);
-
-  // ── Font Resolution ────────────────────────────────────────
-  // Resolve all three font slots (main, sans, mono) against installed fonts.
-  // Templates hardcode font names in \setmainfont{}, \setsansfont{}, \setmonofont{},
-  // so we must patch the template content with resolved (fallback) names.
-  const fontResolution = fontAvailability.resolveFont(tpl.mainfont);
-  const effectiveMainfont = fontResolution.resolved;
-  if (fontResolution.warning) warnings.push(fontResolution.warning);
-
-  const sansResolution = tpl.sansfont ? fontAvailability.resolveFont(tpl.sansfont) : null;
-  const monoResolution = tpl.monofont ? fontAvailability.resolveFont(tpl.monofont) : null;
-  if (sansResolution?.warning) warnings.push(sansResolution.warning);
-  if (monoResolution?.warning) warnings.push(monoResolution.warning);
-
-  // Patch the template file: replace hardcoded font names with resolved ones.
-  // This handles \setmainfont{FontName}, \setsansfont{FontName}, \setmonofont{FontName}
-  // regardless of whether options follow on the same or next line.
-  let templateContent = await fsp.readFile(tpl.templatePath, 'utf8');
-  const fontReplacements = [
-    { original: tpl.mainfont, resolved: effectiveMainfont },
-    ...(sansResolution ? [{ original: tpl.sansfont, resolved: sansResolution.resolved }] : []),
-    ...(monoResolution ? [{ original: tpl.monofont, resolved: monoResolution.resolved }] : []),
-  ];
-  for (const { original, resolved } of fontReplacements) {
-    if (original !== resolved) {
-      // Escape regex special chars in font name, replace in \set*font{Name} commands
-      const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      templateContent = templateContent.replace(
-        new RegExp(`(\\\\set(?:main|sans|mono)font\\{)${escaped}(\\})`, 'g'),
-        `$1${resolved}$2`
-      );
-    }
-  }
-  // ── Custom Font Override ──────────────────────────────────
-  // If user uploaded a custom font, copy it to temp dir and patch
-  // the template to use fontspec's Path= directive.
-  const CUSTOM_FONTS_DIR = path.join(os.tmpdir(), 'pp-custom-fonts');
-  if (customFonts && typeof customFonts === 'object') {
-    for (const slot of ['main', 'sans', 'mono']) {
-      const fontId = customFonts[slot];
-      if (!fontId || typeof fontId !== 'string') continue;
-      const srcDir = path.join(CUSTOM_FONTS_DIR, fontId);
-      if (!fs.existsSync(srcDir)) continue;
-      const files = fs.readdirSync(srcDir).filter(f => /\.(ttf|otf|woff2?)$/i.test(f));
-      if (files.length === 0) continue;
-      // Copy font file to temp dir
-      const fontFile = files[0];
-      fs.copyFileSync(path.join(srcDir, fontFile), path.join(tmpBase, fontFile));
-      // Patch template: replace \set{main|sans|mono}font{...} with Path=./ version
-      const cmdName = slot === 'main' ? 'setmainfont' : slot === 'sans' ? 'setsansfont' : 'setmonofont';
-      templateContent = templateContent.replace(
-        new RegExp(`(\\\\${cmdName})(\\[.*?\\])?\\{[^}]+\\}`),
-        `$1[Path=./]{${fontFile}}`
-      );
-      warnings.push(`Custom ${slot} font applied: ${fontFile}`);
-    }
-  }
-
-  const patchedTemplatePath = path.join(tmpBase, 'template.latex');
-  await fsp.writeFile(patchedTemplatePath, templateContent, 'utf8');
-
-  // ── Preamble Assembly ──────────────────────────────────────
-  // Collect LaTeX preamble from all analysis modules → header.tex → Pandoc -H
-  const preambleParts = [];
-
-  // 0. Geometry — must be injected via \geometry{} in header.tex because
-  //    custom templates \usepackage{geometry} without options and don't
-  //    reference Pandoc's $geometry$ variable.
-  preambleParts.push(`\\geometry{${geo}}`);
-  let buildMeta;
-
-  try {
-    // 1. Book engineering (widow/orphan control, hyphenation, line breaking, floats)
-    preambleParts.push(bookEngineering.generateEngineeringPreamble(templateType));
-
-    // 2. Multilingual support (polyglossia, bidi, script-specific fonts)
-    const scriptAnalysis = multilingual.detectScripts(effectiveMd);
-    if (scriptAnalysis.isMultiscript || scriptAnalysis.hasRTL) {
-      preambleParts.push(multilingual.generateMultilingualPreamble(scriptAnalysis));
-      if (scriptAnalysis.hasRTL) {
-        warnings.push('RTL content detected — bidi and polyglossia packages activated.');
-      }
-    }
-
-    // 3. Provenance metadata (embedded in PDF properties via hypersetup)
-    buildMeta = provenance.generateBuildMetadata({
-      manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
-      outputFormat: wantPdfX ? 'pdfx1a' : wantEpub ? 'epub' : 'pdf',
-      headingVariant, needsWatermark, customFonts: customFonts || null,
-    });
-    preambleParts.push(provenance.generateMetadataPreamble(buildMeta));
-
-    // 4. Template extensions (if provided by user)
-    const extensions = req.body.extensions;
-    if (extensions && typeof extensions === 'object' && Object.keys(extensions).length > 0) {
-      const extResult = templateExtensions.validateExtensions(extensions, templateType);
-      if (extResult.valid) {
-        preambleParts.push(templateExtensions.generateExtensionPreamble(extResult.resolvedTokens));
-      } else {
-        warnings.push(`Template extension errors: ${extResult.errors.map(e => e.error).join('; ')}`);
-      }
-    }
-
-    // 5. Heading variant (modern/bold override — classic is a no-op)
-    const variantPreamble = headingVariants.getVariantPreamble(tplKey, headingVariant);
-    if (variantPreamble) {
-      preambleParts.push(variantPreamble);
-    }
-
-    // 6. Watermark (free-tier downloads only)
-    if (needsWatermark) {
-      preambleParts.push(watermark.generateWatermarkPreamble());
-    }
-  } catch (preambleErr) {
-    console.error('[compile] Preamble assembly error:', preambleErr);
-    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-    return res.status(500).json({
-      error: 'preamble_error',
-      message: 'Failed to assemble compile preamble. Please try again or switch templates.',
-      detail: String(preambleErr),
-    });
-  }
-
-  // Write assembled preamble to header.tex for Pandoc -H injection
-  const headerPath = path.join(tmpBase, 'header.tex');
-  await fsp.writeFile(headerPath, preambleParts.join('\n\n'), 'utf8');
-
-  const fontLog = [
-    `font=${effectiveMainfont}${fontResolution.isFallback ? ` (fallback from ${tpl.mainfont})` : ''}`,
-    sansResolution?.isFallback ? `sans=${sansResolution.resolved} (fallback from ${tpl.sansfont})` : '',
-    monoResolution?.isFallback ? `mono=${monoResolution.resolved} (fallback from ${tpl.monofont})` : '',
-  ].filter(Boolean).join(' ');
-  console.log(`[compile] engine=lualatex pandoc=${PANDOC_VERSION} template=${tplKey} variant=${headingVariant} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
-
-  // Strip raw_tex and raw_attribute to prevent LFI attacks via \input{} or \verbatiminput{}
-  const fromFormat = safeMode ? '--from=markdown-raw_tex-raw_attribute'
-    : PANDOC_HAS_CITEPROC ? '--from=markdown+citations-raw_tex-raw_attribute' : '--from=markdown-raw_tex-raw_attribute';
-  const baseArgs = [
-    mdPath,
-    fromFormat,
-    '--pdf-engine=lualatex',
-    '-M', `title=${title}`,
-    `--template=${patchedTemplatePath}`,
-    '-H', headerPath,
-    '-V', `mainfont=${effectiveMainfont}`,
-    ...(enableMicrotype ? ['-V','microtype=true'] : []),
-    ...(enableCsquotes  ? ['-V','csquotes=true']  : []),
-    '-o', pdfPath,
-  ];
-
-  const args = safeMode
-    ? baseArgs
-    : baseArgs.concat(citeprocArgs(BIB_PATH));
-
-  const startTs = Date.now();
-  let pandoc;
-  try {
-    pandoc = spawn('pandoc', args, { cwd: tmpBase });
-  } catch (spawnErr) {
-    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-    return res.status(500).json({
-      error: 'spawn_failed',
-      message: 'Failed to start the typesetting engine. Please try again.',
-      detail: String(spawnErr),
-    });
-  }
-
-  let stderr = '';
-  pandoc.stderr.on('data', (d) => { stderr += d.toString(); });
-
-  // Handle spawn errors (e.g. pandoc binary not found, permission denied)
-  pandoc.on('error', (err) => {
-    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+    stream.pipe(res);
+  } catch (err) {
+    console.error('[compile:sync] Error:', err.message);
     if (!res.headersSent) {
-      res.status(500).json({
-        error: 'spawn_failed',
-        message: 'Failed to start the typesetting engine. Please try again.',
-        detail: String(err),
-      });
+      res.status(500).json({ error: 'compile_failed', message: err.message });
     }
-  });
-
-  let timedOut = false;
-  const killer = setTimeout(() => {
-    timedOut = true;
-    try { pandoc.kill('SIGKILL'); } catch {}
-  }, COMPILE_TIMEOUT_MS);
-
-  pandoc.on('close', async (code) => {
-    if (res.headersSent) return; // Already responded via error handler
-    clearTimeout(killer);
-    const elapsed = Date.now() - startTs;
-    res.setHeader('X-PP-Compile-Time', String(elapsed));
-
-    if (timedOut) {
-      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-      return res.status(504).json({
-        error: 'compile_timeout',
-        message: `Compilation exceeded ${COMPILE_TIMEOUT_MS}ms and was stopped.`,
-        detail: sanitizeStderr(stderr.split('\n').slice(-15).join('\n')),
-      });
-    }
-
-    if (code === 0 && fs.existsSync(pdfPath)) {
-      // Provenance headers (buildMeta generated before compile for PDF embedding)
-      res.setHeader('X-PP-Build-Id', buildMeta.buildId);
-      res.setHeader('X-PP-Content-Hash', buildMeta.contentHash);
-      if (fontResolution.isFallback) {
-        res.setHeader('X-PP-Font-Fallback', `${fontResolution.original} -> ${fontResolution.resolved}`);
-      }
-
-      // Compile log analysis — surface typography warnings
-      const compileLog = bookEngineering.analyzeCompileLog(stderr);
-      const overfullCount = compileLog.overfullBoxes.length;
-      const underfullCount = compileLog.underfullBoxes.length;
-      if (overfullCount > 0) {
-        res.setHeader('X-PP-Overfull-Boxes', String(overfullCount));
-      }
-      if (underfullCount > 0) {
-        res.setHeader('X-PP-Underfull-Boxes', String(underfullCount));
-      }
-
-      // Deduct credit AFTER successful compilation — never charge for a failed compile
-      if (shouldDeductCredit && userId) {
-        try {
-          await pbFetch(`/api/collections/users/records/${userId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ pdf_credits: userCredits - 1 }),
-          });
-          creditsRemaining = userCredits - 1;
-          console.log(`[compile] Deducted 1 credit for user ${userId}, remaining: ${creditsRemaining}`);
-        } catch (creditErr) {
-          console.error('[compile] Credit deduction failed:', creditErr.message);
-          // Compilation succeeded — still deliver the PDF, but log the failure
-        }
-      }
-
-      // Optional PDF/X-1a conversion for IngramSpark compliance
-      if (wantPdfX) {
-        const pdfxPath = path.join(tmpBase, 'output-pdfx1a.pdf');
-        const conv = await publishing.convertToPdfX1a(pdfPath, pdfxPath, title);
-        if (!conv.success) {
-          try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-          return res.status(500).json({
-            error: 'pdfx_conversion_failed',
-            message: conv.error,
-          });
-        }
-        const filename = buildFilename(title, tplKey, pageSize).replace('.pdf', '-pdfx1a.pdf');
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-        res.setHeader('Cache-Control', 'no-store');
-        res.setHeader('X-PP-Filename', filename);
-        res.setHeader('X-PP-Template', tplKey);
-        res.setHeader('X-PP-Format', 'PDF/X-1a:2001');
-        res.setHeader('X-PP-Watermarked', needsWatermark ? 'true' : 'false');
-        if (creditsRemaining !== null) {
-          res.setHeader('X-PP-Credits-Remaining', String(creditsRemaining));
-        }
-        const stream = fs.createReadStream(pdfxPath);
-        stream.on('close', () => {
-          try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-        });
-        return stream.pipe(res);
-      }
-
-      const filename = buildFilename(title, tplKey, pageSize);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-      res.setHeader('Cache-Control', 'no-store');
-      res.setHeader('X-PP-Filename', filename);
-      res.setHeader('X-PP-Template', tplKey);
-      res.setHeader('X-PP-Watermarked', needsWatermark ? 'true' : 'false');
-      if (creditsRemaining !== null) {
-        res.setHeader('X-PP-Credits-Remaining', String(creditsRemaining));
-      }
-      const stream = fs.createReadStream(pdfPath);
-      stream.on('close', () => {
-        try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-      });
-      stream.pipe(res);
-    } else {
-      const missingCitations = safeMode ? [] : parseMissingCitations(stderr);
-      const missingPackages  = parseMissingPackages(stderr);
-
-      // Detect font-related failures in LuaLaTeX/XeLaTeX output
-      // fontspec reports: The font "FontName" cannot be found.
-      const fontCannotFind = stderr.match(/The font "([^"]+)" cannot be found/i);
-      // luaotfload reports: font "FontName" not found
-      const luaFontNotFound = !fontCannotFind && stderr.match(/font "([^"]+)" not found/i);
-      const missingFont = fontCannotFind ? fontCannotFind[1] : (luaFontNotFound ? luaFontNotFound[1] : null);
-
-      // Detect common LaTeX errors from stderr
-      const latexError = stderr.match(/^!\s+(.+?)\.?\s*$/m);
-      const undefinedCS = stderr.match(/Undefined control sequence[\s\S]*?l\.\d+\s+(.*)/);
-
-      // Detect PDF driver failure (Error 256 / driver return code)
-      const driverError = /Error\s+\d+\s+\(driver return code\)/i.test(stderr);
-      // Detect LuaTeX-specific font loading failure
-      const luaFontError = /luaotfload.*?cannot\s+(?:open|load|find)/i.test(stderr);
-
-      // Compile log analysis for detailed diagnostics
-      const compileLog = bookEngineering.analyzeCompileLog(stderr);
-
-      const messages = [];
-      if (missingFont) {
-        messages.push(`Font "${missingFont}" not found. Install it or try a different template.`);
-      }
-      if (driverError && !missingFont) {
-        messages.push('The PDF driver encountered an error generating output. Try a different template or simplify your manuscript.');
-      }
-      if (luaFontError && !missingFont) {
-        messages.push('A font could not be loaded by the typesetting engine. Try a different template.');
-      }
-      if (!safeMode) {
-        if (missingCitations.length) messages.push(`Undefined citations: ${missingCitations.join(', ')}.`);
-      }
-      if (missingPackages.length) messages.push(`Missing LaTeX packages: ${missingPackages.join(', ')}.`);
-      if (undefinedCS) {
-        messages.push(`LaTeX error: Undefined control sequence near "${undefinedCS[1].trim().slice(0, 80)}".`);
-      } else if (latexError && !missingFont && !missingPackages.length && !driverError) {
-        messages.push(`LaTeX error: ${latexError[1].slice(0, 120)}.`);
-      }
-      if (messages.length === 0) messages.push('Typesetting failed. Please review your Markdown.');
-      if (safeMode) messages.push('Safe mode was enabled — citations were not processed.');
-
-      const tail = sanitizeStderr(stderr.split('\n').slice(-15).join('\n'));
-
-      res.status(400).json({
-        error: 'compile_failed',
-        message: messages.join(' '),
-        missingCitations,
-        missingPackages,
-        warnings,
-        compileLog: {
-          overfullBoxes: compileLog.overfullBoxes.length,
-          underfullBoxes: compileLog.underfullBoxes.length,
-          floatIssues: compileLog.floatIssues.length,
-          footnoteIssues: compileLog.footnoteIssues.length,
-        },
-        detail: tail,
-      });
-
-      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-    }
-  });
+  } finally {
+    activeSyncCompiles--;
+  }
 });
+
+// ================================================================
+// Compile Status Polling — GET /api/compile/status/:id
+// ================================================================
+
+app.get('/api/compile/status/:id', async (req, res) => {
+  const { id } = req.params;
+
+  // Check in-memory result map first (populated by worker completion callback)
+  const cached = jobResults.get(id);
+  if (cached) {
+    if (cached.success) {
+      return res.json({
+        jobId: id,
+        status: 'completed',
+        elapsed: cached.elapsed,
+        outputFormat: cached.outputFormat,
+        needsWatermark: cached.needsWatermark,
+        warnings: cached.warnings,
+        resultUrl: `/api/compile/result/${id}`,
+      });
+    } else {
+      return res.json({
+        jobId: id,
+        status: 'failed',
+        error: cached.error,
+        message: cached.message,
+        warnings: cached.warnings,
+        detail: cached.detail,
+      });
+    }
+  }
+
+  // Check BullMQ for active/waiting jobs
+  if (compileQueue) {
+    try {
+      const job = await compileQueue.getJob(id);
+      if (job) {
+        const state = await job.getState();
+        return res.json({ jobId: id, status: state, progress: job.progress || 0 });
+      }
+    } catch (err) {
+      console.error('[status] Error fetching job:', err.message);
+    }
+  }
+
+  return res.status(404).json({ error: 'not_found', message: 'Job not found or expired.' });
+});
+
+// ================================================================
+// Compile Result Delivery — GET /api/compile/result/:id
+// ================================================================
+// Auth re-check (F1): requester must be job owner.
+// Credit deduction happens here at delivery time (A3).
+
+app.get('/api/compile/result/:id', async (req, res) => {
+  const { id } = req.params;
+  const result = jobResults.get(id);
+
+  if (!result) {
+    return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });
+  }
+  if (!result.success) {
+    return res.status(400).json(result);
+  }
+
+  // ── Auth check: verify requester matches job owner (F1) ──
+  if (result.userId) {
+    const requester = await verifyUserTier(req);
+    if (requester.userId !== result.userId) {
+      return res.status(403).json({ error: 'forbidden', message: 'Not authorized to access this result.' });
+    }
+  }
+
+  // Verify PDF still exists on disk
+  if (!result.pdfPath || !fs.existsSync(result.pdfPath)) {
+    jobResults.delete(id);
+    return res.status(410).json({ error: 'expired', message: 'Result has expired. Please recompile.' });
+  }
+
+  // ── Credit deduction at delivery (A3) — only once ──
+  if (result.isDownload && result.userId && !result._creditDeducted
+    && result.userCredits > 0 && !hasTier(result.userTier, 'publisher')
+    && isPocketBaseConfigured) {
+    try {
+      const freshUser = await verifyUserTier(req);
+      if (freshUser.credits > 0) {
+        await pbFetch(`/api/collections/users/records/${result.userId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ pdf_credits: freshUser.credits - 1 }),
+        });
+        result._creditDeducted = true;
+        res.setHeader('X-PP-Credits-Remaining', String(freshUser.credits - 1));
+        console.log(`[result] Deducted 1 credit for user ${result.userId}`);
+      }
+    } catch (e) { console.error('[result] Credit deduction failed:', e.message); }
+  }
+
+  // ── Stream PDF ──
+  const isEpub = result.outputFormat === 'EPUB3';
+  const contentType = isEpub ? 'application/epub+zip' : 'application/pdf';
+  const filename = isEpub
+    ? `${slug(result.title || 'manuscript')}.epub`
+    : buildFilename(result.title || 'Manuscript', result.template || 'symphony', result.pageSize || 'letter');
+
+  if (result.buildId) res.setHeader('X-PP-Build-Id', result.buildId);
+  if (result.contentHash) res.setHeader('X-PP-Content-Hash', result.contentHash);
+  if (result.elapsed) res.setHeader('X-PP-Compile-Time', String(result.elapsed));
+  if (result.fontFallback) res.setHeader('X-PP-Font-Fallback', result.fontFallback);
+  res.setHeader('X-PP-Watermarked', result.needsWatermark ? 'true' : 'false');
+  res.setHeader('X-PP-Format', result.outputFormat || 'PDF');
+  res.setHeader('X-PP-Filename', filename);
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+  res.setHeader('Cache-Control', 'no-store');
+
+  const stream = fs.createReadStream(result.pdfPath);
+  stream.on('close', () => {
+    if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
+    jobResults.delete(id);
+  });
+  stream.on('error', () => {
+    if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' });
+    jobResults.delete(id);
+  });
+  stream.pipe(res);
+});
+
 
 // ================================================================
 // Custom Font Upload
@@ -2457,7 +2313,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
 // Start Server
 // ================================================================
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);
   console.log(`  CORS: ${process.env.NODE_ENV === 'production' ? ALLOWED_ORIGINS.join(', ') : 'permissive (dev)'}`);
   console.log(`  Stripe: ${stripe ? 'configured' : 'not configured'}`);
@@ -2465,6 +2321,53 @@ app.listen(PORT, () => {
   console.log(`  Resend: ${process.env.RESEND_API_KEY ? 'configured' : 'not configured'}`);
   console.log(`  Templates: ${Object.keys(DESIGN_TEMPLATES).length}`);
   console.log(`  Rate limit: 20 compiles/min, 120 requests/min`);
-
-  // PocketBase emails handled by Go hooks (Resend HTTP API), no SMTP needed
+  console.log(`  Queue: ${compileQueue ? 'BullMQ (concurrency ' + (process.env.COMPILE_CONCURRENCY || 3) + ')' : 'sync fallback'}`);
 });
+
+// ================================================================
+// Graceful Shutdown (SIGTERM / SIGINT)
+// ================================================================
+// On SIGTERM (Docker stop, Coolify redeploy):
+// 1. Stop accepting new HTTP connections
+// 2. Close BullMQ worker (let active jobs finish, up to 30s)
+// 3. Close BullMQ queue and events
+// 4. Disconnect Redis
+// 5. Exit
+
+async function gracefulShutdown(signal) {
+  console.log(`[shutdown] ${signal} received, shutting down gracefully...`);
+
+  // 1. Stop accepting new connections
+  server.close(() => { console.log('[shutdown] HTTP server closed'); });
+
+  // 2. Close worker — waits for active jobs to finish (up to lockDuration)
+  if (compileWorker) {
+    try {
+      await compileWorker.close();
+      console.log('[shutdown] BullMQ worker closed');
+    } catch (err) { console.error('[shutdown] Worker close error:', err.message); }
+  }
+
+  // 3. Close queue and events
+  if (compileQueueEvents) {
+    try { await compileQueueEvents.close(); } catch {}
+  }
+  if (compileQueue) {
+    try { await compileQueue.close(); } catch {}
+  }
+
+  // 4. Disconnect Redis
+  if (redis) {
+    try { await redis.quit(); console.log('[shutdown] Redis disconnected'); }
+    catch { try { redis.disconnect(); } catch {} }
+  }
+
+  // 5. Clear cleanup interval
+  clearInterval(resultCleanupInterval);
+
+  console.log('[shutdown] Cleanup complete, exiting');
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
