@@ -414,6 +414,18 @@ body[data-editor] > * > footer { display: none !important; }
 /* Scrollbar for light context */
 [data-docs] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); }
 
+/* Sharp geometry — no rounded corners on docs (Swiss precision) */
+[data-docs] .btn-pill { border-radius: 0; }
+[data-docs] .card {
+  border-radius: 0;
+  background: #ffffff;
+  border: 1px solid #1a1a1a;
+  box-shadow: none;
+}
+[data-docs] code { border-radius: 0; }
+[data-docs] pre,
+[data-docs] .docs-code { border-radius: 0; }
+
 /* Sidebar */
 .docs-sidebar {
   position: sticky;
@@ -451,7 +463,7 @@ body[data-editor] > * > footer { display: none !important; }
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: #999;
+  color: #555555;
   padding: 1.25rem 1.5rem 0.5rem;
 }
 
@@ -482,13 +494,13 @@ body[data-editor] > * > footer { display: none !important; }
 }
 .docs-table tr:last-child td { border-bottom: 0; }
 .docs-table td.accent { color: #FF3333; font-family: var(--font-mono); font-size: 0.8125rem; }
-.docs-table td.muted { color: #999; }
+.docs-table td.muted { color: #6a6a64; }
 
 /* Left-border admonitions — no color boxes, just structure */
 .docs-admonition {
-  border-left: 4px solid #e5e5e0;
+  border-left: 4px solid #1a1a1a;
   padding: 1rem 1.25rem;
-  background: #f5f5f0;
+  background: #ffffff;
   margin: 1.5rem 0;
 }
 .docs-admonition-info { border-left-color: #003366; }
@@ -499,7 +511,7 @@ body[data-editor] > * > footer { display: none !important; }
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #999;
+  color: #555555;
   margin-bottom: 0.375rem;
 }
 
@@ -522,10 +534,10 @@ body[data-editor] > * > footer { display: none !important; }
 }
 [data-docs] pre code { color: inherit; }
 
-/* Template cards on paper */
+/* Template cards on paper — white + strict black border */
 .docs-template-card {
   background: #ffffff;
-  border: 1px solid #e5e5e0;
+  border: 1px solid #1a1a1a;
   padding: 1.5rem 2rem;
   transition: box-shadow 0.2s;
 }
@@ -551,7 +563,7 @@ body[data-editor] > * > footer { display: none !important; }
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: #999;
+  color: #555555;
   margin-bottom: 0.75rem;
 }
 
