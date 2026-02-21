@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { RequestFormatCard } from './RequestFormatCard'
 
 // ── Template Data with exact font stacks and grid math ──────────
 const TEMPLATES = [
@@ -580,6 +581,9 @@ export function TemplateGrid() {
                 </Link>
               )
             })}
+
+            {/* 16th slot — Ogilvy CTA: catch users who scrolled past all 15 */}
+            <RequestFormatCard />
           </div>
         </div>
 
