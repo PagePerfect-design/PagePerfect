@@ -39,33 +39,33 @@ function Footer() {
               <CompositorMark size={26} />
               <span className="font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">PagePerfect</span>
             </div>
-            <p className="mt-4 max-w-xs font-body text-sm leading-relaxed text-[#111111]/40">
+            <p className="mt-4 max-w-xs font-body text-sm leading-relaxed text-[#111111]">
               Professional typesetting in your browser. Built on XeLaTeX. Inspired by M&uuml;ller-Brockmann.
             </p>
           </div>
 
           {/* Links */}
           <div>
-            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Product</p>
+            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">Product</p>
             <div className="flex flex-col gap-2.5">
-              <Link href="/app" className="font-mono text-[11px] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Editor</Link>
-              <Link href="/pricing" className="font-mono text-[11px] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Pricing</Link>
-              <Link href="/journal" className="font-mono text-[11px] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Journal</Link>
-              <Link href="/docs" className="font-mono text-[11px] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Documentation</Link>
+              <Link href="/app" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Editor</Link>
+              <Link href="/pricing" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Pricing</Link>
+              <Link href="/journal" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Journal</Link>
+              <Link href="/docs" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Documentation</Link>
             </div>
           </div>
 
           <div>
-            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">System</p>
+            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">System</p>
             <div className="flex flex-col gap-2.5">
-              <Link href="/status" className="font-mono text-[11px] text-[#111111]/50 transition-colors duration-75 hover:text-[#111111]">Status</Link>
+              <Link href="/status" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Status</Link>
             </div>
           </div>
 
           {/* Colophon */}
           <div>
-            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Colophon</p>
-            <div className="space-y-1.5 font-mono text-[10px] text-[#111111]/30">
+            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">Colophon</p>
+            <div className="space-y-1.5 font-mono text-[10px] text-[#111111]/60">
               <p>Inter Tight / Source Serif 4</p>
               <p>IBM Plex Mono</p>
               <p>XeLaTeX + Pandoc</p>
@@ -74,8 +74,8 @@ function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-[#111111]/10 pt-6">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/20">
+        <div className="mt-12 border-t border-[#111111] pt-6">
+          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/50">
             &copy; {new Date().getFullYear()} PagePerfect. Typography is the foundation of graphic design.
           </p>
         </div>

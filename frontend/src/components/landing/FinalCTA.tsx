@@ -29,7 +29,7 @@ export function FinalCTA() {
         {/* Decorative rule */}
         <div className="mx-auto mb-16 h-[2px] w-16 bg-[#FF3333]" />
 
-        <p className="mb-5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+        <p className="mb-5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">
           Try it now
         </p>
 
@@ -41,7 +41,7 @@ export function FinalCTA() {
           for this.
         </h2>
 
-        <p className="mx-auto mt-6 max-w-md font-body text-sm leading-[1.7] text-[#111111]/40">
+        <p className="mx-auto mt-6 max-w-md font-body text-sm leading-[1.7] text-[#111111]">
           Open the editor. Paste your text. See what professional
           typesetting actually looks like.
         </p>
@@ -54,7 +54,7 @@ export function FinalCTA() {
             Open the Editor
           </Link>
 
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/20">
+          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/50">
             No account required &middot; Free forever
           </p>
         </div>
