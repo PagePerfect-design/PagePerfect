@@ -14,7 +14,7 @@ PagePerfect/
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── layout.tsx           # Root layout — fonts, metadata, Providers, noise overlay
-│   │   │   ├── globals.css          # Dark design system — tokens, utilities, docs theme
+│   │   │   ├── globals.css          # Swiss-Ogilvy design system — tokens, utilities, docs/journal themes
 │   │   │   ├── favicon.ico
 │   │   │   ├── page.module.css      # Legacy (unused) — left over from create-next-app
 │   │   │   │
@@ -31,6 +31,11 @@ PagePerfect/
 │   │   │   │   │   ├── page.tsx             # Documentation hub
 │   │   │   │   │   ├── DocsNav.tsx          # Sidebar navigation for docs
 │   │   │   │   │   └── RequirementsCheck.tsx # Automated health/compile diagnostics
+│   │   │   │   ├── journal/
+│   │   │   │   │   ├── page.tsx             # Journal index — "Typography & Conversion"
+│   │   │   │   │   ├── articles.ts          # Re-export barrel
+│   │   │   │   │   ├── articles-1.ts        # Article content (10+ essays)
+│   │   │   │   │   └── [slug]/page.tsx      # Individual article pages (SSG)
 │   │   │   │   ├── pricing/
 │   │   │   │   │   ├── layout.tsx           # Pricing-specific layout wrapper
 │   │   │   │   │   └── page.tsx             # 3-tier pricing with FAQ
@@ -59,12 +64,13 @@ PagePerfect/
 │   │       ├── Container.tsx         # container-grid centered wrapper
 │   │       ├── Section.tsx           # default/raised/light/dark page sections
 │   │       ├── Providers.tsx         # Client provider wrapper (AuthProvider)
+│   │       ├── CompositorMark.tsx    # PagePerfect logo mark
 │   │       ├── NavAuth.tsx           # Auth state in nav (sign in / user menu + tier badge)
-│   │       ├── AuthorGuideTools.tsx  # Copy/download author guide
-│   │       ├── CopyCitation.tsx      # Copy citation to clipboard
+│   │       ├── AuthorGuideTools.tsx  # Copy/download author guide (secondary buttons)
+│   │       ├── CopyCitation.tsx      # Copy citation (secondary) + Go to Editor (primary red CTA)
 │   │       └── landing/             # Landing page components
-│   │           ├── Hero.tsx          # Hero section with parallax
-│   │           ├── HeroImage.tsx     # Animated hero image
+│   │           ├── Hero.tsx          # Hero section — pure typography, no background image
+│   │           ├── HeroImage.tsx     # Legacy animated hero image (unused — typography dominates)
 │   │           ├── Comparison.tsx    # Before/after interactive slider
 │   │           ├── TemplateShowcase.tsx  # Animated template cards
 │   │           ├── TemplateGallery.tsx   # Template gallery view
@@ -72,6 +78,7 @@ PagePerfect/
 │   │           ├── Steps.tsx         # How-it-works walkthrough
 │   │           ├── WhyDifferent.tsx  # Feature callouts
 │   │           ├── SocialProof.tsx   # Testimonials
+│   │           ├── Engineering.tsx   # Technical details section
 │   │           ├── PricingPreview.tsx # Pricing cards for landing
 │   │           ├── FinalCTA.tsx      # Final call-to-action
 │   │           ├── Reveal.tsx        # Scroll-reveal animation wrapper
@@ -80,7 +87,7 @@ PagePerfect/
 │   │
 │   ├── public/                # Static assets, PWA manifest, icons
 │   ├── .env.example           # Environment variable template
-│   ├── tailwind.config.ts     # Dark design system tokens (colors, shadows, animations)
+│   ├── tailwind.config.ts     # Swiss-Ogilvy design tokens (colors, shadows, animations)
 │   ├── next.config.ts         # API rewrites to backend via API_BASE_URL
 │   ├── eslint.config.mjs      # ESLint flat config (next/core-web-vitals)
 │   └── tsconfig.json          # Strict mode, @/* path alias
@@ -100,16 +107,19 @@ PagePerfect/
 │   ├── print-qa.js            # Ink coverage, contrast, DPI, reverse type checks
 │   ├── provenance.js          # Build metadata, versioning, reproducible builds
 │   ├── template-extensions.js # Governed extension tokens for template customization
-│   ├── templates/             # 12 LaTeX templates
+│   ├── templates/             # 15 LaTeX templates
 │   │   ├── chicago.latex      # Academic (12pt baseline)
 │   │   ├── symphony.latex     # Classic academic
+│   │   ├── thesis.latex       # Dissertation format
 │   │   ├── minimal.latex      # BasicTeX-compatible
 │   │   ├── paperback.latex    # Trade fiction/nonfiction (11pt baseline)
+│   │   ├── memoir.latex       # Personal narrative
 │   │   ├── exhibit.latex      # Modern trade design
-│   │   ├── heirloom.latex     # Heritage trade
+│   │   ├── heirloom.latex     # Cookbook/recipe format
+│   │   ├── verse.latex        # Poetry collection
 │   │   ├── chronicle.latex    # Editorial multi-column
 │   │   ├── international.latex # Editorial international
-│   │   ├── operator.latex     # Editorial technical
+│   │   ├── operator.latex     # Technical documentation
 │   │   ├── matrix.latex       # Corporate structured
 │   │   ├── avantgarde.latex   # Experimental creative
 │   │   └── cinema.latex       # Screenplay format
@@ -131,7 +141,7 @@ PagePerfect/
 |-------|-----------|
 | Frontend framework | Next.js 15 (React 19, App Router) |
 | Frontend language | TypeScript 5 (strict mode) |
-| Styling | Tailwind CSS 3.4 with dark design system tokens |
+| Styling | Tailwind CSS 3.4 with Swiss-Ogilvy design tokens |
 | Build tool | Turbopack (via Next.js) |
 | Linting | ESLint 9 (next/core-web-vitals, next/typescript) |
 | Backend framework | Express 5.1 |
@@ -265,9 +275,11 @@ User edits Markdown in browser
 
 | Route | File | Description |
 |-------|------|-------------|
-| `/` | `(site)/page.tsx` | Landing page — hero, comparison slider, template showcase, pricing preview, CTA |
+| `/` | `(site)/page.tsx` | Landing page — hero (pure typography), social proof, comparison, templates, engineering, pricing, CTA |
 | `/app` | `app/page.tsx` | Full-screen Markdown editor with live PDF preview (no Nav/Footer) |
-| `/docs` | `(site)/docs/page.tsx` | Documentation — author guide, citations, troubleshooting, system check |
+| `/journal` | `(site)/journal/page.tsx` | "Typography & Conversion" — essay index with sidebar categories |
+| `/journal/[slug]` | `(site)/journal/[slug]/page.tsx` | Individual article with drop-cap, sections, prev/next nav |
+| `/docs` | `(site)/docs/page.tsx` | "Operating the Engine" — template reference, KDP guide, troubleshooting |
 | `/pricing` | `(site)/pricing/page.tsx` | 3-tier pricing (Drafter / Publisher / Studio) with FAQ |
 | `/status` | `(site)/status/page.tsx` | API connectivity diagnostics and server capabilities |
 | `/auth/login` | `(site)/auth/login/page.tsx` | Sign in / sign up (email + GitHub/Google OAuth) |
@@ -279,45 +291,83 @@ User edits Markdown in browser
 - `(site)/` — Marketing/docs pages wrapped with `Nav` + `Footer` via `(site)/layout.tsx`
 - `app/` — Editor route with its own `layout.tsx` (full-screen, no chrome)
 
-## Design System
+## Design System — The Ogilvy-Swiss Hybrid
 
-The frontend uses a **dark-first** design language. All color tokens, shadows, and animations are defined in `tailwind.config.ts` with supporting CSS utilities in `globals.css`. The docs pages override to a light theme via `[data-docs]` scoping.
+The frontend implements a **Swiss-Ogilvy hybrid** design philosophy. The visual language is Müller-Brockmann's International Typographic Style (stark geometry, grid precision, objective communication) fused with David Ogilvy's direct-response pragmatism (benefit-driven headlines, CTA hierarchy, conversion-optimized contrast).
 
-### Color Tokens
+**Core principles — every design decision must satisfy these:**
 
-Tokens are driven by CSS variables and used in Tailwind classes (e.g., `bg-surface-raised`, `text-accent`, `border-border`).
+1. **Typography dominates white space.** No decorative imagery. No vague illustrations. If you cannot justify an image with empirical data or objective function, remove it and let the type breathe.
+2. **Sharp geometry only.** `border-radius: 0` on all buttons, cards, inputs, and containers in the marketing/docs context. Rounded corners are "friendly SaaS" — we are a precision instrument. The only exception is the editor app which uses the dark design system.
+3. **Contrast triggers action.** The highest-contrast element on any page must be the most valuable CTA. Red (`#FF3333`) is reserved for the primary action (e.g., "Go to Editor", "Start Formatting"). Secondary actions use black or outlined buttons. Never assign red to a utility action (copy, download).
+4. **No dead labels.** Headlines must do work. "Documentation" → "Operating the Engine". "The Journal" → "Typography & Conversion". Every heading is either a benefit, a command, or an active description.
+5. **Low-contrast gray is the enemy of utility.** Navigation links, section labels, and metadata must be readable. Minimum text color is `#555555` for labels and `#333333` for body copy. Never use `#999` or lighter for functional text — it fails WCAG and Swiss clarity standards.
 
-**Editorial palette (static):**
-- `ink` — `#050505` (deep black), `ink-raised`, `ink-overlay`, `ink-subtle`
-- `paper` — `#f5f5f0` (off-white), `paper-warm`, `paper-cool`
-- `reg` — `#0033ff` (registration blue), `reg-light`
+### The Specimen Palette
 
-**Semantic tokens (CSS-variable-driven):**
-- `void` — page background
-- `surface` / `surface-raised` / `surface-overlay` / `surface-subtle` / `surface-glass`
-- `accent` / `accent-hover` / `accent-muted` / `accent-glow` / `accent-soft`
-- `text-primary` / `text-secondary` / `text-tertiary` / `text-ghost`
-- `success` / `success-muted`, `warning` / `warning-muted`, `danger` / `danger-muted`
-- `border` / `border-subtle` / `border-visible` / `border-accent`
+The `(site)` route group uses a **cream-on-ink** specimen palette — light background, dark text. This is NOT a dark theme.
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| Background | `#FDFCF8` (warm cream) | Page background for all `(site)` pages |
+| Ink | `#111111` | Headlines, borders, primary text, nav links |
+| Body text | `#333333` – `#3a3a3a` | Paragraph copy |
+| Secondary text | `#444444` – `#555555` | Descriptions, metadata, captions |
+| Labels | `#555555` or `rgba(17,17,17,0.5)` | Section numbers, kickers, mono labels |
+| Accent | `#FF3333` | Primary CTA buttons, active states, hover accents |
+| Accent hover | `#E52222` | Button hover state |
+| Border | `#111111` | Section separators, card borders, table rules |
+| Border subtle | `#e5e5e0` | Hairlines, inner dividers |
+| Surface | `#f5f5f0` | Sidebar backgrounds, subtle fills |
+
+**The root `<body>` is `bg-[#050505]` (dark void) for the editor app.** The `(site)` layout overrides this with `bg-[#FDFCF8] text-[#111111]` via the `data-specimen` wrapper. The `[data-docs]` scope overrides CSS variables for the paper-light documentation context.
 
 ### Typography
 
 Three Google Fonts loaded via `next/font/google` in `layout.tsx`:
-- **Inter Tight** (`--font-display`) — headings, nav, UI labels (weights 400–800)
-- **Source Serif 4** (`--font-body`) — body text, paragraphs
-- **IBM Plex Mono** (`--font-mono`) — code, status, labels (weights 400, 600)
+- **Inter Tight** (`--font-display`) — headings, nav, UI labels, all uppercase tracking (weights 400–800)
+- **Source Serif 4** (`--font-body`) — body text, paragraphs, journal articles
+- **IBM Plex Mono** (`--font-mono`) — code, status labels, section numbers, metadata (weights 400, 600)
 
 Responsive type scale (Tailwind `fontSize` + `globals.css`):
-- `hero` — `clamp(3.5rem, 9vw, 7.5rem)`
-- `h1` — `clamp(2rem, 3.5vw, 3.5rem)`
-- `h2` — `clamp(1.5rem, 2.5vw, 2.5rem)`
-- `h3` — `clamp(1.25rem, 1.8vw, 1.5rem)`
-- `editorial-body` — `1.125rem`
-- `editorial-caption` — `0.6875rem`
+- `hero` — `clamp(3.5rem, 9vw, 7.5rem)` — landing page hero only
+- `h1` — `clamp(2rem, 3.5vw, 3.5rem)` — page headlines
+- `h2` — `clamp(1.5rem, 2.5vw, 2.5rem)` — section headlines
+- `h3` — `clamp(1.25rem, 1.8vw, 1.5rem)` — subsections
+- `editorial-body` — `1.125rem` — journal article body
+- `editorial-caption` — `0.6875rem` — figure captions
+
+**Typographic conventions:**
+- Section labels: `font-mono text-[0.625rem] uppercase tracking-[0.15em]` (e.g., "01 GETTING STARTED", "VOL. I")
+- Nav links: `font-mono text-[10px] uppercase tracking-[0.12em]`
+- Buttons: `font-mono text-[10px] or text-[11px] uppercase tracking-[0.1em]`
+- All uppercase text uses letter-spacing ≥ 0.1em
+
+### Button Hierarchy
+
+Buttons follow Ogilvy's contrast-triggers-action rule:
+
+| Style | Visual | Usage |
+|-------|--------|-------|
+| **Primary (Red)** | `bg-[#FF3333]` solid, white text | The ONE action you want the user to take: "Start Formatting", "Go to Editor", "Open Editor" |
+| **Black** | `bg-[#111111]` solid, white text, inverts on hover | Strong secondary: "Open Editor" in nav, CTAs in journal/docs |
+| **Outlined** | `border-[#111111]/20`, transparent bg | Tertiary: "Read Docs", navigation alternatives |
+| **Secondary** | `.btn-secondary` (surface bg, visible border) | Utility: "Copy citation", "Download .md", "Copy guide" |
+
+**In `[data-docs]` context:** All `.btn-pill` elements have `border-radius: 0` (sharp rectangles).
+
+### Card & Container Geometry
+
+**In `[data-docs]` and `(site)` contexts:**
+- Cards: `background: #ffffff; border: 1px solid #1a1a1a;` — white with strict black border
+- Template cards (`.docs-template-card`): Same — white + 1px solid black
+- Admonitions (`.docs-admonition`): White background, 4px left border (colored by type: info=#003366, warn=#800020, tip=#FF3333)
+- Code blocks: `border-radius: 0` — no rounded corners anywhere
+- No grey background fills for content containers — use white + border instead
 
 ### Shadows
 
-- `shadow-card` / `shadow-card-hover` — card elevation
+- `shadow-card` / `shadow-card-hover` — card elevation (editor context)
 - `shadow-elevated` — modals, overlays
 - `shadow-paper` / `shadow-paper-hover` — skeuomorphic PDF preview
 - `shadow-editorial` / `shadow-editorial-hover` — clean drop shadows
@@ -333,14 +383,14 @@ Responsive type scale (Tailwind `fontSize` + `globals.css`):
 
 | Class | Purpose |
 |-------|---------|
-| `.btn-pill` | Base pill-shaped button (rounded-full, transitions) |
-| `.btn-primary` | Accent blue button with glow shadow |
-| `.btn-secondary` | Bordered ghost button |
+| `.btn-pill` | Base button (sharp rectangles in `[data-docs]`, rounded elsewhere) |
+| `.btn-primary` | Red accent CTA — reserved for the highest-value action |
+| `.btn-secondary` | Black outlined utility button |
 | `.btn-ghost` | Transparent text-only button |
-| `.card` | Dark raised surface with border and shadow |
+| `.card` | Surface container (white + black border in docs, dark in editor) |
 | `.container-grid` | Centered max-w-7xl wrapper with padding |
-| `.input-dark` | Dark form input/select styling |
-| `.paper-surface` | Dark surface for PDF preview |
+| `.input-dark` | Dark form input/select styling (editor) |
+| `.paper-surface` | Dark surface for PDF preview (editor) |
 | `.bg-noise` | Fixed SVG noise overlay (0.03 opacity) |
 | `.divider` | Horizontal hairline separator |
 | `.colophon` | Top/bottom border strip |
@@ -350,30 +400,61 @@ Responsive type scale (Tailwind `fontSize` + `globals.css`):
 | `.caption` | Monospace figure caption |
 | `.skip-link` | Accessibility skip-to-content link |
 | `.docs-sidebar` | Sticky sidebar navigation (docs) |
-| `.docs-table` | Swiss-style annual report tables (docs) |
-| `.docs-admonition` | Left-border callout boxes (docs) |
-| `.docs-code` | Code blocks (docs) |
-| `.docs-template-card` | Template cards (docs) |
-| `.docs-badge` | Category badges (docs) |
+| `.docs-table` | Swiss-style annual report tables (2px top/bottom rules) |
+| `.docs-admonition` | Left-border callout boxes (white bg, colored left border) |
+| `.docs-template-card` | Template cards (white bg, 1px solid black border) |
+| `.docs-badge` | Category badges (mono, uppercase, sharp) |
+| `.journal-card` | Article cards on journal index |
+| `.journal-article` | Article body typography (Source Serif 4, 1.125rem, 1.8 leading) |
+| `.journal-drop-cap` | 4rem drop cap on article first paragraph |
+| `.journal-subhead` | Article section headings |
+| `.journal-header` | Article header with 2px bottom border |
+
+### Page-Specific Style Rules
+
+**Homepage (`/`):**
+- Hero: Pure typography + white space. No background images, no illustrations. Let the headline sell.
+- Technical bar at bottom: VERSION / OUTPUT / ENGINE in monospace — positions the product as a precision instrument.
+- All section transitions use stark black borders, not gradients.
+
+**Journal (`/journal`):**
+- Headline: "Typography & Conversion" (not "The Journal" — dead labels do no work)
+- VOL. kicker uses `rgba(17,17,17,0.5)` — visible but subordinate
+- Article cards: `.journal-card` with `border-bottom: 1px solid #e5e5e0`, hover red on title
+- Article body: Source Serif 4 at 1.125rem/1.8 line-height — optimal reading measure
+
+**Docs (`/docs`):**
+- Headline: "Operating the Engine" (not "Documentation" — active, authoritative)
+- All cards and buttons have `border-radius: 0` via `[data-docs]` scope
+- "Go to Editor" is the Red CTA; "Copy citation" / "Copy guide" are black secondary
+- Section numbering: `01`, `01.1`, `02` etc. in monospace — engineering schematic precision
+
+**Nav:**
+- Header: PagePerfect logo + Pricing + Journal + Auth + "Open Editor" (black button)
+- Docs link is in the footer only (not in the header nav) — declutters the top
+- All nav text: `text-[#111111]/50` default, `text-[#111111]` on hover
 
 ## Templates
 
-12 LaTeX templates organized by category:
+15 LaTeX templates organized by category:
 
 | Template | Category | Baseline | Description |
 |----------|----------|----------|-------------|
-| `chicago` | Academic | 12pt | Chicago Manual style |
-| `symphony` | Academic | 12pt | Classic academic |
-| `minimal` | Basic | 12pt | BasicTeX-compatible, lightweight |
-| `paperback` | Trade | 11pt | Fiction/nonfiction trade |
-| `exhibit` | Trade | 11pt | Modern trade design |
-| `heirloom` | Trade | 11pt | Heritage trade |
-| `chronicle` | Editorial | 11pt | Multi-column editorial |
-| `international` | Editorial | 11pt | International format |
-| `operator` | Editorial | 11pt | Technical editorial |
-| `matrix` | Corporate | 11pt | Structured corporate |
-| `avantgarde` | Creative | 11pt | Experimental creative |
-| `cinema` | Creative | 11pt | Screenplay format |
+| `chicago` | Academic | 11pt | Chicago Manual / University Press |
+| `symphony` | Academic | 12pt | Van de Graaf Canon monograph |
+| `thesis` | Academic | 12pt | Double-spaced dissertation |
+| `minimal` | Basic | 12pt | BasicTeX-compatible, zero dependencies |
+| `paperback` | Fiction | 11pt | Cinematic page-turner |
+| `memoir` | Fiction | 11pt | Personal narrative (Libre Baskerville) |
+| `exhibit` | Trade | 10pt | White-cube gallery catalog |
+| `heirloom` | Cookbook | 11pt | Recipe format with ingredient blocks |
+| `verse` | Poetry | 11pt | Preserved line breaks, EB Garamond |
+| `chronicle` | Editorial | 11pt | Swiss journalism, multi-column |
+| `international` | Design | 9pt | Müller-Brockmann modular grid |
+| `operator` | Technical | 10pt | Developer docs, admonition boxes |
+| `matrix` | Business | 10pt | Annual report, tabular figures |
+| `avantgarde` | Creative | 11pt | Brutalist manifesto |
+| `cinema` | Screenplay | 12pt | Hollywood standard (Courier) |
 
 ## Page Sizes
 
@@ -420,7 +501,7 @@ Mass Market (4.25×6.87"), A-format (111×178mm), B-format (129×198mm), 5.25×8
 - **Tooltips**: Rendered via `createPortal` to `document.body`
 - **Path alias**: `@/*` maps to `./src/*`
 - **Types**: Defined locally at the top of files (`TemplateKey`, `PageSize`, `MarginPreset`, `CompileMode`)
-- **CSS**: Utility-first Tailwind with dark design system tokens. Do NOT use legacy `ens-*` tokens in new code.
+- **CSS**: Utility-first Tailwind with Swiss-Ogilvy design tokens. Do NOT use legacy `ens-*` tokens in new code. On `(site)` pages, use the specimen palette (cream bg, ink text, red accent). On `[data-docs]` pages, all buttons/cards have `border-radius: 0`. Never use `#999` or lighter for functional text.
 - **Layout**: `(site)/layout.tsx` provides sticky `Nav` and `Footer`; `app/layout.tsx` provides full-screen editor chrome. Root `layout.tsx` provides fonts, Providers, and noise overlay.
 - **Fonts**: Inter Tight for display, Source Serif 4 for body, IBM Plex Mono for mono — loaded via `next/font/google` in root `layout.tsx`.
 
@@ -560,9 +641,10 @@ No automated test suite is configured. Testing is manual via the frontend UI:
 | Grid/typography changes | `backend/grid-system.js` |
 | API route changes | `backend/index.js` |
 | Landing page | `frontend/src/app/(site)/page.tsx`, `frontend/src/components/landing/` |
+| Journal index & articles | `frontend/src/app/(site)/journal/page.tsx`, `articles-1.ts`, `[slug]/page.tsx` |
 | Pricing page | `frontend/src/app/(site)/pricing/page.tsx` |
 | Design system tokens | `frontend/tailwind.config.ts` |
-| CSS utilities & global styles | `frontend/src/app/globals.css` |
+| CSS utilities & global styles | `frontend/src/app/globals.css` (Swiss-Ogilvy system, docs/journal scopes) |
 | Site Nav & Footer | `frontend/src/app/(site)/layout.tsx` |
 | Root layout (fonts, metadata) | `frontend/src/app/layout.tsx` |
 | API proxy config | `frontend/next.config.ts` |
