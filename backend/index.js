@@ -31,28 +31,27 @@ const headingVariants = require('./heading-variants');
 const watermark = require('./watermark');
 
 // ── Redis (optional — gracefully degrades if not configured) ──
-// BullMQ requires connection OPTIONS (not an instance) so it can create
-// its own dedicated connections for Queue, Worker, and QueueEvents.
-// We keep a separate "general" redis instance for rate-limit, health, Stripe idem.
+// BullMQ accepts a pre-instantiated ioredis connection and clones it
+// internally for Queue, Worker, and QueueEvents.
+// IMPORTANT: ioredis does NOT accept { url: '...' } as an options object —
+// it silently falls back to localhost:6379. Pass the URL as the first arg.
 let redis = null;
 let redisHealthy = false;
-let redisConnectionOpts = null; // { host, port } or { url } for BullMQ
+
 try {
   if (process.env.REDIS_URL || process.env.REDIS_HOST) {
     const Redis = require('ioredis');
-    if (process.env.REDIS_URL) {
-      redis = new Redis(process.env.REDIS_URL, {
-        maxRetriesPerRequest: null,
-        enableOfflineQueue: false,
-      });
-      // BullMQ needs connection options object, not an instance
-      redisConnectionOpts = { url: process.env.REDIS_URL, maxRetriesPerRequest: null };
-    } else {
-      const host = process.env.REDIS_HOST || 'localhost';
-      const port = Number(process.env.REDIS_PORT || 6379);
-      redis = new Redis({ host, port, maxRetriesPerRequest: null, enableOfflineQueue: false });
-      redisConnectionOpts = { host, port, maxRetriesPerRequest: null };
-    }
+
+    // Create the master connection instance
+    redis = process.env.REDIS_URL
+      ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null, enableOfflineQueue: false })
+      : new Redis({
+          host: process.env.REDIS_HOST || 'localhost',
+          port: Number(process.env.REDIS_PORT || 6379),
+          maxRetriesPerRequest: null,
+          enableOfflineQueue: false,
+        });
+
     redis.on('connect', () => { redisHealthy = true; console.log('[redis] Connected'); });
     redis.on('error', (err) => { redisHealthy = false; console.error('[redis] Error:', err.message); });
     redis.on('close', () => { redisHealthy = false; });
@@ -89,20 +88,20 @@ const resultCleanupInterval = setInterval(() => {
 }, 60_000);
 resultCleanupInterval.unref(); // Don't keep process alive
 
-if (redisConnectionOpts) {
+if (redis) {
   try {
     const { Queue, Worker, QueueEvents } = require('bullmq');
 
     // Queue: used by the HTTP handler to enqueue jobs
-    compileQueue = new Queue('pp-compile', { connection: { ...redisConnectionOpts } });
+    // BullMQ clones the ioredis instance internally for each component.
+    compileQueue = new Queue('pp-compile', { connection: redis });
 
     // Worker: processes jobs with bounded concurrency
-    // IMPORTANT: Pass connection OPTIONS, not an instance. BullMQ creates its own connections.
     compileWorker = new Worker('pp-compile', async (job) => {
       // DESIGN_TEMPLATES is defined later in this file — worker references it at runtime
       return processCompileJob(job, DESIGN_TEMPLATES);
     }, {
-      connection: { ...redisConnectionOpts },
+      connection: redis,
       concurrency: Number(process.env.COMPILE_CONCURRENCY || 3),
       lockDuration: 60_000,      // 60s lock — lualatex can take 30-45s
       stalledInterval: 30_000,   // Check for stalled jobs every 30s
@@ -132,7 +131,7 @@ if (redisConnectionOpts) {
     });
 
     // QueueEvents: push-based notifications via Redis Streams (D5 — avoids polling Redis)
-    compileQueueEvents = new QueueEvents('pp-compile', { connection: { ...redisConnectionOpts } });
+    compileQueueEvents = new QueueEvents('pp-compile', { connection: redis });
 
     console.log('[queue] BullMQ compile queue initialized (concurrency: ' +
       (process.env.COMPILE_CONCURRENCY || 3) + ')');
@@ -1637,12 +1636,27 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         });
       }
 
+      // A4: Queue Replacement — deterministic jobId for previews prevents
+      // rapid-typers from flooding the queue with abandoned compiles.
+      // Downloads get random UUIDs (each is intentional).
+      const queueKey = isDownload ? `dl-${crypto.randomUUID()}` : `preview-${user.userId || req.ip}`;
+
+      if (!isDownload) {
+        const existingJob = await compileQueue.getJob(queueKey);
+        if (existingJob) {
+          const state = await existingJob.getState();
+          // If the old preview hasn't started processing yet, rip it out
+          if (state === 'waiting' || state === 'delayed') {
+            await existingJob.remove();
+          }
+        }
+      }
+
       // Write manuscript to temp file BEFORE enqueue — keep payload out of Redis
       const manuscriptDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-enqueue-'));
       const manuscriptPath = path.join(manuscriptDir, 'manuscript.md');
       await fsp.writeFile(manuscriptPath, manuscriptText, 'utf8');
 
-      const jobId = `pp-${crypto.randomUUID()}`;
       await compileQueue.add('compile', {
         manuscriptPath,
         template, title, pageSize, marginPreset,
@@ -1653,18 +1667,18 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         authToken,
         extensions: req.body.extensions || null,
       }, {
-        jobId,
+        jobId: queueKey,
         // Publisher/Studio get higher priority (lower number = higher priority)
         priority: hasTier(userTier, 'publisher') ? 1 : 5,
       });
 
-      console.log(`[compile] Enqueued job ${jobId} (tier=${userTier}, download=${isDownload})`);
+      console.log(`[compile] Enqueued job ${queueKey} (tier=${userTier}, download=${isDownload})`);
       return res.status(202).json({
-        jobId,
+        jobId: queueKey,
         status: 'queued',
         message: 'Compilation queued.',
-        statusUrl: `/api/compile/status/${jobId}`,
-        resultUrl: `/api/compile/result/${jobId}`,
+        statusUrl: `/api/compile/status/${queueKey}`,
+        resultUrl: `/api/compile/result/${queueKey}`,
       });
     } catch (err) {
       console.error('[compile] Enqueue failed, falling through to sync:', err.message);
