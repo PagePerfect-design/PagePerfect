@@ -169,22 +169,22 @@ export default async function ArticlePage({ params }: Props) {
             </nav>
 
             {/* CTA */}
-            <div className="mt-12 border border-[#e5e5e0] bg-[#f5f5f0] p-8 text-center">
+            <div className="mt-12 border border-[#e5e5e0] bg-[#f5f5f0] p-8">
               <p className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50 mb-3">
                 Put this into practice
               </p>
               <p className="font-display text-lg font-bold text-[#111]">
                 Every principle above is built into PagePerfect.
               </p>
-              <p className="mx-auto mt-2 max-w-md font-body text-sm text-[#555555]">
+              <p className="mt-2 max-w-md font-body text-sm text-[#555555]">
                 Baseline grids, golden-ratio type scales, and 12 templates — engineered
                 for the legibility and conversion metrics discussed in this essay.
               </p>
               <Link
                 href="/app"
-                className="mt-5 inline-block border border-[#111111] bg-[#111111] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-transparent hover:text-[#111111]"
+                className="mt-5 inline-block border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222] hover:border-[#E52222]"
               >
-                Open Editor
+                Start Formatting
               </Link>
             </div>
           </div>

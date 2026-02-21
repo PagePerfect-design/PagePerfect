@@ -115,23 +115,23 @@ export default function JournalPage() {
 
       {/* CTA */}
       <section className="border-t-2 border-[#111111] py-16">
-        <div className="mx-auto max-w-7xl px-6 md:px-8 text-center">
+        <div className="mx-auto max-w-7xl px-6 md:px-8">
           <p className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50 mb-4">
             Put theory into practice
           </p>
           <h2 className="font-display text-h2 font-extrabold tracking-tighter text-[#111111]" style={{ lineHeight: 0.95 }}>
             Typeset your manuscript
           </h2>
-          <p className="mx-auto mt-4 max-w-lg font-body text-base text-[#444444]">
+          <p className="mt-4 max-w-lg font-body text-base text-[#444444]">
             Every principle in these essays is built into PagePerfect — baseline grids,
             golden-ratio scales, and 12 templates engineered for readability and conversion.
           </p>
-          <div className="mt-8 flex items-center justify-center gap-4">
+          <div className="mt-8 flex items-center gap-4">
             <Link
               href="/app"
-              className="border border-[#111111] bg-[#111111] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-transparent hover:text-[#111111]"
+              className="border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222] hover:border-[#E52222]"
             >
-              Open Editor
+              Start Formatting
             </Link>
             <Link
               href="/docs"
