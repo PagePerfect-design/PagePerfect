@@ -16,7 +16,7 @@ export function Hero() {
           <p className="mt-8 max-w-md font-body text-sm leading-[1.7] text-[#111111]/50 md:text-base md:leading-[1.7]">
             Stop fighting Word. PagePerfect turns your raw manuscript
             into precision typography and print-ready PDFs &mdash; powered
-            by XeLaTeX with baseline grids and golden-ratio type scales.
+            by LuaLaTeX with baseline grids and golden-ratio type scales.
           </p>
 
           <div className="mt-10 flex flex-col items-start gap-6">

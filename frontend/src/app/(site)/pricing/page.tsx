@@ -85,7 +85,7 @@ const FAQ = [
   },
   {
     q: 'How does this compare to Vellum ($500)?',
-    a: 'Vellum is Mac-only with 26 curated styles and consumer-grade typography. PagePerfect runs in any browser, uses XeLaTeX for professional typesetting with baseline grids and golden-ratio scales, and starts free.',
+    a: 'Vellum is Mac-only with 26 curated styles and consumer-grade typography. PagePerfect runs in any browser, uses LuaLaTeX for professional typesetting with baseline grids and golden-ratio scales, and starts free.',
   },
   {
     q: 'How does this compare to Atticus ($147)?',

@@ -85,7 +85,7 @@ export default function TermsPage() {
               <>
                 <strong>01. Service Description.</strong> PagePerfect is a browser-based document
                 typesetting service that converts user-provided Markdown, plain text, or .docx
-                manuscripts into professionally typeset PDF documents using the XeLaTeX engine.
+                manuscripts into professionally typeset PDF documents using the LuaLaTeX engine.
                 eazyaccess ltd acts solely as a technology provider and does not function as a
                 publisher, distributor, or rights holder. All intellectual property rights in
                 user-submitted content remain exclusively with the user. eazyaccess ltd claims

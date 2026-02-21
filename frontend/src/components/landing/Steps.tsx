@@ -15,7 +15,7 @@ const STEPS = [
     num: '03',
     title: 'Export print-ready PDF',
     body: 'Professional output with embedded fonts, correct bleed, and proper trim. Upload directly to Amazon KDP, IngramSpark, Lulu, or any print-on-demand service.',
-    detail: 'Compiles via XeLaTeX. Download, upload to your distributor — done.',
+    detail: 'Compiles via LuaLaTeX. Download, upload to your distributor — done.',
   },
 ]
 

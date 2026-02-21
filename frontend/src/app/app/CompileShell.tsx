@@ -158,7 +158,7 @@ const MARGIN_INFO: Record<MarginPreset, { label: string; desc: string }> = {
   generous: { label: 'Generous', desc: 'Airy' },
 }
 
-/** Translate raw pandoc/XeLaTeX errors into plain English. */
+/** Translate raw pandoc/LuaLaTeX errors into plain English. */
 function translateError(raw: string): string {
   const s = raw.trim()
   const patterns: [RegExp, string][] = [
@@ -170,12 +170,13 @@ function translateError(raw: string): string {
     [/Emergency stop/i, 'The typesetter encountered a critical error and stopped. Simplify your manuscript and try again.'],
     [/I can't find file.*`([^']+)'/i, 'Referenced file "$1" was not found. Check your file references.'],
     [/Package fontspec Error.*"([^"]+)"/i, 'The font "$1" is not available on the server. Try a different template.'],
+    [/luaotfload.*cannot/i, 'A font could not be loaded. Try a different template.'],
     [/Font.*not found/i, 'A required font is not installed. Try a different template.'],
     [/Undefined citation.*`([^']+)'/i, 'Citation "$1" not found in your bibliography. Check the key or enable Safe Mode.'],
     [/I couldn.t open.*\.bib/i, 'Bibliography file not found. Enable Safe Mode to skip citations.'],
     [/Package .* Error/i, 'A LaTeX package reported an error. Try a different template.'],
     [/! LaTeX Error:\s*(.*)/i, '$1'],
-    [/xelatex.*not found/i, 'Server configuration error. The typesetting engine is not available.'],
+    [/(?:xelatex|lualatex).*not found/i, 'Server configuration error. The typesetting engine is not available.'],
     [/pandoc.*not found/i, 'Server configuration error. The document converter is not available.'],
     [/Error\s+\d+\s+\(driver return code\)/i, 'The PDF engine encountered a driver error. Try a different template or simplify your manuscript.'],
     [/timed?\s*out/i, 'Compilation timed out. Your manuscript may be too large — try splitting it into smaller sections.'],

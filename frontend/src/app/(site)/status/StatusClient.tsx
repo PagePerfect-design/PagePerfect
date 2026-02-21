@@ -33,6 +33,7 @@ type FontAudit = {
 type Details = {
   ok: boolean
   service?: string
+  pdfEngine?: string
   templates?: string[]
   pageSizes?: string[]
   marginPresets?: string[]
@@ -153,7 +154,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
               )}
             </div>
             <p className="text-sm text-text-secondary ml-6 mb-2">
-              XeLaTeX fonts required by the 12 design templates.
+              {details.pdfEngine === 'lualatex' ? 'LuaLaTeX' : 'XeLaTeX'} fonts required by the {details.templates?.length || 15} design templates.
             </p>
 
             {details.fonts && !details.fonts.probeWorking && (

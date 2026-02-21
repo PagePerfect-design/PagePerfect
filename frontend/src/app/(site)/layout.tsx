@@ -41,7 +41,7 @@ function Footer() {
               <span className="font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">PagePerfect</span>
             </div>
             <p className="mt-4 max-w-xs font-body text-sm leading-relaxed text-[#111111]">
-              Professional typesetting in your browser. Built on XeLaTeX. Inspired by M&uuml;ller-Brockmann.
+              Professional typesetting in your browser. Built on LuaLaTeX. Inspired by M&uuml;ller-Brockmann.
             </p>
           </div>
 
@@ -73,7 +73,7 @@ function Footer() {
             <div className="space-y-1.5 font-mono text-[10px] text-[#111111]/60">
               <p>Inter Tight / Source Serif 4</p>
               <p>IBM Plex Mono</p>
-              <p>XeLaTeX + Pandoc</p>
+              <p>LuaLaTeX + Pandoc</p>
               <p>EST. 2024</p>
             </div>
           </div>

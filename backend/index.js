@@ -36,14 +36,16 @@ const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000); // 
 // ---- Pandoc version detection ----
 // Pandoc 2.11+ has built-in --citeproc; older versions need --filter pandoc-citeproc
 let PANDOC_HAS_CITEPROC = true; // Default true — pandoc-citeproc was removed in 2020; any modern install has --citeproc
+let PANDOC_VERSION = 'unknown';
 try {
   const versionOutput = execSync('pandoc --version', { encoding: 'utf8', timeout: 5000 });
-  const match = versionOutput.match(/pandoc(?:\.exe)?\s+(\d+)\.(\d+)/);
+  const match = versionOutput.match(/pandoc(?:\.exe)?\s+(\d+)\.(\d+)(?:\.(\d+))?/);
   if (match) {
     const major = parseInt(match[1], 10);
     const minor = parseInt(match[2], 10);
+    PANDOC_VERSION = `${match[1]}.${match[2]}${match[3] ? '.' + match[3] : ''}`;
     PANDOC_HAS_CITEPROC = major > 2 || (major === 2 && minor >= 11);
-    console.log(`[startup] Pandoc ${match[1]}.${match[2]} detected — citeproc: ${PANDOC_HAS_CITEPROC ? 'built-in' : 'filter fallback'}`);
+    console.log(`[startup] Pandoc ${PANDOC_VERSION} detected — citeproc: ${PANDOC_HAS_CITEPROC ? 'built-in' : 'filter fallback'} — pdf-engine: lualatex`);
   }
 } catch (e) {
   console.warn('[startup] Could not detect Pandoc version, assuming built-in --citeproc');
@@ -63,6 +65,15 @@ const ALLOWED_ORIGINS = [
   'http://localhost:4000',
   process.env.FRONTEND_URL, // e.g. https://pageperfect.studio
 ].filter(Boolean);
+
+// Match Vercel preview/branch deployment URLs for the project
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  // Vercel preview deployments: <project>-<hash>-<team>.vercel.app
+  if (/^https:\/\/page-perfect[a-z0-9-]*\.vercel\.app$/.test(origin)) return true;
+  return false;
+}
 
 // Filename helper functions
 function slug(s) {
@@ -145,10 +156,10 @@ app.use(morgan('tiny'));
 // Body parsing
 app.use(express.json({ limit: '5mb' }));
 
-// CORS — locked to known origins (falls back to permissive in dev)
+// CORS — locked to known origins + Vercel preview domains (falls back to permissive in dev)
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ALLOWED_ORIGINS
+    ? (origin, callback) => callback(null, isAllowedOrigin(origin))
     : true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -530,7 +541,7 @@ app.post('/api/stripe/create-payment', async (req, res) => {
 // ================================================================
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, service: 'pageperfect-backend', timestamp: new Date().toISOString(), version: '3.0' });
+  res.json({ ok: true, service: 'pageperfect-backend', timestamp: new Date().toISOString(), version: '3.1', pdfEngine: 'lualatex' });
 });
 
 app.get('/api/health/details', (_req, res) => {
@@ -546,6 +557,7 @@ app.get('/api/health/details', (_req, res) => {
     pageSizes,
     marginPresets,
     compileModes,
+    pdfEngine: 'lualatex',
     safeModeAvailable: true,
     auth: isPocketBaseConfigured,
     payments: !!stripe,
@@ -1617,14 +1629,14 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     sansResolution?.isFallback ? `sans=${sansResolution.resolved} (fallback from ${tpl.sansfont})` : '',
     monoResolution?.isFallback ? `mono=${monoResolution.resolved} (fallback from ${tpl.monofont})` : '',
   ].filter(Boolean).join(' ');
-  console.log(`[compile] template=${tplKey} variant=${headingVariant} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
+  console.log(`[compile] engine=lualatex pandoc=${PANDOC_VERSION} template=${tplKey} variant=${headingVariant} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
 
   const fromFormat = safeMode ? '--from=markdown'
     : PANDOC_HAS_CITEPROC ? '--from=markdown+citations' : '--from=markdown';
   const baseArgs = [
     mdPath,
     fromFormat,
-    '--pdf-engine=xelatex',
+    '--pdf-engine=lualatex',
     '-M', `title=${title}`,
     `--template=${patchedTemplatePath}`,
     '-H', headerPath,
@@ -1750,10 +1762,12 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       const missingCitations = safeMode ? [] : parseMissingCitations(stderr);
       const missingPackages  = parseMissingPackages(stderr);
 
-      // Detect font-related failures in XeLaTeX output
+      // Detect font-related failures in LuaLaTeX/XeLaTeX output
       // fontspec reports: The font "FontName" cannot be found.
       const fontCannotFind = stderr.match(/The font "([^"]+)" cannot be found/i);
-      const missingFont = fontCannotFind ? fontCannotFind[1] : null;
+      // luaotfload reports: font "FontName" not found
+      const luaFontNotFound = !fontCannotFind && stderr.match(/font "([^"]+)" not found/i);
+      const missingFont = fontCannotFind ? fontCannotFind[1] : (luaFontNotFound ? luaFontNotFound[1] : null);
 
       // Detect common LaTeX errors from stderr
       const latexError = stderr.match(/^!\s+(.+?)\.?\s*$/m);
@@ -1761,6 +1775,8 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
 
       // Detect PDF driver failure (Error 256 / driver return code)
       const driverError = /Error\s+\d+\s+\(driver return code\)/i.test(stderr);
+      // Detect LuaTeX-specific font loading failure
+      const luaFontError = /luaotfload.*?cannot\s+(?:open|load|find)/i.test(stderr);
 
       // Compile log analysis for detailed diagnostics
       const compileLog = bookEngineering.analyzeCompileLog(stderr);
@@ -1771,6 +1787,9 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       }
       if (driverError && !missingFont) {
         messages.push('The PDF driver encountered an error generating output. Try a different template or simplify your manuscript.');
+      }
+      if (luaFontError && !missingFont) {
+        messages.push('A font could not be loaded by the typesetting engine. Try a different template.');
       }
       if (!safeMode) {
         if (missingCitations.length) messages.push(`Undefined citations: ${missingCitations.join(', ')}.`);
@@ -1990,7 +2009,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
       const args = [
         mdPath,
         batchFromFormat,
-        '--pdf-engine=xelatex',
+        '--pdf-engine=lualatex',
         '-M', `title=${title}`,
         `--template=${tplPath}`,
         '-H', headerPath,

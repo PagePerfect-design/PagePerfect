@@ -85,7 +85,7 @@ export default function PrivacyPage() {
               <>
                 <strong>01. Transient Data Processing.</strong> Upon submission via the
                 &ldquo;Compile&rdquo; function, user-provided text files (.txt, .md, .docx) are
-                held in temporary server memory solely for the duration of the XeLaTeX compilation
+                held in temporary server memory solely for the duration of the LuaLaTeX compilation
                 process. Upon successful generation of the output file (.pdf) or upon compilation
                 failure, the source material is permanently purged from active systems via
                 filesystem deletion of the temporary directory. No copy, cache, backup, or

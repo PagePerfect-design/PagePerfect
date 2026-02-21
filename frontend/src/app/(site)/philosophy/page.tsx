@@ -173,7 +173,7 @@ export default function PhilosophyPage() {
                 Architecture
               </p>
               <div className="space-y-3">
-                <ColophonEntry label="Engine" value="XeLaTeX + Pandoc" />
+                <ColophonEntry label="Engine" value="LuaLaTeX + Pandoc" />
                 <ColophonEntry label="Grid" value="12-Column Modular" />
                 <ColophonEntry label="Baseline" value="11pt / 12pt" />
                 <ColophonEntry label="Scale" value="Golden Ratio (1.618)" />

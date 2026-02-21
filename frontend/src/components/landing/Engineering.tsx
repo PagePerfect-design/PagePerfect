@@ -29,7 +29,7 @@ const CAPABILITIES = [
   {
     category: 'Engine',
     items: [
-      'XeLaTeX compilation with 45-second timeout',
+      'LuaLaTeX compilation with 45-second timeout',
       'Pandoc Markdown conversion with citeproc',
       'BibTeX/CSL citation and bibliography processing',
       'DOCX-to-Markdown conversion via Pandoc',
@@ -38,7 +38,7 @@ const CAPABILITIES = [
 ]
 
 const SPECS = [
-  { label: 'Compiler', value: 'XeLaTeX (TeX Live 2023)' },
+  { label: 'Compiler', value: 'LuaLaTeX (TeX Live)' },
   { label: 'Converter', value: 'Pandoc 3.x' },
   { label: 'Post-proc', value: 'Ghostscript 10.x' },
   { label: 'Grid', value: 'Müller-Brockmann (7 presets)' },
