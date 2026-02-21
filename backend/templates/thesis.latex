@@ -14,6 +14,9 @@
 \usepackage{hyperref}
 \usepackage{enumitem}
 \usepackage[hang,flushmargin]{footmisc}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
 
 % ── TYPOGRAPHY — Institutional Standard ───────────────────────
 % Latin Modern Roman: the university default, compatible everywhere

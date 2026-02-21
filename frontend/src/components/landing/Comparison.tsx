@@ -5,7 +5,7 @@ export function Comparison() {
 
         {/* ── Header ── */}
         <div className="mb-12 max-w-2xl md:mb-16">
-          <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+          <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">
             Fig. 1 &mdash; Before &amp; After
           </p>
           <h2 className="font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
@@ -13,7 +13,7 @@ export function Comparison() {
             <br />
             Different book.
           </h2>
-          <p className="mt-5 max-w-lg font-body text-sm leading-[1.7] text-[#111111]/45">
+          <p className="mt-5 max-w-lg font-body text-sm leading-[1.7] text-[#333333]">
             On the left, a manuscript in Word. On the right,
             the same text, typeset with PagePerfect.
           </p>
@@ -26,7 +26,7 @@ export function Comparison() {
             {/* LEFT: Word doc */}
             <div className="border-b-2 border-[#111111] md:border-b-0 md:border-r-2">
               <div className="border-b border-[#111111]/10 px-4 py-2">
-                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/30">
+                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]">
                   .docx &mdash; Microsoft Word
                 </span>
               </div>
@@ -60,7 +60,7 @@ export function Comparison() {
             {/* RIGHT: Typeset PDF */}
             <div>
               <div className="border-b border-[#111111]/10 px-4 py-2">
-                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/30">
+                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]">
                   .pdf &mdash; PagePerfect
                 </span>
               </div>
@@ -96,17 +96,17 @@ export function Comparison() {
         </div>
 
         {/* ── Annotations ── */}
-        <div className="mt-8 grid grid-cols-1 gap-6 border-t border-[#111111]/10 pt-6 sm:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-6 border-t border-[#111111]/20 pt-6 sm:grid-cols-3">
           {[
             { label: 'Margins', desc: 'Golden-ratio proportions replace cramped Word defaults' },
             { label: 'Typography', desc: 'Baseline grid locks every line to a consistent rhythm' },
             { label: 'Structure', desc: 'Drop caps, em-dashes, and proper chapter openings' },
           ].map((item) => (
             <div key={item.label}>
-              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/35">
+              <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">
                 {item.label}
               </p>
-              <p className="font-body text-[13px] leading-relaxed text-[#111111]/40">
+              <p className="font-body text-[13px] leading-relaxed text-[#333333]">
                 {item.desc}
               </p>
             </div>

@@ -13,6 +13,9 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{enumitem}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
 
 % ── TYPOGRAPHY ──────────────────────────────────────────────
 % Body: EB Garamond — humanist serif, 16th-century French elegance

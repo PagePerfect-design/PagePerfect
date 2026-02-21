@@ -13,6 +13,9 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{enumitem}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
 
 % ── TYPOGRAPHY — Kitchen-Robust ─────────────────────────────
 % DejaVu Serif for headers (slab-serif feel, robust)

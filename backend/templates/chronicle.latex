@@ -14,6 +14,9 @@
 \usepackage{hyperref}
 \usepackage{enumitem}
 \usepackage{ragged2e}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
 
 % ── TYPOGRAPHY — Swiss International Style ──────────────────
 % Body: TeX Gyre Heros (Helvetica clone) — neutral, dense, authoritative

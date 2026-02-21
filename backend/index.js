@@ -200,6 +200,9 @@ try {
   }
 } catch { /* stripe not configured */ }
 
+// Track processed Stripe event IDs to prevent duplicate webhook handling
+const processedStripeEvents = new Set();
+
 // ── PocketBase Admin Client (server-side only) ──
 const POCKETBASE_URL = (process.env.POCKETBASE_URL || '').replace(/\/+$/, '');
 let pbAdminToken = null;
@@ -312,6 +315,18 @@ app.post('/api/stripe/webhook',
     } catch (err) {
       console.error('Stripe webhook signature verification failed:', err.message);
       return res.status(400).json({ error: 'Invalid signature' });
+    }
+
+    // Idempotency — skip already-processed events (Stripe may retry webhooks)
+    if (processedStripeEvents.has(event.id)) {
+      console.log(`Stripe webhook already processed: ${event.id}, skipping`);
+      return res.json({ received: true, duplicate: true });
+    }
+    processedStripeEvents.add(event.id);
+    // Cap set size to prevent unbounded memory growth
+    if (processedStripeEvents.size > 10000) {
+      const first = processedStripeEvents.values().next().value;
+      processedStripeEvents.delete(first);
     }
 
     // Helper: upgrade a user's tier in PocketBase
@@ -513,11 +528,11 @@ app.post('/api/stripe/create-payment', async (req, res) => {
     }
 
     if (tier === 'single') {
-      // Single PDF — £2.99 one-time PaymentIntent
-      const amount = 299; // £2.99 in pence
+      // Single PDF — $2.99 one-time PaymentIntent
+      const amount = 299; // $2.99 in cents
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
-        currency: 'gbp',
+        currency: 'usd',
         customer: customerId,
         metadata: { tier, user_id },
         automatic_payment_methods: { enabled: true },
@@ -1398,8 +1413,8 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     }
   }
 
-  // Page size restriction — Drafter limited to 6 default sizes on download
-  if (isDownload && userTier === 'drafter' && pageSize && !FREE_TIER_SIZES.has(pageSize)) {
+  // Page size restriction — Drafter limited to 6 default sizes on download (unless they have credits)
+  if (isDownload && userTier === 'drafter' && userCredits <= 0 && pageSize && !FREE_TIER_SIZES.has(pageSize)) {
     return res.status(403).json({
       error: 'tier_required',
       message: `Page size "${pageSize}" requires a paid plan. Free tier includes 6 standard sizes.`,
@@ -1790,7 +1805,9 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         const filename = buildFilename(title, tplKey, pageSize).replace('.pdf', '-pdfx1a.pdf');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.setHeader('Cache-Control', 'no-store');
         res.setHeader('X-PP-Filename', filename);
+        res.setHeader('X-PP-Template', tplKey);
         res.setHeader('X-PP-Format', 'PDF/X-1a:2001');
         res.setHeader('X-PP-Watermarked', needsWatermark ? 'true' : 'false');
         if (creditsRemaining !== null) {
@@ -1806,7 +1823,9 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       const filename = buildFilename(title, tplKey, pageSize);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'no-store');
       res.setHeader('X-PP-Filename', filename);
+      res.setHeader('X-PP-Template', tplKey);
       res.setHeader('X-PP-Watermarked', needsWatermark ? 'true' : 'false');
       if (creditsRemaining !== null) {
         res.setHeader('X-PP-Credits-Remaining', String(creditsRemaining));
