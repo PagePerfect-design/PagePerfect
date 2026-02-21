@@ -259,10 +259,10 @@ const isPocketBaseConfigured = !!(POCKETBASE_URL && process.env.POCKETBASE_ADMIN
 // Verifies a PocketBase auth token and returns user tier info.
 // Returns { userId, tier, credits } or { userId: null, tier: 'anonymous', credits: 0 }
 async function verifyUserTier(req) {
-  if (!isPocketBaseConfigured) return { userId: null, tier: 'anonymous', credits: 0 };
+  if (!isPocketBaseConfigured) return { userId: null, tier: 'anonymous', credits: 0, publisherWindowEnd: null };
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { userId: null, tier: 'anonymous', credits: 0 };
+    return { userId: null, tier: 'anonymous', credits: 0, publisherWindowEnd: null };
   }
   const token = authHeader.slice(7);
   try {
@@ -274,17 +274,29 @@ async function verifyUserTier(req) {
       const authData = await authResp.json();
       const record = authData.record;
       if (record) {
+        let effectiveTier = record.tier || 'drafter';
+        const publisherWindowEnd = record.publisher_window_end || null;
+
+        // Active publisher window elevates drafter to publisher-level access
+        if (effectiveTier === 'drafter' && publisherWindowEnd) {
+          const windowEnd = new Date(publisherWindowEnd);
+          if (windowEnd > new Date()) {
+            effectiveTier = 'publisher';
+          }
+        }
+
         return {
           userId: record.id,
-          tier: record.tier || 'drafter',
+          tier: effectiveTier,
           credits: Number(record.pdf_credits) || 0,
+          publisherWindowEnd,
         };
       }
     }
   } catch (err) {
     console.error('[auth] Tier verification failed:', err.message);
   }
-  return { userId: null, tier: 'anonymous', credits: 0 };
+  return { userId: null, tier: 'anonymous', credits: 0, publisherWindowEnd: null };
 }
 
 // Tier hierarchy for feature gating
@@ -386,6 +398,44 @@ app.post('/api/stripe/webhook',
       }
     }
 
+    // Helper: activate 14-day Publisher export window for a user
+    // If the user already has an active window, extends from the current end date.
+    async function activatePublisherWindow(userId, customerId) {
+      if (!isPocketBaseConfigured) {
+        console.error('PocketBase not configured — cannot activate publisher window');
+        return;
+      }
+      try {
+        const resp = await pbFetch(`/api/collections/users/records/${userId}`);
+        if (!resp || !resp.ok) {
+          console.error('Failed to fetch user for window activation:', resp?.status);
+          return;
+        }
+        const user = await resp.json();
+
+        // Start new 14-day window from max(current_end, now)
+        const now = new Date();
+        const currentEnd = user.publisher_window_end ? new Date(user.publisher_window_end) : null;
+        const windowStart = (currentEnd && currentEnd > now) ? currentEnd : now;
+        const windowEnd = new Date(windowStart.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+        const patchResp = await pbFetch(`/api/collections/users/records/${userId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            publisher_window_end: windowEnd.toISOString(),
+            stripe_customer_id: customerId,
+          }),
+        });
+        if (patchResp && patchResp.ok) {
+          console.log(`User ${userId} Publisher window activated until ${windowEnd.toISOString()}`);
+        } else {
+          console.error('Failed to activate Publisher window:', patchResp?.status);
+        }
+      } catch (err) {
+        console.error('Failed to activate Publisher window:', err.message);
+      }
+    }
+
     // Handle relevant events
     switch (event.type) {
       // Payment Element flow: one-time payment succeeded (Publisher $19.99 or Studio $199)
@@ -396,8 +446,8 @@ app.post('/api/stripe/webhook',
         console.log(`PaymentIntent succeeded: customer=${pi.customer}, tier=${tier}, user=${userId}`);
 
         if (userId && tier === 'publisher') {
-          // Publisher — per-manuscript purchase: increment pdf_credits by 1
-          await incrementCredits(userId, pi.customer);
+          // Publisher — per-manuscript purchase: activate 14-day export window
+          await activatePublisherWindow(userId, pi.customer);
         } else if (userId && tier) {
           // Studio — lifetime upgrade
           await upgradeTier(userId, tier, pi.customer, null);

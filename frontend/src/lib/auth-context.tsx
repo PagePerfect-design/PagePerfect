@@ -11,6 +11,7 @@ type Profile = {
   display_name: string | null
   tier: Tier
   pdf_credits: number
+  publisher_window_end: string | null
 }
 
 type AuthState = {
@@ -20,6 +21,8 @@ type AuthState = {
   loading: boolean
   tier: Tier
   pdfCredits: number
+  publisherWindowEnd: string | null
+  hasActiveWindow: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>
   signInWithOAuth: (provider: 'google' | 'github') => Promise<void>
@@ -38,6 +41,7 @@ function userToProfile(user: RecordModel): Profile {
     display_name: user.display_name ?? user.name ?? null,
     tier: (user.tier as Tier) || 'drafter',
     pdf_credits: Number(user.pdf_credits) || 0,
+    publisher_window_end: (user.publisher_window_end as string) ?? null,
   }
 }
 
@@ -166,12 +170,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const session = user ? { token: createClient().authStore.token } : null
-  const tier: Tier = profile?.tier ?? 'drafter'
+  const baseTier: Tier = profile?.tier ?? 'drafter'
   const pdfCredits = profile?.pdf_credits ?? 0
+  const publisherWindowEnd = profile?.publisher_window_end ?? null
+  const hasActiveWindow = publisherWindowEnd ? new Date(publisherWindowEnd) > new Date() : false
+  // Active publisher window elevates drafter to publisher-level access
+  const tier: Tier = (baseTier === 'drafter' && hasActiveWindow) ? 'publisher' : baseTier
 
   return (
     <AuthContext.Provider
-      value={{ user, session, profile, loading, tier, pdfCredits, signIn, signUp, signInWithOAuth, signOut, resetPassword, updatePassword, refreshUser }}
+      value={{ user, session, profile, loading, tier, pdfCredits, publisherWindowEnd, hasActiveWindow, signIn, signUp, signInWithOAuth, signOut, resetPassword, updatePassword, refreshUser }}
     >
       {children}
     </AuthContext.Provider>

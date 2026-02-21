@@ -1462,6 +1462,7 @@ function LaunchOverlay({
   lastDownloadWatermarked,
   userTier,
   userCredits,
+  publisherWindowEnd,
 }: {
   title: string
   template: TemplateKey
@@ -1479,6 +1480,7 @@ function LaunchOverlay({
   lastDownloadWatermarked: boolean
   userTier: string
   userCredits: number
+  publisherWindowEnd: string | null
 }) {
   const [platform, setPlatform] = useState<Platform>('kdp')
   const [paper, setPaper] = useState<PaperStock>('white')
@@ -1897,7 +1899,11 @@ function LaunchOverlay({
             {userCredits} clean PDF credit{userCredits !== 1 ? 's' : ''} remaining
           </p>
         )}
-
+        {publisherWindowEnd && new Date(publisherWindowEnd) > new Date() && (
+          <p className="mt-2 text-center font-mono text-[10px] text-emerald-600/60">
+            Publisher window active — {Math.ceil((new Date(publisherWindowEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} day{Math.ceil((new Date(publisherWindowEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) !== 1 ? 's' : ''} remaining
+          </p>
+        )}
 
         <p className="mt-3 text-center font-mono text-[10px] text-[#111111]/25">
           {TEMPLATE_INFO[template]?.name} / {PAGE_SIZES[pageSize]?.label} / {title || 'Untitled'}
@@ -2016,7 +2022,7 @@ export default function CompileShell() {
   const [fontUploading, setFontUploading] = useState(false)
   const [lastDownloadWatermarked, setLastDownloadWatermarked] = useState(false)
 
-  const { session, tier, pdfCredits, refreshUser } = useAuth()
+  const { session, tier, pdfCredits, publisherWindowEnd, refreshUser } = useAuth()
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -2457,6 +2463,7 @@ export default function CompileShell() {
             lastDownloadWatermarked={lastDownloadWatermarked}
             userTier={tier}
             userCredits={pdfCredits}
+            publisherWindowEnd={publisherWindowEnd}
           />
         )}
       </AnimatePresence>

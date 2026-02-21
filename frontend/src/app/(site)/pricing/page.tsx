@@ -410,7 +410,7 @@ function SuccessBanner({ tier }: { tier: string }) {
 // ── Page ──
 
 export default function PricingPage() {
-  const { user, tier: currentTier } = useAuth()
+  const { user, tier: currentTier, hasActiveWindow, publisherWindowEnd } = useAuth()
   const [checkoutTier, setCheckoutTier] = useState<'publisher' | 'studio' | null>(null)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
@@ -477,12 +477,15 @@ export default function PricingPage() {
 
   function getCtaForTier(tier: typeof TIERS[number]) {
     if (tier.key === 'drafter') {
-      if (currentTier === 'drafter' && user) return { label: 'Current Plan', disabled: true }
+      if (currentTier === 'drafter' && user && !hasActiveWindow) return { label: 'Current Plan', disabled: true }
       return { label: tier.cta, disabled: false }
     }
     if (tier.key === 'publisher') {
-      if (currentTier === 'publisher') return { label: 'Purchased', disabled: true }
       if (currentTier === 'studio') return { label: 'Included', disabled: true }
+      if (hasActiveWindow && publisherWindowEnd) {
+        const daysLeft = Math.ceil((new Date(publisherWindowEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        return { label: `Active — ${daysLeft}d left`, disabled: true }
+      }
       return { label: user ? tier.cta : 'Sign in to Buy', disabled: false }
     }
     if (currentTier === 'studio') return { label: 'Current Plan', disabled: true }

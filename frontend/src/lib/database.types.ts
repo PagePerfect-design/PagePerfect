@@ -10,6 +10,8 @@
  *     - stripe_customer_id: text
  *     - stripe_subscription_id: text
  *
+ *     - publisher_window_end: datetime (nullable) — 14-day export window expiry
+ *
  *   manuscripts — user manuscripts:
  *     - user: relation → users
  *     - title: text
@@ -42,6 +44,7 @@ export interface UserRecord {
   pdf_credits: number
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
+  publisher_window_end: string | null
   created: string
   updated: string
 }
