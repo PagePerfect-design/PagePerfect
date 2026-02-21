@@ -76,7 +76,7 @@ export default function TermsPage() {
             number="01"
             promise={
               <>
-                PagePerfect is a formatting tool, not a publisher.<br /><br />
+                PagePerfect is a typesetting engine, not a publisher.<br /><br />
                 You write the book. We typeset it. Your words, your copyright, your PDF.
                 We claim zero ownership of your content.
               </>
@@ -84,8 +84,8 @@ export default function TermsPage() {
             legal={
               <>
                 <strong>01. Service Description.</strong> PagePerfect is a browser-based document
-                formatting service that converts user-provided Markdown, plain text, or .docx
-                manuscripts into professionally typeset PDF documents using the XeLaTeX engine.
+                typesetting service that converts user-provided Markdown, plain text, or .docx
+                manuscripts into professionally typeset PDF documents using the LuaLaTeX engine.
                 eazyaccess ltd acts solely as a technology provider and does not function as a
                 publisher, distributor, or rights holder. All intellectual property rights in
                 user-submitted content remain exclusively with the user. eazyaccess ltd claims

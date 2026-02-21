@@ -16,14 +16,23 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs
 
-# Install Pandoc + LaTeX (XeLaTeX) + Ghostscript
-# Note: pandoc-citeproc is built into pandoc since 2.11+, no separate package needed
+# Install Pandoc 3.6.2 from GitHub (Ubuntu 22.04 ships ancient 2.9)
+# Pandoc 3.x has built-in --citeproc, better error handling, modern template syntax
+RUN curl -fsSL -o /tmp/pandoc.deb \
+    https://github.com/jgm/pandoc/releases/download/3.6.2/pandoc-3.6.2-1-amd64.deb \
+    && dpkg -i /tmp/pandoc.deb \
+    && rm /tmp/pandoc.deb
+
+# Install LaTeX (LuaLaTeX + XeLaTeX) + Ghostscript
+# LuaLaTeX is the primary PDF engine — generates PDFs directly without xdvipdfmx,
+# avoiding the OpenType font embedding bugs in TeX Live 2021's xdvipdfmx driver.
+# XeLaTeX kept as fallback.
 RUN apt-get update && apt-get install -y \
-    pandoc \
     texlive-latex-base \
     texlive-latex-extra \
     texlive-fonts-recommended \
     texlive-fonts-extra \
+    texlive-luatex \
     texlive-xetex \
     texlive-latex-recommended \
     ghostscript \
@@ -44,11 +53,11 @@ RUN apt-get update && apt-get install -y \
     fontconfig \
     && rm -rf /var/lib/apt/lists/*
 
-# Rebuild fontconfig cache so fc-list sees all TeX Live + system fonts
-# TeX Live installs fonts in its own tree (/usr/share/texlive/texmf-dist/fonts/)
-# but fontconfig doesn't know about them unless we link the config files.
+# Rebuild fontconfig cache and TeX font maps so all fonts are visible
+# to both fontconfig (fc-list) and LuaLaTeX/XeLaTeX (fontspec).
 RUN cp /usr/share/texlive/texmf-dist/fontconfig/conf.avail/*.conf /etc/fonts/conf.d/ 2>/dev/null || true \
-    && fc-cache -fv
+    && fc-cache -fv \
+    && luaotfload-tool --update 2>/dev/null || true
 
 # App dir
 WORKDIR /app

@@ -21,6 +21,7 @@ import {
   Upload,
   Package,
   Loader2,
+  Lock,
 } from 'lucide-react'
 
 import { SAMPLE_MD } from './sample'
@@ -148,6 +149,14 @@ const PAGE_SIZES: Record<string, { label: string; desc: string }> = {
   amazonEightFiveByEleven: { label: '8.5 x 11"', desc: 'KDP' },
 }
 
+// The 6 page sizes available on the free (Drafter) tier — matches backend FREE_TIER_SIZES
+const FREE_TIER_SIZES = new Set(['fiveFiveByEightFive', 'sixByNine', 'a5', 'royal', 'letter', 'a4'])
+
+const TIER_LEVEL: Record<string, number> = { anonymous: 0, drafter: 1, single: 2, publisher: 3, studio: 4 }
+function hasTier(userTier: string, requiredTier: string): boolean {
+  return (TIER_LEVEL[userTier] || 0) >= (TIER_LEVEL[requiredTier] || 0)
+}
+
 const MARGIN_INFO: Record<MarginPreset, { label: string; desc: string }> = {
   minimal:  { label: 'Minimal',  desc: 'Tight' },
   compact:  { label: 'Compact',  desc: 'Snug' },
@@ -158,7 +167,7 @@ const MARGIN_INFO: Record<MarginPreset, { label: string; desc: string }> = {
   generous: { label: 'Generous', desc: 'Airy' },
 }
 
-/** Translate raw pandoc/XeLaTeX errors into plain English. */
+/** Translate raw pandoc/LuaLaTeX errors into plain English. */
 function translateError(raw: string): string {
   const s = raw.trim()
   const patterns: [RegExp, string][] = [
@@ -170,13 +179,15 @@ function translateError(raw: string): string {
     [/Emergency stop/i, 'The typesetter encountered a critical error and stopped. Simplify your manuscript and try again.'],
     [/I can't find file.*`([^']+)'/i, 'Referenced file "$1" was not found. Check your file references.'],
     [/Package fontspec Error.*"([^"]+)"/i, 'The font "$1" is not available on the server. Try a different template.'],
+    [/luaotfload.*cannot/i, 'A font could not be loaded. Try a different template.'],
     [/Font.*not found/i, 'A required font is not installed. Try a different template.'],
     [/Undefined citation.*`([^']+)'/i, 'Citation "$1" not found in your bibliography. Check the key or enable Safe Mode.'],
     [/I couldn.t open.*\.bib/i, 'Bibliography file not found. Enable Safe Mode to skip citations.'],
     [/Package .* Error/i, 'A LaTeX package reported an error. Try a different template.'],
     [/! LaTeX Error:\s*(.*)/i, '$1'],
-    [/xelatex.*not found/i, 'Server configuration error. The typesetting engine is not available.'],
+    [/(?:xelatex|lualatex).*not found/i, 'Server configuration error. The typesetting engine is not available.'],
     [/pandoc.*not found/i, 'Server configuration error. The document converter is not available.'],
+    [/Error\s+\d+\s+\(driver return code\)/i, 'The PDF engine encountered a driver error. Try a different template or simplify your manuscript.'],
     [/timed?\s*out/i, 'Compilation timed out. Your manuscript may be too large — try splitting it into smaller sections.'],
     [/Compile failed \(status (\d+)\)/i, 'The server returned an error (code $1). Please try again.'],
   ]
@@ -821,14 +832,24 @@ function LevitatingBook({
               <BookSkeleton />
             ) : status === 'error' && errors.length > 0 ? (
               <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3] p-8">
-                <div className="max-w-[360px] text-center">
-                  <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/5">
+                <div className="max-w-[420px]">
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/5">
                     <AlertTriangle className="h-4 w-4 text-red-500/60" />
                   </div>
                   <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-wider text-red-600/70">Typesetting Error</p>
-                  {errors.map((e, i) => (
-                    <p key={i} className="mb-1.5 font-mono text-[10px] leading-relaxed text-[#111111]/70">{translateError(e.message)}</p>
+                  {errors.filter(e => !e.message.startsWith('__detail__')).map((e, i) => (
+                    <p key={i} className="mb-1.5 font-mono text-[11px] leading-relaxed text-[#111111]/80">{translateError(e.message)}</p>
                   ))}
+                  {errors.some(e => e.message.startsWith('__detail__')) && (
+                    <details className="mt-4">
+                      <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+                        Engine log
+                      </summary>
+                      <pre className="mt-2 max-h-[200px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+                        {errors.filter(e => e.message.startsWith('__detail__')).map(e => e.message.replace('__detail__', '')).join('\n')}
+                      </pre>
+                    </details>
+                  )}
                 </div>
               </div>
             ) : (
@@ -881,6 +902,7 @@ function FloatingHUD({
   activeTab,
   customFont,
   fontUploading,
+  userTier,
   onTabChange,
   onTemplateChange,
   onHeadingVariantChange,
@@ -901,6 +923,7 @@ function FloatingHUD({
   activeTab: HudTab
   customFont: CustomFont
   fontUploading: boolean
+  userTier: string
   onTabChange: (t: HudTab) => void
   onTemplateChange: (t: TemplateKey) => void
   onHeadingVariantChange: (v: HeadingVariant) => void
@@ -1056,62 +1079,76 @@ function FloatingHUD({
               })}
             </div>
 
-            {/* More book sizes */}
+            {/* More book sizes — paid tiers only for download */}
             <details className="mt-3">
               <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/35 hover:text-[#111111]/55">
-                More book sizes
+                More book sizes {userTier === 'drafter' && <Lock className="ml-1 inline h-2.5 w-2.5 opacity-40" />}
               </summary>
               <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-4">
                 {(['massMarket', 'aFormat', 'bFormat', 'fiveTwentyFiveByEight', 'demy', 'sevenByTen', 'b5', 'crownQuarto'] as PageSize[]).map((key) => {
                   const info = PAGE_SIZES[key]
                   const isActive = key === pageSize
+                  const locked = userTier === 'drafter'
                   return (
                     <button
                       key={key}
                       onClick={() => onPageSizeChange(key)}
-                      className={`rounded-lg px-3 py-2 text-center transition-all duration-150 ${
+                      className={`relative rounded-lg px-3 py-2 text-center transition-all duration-150 ${
                         isActive
                           ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                           : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
-                      }`}
+                      } ${locked ? 'opacity-60' : ''}`}
                     >
                       <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                         {info.label}
                       </span>
                       <span className="block font-mono text-[8px] text-[#111111]/25">{info.desc}</span>
+                      {locked && <Lock className="absolute right-1 top-1 h-2 w-2 text-[#111111]/20" />}
                     </button>
                   )
                 })}
               </div>
+              {userTier === 'drafter' && (
+                <p className="mt-1.5 text-center font-mono text-[8px] text-[#111111]/30">
+                  Preview only — <a href="/pricing" className="underline hover:text-[#111111]/50">upgrade</a> to download these sizes
+                </p>
+              )}
             </details>
 
-            {/* Amazon KDP */}
+            {/* Amazon KDP — paid tiers only for download */}
             <details className="mt-3">
               <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/35 hover:text-[#111111]/55">
-                Amazon KDP sizes
+                Amazon KDP sizes {userTier === 'drafter' && <Lock className="ml-1 inline h-2.5 w-2.5 opacity-40" />}
               </summary>
               <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-5">
                 {(['amazonFiveByEight', 'amazonSixByNine', 'amazonSevenByTen', 'amazonEightByTen', 'amazonEightFiveByEleven'] as PageSize[]).map((key) => {
                   const info = PAGE_SIZES[key]
                   const isActive = key === pageSize
+                  const locked = userTier === 'drafter'
                   return (
                     <button
                       key={key}
                       onClick={() => onPageSizeChange(key)}
-                      className={`rounded-lg px-3 py-2 text-center transition-all ${
+                      className={`relative rounded-lg px-3 py-2 text-center transition-all ${
                         isActive
                           ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                           : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
-                      }`}
+                      } ${locked ? 'opacity-60' : ''}`}
                     >
                       <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                         {info.label}
                       </span>
                       <span className="block font-mono text-[8px] text-[#111111]/25">{info.desc}</span>
+                      {locked && <Lock className="absolute right-1 top-1 h-2 w-2 text-[#111111]/20" />}
                     </button>
                   )
                 })}
               </div>
+              {userTier === 'drafter' && (
+                <p className="mt-1.5 text-center font-mono text-[8px] text-[#111111]/30">
+                  Preview only — <a href="/pricing" className="underline hover:text-[#111111]/50">upgrade</a> to download these sizes
+                </p>
+              )}
             </details>
 
             {/* Margins */}
@@ -1179,10 +1216,14 @@ function FloatingHUD({
               <span className="text-[11px] text-[#111111]/50">Safe mode (skip citations)</span>
             </label>
 
-            {/* Custom font upload */}
+            {/* Custom font upload — Studio only */}
             <div className="mt-3 border-t border-[#111111]/[0.06] pt-3">
               <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Custom Font</p>
-              {customFont ? (
+              {!hasTier(userTier, 'studio') ? (
+                <a href="/pricing" className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[#111111]/[0.08] py-2.5 text-[11px] text-[#111111]/25 transition-all hover:border-[#111111]/15 hover:text-[#111111]/40">
+                  <Lock className="h-3 w-3" />Studio — <span className="underline">Upgrade</span>
+                </a>
+              ) : customFont ? (
                 <div className="flex items-center gap-2 rounded-lg bg-[#111111]/[0.03] px-3 py-2">
                   <span className="flex-1 truncate text-[11px] text-[#111111]/50">{customFont.originalName}</span>
                   <button
@@ -1203,7 +1244,7 @@ function FloatingHUD({
                   )}
                   <input
                     type="file"
-                    accept=".ttf,.otf,.woff,.woff2"
+                    accept=".ttf,.otf"
                     className="hidden"
                     disabled={fontUploading}
                     onChange={(e) => {
@@ -1508,12 +1549,22 @@ function LaunchOverlay({
         safeMode,
         compileMode,
         outputFormat: 'epub',
+        download: true,
       }
       if (customFont) body.customFonts = { main: customFont.fontId }
 
+      // Include auth token for tier/credit checks (same as PDF download)
+      const epubHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (isPocketBaseConfigured) {
+        const pb = createClient()
+        if (pb.authStore.isValid && pb.authStore.token) {
+          epubHeaders['Authorization'] = `Bearer ${pb.authStore.token}`
+        }
+      }
+
       const resp = await fetch('/api/compile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: epubHeaders,
         body: JSON.stringify(body),
       })
       if (!resp.ok) {
@@ -1550,12 +1601,22 @@ function LaunchOverlay({
         safeMode,
         compileMode,
         pageSizes: allSizes,
+        download: true,
       }
       if (customFont) body.customFonts = { main: customFont.fontId }
 
+      // Include auth token for tier/credit checks
+      const batchHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (isPocketBaseConfigured) {
+        const pb = createClient()
+        if (pb.authStore.isValid && pb.authStore.token) {
+          batchHeaders['Authorization'] = `Bearer ${pb.authStore.token}`
+        }
+      }
+
       const resp = await fetch('/api/batch-compile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: batchHeaders,
         body: JSON.stringify(body),
       })
       if (!resp.ok) {
@@ -1625,14 +1686,15 @@ function LaunchOverlay({
                   Amazon KDP
                 </button>
                 <button
-                  onClick={() => setPlatform('ingram')}
+                  onClick={() => hasTier(userTier, 'publisher') && setPlatform('ingram')}
                   className={`flex-1 rounded-lg py-2 text-[11px] font-semibold transition-all ${
                     platform === 'ingram'
                       ? 'bg-[#FF3333] text-white'
                       : 'border border-[#111111]/[0.08] text-[#111111]/40 hover:border-[#111111]/20'
-                  }`}
+                  } ${!hasTier(userTier, 'publisher') ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  title={!hasTier(userTier, 'publisher') ? 'PDF/X-1a requires Publisher or Studio' : ''}
                 >
-                  IngramSpark
+                  IngramSpark {!hasTier(userTier, 'publisher') && <Lock className="ml-1 inline h-2.5 w-2.5" />}
                 </button>
               </div>
               <p className="mt-2 font-mono text-[10px] leading-relaxed text-[#111111]/30">
@@ -1753,7 +1815,7 @@ function LaunchOverlay({
                   : 'text-[#111111]/40 hover:text-[#111111]/60'
               }`}
             >
-              {fmt === 'pdf' ? 'PDF' : 'EPUB'}
+              {fmt === 'pdf' ? 'PDF' : (<span className="inline-flex items-center gap-1">EPUB{!hasTier(userTier, 'studio') && <Lock className="h-2.5 w-2.5 opacity-40" />}</span>)}
             </button>
           ))}
         </div>
@@ -1769,6 +1831,13 @@ function LaunchOverlay({
               <Download className="h-4 w-4" />
               {platform === 'ingram' ? 'Download PDF/X-1a' : 'Download Print PDF'}
             </button>
+          ) : !hasTier(userTier, 'studio') ? (
+            <a
+              href="/pricing"
+              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 border border-[#111111]/[0.12] font-display text-[13px] font-medium text-[#111111]/40 transition-all hover:border-[#111111]/20 hover:text-[#111111]/60"
+            >
+              <Lock className="h-4 w-4" />EPUB — Studio Only
+            </a>
           ) : (
             <button
               onClick={handleEpubDownload}
@@ -1783,18 +1852,27 @@ function LaunchOverlay({
             </button>
           )}
 
-          {/* Batch export */}
-          <button
-            onClick={handleBatchExport}
-            disabled={batchLoading || !pdfUrl}
-            className="group inline-flex h-10 w-full items-center justify-center gap-2 border border-[#111111]/[0.08] text-[12px] font-medium text-[#111111]/40 transition-all hover:border-[#111111]/20 hover:text-[#111111]/60 disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {batchLoading ? (
-              <><Loader2 className="h-3.5 w-3.5 animate-spin" />{batchProgress || 'Batch exporting...'}</>
-            ) : (
-              <><Package className="h-3.5 w-3.5" />Batch Export — All Sizes (ZIP)</>
-            )}
-          </button>
+          {/* Batch export — Studio only */}
+          {!hasTier(userTier, 'studio') ? (
+            <a
+              href="/pricing"
+              className="group inline-flex h-10 w-full items-center justify-center gap-2 border border-[#111111]/[0.08] text-[12px] font-medium text-[#111111]/25 transition-all hover:border-[#111111]/15 hover:text-[#111111]/40"
+            >
+              <Lock className="h-3.5 w-3.5" />Batch Export — Studio Only
+            </a>
+          ) : (
+            <button
+              onClick={handleBatchExport}
+              disabled={batchLoading || !pdfUrl}
+              className="group inline-flex h-10 w-full items-center justify-center gap-2 border border-[#111111]/[0.08] text-[12px] font-medium text-[#111111]/40 transition-all hover:border-[#111111]/20 hover:text-[#111111]/60 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {batchLoading ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" />{batchProgress || 'Batch exporting...'}</>
+              ) : (
+                <><Package className="h-3.5 w-3.5" />Batch Export — All Sizes (ZIP)</>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Failure message */}
@@ -2134,8 +2212,9 @@ export default function CompileShell() {
         pdfBlobRef.current = null
         const msgs: CompileError[] = []
         if (payload?.message) msgs.push({ message: payload.message })
-        if (payload?.detail) msgs.push({ message: payload.detail })
         if (!msgs.length) msgs.push({ message: `Compile failed (status ${resp.status}).` })
+        // Attach raw detail for optional "Show details" — but do NOT display as a primary error
+        if (payload?.detail) msgs.push({ message: `__detail__${payload.detail}` })
         setErrors(msgs)
         setStatus('error')
       }
@@ -2259,6 +2338,7 @@ export default function CompileShell() {
                 activeTab={hudTab}
                 customFont={customFont}
                 fontUploading={fontUploading}
+                userTier={tier}
                 onTabChange={setHudTab}
                 onTemplateChange={setTemplate}
                 onHeadingVariantChange={setHeadingVariant}

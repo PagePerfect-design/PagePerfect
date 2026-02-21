@@ -44,7 +44,7 @@ export default function JournalPage() {
             Typography &amp; Conversion
           </h1>
           <p className="mt-6 max-w-2xl font-body text-lg leading-relaxed text-[#333333]">
-            Where Swiss precision meets Madison Avenue pragmatism. Twenty essays on typography,
+            Where Swiss precision meets Madison Avenue pragmatism. Essays on typography,
             layout, and visual communication — grounded in empirical research, not aesthetic opinion.
           </p>
           <p className="mt-3 font-body text-base leading-relaxed text-[#555555]">
@@ -131,7 +131,7 @@ export default function JournalPage() {
               href="/app"
               className="border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222] hover:border-[#E52222]"
             >
-              Start Formatting
+              Open the Editor &rarr;
             </Link>
             <Link
               href="/docs"

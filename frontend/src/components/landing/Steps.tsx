@@ -1,5 +1,3 @@
-import Image from 'next/image'
-
 const STEPS = [
   {
     num: '01',
@@ -17,34 +15,14 @@ const STEPS = [
     num: '03',
     title: 'Export print-ready PDF',
     body: 'Professional output with embedded fonts, correct bleed, and proper trim. Upload directly to Amazon KDP, IngramSpark, Lulu, or any print-on-demand service.',
-    detail: 'Compiles via XeLaTeX. Download, upload to your distributor — done.',
+    detail: 'Compiles via LuaLaTeX. Download, upload to your distributor — done.',
   },
 ]
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="relative overflow-hidden border-t-2 border-[#111111] bg-[#FDFCF8] py-20 md:py-28">
-
-      {/* ── Screenback — open books ghost rising from bottom ── */}
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[40%] md:h-[45%]"
-        aria-hidden="true"
-      >
-        <Image
-          src="/images/books-scattered.webp"
-          alt=""
-          fill
-          className="object-cover object-top grayscale"
-          style={{
-            opacity: 0.05,
-            mixBlendMode: 'multiply',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 50%)',
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 50%)',
-          }}
-        />
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-6xl px-6 md:px-8">
+    <section id="how-it-works" className="border-t-2 border-[#111111] bg-[#FDFCF8] py-20 md:py-28">
+      <div className="mx-auto max-w-6xl px-6 md:px-8">
 
         {/* ── Header ── */}
         <div className="mb-12 max-w-2xl md:mb-16">

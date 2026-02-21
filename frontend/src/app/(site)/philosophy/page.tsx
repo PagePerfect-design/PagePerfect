@@ -173,7 +173,7 @@ export default function PhilosophyPage() {
                 Architecture
               </p>
               <div className="space-y-3">
-                <ColophonEntry label="Engine" value="XeLaTeX + Pandoc" />
+                <ColophonEntry label="Engine" value="LuaLaTeX + Pandoc" />
                 <ColophonEntry label="Grid" value="12-Column Modular" />
                 <ColophonEntry label="Baseline" value="11pt / 12pt" />
                 <ColophonEntry label="Scale" value="Golden Ratio (1.618)" />
@@ -216,7 +216,7 @@ export default function PhilosophyPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="py-16">
+      <section className="py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-6 text-center md:px-8">
           <p className="mb-4 font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50">
             Put the engine to work
@@ -225,7 +225,7 @@ export default function PhilosophyPage() {
             className="font-display font-extrabold tracking-tighter text-[#111111]"
             style={{ lineHeight: 0.95, fontSize: 'clamp(1.5rem, 2.5vw, 2.5rem)' }}
           >
-            Start formatting
+            Start Formatting
           </h2>
           <p className="mx-auto mt-4 max-w-lg font-body text-base text-[#444444]">
             Every principle on this page is built into PagePerfect — baseline

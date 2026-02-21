@@ -36,14 +36,16 @@ const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000); // 
 // ---- Pandoc version detection ----
 // Pandoc 2.11+ has built-in --citeproc; older versions need --filter pandoc-citeproc
 let PANDOC_HAS_CITEPROC = true; // Default true — pandoc-citeproc was removed in 2020; any modern install has --citeproc
+let PANDOC_VERSION = 'unknown';
 try {
   const versionOutput = execSync('pandoc --version', { encoding: 'utf8', timeout: 5000 });
-  const match = versionOutput.match(/pandoc(?:\.exe)?\s+(\d+)\.(\d+)/);
+  const match = versionOutput.match(/pandoc(?:\.exe)?\s+(\d+)\.(\d+)(?:\.(\d+))?/);
   if (match) {
     const major = parseInt(match[1], 10);
     const minor = parseInt(match[2], 10);
+    PANDOC_VERSION = `${match[1]}.${match[2]}${match[3] ? '.' + match[3] : ''}`;
     PANDOC_HAS_CITEPROC = major > 2 || (major === 2 && minor >= 11);
-    console.log(`[startup] Pandoc ${match[1]}.${match[2]} detected — citeproc: ${PANDOC_HAS_CITEPROC ? 'built-in' : 'filter fallback'}`);
+    console.log(`[startup] Pandoc ${PANDOC_VERSION} detected — citeproc: ${PANDOC_HAS_CITEPROC ? 'built-in' : 'filter fallback'} — pdf-engine: lualatex`);
   }
 } catch (e) {
   console.warn('[startup] Could not detect Pandoc version, assuming built-in --citeproc');
@@ -63,6 +65,15 @@ const ALLOWED_ORIGINS = [
   'http://localhost:4000',
   process.env.FRONTEND_URL, // e.g. https://pageperfect.studio
 ].filter(Boolean);
+
+// Match Vercel preview/branch deployment URLs for the project
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  // Vercel preview deployments: <project>-<hash>-<team>.vercel.app
+  if (/^https:\/\/page-perfect[a-z0-9-]*\.vercel\.app$/.test(origin)) return true;
+  return false;
+}
 
 // Filename helper functions
 function slug(s) {
@@ -145,10 +156,10 @@ app.use(morgan('tiny'));
 // Body parsing
 app.use(express.json({ limit: '5mb' }));
 
-// CORS — locked to known origins (falls back to permissive in dev)
+// CORS — locked to known origins + Vercel preview domains (falls back to permissive in dev)
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ALLOWED_ORIGINS
+    ? (origin, callback) => callback(null, isAllowedOrigin(origin))
     : true,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -240,6 +251,44 @@ async function pbFetch(path, options = {}) {
 }
 
 const isPocketBaseConfigured = !!(POCKETBASE_URL && process.env.POCKETBASE_ADMIN_EMAIL);
+
+// ── Tier Verification Helper ─────────────────────────────────
+// Verifies a PocketBase auth token and returns user tier info.
+// Returns { userId, tier, credits } or { userId: null, tier: 'anonymous', credits: 0 }
+async function verifyUserTier(req) {
+  if (!isPocketBaseConfigured) return { userId: null, tier: 'anonymous', credits: 0 };
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { userId: null, tier: 'anonymous', credits: 0 };
+  }
+  const token = authHeader.slice(7);
+  try {
+    const authResp = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-refresh`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+    if (authResp && authResp.ok) {
+      const authData = await authResp.json();
+      const record = authData.record;
+      if (record) {
+        return {
+          userId: record.id,
+          tier: record.tier || 'drafter',
+          credits: Number(record.pdf_credits) || 0,
+        };
+      }
+    }
+  } catch (err) {
+    console.error('[auth] Tier verification failed:', err.message);
+  }
+  return { userId: null, tier: 'anonymous', credits: 0 };
+}
+
+// Tier hierarchy for feature gating
+const TIER_LEVEL = { anonymous: 0, drafter: 1, single: 2, publisher: 3, studio: 4 };
+function hasTier(userTier, requiredTier) {
+  return (TIER_LEVEL[userTier] || 0) >= (TIER_LEVEL[requiredTier] || 0);
+}
 
 // NOTE: PocketBase emails are sent via Resend HTTP API hooks in the custom
 // Go binary (pageperfect-pb-custom/main.go), bypassing SMTP entirely.
@@ -530,7 +579,7 @@ app.post('/api/stripe/create-payment', async (req, res) => {
 // ================================================================
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, service: 'pageperfect-backend', timestamp: new Date().toISOString(), version: '3.0' });
+  res.json({ ok: true, service: 'pageperfect-backend', timestamp: new Date().toISOString(), version: '3.1', pdfEngine: 'lualatex' });
 });
 
 app.get('/api/health/details', (_req, res) => {
@@ -546,6 +595,7 @@ app.get('/api/health/details', (_req, res) => {
     pageSizes,
     marginPresets,
     compileModes,
+    pdfEngine: 'lualatex',
     safeModeAvailable: true,
     auth: isPocketBaseConfigured,
     payments: !!stripe,
@@ -1294,7 +1344,8 @@ app.post('/api/analyze/full', (req, res) => {
 // ================================================================
 // Free tier page size restrictions
 // ================================================================
-const FREE_TIER_SIZES = new Set(['letter', 'a4', 'sixByNine']);
+// 6 default page sizes for free tier (matches pricing page and editor default section)
+const FREE_TIER_SIZES = new Set(['letter', 'a4', 'sixByNine', 'fiveFiveByEightFive', 'a5', 'royal']);
 const ALL_SIZES = new Set(['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','royal','bFormat','massMarket','aFormat','demy','fiveTwentyFiveByEight','crownQuarto','b5','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven']);
 const ALL_MARGINS = new Set(['normal','narrow','wide','minimal','academic','generous','compact']);
 
@@ -1311,44 +1362,63 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   const wantPdfX = outputFormat === 'pdfx1a';
   const wantEpub = outputFormat === 'epub';
 
+  // ── Auth & Tier Verification ─────────────────────────────────
+  const user = await verifyUserTier(req);
+  const userTier = user.tier;
+  const userId = user.userId;
+  const userCredits = user.credits;
+
+  // ── Feature Gates (download paths only) ──────────────────────
+  // EPUB export — Studio only
+  if (wantEpub && !hasTier(userTier, 'studio')) {
+    return res.status(403).json({
+      error: 'tier_required',
+      message: 'EPUB export requires a Studio subscription.',
+      requiredTier: 'studio',
+    });
+  }
+
+  // PDF/X-1a export — Publisher+ only
+  if (wantPdfX && !hasTier(userTier, 'publisher')) {
+    return res.status(403).json({
+      error: 'tier_required',
+      message: 'PDF/X-1a export requires a Publisher or Studio subscription.',
+      requiredTier: 'publisher',
+    });
+  }
+
+  // Custom fonts — Studio only
+  if (customFonts && typeof customFonts === 'object' && Object.keys(customFonts).length > 0) {
+    if (!hasTier(userTier, 'studio')) {
+      return res.status(403).json({
+        error: 'tier_required',
+        message: 'Custom font upload requires a Studio subscription.',
+        requiredTier: 'studio',
+      });
+    }
+  }
+
+  // Page size restriction — Drafter limited to 6 default sizes on download
+  if (isDownload && userTier === 'drafter' && pageSize && !FREE_TIER_SIZES.has(pageSize)) {
+    return res.status(403).json({
+      error: 'tier_required',
+      message: `Page size "${pageSize}" requires a paid plan. Free tier includes 6 standard sizes.`,
+      requiredTier: 'single',
+    });
+  }
+
+  // Citations — Publisher+ only; force safe mode for lower tiers
+  if (!safeMode && !hasTier(userTier, 'publisher')) {
+    safeMode = true;
+  }
+
   // ── Watermark Decision ──────────────────────────────────────
   // Clean preview always (no watermark). On download, check tier/credits.
   let needsWatermark = false;
   let creditsRemaining = null;
 
   if (isDownload && isPocketBaseConfigured) {
-    let userTier = 'drafter';
-    let userCredits = 0;
-    let userId = null;
-
-    // Try to authenticate via PocketBase token
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.slice(7);
-      try {
-        // Verify token by requesting the authenticated user's record
-        const authResp = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-refresh`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (authResp && authResp.ok) {
-          const authData = await authResp.json();
-          const record = authData.record;
-          if (record) {
-            userId = record.id;
-            userTier = record.tier || 'drafter';
-            userCredits = Number(record.pdf_credits) || 0;
-          }
-        }
-      } catch (authErr) {
-        console.error('[compile] Auth verification failed:', authErr.message);
-      }
-    }
-
-    if (userTier === 'publisher' || userTier === 'studio') {
+    if (hasTier(userTier, 'publisher')) {
       needsWatermark = false;
     } else if (userCredits > 0 && userId) {
       // Deduct one credit
@@ -1617,14 +1687,14 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     sansResolution?.isFallback ? `sans=${sansResolution.resolved} (fallback from ${tpl.sansfont})` : '',
     monoResolution?.isFallback ? `mono=${monoResolution.resolved} (fallback from ${tpl.monofont})` : '',
   ].filter(Boolean).join(' ');
-  console.log(`[compile] template=${tplKey} variant=${headingVariant} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
+  console.log(`[compile] engine=lualatex pandoc=${PANDOC_VERSION} template=${tplKey} variant=${headingVariant} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
 
   const fromFormat = safeMode ? '--from=markdown'
     : PANDOC_HAS_CITEPROC ? '--from=markdown+citations' : '--from=markdown';
   const baseArgs = [
     mdPath,
     fromFormat,
-    '--pdf-engine=xelatex',
+    '--pdf-engine=lualatex',
     '-M', `title=${title}`,
     `--template=${patchedTemplatePath}`,
     '-H', headerPath,
@@ -1750,14 +1820,21 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       const missingCitations = safeMode ? [] : parseMissingCitations(stderr);
       const missingPackages  = parseMissingPackages(stderr);
 
-      // Detect font-related failures in XeLaTeX output
+      // Detect font-related failures in LuaLaTeX/XeLaTeX output
       // fontspec reports: The font "FontName" cannot be found.
       const fontCannotFind = stderr.match(/The font "([^"]+)" cannot be found/i);
-      const missingFont = fontCannotFind ? fontCannotFind[1] : null;
+      // luaotfload reports: font "FontName" not found
+      const luaFontNotFound = !fontCannotFind && stderr.match(/font "([^"]+)" not found/i);
+      const missingFont = fontCannotFind ? fontCannotFind[1] : (luaFontNotFound ? luaFontNotFound[1] : null);
 
       // Detect common LaTeX errors from stderr
       const latexError = stderr.match(/^!\s+(.+?)\.?\s*$/m);
       const undefinedCS = stderr.match(/Undefined control sequence[\s\S]*?l\.\d+\s+(.*)/);
+
+      // Detect PDF driver failure (Error 256 / driver return code)
+      const driverError = /Error\s+\d+\s+\(driver return code\)/i.test(stderr);
+      // Detect LuaTeX-specific font loading failure
+      const luaFontError = /luaotfload.*?cannot\s+(?:open|load|find)/i.test(stderr);
 
       // Compile log analysis for detailed diagnostics
       const compileLog = bookEngineering.analyzeCompileLog(stderr);
@@ -1766,13 +1843,19 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       if (missingFont) {
         messages.push(`Font "${missingFont}" not found. Install it or try a different template.`);
       }
+      if (driverError && !missingFont) {
+        messages.push('The PDF driver encountered an error generating output. Try a different template or simplify your manuscript.');
+      }
+      if (luaFontError && !missingFont) {
+        messages.push('A font could not be loaded by the typesetting engine. Try a different template.');
+      }
       if (!safeMode) {
         if (missingCitations.length) messages.push(`Undefined citations: ${missingCitations.join(', ')}.`);
       }
       if (missingPackages.length) messages.push(`Missing LaTeX packages: ${missingPackages.join(', ')}.`);
       if (undefinedCS) {
         messages.push(`LaTeX error: Undefined control sequence near "${undefinedCS[1].trim().slice(0, 80)}".`);
-      } else if (latexError && !missingFont && !missingPackages.length) {
+      } else if (latexError && !missingFont && !missingPackages.length && !driverError) {
         messages.push(`LaTeX error: ${latexError[1].slice(0, 120)}.`);
       }
       if (messages.length === 0) messages.push('Typesetting failed. Please review your Markdown.');
@@ -1827,15 +1910,26 @@ const fontUpload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (['.ttf', '.otf', '.woff', '.woff2'].includes(ext)) {
+    // Only .ttf and .otf work with LuaLaTeX/fontspec — .woff/.woff2 are web-only formats
+    if (['.ttf', '.otf'].includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Only .ttf, .otf, .woff, and .woff2 files are allowed.'));
+      cb(new Error('Only .ttf and .otf font files are supported. Web fonts (.woff/.woff2) cannot be used for PDF typesetting.'));
     }
   },
 });
 
-app.post('/api/fonts/upload', fontUpload.single('font'), (req, res) => {
+app.post('/api/fonts/upload', fontUpload.single('font'), async (req, res) => {
+  // ── Tier gate: Custom font upload requires Studio ──
+  const user = await verifyUserTier(req);
+  if (!hasTier(user.tier, 'studio')) {
+    // Clean up uploaded file if tier check fails
+    if (req.file) {
+      try { fs.rmSync(path.dirname(req.file.path), { recursive: true, force: true }); } catch {}
+    }
+    return res.status(403).json({ error: 'tier_required', message: 'Custom font upload requires a Studio subscription.', requiredTier: 'studio' });
+  }
+
   if (!req.file) {
     return res.status(400).json({ error: 'no_file', message: 'No font file provided.' });
   }
@@ -1863,6 +1957,12 @@ app.post('/api/fonts/upload', fontUpload.single('font'), (req, res) => {
 // ================================================================
 
 app.post('/api/batch-compile', compileLimiter, async (req, res) => {
+  // ── Tier gate: Batch export requires Studio ──
+  const user = await verifyUserTier(req);
+  if (!hasTier(user.tier, 'studio')) {
+    return res.status(403).json({ error: 'tier_required', message: 'Batch export requires a Studio subscription.', requiredTier: 'studio' });
+  }
+
   let { manuscriptText, template, title, marginPreset, safeMode, compileMode, pageSizes, customFonts, headingVariant: batchVariant } = req.body || {};
   safeMode = Boolean(safeMode);
   compileMode = (compileMode === 'full') ? 'full' : 'fast';
@@ -1874,8 +1974,8 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
   if (!Array.isArray(pageSizes) || pageSizes.length === 0) {
     return res.status(400).json({ error: 'invalid_request', message: 'pageSizes array is required.' });
   }
-  if (pageSizes.length > 10) {
-    return res.status(400).json({ error: 'too_many', message: 'Maximum 10 page sizes per batch.' });
+  if (pageSizes.length > 20) {
+    return res.status(400).json({ error: 'too_many', message: 'Maximum 20 page sizes per batch.' });
   }
 
   const mdBytes = Buffer.byteLength(manuscriptText, 'utf8');
@@ -1984,7 +2084,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
       const args = [
         mdPath,
         batchFromFormat,
-        '--pdf-engine=xelatex',
+        '--pdf-engine=lualatex',
         '-M', `title=${title}`,
         `--template=${tplPath}`,
         '-H', headerPath,

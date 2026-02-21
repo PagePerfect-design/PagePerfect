@@ -261,7 +261,7 @@ export default function DocsPage() {
             <p className="font-body text-lg leading-8 text-[#3a3a3a] mb-8 max-w-xl">
               The system is designed for immediate compilation. Do not format your text.
               Paste your raw manuscript into the Editor, select a typographic system,
-              and let XeLaTeX handle the typesetting.
+              and let LuaLaTeX handle the typesetting.
             </p>
 
             <div className="space-y-4">
@@ -751,7 +751,7 @@ export default function DocsPage() {
             </div>
             <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-2">
               IngramSpark requires PDF/X-1a:2001 compliance — CMYK color space, all fonts embedded, no transparency, PDF 1.3.
-              PagePerfect converts XeLaTeX output to PDF/X-1a via Ghostscript post-processing with US Web Coated (SWOP) v2 output intent.
+              PagePerfect converts LuaLaTeX output to PDF/X-1a via Ghostscript post-processing with US Web Coated (SWOP) v2 output intent.
             </p>
             <Admonition type="info" label="Note">
               Select &quot;IngramSpark&quot; as your platform in the Press stage, then click &quot;Export PDF/X-1a&quot; to generate a compliant file.
@@ -864,7 +864,7 @@ export default function DocsPage() {
                   </tr>
                   <tr>
                     <td className="accent">compile_timeout</td>
-                    <td>XeLaTeX exceeded 45s</td>
+                    <td>LuaLaTeX exceeded 45s</td>
                     <td>Simplify content, reduce images, or use Preview mode</td>
                   </tr>
                   <tr>
@@ -937,7 +937,7 @@ export default function DocsPage() {
             {/* Colophon */}
             <div className="mt-16 border-t border-[#e5e5e0] pt-6">
               <p className="font-mono text-[10px] text-[#888]">
-                PagePerfect Documentation &middot; Built on XeLaTeX + Pandoc &middot; Typography is the foundation of graphic design.
+                PagePerfect Documentation &middot; Built on LuaLaTeX + Pandoc &middot; Typography is the foundation of graphic design.
               </p>
             </div>
           </section>

@@ -9,7 +9,7 @@ const mono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-mono', weight
 
 export const metadata: Metadata = {
   title: 'PagePerfect — Professional Typesetting in Your Browser',
-  description: 'Transform Markdown into beautifully typeset, print-ready PDFs. Powered by XeLaTeX with Muller-Brockmann grid systems, golden-ratio typography, and baseline grids.',
+  description: 'Transform Markdown into beautifully typeset, print-ready PDFs. Powered by LuaLaTeX with Muller-Brockmann grid systems, golden-ratio typography, and baseline grids.',
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
