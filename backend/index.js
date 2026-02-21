@@ -445,8 +445,11 @@ app.post('/api/stripe/webhook',
         const userId = pi.metadata?.user_id;
         console.log(`PaymentIntent succeeded: customer=${pi.customer}, tier=${tier}, user=${userId}`);
 
-        if (userId && tier === 'publisher') {
-          // Publisher — per-manuscript purchase: activate 14-day export window
+        if (userId && tier === 'single') {
+          // Single PDF — $2.99 one-time: increment pdf_credits by 1
+          await incrementCredits(userId, pi.customer);
+        } else if (userId && tier === 'publisher') {
+          // Publisher — $19.99 per-manuscript: activate 14-day export window
           await activatePublisherWindow(userId, pi.customer);
         } else if (userId && tier) {
           // Studio — lifetime upgrade
@@ -521,7 +524,7 @@ app.post('/api/stripe/create-payment', async (req, res) => {
   }
 
   const { tier, user_id, email } = req.body;
-  if (!['publisher', 'studio'].includes(tier)) {
+  if (!['single', 'publisher', 'studio'].includes(tier)) {
     return res.status(400).json({ error: 'Invalid tier' });
   }
   if (!user_id) {
@@ -559,8 +562,23 @@ app.post('/api/stripe/create-payment', async (req, res) => {
       }
     }
 
-    if (tier === 'publisher') {
-      // Publisher — $19.99 one-time PaymentIntent per manuscript
+    if (tier === 'single') {
+      // Single PDF — $2.99 one-time PaymentIntent (one clean export credit)
+      const amount = 299; // $2.99 in cents
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'usd',
+        customer: customerId,
+        metadata: { tier, user_id },
+        automatic_payment_methods: { enabled: true },
+      });
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        customerId,
+      });
+    } else if (tier === 'publisher') {
+      // Publisher — $19.99 one-time PaymentIntent per manuscript (14-day window)
       const amount = 1999; // $19.99 in cents
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
