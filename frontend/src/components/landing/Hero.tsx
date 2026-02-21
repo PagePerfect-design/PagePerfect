@@ -24,7 +24,7 @@ export function Hero() {
               href="/app"
               className="inline-flex h-12 items-center bg-[#FF3333] px-10 font-mono text-[11px] uppercase tracking-[0.12em] text-white transition-all duration-75 hover:bg-[#E52222]"
             >
-              Start Formatting
+              Open the Editor
             </Link>
 
             <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/25">

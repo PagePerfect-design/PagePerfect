@@ -34,11 +34,9 @@ export function FinalCTA() {
         </p>
 
         <h2 className="font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
-          Your manuscript
+          Try it now.
           <br />
-          has been waiting
-          <br />
-          for this.
+          No signup required.
         </h2>
 
         <p className="mx-auto mt-6 max-w-md font-body text-sm leading-[1.7] text-[#111111]">
