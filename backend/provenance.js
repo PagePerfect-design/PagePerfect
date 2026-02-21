@@ -26,6 +26,9 @@ const crypto = require('crypto');
  * @param {string} opts.title          — document title
  * @param {string} [opts.userId]       — optional user ID
  * @param {string} [opts.outputFormat] — 'pdf' | 'pdfx1a'
+ * @param {string} [opts.headingVariant] — 'classic' | 'modern' | 'bold'
+ * @param {boolean} [opts.needsWatermark] — whether output is watermarked
+ * @param {object} [opts.customFonts]  — custom font mappings { main?, sans?, mono? }
  * @returns {object} Build metadata
  */
 function generateBuildMetadata(opts) {
@@ -39,12 +42,23 @@ function generateBuildMetadata(opts) {
     title = 'Untitled',
     userId = null,
     outputFormat = 'pdf',
+    headingVariant = 'classic',
+    needsWatermark = false,
+    customFonts = null,
   } = opts;
 
   const now = new Date();
 
-  // Content fingerprint — deterministic hash of manuscript + settings
-  const settingsString = JSON.stringify({ template, pageSize, marginPreset, safeMode, compileMode });
+  // Content fingerprint — deterministic hash of manuscript + settings.
+  // IMPORTANT: settingsString must include EVERY parameter that affects the
+  // compiled output. If two compiles with different parameters share the same
+  // hash, a cached result with the wrong watermark/fonts/variant could be
+  // served to the wrong user.
+  const settingsString = JSON.stringify({
+    template, pageSize, marginPreset, safeMode, compileMode,
+    outputFormat, headingVariant, needsWatermark,
+    customFonts: customFonts || null,
+  });
   const contentHash = crypto.createHash('sha256')
     .update(manuscriptText)
     .digest('hex')
