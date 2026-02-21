@@ -7,6 +7,7 @@ const multer = require('multer');
 const archiver = require('archiver');
 const crypto = require('crypto');
 const fs = require('fs');
+const fsp = require('fs').promises;
 const os = require('os');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
@@ -57,6 +58,16 @@ function citeprocArgs(bibPath) {
     return ['--citeproc', `--bibliography=${bibPath}`];
   }
   return ['--filter', 'pandoc-citeproc', `--bibliography=${bibPath}`];
+}
+
+// ---- Sanitize stderr before sending to clients ----
+// Strips server paths from error output to prevent leaking container architecture
+function sanitizeStderr(raw) {
+  return String(raw)
+    .replace(/\/tmp\/pp-[a-zA-Z0-9_-]+\//g, '[workspace]/')
+    .replace(/\/home\/[a-zA-Z0-9_-]+\//g, '[home]/')
+    .replace(/\/app\/[a-zA-Z0-9_/-]*templates\//g, '[templates]/')
+    .replace(/\/usr\/local\/[a-zA-Z0-9_/-]+/g, '[system]');
 }
 
 // ---- Allowed origins ----
@@ -200,8 +211,29 @@ try {
   }
 } catch { /* stripe not configured */ }
 
-// Track processed Stripe event IDs to prevent duplicate webhook handling
+// Track processed Stripe event IDs to prevent duplicate webhook handling.
+// Persisted to disk so idempotency survives container restarts.
+const STRIPE_EVENTS_PATH = path.join(os.tmpdir(), 'pp-stripe-events.json');
 const processedStripeEvents = new Set();
+const MAX_STRIPE_EVENTS = 10000;
+
+// Load persisted events on startup
+try {
+  if (fs.existsSync(STRIPE_EVENTS_PATH)) {
+    const saved = JSON.parse(fs.readFileSync(STRIPE_EVENTS_PATH, 'utf8'));
+    if (Array.isArray(saved)) {
+      for (const id of saved.slice(-MAX_STRIPE_EVENTS)) processedStripeEvents.add(id);
+    }
+    console.log(`[startup] Loaded ${processedStripeEvents.size} persisted Stripe event IDs`);
+  }
+} catch { /* ignore corrupt file */ }
+
+function persistStripeEvents() {
+  try {
+    const arr = [...processedStripeEvents].slice(-MAX_STRIPE_EVENTS);
+    fs.writeFileSync(STRIPE_EVENTS_PATH, JSON.stringify(arr), 'utf8');
+  } catch { /* best-effort — don't crash on write failure */ }
+}
 
 // ── PocketBase Admin Client (server-side only) ──
 const POCKETBASE_URL = (process.env.POCKETBASE_URL || '').replace(/\/+$/, '');
@@ -336,10 +368,12 @@ app.post('/api/stripe/webhook',
     }
     processedStripeEvents.add(event.id);
     // Cap set size to prevent unbounded memory growth
-    if (processedStripeEvents.size > 10000) {
+    if (processedStripeEvents.size > MAX_STRIPE_EVENTS) {
       const first = processedStripeEvents.values().next().value;
       processedStripeEvents.delete(first);
     }
+    // Persist to disk so idempotency survives restarts
+    persistStripeEvents();
 
     // Helper: upgrade a user's tier in PocketBase
     async function upgradeTier(userId, tier, customerId, subscriptionId) {
@@ -1072,7 +1106,7 @@ function parseMissingPackages(stderr) {
 const convertLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { error: 'rate_limit', message: 'Too many conversion requests. Try again in a minute.' } });
 const MAX_DOCX_BYTES = Number(process.env.MAX_DOCX_BYTES || 10_000_000); // 10 MB
 
-app.post('/api/convert', convertLimiter, express.raw({ type: '*/*', limit: '10mb' }), (req, res) => {
+app.post('/api/convert', convertLimiter, express.raw({ type: '*/*', limit: '10mb' }), async (req, res) => {
   const buf = req.body;
   if (!Buffer.isBuffer(buf) || buf.length < 100) {
     return res.status(400).json({ error: 'invalid_request', message: 'No file received. Send the .docx as the raw request body.' });
@@ -1081,9 +1115,9 @@ app.post('/api/convert', convertLimiter, express.raw({ type: '*/*', limit: '10mb
     return res.status(413).json({ error: 'payload_too_large', message: `File exceeds ${MAX_DOCX_BYTES} byte limit.` });
   }
 
-  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-conv-'));
+  const tmpBase = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-conv-'));
   const docxPath = path.join(tmpBase, 'input.docx');
-  fs.writeFileSync(docxPath, buf);
+  await fsp.writeFile(docxPath, buf);
 
   const pandoc = spawn('pandoc', [docxPath, '-t', 'markdown', '--wrap=none'], { cwd: tmpBase });
 
@@ -1104,7 +1138,7 @@ app.post('/api/convert', convertLimiter, express.raw({ type: '*/*', limit: '10mb
       return res.json({ markdown: stdout });
     }
     console.error(`[convert] pandoc exit ${code}: ${stderr.slice(0, 500)}`);
-    return res.status(500).json({ error: 'conversion_failed', message: 'Failed to convert .docx to Markdown.', detail: stderr.slice(0, 300) });
+    return res.status(500).json({ error: 'conversion_failed', message: 'Failed to convert .docx to Markdown.', detail: sanitizeStderr(stderr.slice(0, 300)) });
   });
 });
 
@@ -1125,14 +1159,14 @@ app.post('/api/analyze/structure', (req, res) => {
 // References and Citations System
 // ================================================================
 
-app.post('/api/analyze/references', (req, res) => {
+app.post('/api/analyze/references', async (req, res) => {
   const { manuscriptText, bibliography } = req.body || {};
   if (!manuscriptText || typeof manuscriptText !== 'string') {
     return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required.' });
   }
 
   const citations = referencesSystem.extractCitations(manuscriptText);
-  const bibContent = bibliography || fs.readFileSync(BIB_PATH, 'utf8');
+  const bibContent = bibliography || await fsp.readFile(BIB_PATH, 'utf8');
   const validation = referencesSystem.validateBibliography(bibContent);
   const crossRef = referencesSystem.crossReference(manuscriptText, bibContent);
 
@@ -1454,26 +1488,19 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
 
   // ── Watermark Decision ──────────────────────────────────────
   // Clean preview always (no watermark). On download, check tier/credits.
+  // IMPORTANT: Credits are deducted AFTER successful compilation, not before.
+  // This prevents users from losing credits when Pandoc fails.
   let needsWatermark = false;
   let creditsRemaining = null;
+  let shouldDeductCredit = false;
 
   if (isDownload && isPocketBaseConfigured) {
     if (hasTier(userTier, 'publisher')) {
       needsWatermark = false;
     } else if (userCredits > 0 && userId) {
-      // Deduct one credit
-      try {
-        await pbFetch(`/api/collections/users/records/${userId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ pdf_credits: userCredits - 1 }),
-        });
-        creditsRemaining = userCredits - 1;
-        needsWatermark = false;
-        console.log(`[compile] Deducted 1 credit for user ${userId}, remaining: ${creditsRemaining}`);
-      } catch (creditErr) {
-        console.error('[compile] Credit deduction failed:', creditErr.message);
-        needsWatermark = true;
-      }
+      // Mark for deduction — actual deduction happens after successful compile
+      shouldDeductCredit = true;
+      needsWatermark = false;
     } else {
       needsWatermark = true;
     }
@@ -1508,12 +1535,12 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   // Sanitize marginPreset
   if (!ALL_MARGINS.has(marginPreset)) marginPreset = 'normal';
 
-  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-'));
+  const tmpBase = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-'));
   const mdPath  = path.join(tmpBase, 'input.md');
   const pdfPath = path.join(tmpBase, 'output.pdf');
 
   const effectiveMd = safeMode ? stripCitations(manuscriptText) : manuscriptText;
-  fs.writeFileSync(mdPath, effectiveMd, 'utf8');
+  await fsp.writeFile(mdPath, effectiveMd, 'utf8');
 
   // ── EPUB Export Path ────────────────────────────────────────
   // EPUB uses Pandoc's HTML/CSS pipeline, not XeLaTeX. Skip all
@@ -1581,7 +1608,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         res.status(400).json({
           error: 'epub_failed',
           message: 'EPUB compilation failed.',
-          detail: stderr.split('\n').slice(-15).join('\n'),
+          detail: sanitizeStderr(stderr.split('\n').slice(-15).join('\n')),
         });
       }
     });
@@ -1614,7 +1641,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   // Patch the template file: replace hardcoded font names with resolved ones.
   // This handles \setmainfont{FontName}, \setsansfont{FontName}, \setmonofont{FontName}
   // regardless of whether options follow on the same or next line.
-  let templateContent = fs.readFileSync(tpl.templatePath, 'utf8');
+  let templateContent = await fsp.readFile(tpl.templatePath, 'utf8');
   const fontReplacements = [
     { original: tpl.mainfont, resolved: effectiveMainfont },
     ...(sansResolution ? [{ original: tpl.sansfont, resolved: sansResolution.resolved }] : []),
@@ -1656,7 +1683,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   }
 
   const patchedTemplatePath = path.join(tmpBase, 'template.latex');
-  fs.writeFileSync(patchedTemplatePath, templateContent, 'utf8');
+  await fsp.writeFile(patchedTemplatePath, templateContent, 'utf8');
 
   // ── Preamble Assembly ──────────────────────────────────────
   // Collect LaTeX preamble from all analysis modules → header.tex → Pandoc -H
@@ -1720,7 +1747,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
 
   // Write assembled preamble to header.tex for Pandoc -H injection
   const headerPath = path.join(tmpBase, 'header.tex');
-  fs.writeFileSync(headerPath, preambleParts.join('\n\n'), 'utf8');
+  await fsp.writeFile(headerPath, preambleParts.join('\n\n'), 'utf8');
 
   const fontLog = [
     `font=${effectiveMainfont}${fontResolution.isFallback ? ` (fallback from ${tpl.mainfont})` : ''}`,
@@ -1729,8 +1756,9 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
   ].filter(Boolean).join(' ');
   console.log(`[compile] engine=lualatex pandoc=${PANDOC_VERSION} template=${tplKey} variant=${headingVariant} size=${pageSize} margins=${marginPreset} safe=${safeMode} mode=${compileMode} ${fontLog}`);
 
-  const fromFormat = safeMode ? '--from=markdown'
-    : PANDOC_HAS_CITEPROC ? '--from=markdown+citations' : '--from=markdown';
+  // Strip raw_tex and raw_attribute to prevent LFI attacks via \input{} or \verbatiminput{}
+  const fromFormat = safeMode ? '--from=markdown-raw_tex-raw_attribute'
+    : PANDOC_HAS_CITEPROC ? '--from=markdown+citations-raw_tex-raw_attribute' : '--from=markdown-raw_tex-raw_attribute';
   const baseArgs = [
     mdPath,
     fromFormat,
@@ -1793,7 +1821,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       return res.status(504).json({
         error: 'compile_timeout',
         message: `Compilation exceeded ${COMPILE_TIMEOUT_MS}ms and was stopped.`,
-        detail: stderr.split('\n').slice(-15).join('\n'),
+        detail: sanitizeStderr(stderr.split('\n').slice(-15).join('\n')),
       });
     }
 
@@ -1814,6 +1842,21 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       }
       if (underfullCount > 0) {
         res.setHeader('X-PP-Underfull-Boxes', String(underfullCount));
+      }
+
+      // Deduct credit AFTER successful compilation — never charge for a failed compile
+      if (shouldDeductCredit && userId) {
+        try {
+          await pbFetch(`/api/collections/users/records/${userId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ pdf_credits: userCredits - 1 }),
+          });
+          creditsRemaining = userCredits - 1;
+          console.log(`[compile] Deducted 1 credit for user ${userId}, remaining: ${creditsRemaining}`);
+        } catch (creditErr) {
+          console.error('[compile] Credit deduction failed:', creditErr.message);
+          // Compilation succeeded — still deliver the PDF, but log the failure
+        }
       }
 
       // Optional PDF/X-1a conversion for IngramSpark compliance
@@ -1905,7 +1948,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       if (messages.length === 0) messages.push('Typesetting failed. Please review your Markdown.');
       if (safeMode) messages.push('Safe mode was enabled — citations were not processed.');
 
-      const tail = stderr.split('\n').slice(-15).join('\n');
+      const tail = sanitizeStderr(stderr.split('\n').slice(-15).join('\n'));
 
       res.status(400).json({
         error: 'compile_failed',
@@ -2048,7 +2091,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
   const sansResolution = tpl.sansfont ? fontAvailability.resolveFont(tpl.sansfont) : null;
   const monoResolution = tpl.monofont ? fontAvailability.resolveFont(tpl.monofont) : null;
 
-  let templateContent = fs.readFileSync(tpl.templatePath, 'utf8');
+  let templateContent = await fsp.readFile(tpl.templatePath, 'utf8');
   const fontReplacements = [
     { original: tpl.mainfont, resolved: effectiveMainfont },
     ...(sansResolution ? [{ original: tpl.sansfont, resolved: sansResolution.resolved }] : []),
@@ -2094,19 +2137,19 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
   for (const size of validSizes) {
     if (!ALL_MARGINS.has(marginPreset)) marginPreset = 'normal';
     const geo = geometryFor(size, marginPreset, templateType);
-    const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-batch-'));
+    const tmpBase = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-batch-'));
 
     try {
       const mdPath = path.join(tmpBase, 'input.md');
       const pdfPath = path.join(tmpBase, 'output.pdf');
-      fs.writeFileSync(mdPath, effectiveMd, 'utf8');
+      await fsp.writeFile(mdPath, effectiveMd, 'utf8');
 
       const tplPath = path.join(tmpBase, 'template.latex');
-      fs.writeFileSync(tplPath, templateContent, 'utf8');
+      await fsp.writeFile(tplPath, templateContent, 'utf8');
 
       // Inject per-size geometry into header.tex (templates don't use Pandoc's $geometry$ variable)
       const headerPath = path.join(tmpBase, 'header.tex');
-      fs.writeFileSync(headerPath, `\\geometry{${geo}}\n\n${preambleStr}`, 'utf8');
+      await fsp.writeFile(headerPath, `\\geometry{${geo}}\n\n${preambleStr}`, 'utf8');
 
       // Handle custom fonts for batch
       if (customFonts && typeof customFonts === 'object') {
@@ -2123,8 +2166,9 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
         }
       }
 
-      const batchFromFormat = safeMode ? '--from=markdown'
-        : PANDOC_HAS_CITEPROC ? '--from=markdown+citations' : '--from=markdown';
+      // Strip raw_tex and raw_attribute to prevent LFI attacks
+      const batchFromFormat = safeMode ? '--from=markdown-raw_tex-raw_attribute'
+        : PANDOC_HAS_CITEPROC ? '--from=markdown+citations-raw_tex-raw_attribute' : '--from=markdown-raw_tex-raw_attribute';
       const args = [
         mdPath,
         batchFromFormat,
@@ -2151,7 +2195,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
           if (code === 0 && fs.existsSync(pdfPath)) {
             resolve({ success: true });
           } else {
-            resolve({ success: false, error: stderr.split('\n').slice(-5).join('\n') });
+            resolve({ success: false, error: sanitizeStderr(stderr.split('\n').slice(-5).join('\n')) });
           }
         });
       });

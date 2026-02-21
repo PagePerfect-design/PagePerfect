@@ -70,6 +70,8 @@ type PreflightResult = {
 }
 
 const PREFS_KEY = 'pp-prefs-v1'
+const MANUSCRIPT_KEY = 'pp-manuscript-v1'
+const TITLE_KEY = 'pp-title-v1'
 type Prefs = {
   template: TemplateKey
   pageSize: PageSize
@@ -1340,24 +1342,28 @@ function TopBar({
   title,
   wordCount,
   status,
+  loading,
   errors,
   showEditor,
   showSystems,
   onTitleChange,
   onBack,
   onPublish,
+  onCompile,
   onToggleEditor,
   onToggleSystems,
 }: {
   title: string
   wordCount: number
   status: Status
+  loading: boolean
   errors: CompileError[]
   showEditor: boolean
   showSystems: boolean
   onTitleChange: (t: string) => void
   onBack: () => void
   onPublish: () => void
+  onCompile: () => void
   onToggleEditor: () => void
   onToggleSystems: () => void
 }) {
@@ -1401,6 +1407,16 @@ function TopBar({
               {translateError(errors[0].message).slice(0, 50)}
             </span>
           )}
+
+          <button
+            onClick={onCompile}
+            disabled={loading}
+            className="flex h-8 items-center gap-1.5 px-3 text-[11px] font-medium text-[#111111]/30 transition-all hover:bg-[#111111]/[0.04] hover:text-[#111111]/50 disabled:opacity-30"
+            title="Recompile (Space)"
+          >
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Keyboard className="h-3 w-3" />}
+            Compile
+          </button>
 
           <button
             onClick={onToggleEditor}
@@ -2041,18 +2057,26 @@ export default function CompileShell() {
     return () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl) }
   }, [pdfUrl])
 
-  // Load saved preferences on mount
+  // Load saved preferences and manuscript on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(PREFS_KEY)
-      if (!raw) return
-      const p: Partial<Prefs> = JSON.parse(raw)
-      if (p.template) setTemplate(p.template)
-      if (p.headingVariant) setHeadingVariant(p.headingVariant)
-      if (p.pageSize) setPageSize(p.pageSize)
-      if (p.marginPreset) setMarginPreset(p.marginPreset)
-      if (typeof p.safeMode === 'boolean') setSafeMode(p.safeMode)
-      if (typeof p.title === 'string' && p.title.trim()) setTitle(p.title)
+      if (raw) {
+        const p: Partial<Prefs> = JSON.parse(raw)
+        if (p.template) setTemplate(p.template)
+        if (p.headingVariant) setHeadingVariant(p.headingVariant)
+        if (p.pageSize) setPageSize(p.pageSize)
+        if (p.marginPreset) setMarginPreset(p.marginPreset)
+        if (typeof p.safeMode === 'boolean') setSafeMode(p.safeMode)
+        if (typeof p.title === 'string' && p.title.trim()) setTitle(p.title)
+      }
+    } catch { /* ignore */ }
+    // Restore manuscript from auto-save
+    try {
+      const savedMs = localStorage.getItem(MANUSCRIPT_KEY)
+      if (savedMs && savedMs.trim()) setManuscript(savedMs)
+      const savedTitle = localStorage.getItem(TITLE_KEY)
+      if (savedTitle && savedTitle.trim()) setTitle(savedTitle)
     } catch { /* ignore */ }
   }, [])
 
@@ -2062,6 +2086,20 @@ export default function CompileShell() {
     const prefs: Prefs = { template, pageSize, marginPreset, safeMode, title, headingVariant }
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)) } catch { /* ignore */ }
   }, [template, headingVariant, pageSize, marginPreset, safeMode, title, stage])
+
+  // Auto-save manuscript to localStorage (3s debounce)
+  const manuscriptSaveRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!manuscript) return
+    if (manuscriptSaveRef.current) window.clearTimeout(manuscriptSaveRef.current)
+    manuscriptSaveRef.current = window.setTimeout(() => {
+      try {
+        localStorage.setItem(MANUSCRIPT_KEY, manuscript)
+        localStorage.setItem(TITLE_KEY, title)
+      } catch { /* quota exceeded — ignore */ }
+    }, 3000)
+    return () => { if (manuscriptSaveRef.current) window.clearTimeout(manuscriptSaveRef.current) }
+  }, [manuscript, title])
 
   // Clear PDF preview immediately when design parameters change
   // so the user sees visual feedback that a new compile is coming
@@ -2078,10 +2116,16 @@ export default function CompileShell() {
   }, [template, headingVariant, stage, pdfUrl])
 
   // Debounced auto-compile in design stage
+  // Uses 3s debounce for manuscript text changes (large payloads),
+  // 1.5s for settings changes (template, page size, etc.)
+  const prevManuscriptRef = useRef(manuscript)
   useEffect(() => {
     if (stage !== 'design' || !manuscript.trim()) return
     if (debounceRef.current) window.clearTimeout(debounceRef.current)
-    debounceRef.current = window.setTimeout(() => { void compile(false) }, 1000)
+    const isTextChange = prevManuscriptRef.current !== manuscript
+    prevManuscriptRef.current = manuscript
+    const delay = isTextChange ? 3000 : 1500
+    debounceRef.current = window.setTimeout(() => { void compile(false) }, delay)
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, stage])
@@ -2340,12 +2384,14 @@ export default function CompileShell() {
                 title={title}
                 wordCount={wordCount}
                 status={status}
+                loading={loading}
                 errors={errors}
                 showEditor={showEditor}
                 showSystems={showSystems}
                 onTitleChange={setTitle}
                 onBack={() => setStage('portal')}
                 onPublish={() => setStage('launch')}
+                onCompile={() => compile(false)}
                 onToggleEditor={() => setShowEditor(prev => !prev)}
                 onToggleSystems={() => setShowSystems(prev => !prev)}
               />
