@@ -1759,6 +1759,9 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       const latexError = stderr.match(/^!\s+(.+?)\.?\s*$/m);
       const undefinedCS = stderr.match(/Undefined control sequence[\s\S]*?l\.\d+\s+(.*)/);
 
+      // Detect PDF driver failure (Error 256 / driver return code)
+      const driverError = /Error\s+\d+\s+\(driver return code\)/i.test(stderr);
+
       // Compile log analysis for detailed diagnostics
       const compileLog = bookEngineering.analyzeCompileLog(stderr);
 
@@ -1766,13 +1769,16 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       if (missingFont) {
         messages.push(`Font "${missingFont}" not found. Install it or try a different template.`);
       }
+      if (driverError && !missingFont) {
+        messages.push('The PDF driver encountered an error generating output. Try a different template or simplify your manuscript.');
+      }
       if (!safeMode) {
         if (missingCitations.length) messages.push(`Undefined citations: ${missingCitations.join(', ')}.`);
       }
       if (missingPackages.length) messages.push(`Missing LaTeX packages: ${missingPackages.join(', ')}.`);
       if (undefinedCS) {
         messages.push(`LaTeX error: Undefined control sequence near "${undefinedCS[1].trim().slice(0, 80)}".`);
-      } else if (latexError && !missingFont && !missingPackages.length) {
+      } else if (latexError && !missingFont && !missingPackages.length && !driverError) {
         messages.push(`LaTeX error: ${latexError[1].slice(0, 120)}.`);
       }
       if (messages.length === 0) messages.push('Typesetting failed. Please review your Markdown.');

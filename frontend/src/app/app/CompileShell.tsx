@@ -177,6 +177,7 @@ function translateError(raw: string): string {
     [/! LaTeX Error:\s*(.*)/i, '$1'],
     [/xelatex.*not found/i, 'Server configuration error. The typesetting engine is not available.'],
     [/pandoc.*not found/i, 'Server configuration error. The document converter is not available.'],
+    [/Error\s+\d+\s+\(driver return code\)/i, 'The PDF engine encountered a driver error. Try a different template or simplify your manuscript.'],
     [/timed?\s*out/i, 'Compilation timed out. Your manuscript may be too large — try splitting it into smaller sections.'],
     [/Compile failed \(status (\d+)\)/i, 'The server returned an error (code $1). Please try again.'],
   ]
@@ -821,14 +822,24 @@ function LevitatingBook({
               <BookSkeleton />
             ) : status === 'error' && errors.length > 0 ? (
               <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3] p-8">
-                <div className="max-w-[360px] text-center">
-                  <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/5">
+                <div className="max-w-[420px]">
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/5">
                     <AlertTriangle className="h-4 w-4 text-red-500/60" />
                   </div>
                   <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-wider text-red-600/70">Typesetting Error</p>
-                  {errors.map((e, i) => (
-                    <p key={i} className="mb-1.5 font-mono text-[10px] leading-relaxed text-[#111111]/70">{translateError(e.message)}</p>
+                  {errors.filter(e => !e.message.startsWith('__detail__')).map((e, i) => (
+                    <p key={i} className="mb-1.5 font-mono text-[11px] leading-relaxed text-[#111111]/80">{translateError(e.message)}</p>
                   ))}
+                  {errors.some(e => e.message.startsWith('__detail__')) && (
+                    <details className="mt-4">
+                      <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+                        Engine log
+                      </summary>
+                      <pre className="mt-2 max-h-[200px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+                        {errors.filter(e => e.message.startsWith('__detail__')).map(e => e.message.replace('__detail__', '')).join('\n')}
+                      </pre>
+                    </details>
+                  )}
                 </div>
               </div>
             ) : (
@@ -2134,8 +2145,9 @@ export default function CompileShell() {
         pdfBlobRef.current = null
         const msgs: CompileError[] = []
         if (payload?.message) msgs.push({ message: payload.message })
-        if (payload?.detail) msgs.push({ message: payload.detail })
         if (!msgs.length) msgs.push({ message: `Compile failed (status ${resp.status}).` })
+        // Attach raw detail for optional "Show details" — but do NOT display as a primary error
+        if (payload?.detail) msgs.push({ message: `__detail__${payload.detail}` })
         setErrors(msgs)
         setStatus('error')
       }
