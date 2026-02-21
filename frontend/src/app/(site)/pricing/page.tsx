@@ -29,7 +29,7 @@ const TIERS = [
     num: '02',
     key: 'single' as const,
     name: 'Single',
-    price: '\u00a32.99',
+    price: '$2.99',
     period: 'per PDF',
     body: 'One clean, watermark-free export. All 19 page sizes including Amazon KDP formats. Full quality compile, print-ready output.',
     aside: 'No subscription. Pay only when you need a clean export.',
@@ -230,7 +230,7 @@ function PaymentForm({
   const [processing, setProcessing] = useState(false)
 
   const buttonLabel = {
-    single: 'Pay \u00a32.99 \u2014 One PDF',
+    single: 'Pay $2.99 \u2014 One PDF',
     publisher: 'Subscribe \u2014 $9.99/mo',
     studio: 'Pay $199 \u2014 Lifetime',
   }[tier]
@@ -352,7 +352,7 @@ function CheckoutOverlay({
               {{ single: 'Single PDF', publisher: 'Publisher', studio: 'Studio' }[tier]}
             </p>
             <p className="mt-1 font-mono text-[11px] text-white/35">
-              {{ single: '\u00a32.99 \u00b7 one watermark-free PDF', publisher: '$9.99/month \u00b7 cancel anytime', studio: '$199 one-time \u00b7 lifetime access' }[tier]}
+              {{ single: '$2.99 \u00b7 one watermark-free PDF', publisher: '$9.99/month \u00b7 cancel anytime', studio: '$199 one-time \u00b7 lifetime access' }[tier]}
             </p>
           </div>
           <button

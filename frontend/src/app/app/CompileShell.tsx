@@ -1810,7 +1810,7 @@ function LaunchOverlay({
             <p className="font-mono text-[10px] text-amber-700/70">
               Free tier — PDF includes watermark.{' '}
               <a href="/pricing" className="underline hover:text-amber-800">Upgrade</a>{' '}
-              or buy a single clean PDF for £2.99.
+              or buy a single clean PDF for $2.99.
             </p>
           </div>
         )}
