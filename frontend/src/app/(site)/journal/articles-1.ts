@@ -573,4 +573,52 @@ export const ARTICLES_PART1: Article[] = [
       ],
     },
   },
+  {
+    slug: 'paragraph-indent',
+    title: 'The Paragraph Indent: Five Centuries of Evidence Against the Line Space',
+    description:
+      'Why every major tradition in book typography uses a first-line indent to separate paragraphs — and why the block-paragraph style that dominates screens is a regression when applied to the printed page.',
+    category: 'Typography',
+    date: '2026-03-01',
+    readTime: '5 min',
+    hook:
+      'Open any book printed between 1500 and 1970. The paragraphs are separated by a first-line indent — typically one em — with no extra vertical space between them. Open a website built in 2024. The paragraphs are separated by a full line of vertical space with no indent at all. Both conventions exist because they solve the same problem: signaling to the reader that one unit of thought has ended and another has begun. But they are not equivalent solutions. The indent preserves the vertical rhythm of the page. The line space breaks it. For five centuries, every compositor, punch-cutter, and type designer who cared about sustained reading chose the indent. The line space is a child of the typewriter and the screen — media where vertical rhythm either does not exist or cannot be controlled. Applying it to a typeset page is not a modernization. It is a loss of information.',
+    sections: [
+      {
+        heading: 'The Vertical Rhythm Argument',
+        paragraphs: [
+          'A baseline grid imposes a fixed vertical increment — say, 14.4 points for 12-point type with 120% leading — to which every line of text on the page adheres. When adjacent columns of text share the same baseline grid, their lines align horizontally across the spread, producing the visual coherence that readers perceive as professionalism. This alignment is the single most important structural property of a well-typeset page. It is also the first casualty of inter-paragraph line spaces.',
+          'When a full line of vertical space is inserted between paragraphs, every paragraph after the first is displaced by one baseline increment. If a page contains six paragraphs, the text block contains five gaps — five points at which the vertical rhythm resets. In a two-column layout, these gaps will almost never occur at the same vertical position in both columns, destroying the horizontal baseline alignment that the grid was designed to enforce. The indent, by contrast, adds zero vertical space. The last line of one paragraph and the first line of the next sit on consecutive baselines. The grid is unbroken. Bringhurst is explicit: "A textblock with block paragraphs and no paragraph indent is like a painting in which the weights and shapes are distributed equally across the canvas — monotonous and lifeless." He prescribes the indent as the default and treats block spacing as an exception requiring justification.',
+        ],
+      },
+      {
+        heading: 'The Density Argument: More Text, Same Legibility',
+        paragraphs: [
+          'A 300-page novel set with first-line indents and no inter-paragraph spacing will contain approximately 15% more text per page than the same novel set with block paragraphs separated by a full line space. This is not a trivial difference. In commercial publishing, it is the difference between a 300-page book and a 345-page book — a difference that affects printing costs, spine width, shipping weight, and retail price. For self-published authors using print-on-demand services where cost scales linearly with page count, the indent is not merely a typographic preference. It is an economic decision.',
+          'The density gain does not come at the expense of legibility. The indent provides the same paragraph-separation signal as the line space — "new thought begins here" — without consuming vertical real estate. Miles Tinker\'s research at the University of Minnesota found no statistically significant difference in reading speed or comprehension between indented paragraphs and block paragraphs in controlled experiments. The two methods are equally effective at signaling paragraph boundaries. But the indent achieves this with zero vertical cost, while the line space consumes one full baseline increment per paragraph. When the signals are equally effective, the method that preserves density and rhythm is objectively superior for sustained reading.',
+        ],
+      },
+      {
+        heading: 'The Historical Consensus',
+        paragraphs: [
+          'The first-line indent emerged in the late fifteenth century as printers transitioned from the pilcrow (¶) — a symbol inherited from medieval scribes — to a spatial signal. Early incunabula left blank spaces for rubricators to insert pilcrows by hand; when the hand-decoration step was omitted (whether by haste or economy), the blank space remained, and compositors discovered that the space alone was sufficient to signal a new paragraph. By the sixteenth century, the convention was universal. Aldus Manutius, Claude Garamond, Robert Estienne, and the Elzevir house all used first-line indents. No major printing house between 1500 and 1900 used inter-paragraph line spaces for book-length body text.',
+          'The block-paragraph convention has a precise origin: the typewriter. On a mechanical typewriter, controlling first-line indentation required the operator to manually press the tab key or space bar — an action prone to inconsistency. The carriage return, by contrast, reliably produced a full line advance. When typed manuscripts were the primary input format for correspondence, business documents, and eventually web pages, the block paragraph became the default because it was the path of least resistance for the input device. HTML formalized this when browsers implemented <p> elements with default top and bottom margins and no first-line indent. The convention spread not because it was superior but because the tools made it easier.',
+        ],
+      },
+      {
+        heading: 'When Block Paragraphs Are Correct',
+        paragraphs: [
+          'Block paragraphs with inter-paragraph spacing are the correct choice in specific contexts. Technical documentation, where paragraphs are often interspersed with code blocks, lists, and diagrams, benefits from the additional vertical separation because it disambiguates paragraph boundaries from the boundaries of adjacent non-text elements. Business letters use block paragraphs by long convention, and violating that convention would read as eccentric rather than refined. Screen-based reading at typical web line lengths (often exceeding 90 characters) benefits from the extra spatial cue because the reading conditions — backlit screens, variable fonts, distracting surroundings — degrade the reader\'s ability to detect the subtle indent signal.',
+          'Tschichold acknowledged this distinction in "The New Typography" (1928), where he advocated block paragraphs for modernist commercial printing — advertising, catalogs, ephemera — while maintaining the indent for book-length texts. His reasoning was functional, not ideological: in short documents where the reader enters and exits frequently, the line space helps the eye locate its position after an interruption. In sustained reading, where the reader proceeds linearly through hundreds of pages, the line space becomes a rhythmic disturbance that accumulates across the length of the work. The indent is for the reader who stays. The line space is for the reader who dips in and out.',
+        ],
+      },
+    ],
+    conclusion: {
+      heading: 'The Actionable Rule',
+      paragraphs: [
+        'For any document intended for sustained, linear reading — books, dissertations, long-form essays, manuscripts — use a first-line indent of one em (equal to the body type size) with no additional vertical space between paragraphs. Omit the indent on the first paragraph after a chapter title, section heading, or block element (the reader does not need a paragraph signal when the preceding element already provides a structural break). Align all text to the baseline grid.',
+        'Reserve block paragraphs for documents where reading is non-linear: technical manuals, correspondence, web pages, and any format where the reader routinely interrupts and resumes. The choice between indent and line space is not a style preference. It is a functional decision with a five-century evidence base. For the printed page and sustained reading, the indent preserves what matters most — vertical rhythm, text density, and the unbroken flow of the reader\'s eye from one thought to the next.',
+      ],
+    },
+  },
 ]
