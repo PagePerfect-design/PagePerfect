@@ -1,169 +1,128 @@
-# Plan: Watermark System + Single-PDF Credit Wiring
+# Mobile Optimisation Plan — PagePerfect
 
-## Problem
-1. **No watermark** is applied to free-tier PDFs — the "watermarked output" claim is not implemented
-2. The £2.99 "Single" tier collects payment but **doesn't deliver** — webhook writes `tier='single'` but there's no credit/token system
-3. Compile route has **no paywall enforcement** — anyone gets clean PDFs
+## Audit Summary
 
-## Design Decisions (from user)
-- **Watermark visibility**: Middle ground — repeating geometric pattern, refined but clearly marked
-- **Preview vs download**: Clean preview (no watermark), watermarked on download only
-- **Credit model**: 1 credit = 1 PDF download
+The site is desktop-first with limited mobile handling. Three areas are **critical** (nav, pricing table, editor), two are **high** (touch targets, sidebar navigation), and the rest are **medium** fixes.
 
 ---
 
-## Watermark Design: "The Compositor's Mark"
+## Phase 1 — Navigation (Critical)
 
-A Müller-Brockmann-inspired geometric watermark built entirely in TikZ. The theme is *printer's registration marks meets Swiss grid design*.
+**Problem:** No hamburger menu. All nav items (Pricing, Journal, NavAuth, Open Editor) overflow horizontally on phones. 10px text is untappable.
 
-### The Tile (single unit, repeated across page)
+**Fix in `frontend/src/app/(site)/layout.tsx`:**
+- Add a `MobileNav` client component with hamburger icon (3 horizontal lines)
+- Desktop: current horizontal bar unchanged (`hidden md:flex` on the link group)
+- Mobile: hamburger button (`md:hidden`) opens a full-screen overlay or slide-down panel
+  - Stack links vertically: Pricing, Journal, Docs, Sign in / User menu
+  - "Open Editor" as full-width red CTA at bottom
+  - Each link = 48px min height for touch targets
+  - Close on link click or X button
+- Keep sticky `top-0 z-40` behavior on both
 
-```
-         ┌─┐                     ┌─┐
-         └─┘                     └─┘
-              ╶─╶─╶─╶─╶─╶─╶─
-           ┌───────────────────┐
-           │   P A G E         │
-           │     ───+───       │
-           │   P E R F E C T   │
-           └───────────────────┘
-              ╶─╶─╶─╶─╶─╶─╶─
-         ┌─┐                     ┌─┐
-         └─┘                     └─┘
-```
-
-**Elements:**
-1. **Registration crosshair** — a ＋ inside a circle (the classic printer's alignment mark)
-2. **"PAGE" above, "PERFECT" below** — letterspaced small-caps text flanking the crosshair
-3. **Baseline grid fragments** — short dashed horizontal lines suggesting the grid system
-4. **Corner crop marks** — small L-brackets at the four corners of the tile
-5. **Golden rectangle** — a subtle phi-proportioned rectangle outline behind the crosshair
-
-**Layout:**
-- Tiles arranged on a 30° rotated grid, ~2.5 inches apart
-- Opacity: 8% (`text opacity=0.08, draw opacity=0.08`)
-- `eso-pic` package places the pattern in every page background
-- `tikz` renders each tile
+**Files:** `(site)/layout.tsx`, new `components/MobileNav.tsx` (client component)
 
 ---
 
-## Architecture
+## Phase 2 — Pricing Comparison Table (Critical)
 
-### Current compile flow
-```
-User types → 1s debounce → compile() → PDF blob → preview iframe
-User clicks Download → compile(downloadAfter=true) → same PDF blob → trigger <a download>
-```
+**Problem:** `min-w-[640px]` forces horizontal scroll. Four tier columns are unreadable on 375px screens.
 
-Both preview and download use the same compile call. The `downloadAfter` flag just triggers a file save after compilation.
+**Fix in `frontend/src/app/(site)/pricing/page.tsx`:**
+- Replace horizontal scroll table with **stacked cards on mobile** (`md:hidden` / `hidden md:block` pattern):
+  - Desktop (md+): current Swiss-style table grid — unchanged
+  - Mobile: each feature becomes a card row showing feature name + value for each tier stacked vertically, or a single-tier-at-a-time tabbed view
+- Simplest approach: on mobile, show a vertical list where each row displays the feature name and all 4 values in a 2x2 grid beneath it
+- Tier number sizing: reduce `text-[4rem]` to `text-[2.5rem]` on mobile via responsive class (`text-[2.5rem] md:text-[4rem] md:text-[5rem]`)
 
-### New flow
-```
-Auto-compile (preview)
-  → compile(download=false) in request body
-  → backend: always clean PDF, no watermark
-  → preview in iframe
-
-Download button click
-  → compile(download=true) in request body + Authorization header
-  → backend: check user tier via PocketBase token
-     ├─ publisher/studio tier → clean PDF
-     ├─ pdf_credits > 0 → decrement credit, clean PDF, X-Credits-Remaining header
-     └─ drafter/no auth/no credits → inject watermark preamble → watermarked PDF
-  → frontend: save PDF, show credit info or "watermarked" notice
-```
+**Files:** `(site)/pricing/page.tsx`
 
 ---
 
-## Implementation Steps
+## Phase 3 — Editor Mobile Gate (Critical)
 
-### Step 1: `backend/watermark.js` (NEW)
+**Problem:** The editor is entirely desktop-dependent — fixed-dimension PDF preview (520x680px), dock toolbar, split-pane layout. Redesigning it for mobile is a large project.
 
-TikZ watermark generator module.
+**Fix in `frontend/src/app/app/CompileShell.tsx`:**
+- Add a **mobile gate** at the top of the main editor component:
+  - Detect viewport width < 768px
+  - Show a full-screen message: "PagePerfect's editor requires a desktop browser. Open this page on a laptop or tablet for the best experience."
+  - Include a "Continue anyway" link that dismisses the gate (for adventurous users)
+- This is a pragmatic short-term solution — a full mobile editor would be a separate project
 
-Exports:
-- `generateWatermarkPreamble()` → returns LaTeX string
-
-The LaTeX code:
-- Loads `eso-pic` and `tikz` packages
-- Defines a `\AddToShipoutPictureBG*` command
-- Draws the compositor's mark tile pattern at 8% opacity
-- Tiles rotated 30° across the full page
-
-### Step 2: `backend/index.js` — compile route changes
-
-In the `/api/compile` route handler:
-
-1. Accept `download` boolean from `req.body`
-2. Accept optional `Authorization: Bearer <token>` header
-3. Add watermark decision logic:
-   ```
-   needsWatermark = false
-   if download:
-     tier = 'drafter' (default)
-     credits = 0
-     if auth token present:
-       verify against PocketBase → get tier, pdf_credits
-     if tier in ['publisher', 'studio']:
-       needsWatermark = false
-     elif credits > 0:
-       decrement credit via PocketBase PATCH
-       needsWatermark = false
-       set X-Credits-Remaining header
-     else:
-       needsWatermark = true
-   ```
-4. If `needsWatermark`, push watermark preamble into `preambleParts[]`
-5. Set `X-Watermarked: true/false` response header
-
-### Step 3: `backend/index.js` — webhook changes
-
-In `payment_intent.succeeded`:
-- If `tier === 'single'`: increment `pdf_credits` by 1 (not set tier)
-- If `tier === 'studio'`: set tier to 'studio' (existing behavior)
-
-New helper: `incrementCredits(userId, customerId)`:
-- Fetch current `pdf_credits` from PocketBase
-- PATCH with `pdf_credits + 1`
-
-### Step 4: `frontend/src/lib/database.types.ts`
-
-- Add `pdf_credits: number` to `UserRecord` interface
-- Update comment to document the field
-
-### Step 5: `frontend/src/lib/auth-context.tsx`
-
-- Add `pdfCredits: number` to `AuthState`
-- Parse `pdf_credits` from user record in `userToProfile()` / `syncUser()`
-- Add `refreshUser()` method to re-fetch from PocketBase (called after download or purchase)
-
-### Step 6: `frontend/src/app/app/CompileShell.tsx`
-
-- In `compile()`: when `downloadAfter=true`, add `download: true` to request body
-- Pass PocketBase auth token: `Authorization: Bearer ${pb.authStore.token}`
-- After response: read `X-Watermarked` and `X-Credits-Remaining` headers
-- If watermarked: show small notice "Free tier — PDF includes watermark"
-- If credits used: show "N credits remaining" and call `refreshUser()`
-- Show credit badge near download button if user has credits
+**Files:** `app/CompileShell.tsx`
 
 ---
 
-## PocketBase Admin Change (manual)
+## Phase 4 — Touch Targets & Small Interactions (High)
 
-Add field to `users` collection:
-- **Field name**: `pdf_credits`
-- **Type**: Number
-- **Default**: `0`
-- **Min value**: `0`
+**Problem:** Many buttons are `h-8` (32px), nav/footer links have no padding, all below the 44px iOS minimum.
+
+**Fixes across multiple files:**
+- Footer links: add `py-1` minimum padding to create 44px tap zones
+- Nav links (desktop): already adequate with hamburger replacing them on mobile
+- Journal article cards: already 32px padding — OK
+- Pricing CTA buttons: `h-10` (40px) -> add `sm:h-12` or increase base to `h-11` (44px)
+- Editor dock buttons: increase from `h-8` to `h-10` on mobile, but editor has mobile gate so lower priority
+
+**Files:** `(site)/layout.tsx` (footer), `(site)/pricing/page.tsx`
 
 ---
 
-## Files Modified
+## Phase 5 — Journal & Docs Mobile Sidebar (High)
 
-| File | Change |
-|------|--------|
-| `backend/watermark.js` | **NEW** — TikZ watermark preamble generator |
-| `backend/index.js` | Compile route: download flag, auth check, watermark injection. Webhook: credit increment for single tier |
-| `frontend/src/lib/database.types.ts` | Add `pdf_credits` field to UserRecord |
-| `frontend/src/lib/auth-context.tsx` | Expose `pdfCredits`, add `refreshUser()` |
-| `frontend/src/app/app/CompileShell.tsx` | Download flag, auth header, credit display, watermark notice |
+**Problem:** Both pages hide sidebar navigation on mobile. Users have no way to filter journal categories or navigate docs sections on phones.
+
+**Journal fix in `frontend/src/app/(site)/journal/page.tsx`:**
+- Add a horizontal scrollable category filter bar above the article list on mobile (`md:hidden`)
+- Pills/chips for each category: All, Typography, Layout, Conversion, etc.
+- Active state: solid black fill. Tapping filters the article list
+
+**Docs fix in `frontend/src/app/(site)/docs/page.tsx`:**
+- Add a collapsible "Sections" button at the top of docs content on mobile (`lg:hidden`)
+- Tapping reveals a full-width vertical list of section anchors
+- Closes after selection
+
+**Files:** `(site)/journal/page.tsx`, `(site)/docs/page.tsx`, possibly `DocsNav.tsx`
+
+---
+
+## Phase 6 — Typography & Spacing Polish (Medium)
+
+**Problem:** Many inline `text-[Xpx]` values don't scale. Padding is sometimes aggressive on small screens.
+
+**Fixes:**
+- Pricing tier numbers: `text-[4rem] md:text-[5rem]` -> `text-[2.5rem] md:text-[4rem] lg:text-[5rem]`
+- Pricing tier prices: `text-[2rem] md:text-[2.5rem]` — already responsive, OK
+- Docs content padding: `px-8 md:px-16` -> `px-4 sm:px-8 md:px-16` (more breathing room on small phones)
+- Hero section: already uses clamp() — OK
+- Section headings: already use responsive Tailwind text scale — OK
+
+**Files:** `(site)/pricing/page.tsx`, `(site)/docs/page.tsx`
+
+---
+
+## Phase 7 — Global Mobile Utilities (Medium)
+
+**Fixes in `frontend/src/app/globals.css`:**
+- Add `:active` states for touch feedback on buttons (background shift on press)
+- Add scrollbar hide utility for horizontal scroll containers on mobile
+- Ensure `.skip-link` is accessible on mobile screen readers
+
+**Files:** `globals.css`
+
+---
+
+## Execution Order
+
+| Phase | Severity | Scope | Files |
+|-------|----------|-------|-------|
+| 1. Nav hamburger | Critical | ~80 lines new component | layout.tsx, MobileNav.tsx |
+| 2. Pricing table | Critical | ~60 lines refactor | pricing/page.tsx |
+| 3. Editor gate | Critical | ~30 lines | CompileShell.tsx |
+| 4. Touch targets | High | ~15 lines tweaks | layout.tsx, pricing |
+| 5. Sidebar mobile | High | ~50 lines each | journal, docs |
+| 6. Typography | Medium | ~10 lines tweaks | pricing, docs |
+| 7. Global CSS | Medium | ~15 lines | globals.css |
+
+All changes maintain the Swiss-Ogilvy design system: sharp geometry, solid ink, red accent CTA, no rounded corners on marketing pages.
