@@ -30,6 +30,27 @@ const fontAvailability = require('./font-availability');
 const headingVariants = require('./heading-variants');
 const watermark = require('./watermark');
 
+// ── Redis (optional — gracefully degrades if not configured) ──
+let redis = null;
+let redisHealthy = false;
+try {
+  if (process.env.REDIS_URL || process.env.REDIS_HOST) {
+    const Redis = require('ioredis');
+    const redisOpts = process.env.REDIS_URL
+      ? process.env.REDIS_URL
+      : { host: process.env.REDIS_HOST || 'localhost', port: Number(process.env.REDIS_PORT || 6379) };
+    redis = new Redis(redisOpts, {
+      maxRetriesPerRequest: null, // Required by BullMQ — retry indefinitely
+      enableOfflineQueue: false,   // Fail fast on Queue.add() when Redis is down
+    });
+    redis.on('connect', () => { redisHealthy = true; console.log('[redis] Connected'); });
+    redis.on('error', (err) => { redisHealthy = false; console.error('[redis] Error:', err.message); });
+    redis.on('close', () => { redisHealthy = false; });
+  }
+} catch (err) {
+  console.warn('[redis] Not available:', err.message);
+}
+
 // ---- limits (env overridable) ----
 const MAX_MD_BYTES = Number(process.env.MAX_MD_BYTES || 2_000_000); // ~2 MB
 const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000); // 45s
@@ -148,6 +169,11 @@ function buildFilename(title, template, pageSize) {
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// Trust the first proxy (Vercel edge / Coolify reverse proxy).
+// Without this, req.ip returns the proxy's IP for ALL users, causing
+// every Vercel-proxied request to share a single rate-limit bucket.
+app.set('trust proxy', 1);
+
 // Initialize Grid System
 const gridSystem = new GridSystem();
 
@@ -179,12 +205,24 @@ app.use(cors({
   optionsSuccessStatus: 200,
 }));
 
-// Rate limiting — per IP
+// Rate limiting — per real client IP (trust proxy must be set for X-Forwarded-For).
+// When Redis is available, use RedisStore so limits persist across restarts and
+// would work correctly if multiple backend instances share a single Redis.
+let rateLimitStore;
+if (redis) {
+  try {
+    const { RedisStore } = require('rate-limit-redis');
+    rateLimitStore = new RedisStore({ sendCommand: (...args) => redis.call(...args) });
+    console.log('[rate-limit] Using Redis store');
+  } catch { /* rate-limit-redis not installed — fall back to in-memory */ }
+}
+
 const compileLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 20,             // 20 compiles per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
+  ...(rateLimitStore ? { store: rateLimitStore } : {}),
   message: {
     error: 'rate_limited',
     message: 'Too many compile requests. Please wait a moment and try again.',
@@ -196,6 +234,7 @@ const generalLimiter = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
+  ...(rateLimitStore ? { store: rateLimitStore } : {}),
 });
 
 // Apply general limiter to all routes
@@ -652,8 +691,19 @@ app.post('/api/stripe/create-payment', async (req, res) => {
 // Health & Info Endpoints
 // ================================================================
 
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, service: 'pageperfect-backend', timestamp: new Date().toISOString(), version: '3.1', pdfEngine: 'lualatex' });
+app.get('/api/health', async (_req, res) => {
+  let redisOk = false;
+  if (redis) {
+    try { await redis.ping(); redisOk = true; } catch { /* redis down */ }
+  }
+  res.json({
+    ok: true,
+    service: 'pageperfect-backend',
+    timestamp: new Date().toISOString(),
+    version: '3.1',
+    pdfEngine: 'lualatex',
+    redis: redis ? (redisOk ? 'connected' : 'down') : 'not_configured',
+  });
 });
 
 app.get('/api/health/details', (_req, res) => {
@@ -1711,6 +1761,8 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     // 3. Provenance metadata (embedded in PDF properties via hypersetup)
     buildMeta = provenance.generateBuildMetadata({
       manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
+      outputFormat: wantPdfX ? 'pdfx1a' : wantEpub ? 'epub' : 'pdf',
+      headingVariant, needsWatermark, customFonts: customFonts || null,
     });
     preambleParts.push(provenance.generateMetadataPreamble(buildMeta));
 
@@ -2116,6 +2168,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
     }
     const buildMeta = provenance.generateBuildMetadata({
       manuscriptText, template: tplKey, pageSize: validSizes[0], marginPreset, safeMode, compileMode, title,
+      headingVariant, customFonts: customFonts || null,
     });
     preambleParts.push(provenance.generateMetadataPreamble(buildMeta));
   } catch (err) {
