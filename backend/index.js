@@ -2110,6 +2110,12 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     const { Resend } = require('resend');
     const resend = new Resend(resendKey);
 
+    // Escape HTML entities in user-provided content
+    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const escapedEmail = esc(email);
+    const escapedMessage = esc(message);
+    const nl2br = (s) => s.replace(/\n/g, '<br>');
+
     // Send notification to support
     await resend.emails.send({
       from: 'PagePerfect <noreply@pageperfect.studio>',
@@ -2118,17 +2124,40 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
       subject: `Format Request from ${email}`,
       text: [
         'NEW FORMAT REQUEST',
-        '═'.repeat(40),
+        '----------------------------------------',
         '',
         `From: ${email}`,
         `Time: ${new Date().toISOString()}`,
         `IP:   ${req.ip}`,
         '',
-        '── Message ──',
+        'Message:',
         message,
         '',
-        '═'.repeat(40),
+        '----------------------------------------',
         'Sent via PagePerfect /api/contact',
+      ].join('\n'),
+      html: [
+        '<!DOCTYPE html><html><head><meta charset="utf-8"></head>',
+        '<body style="margin:0;padding:40px 20px;background:#FDFCF8;font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#111111;">',
+        '<div style="max-width:560px;margin:0 auto;">',
+        '  <div style="border-bottom:2px solid #111111;padding-bottom:16px;margin-bottom:24px;">',
+        '    <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:rgba(17,17,17,0.4);">Format Request</span>',
+        '    <h1 style="margin:8px 0 0;font-size:22px;font-weight:700;letter-spacing:-0.02em;">New submission</h1>',
+        '  </div>',
+        '  <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;">',
+        `    <tr><td style="padding:6px 0;color:rgba(17,17,17,0.5);width:60px;vertical-align:top;">From</td><td style="padding:6px 0;font-weight:600;">${escapedEmail}</td></tr>`,
+        `    <tr><td style="padding:6px 0;color:rgba(17,17,17,0.5);vertical-align:top;">Time</td><td style="padding:6px 0;">${new Date().toISOString()}</td></tr>`,
+        `    <tr><td style="padding:6px 0;color:rgba(17,17,17,0.5);vertical-align:top;">IP</td><td style="padding:6px 0;font-family:monospace;font-size:12px;">${esc(req.ip || 'unknown')}</td></tr>`,
+        '  </table>',
+        '  <div style="border-top:1px solid rgba(17,17,17,0.1);padding-top:20px;">',
+        '    <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:rgba(17,17,17,0.4);">Message</span>',
+        `    <p style="margin:8px 0 0;font-size:14px;line-height:1.7;color:#333333;">${nl2br(escapedMessage)}</p>`,
+        '  </div>',
+        '  <div style="margin-top:32px;padding-top:16px;border-top:1px solid rgba(17,17,17,0.1);">',
+        '    <span style="font-size:10px;color:rgba(17,17,17,0.3);">Sent via PagePerfect /api/contact</span>',
+        '  </div>',
+        '</div>',
+        '</body></html>',
       ].join('\n'),
     });
 
@@ -2142,14 +2171,36 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
         '',
         'We have received the following message:',
         '',
-        '───',
+        '---',
         message,
-        '───',
+        '---',
         '',
-        'Our team will review your requirements and follow up at this address.',
+        'Our team will review your requirements and follow up at this email address.',
         '',
-        '— PagePerfect',
+        'PagePerfect',
         'https://pageperfect.studio',
+      ].join('\n'),
+      html: [
+        '<!DOCTYPE html><html><head><meta charset="utf-8"></head>',
+        '<body style="margin:0;padding:40px 20px;background:#FDFCF8;font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#111111;">',
+        '<div style="max-width:560px;margin:0 auto;">',
+        '  <div style="border-bottom:2px solid #111111;padding-bottom:16px;margin-bottom:24px;">',
+        '    <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:rgba(17,17,17,0.4);">PagePerfect</span>',
+        '    <h1 style="margin:8px 0 0;font-size:22px;font-weight:700;letter-spacing:-0.02em;">Request received</h1>',
+        '  </div>',
+        '  <p style="font-size:14px;line-height:1.7;color:#333333;margin:0 0 20px;">Thank you for reaching out. We have received your format request and will review it shortly.</p>',
+        '  <div style="background:#f5f5f0;border-left:3px solid #111111;padding:16px 20px;margin-bottom:24px;">',
+        '    <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:rgba(17,17,17,0.4);display:block;margin-bottom:8px;">Your message</span>',
+        `    <p style="margin:0;font-size:14px;line-height:1.7;color:#333333;">${nl2br(escapedMessage)}</p>`,
+        '  </div>',
+        '  <p style="font-size:14px;line-height:1.7;color:#333333;margin:0 0 32px;">Our team will follow up at this email address. If you have additional details, reply directly to this email.</p>',
+        '  <div style="border-top:2px solid #111111;padding-top:16px;">',
+        '    <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">PagePerfect</span>',
+        '    <p style="margin:4px 0 0;font-size:11px;color:rgba(17,17,17,0.4);">Professional typesetting in your browser</p>',
+        '    <a href="https://pageperfect.studio" style="font-size:11px;color:#FF3333;text-decoration:none;display:inline-block;margin-top:4px;">pageperfect.studio</a>',
+        '  </div>',
+        '</div>',
+        '</body></html>',
       ].join('\n'),
     });
 
