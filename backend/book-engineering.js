@@ -307,7 +307,7 @@ function analyzeCompileLog(stderr) {
 
   for (const line of lines) {
     // Overfull \hbox
-    const overfull = line.match(/Overfull \\hbox \((\d+\.?\d*)pt too wide\).*?(?:at lines? (\d+))?/);
+    const overfull = line.match(/Overfull \\hbox \((\d+\.?\d*)pt too wide\)(?:.*?at lines? (\d+))?/);
     if (overfull) {
       result.overfullBoxes.push({
         amount: parseFloat(overfull[1]),
@@ -318,7 +318,7 @@ function analyzeCompileLog(stderr) {
     }
 
     // Underfull \hbox
-    const underfull = line.match(/Underfull \\hbox.*?(?:badness (\d+))?.*?(?:at lines? (\d+))?/);
+    const underfull = line.match(/Underfull \\hbox(?:.*?badness (\d+))?(?:.*?at lines? (\d+))?/);
     if (underfull) {
       const badness = underfull[1] ? parseInt(underfull[1]) : 0;
       if (badness > 5000) {
