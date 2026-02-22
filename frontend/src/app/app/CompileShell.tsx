@@ -472,6 +472,7 @@ export default function CompileShell() {
               status={status}
               errors={errors}
               isWatermarked={!hasTier(tier, 'publisher') && !!pdfUrl}
+              onRetry={() => compile(false)}
             />
 
             {/* Layer 2: Top Bar */}

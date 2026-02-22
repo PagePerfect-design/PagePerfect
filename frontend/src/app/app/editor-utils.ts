@@ -27,6 +27,14 @@ export function translateError(raw: string): string {
     [/Error\s+\d+\s+\(driver return code\)/i, () => 'The PDF engine encountered a driver error. Try a different template or simplify your manuscript.'],
     [/timed?\s*out/i, () => 'Compilation timed out. Your manuscript may be too large — try splitting it into smaller sections.'],
     [/Compile failed \(status (\d+)\)/i, (m) => `The server returned an error (code ${m[1]}). Please try again.`],
+    [/Result not found or expired/i, () => 'Your compiled PDF expired. Click "Retry" to recompile.'],
+    [/Result has expired/i, () => 'Your compiled PDF expired. Click "Retry" to recompile.'],
+    [/Server restarted.*recompile/i, () => 'The server restarted and your PDF was lost. Click "Retry" to recompile.'],
+    [/Job not found or expired/i, () => 'The compile job expired. Click "Retry" to recompile.'],
+    [/Network disconnected/i, () => 'Lost connection to the compile server. Check your internet and retry.'],
+    [/Network or server error/i, () => 'Could not reach the compile server. Check your connection or try again.'],
+    [/Failed to retrieve compiled PDF/i, () => 'The PDF could not be retrieved. Click "Retry" to recompile.'],
+    [/Failed to fetch|fetch failed|ERR_CONNECTION/i, () => 'Could not connect to the server. Check your internet connection.'],
   ]
   for (const [re, fn] of patterns) {
     const match = s.match(re)

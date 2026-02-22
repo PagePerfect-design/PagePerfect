@@ -1,6 +1,6 @@
 'use client'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertTriangle, FileText } from 'lucide-react'
+import { AlertTriangle, FileText, RotateCcw } from 'lucide-react'
 
 import type { Status, CompileError } from './editor-types'
 import { ease } from './editor-types'
@@ -48,12 +48,14 @@ export default function PreviewPane({
   status,
   errors,
   isWatermarked,
+  onRetry,
 }: {
   pdfUrl: string | null
   loading: boolean
   status: Status
   errors: CompileError[]
   isWatermarked: boolean
+  onRetry?: () => void
 }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center pb-24 pt-16">
@@ -113,6 +115,15 @@ export default function PreviewPane({
                         {errors.filter(e => e.message.startsWith('__detail__')).map(e => e.message.replace('__detail__', '')).join('\n')}
                       </pre>
                     </details>
+                  )}
+                  {onRetry && (
+                    <button
+                      onClick={onRetry}
+                      className="mt-4 inline-flex items-center gap-1.5 border border-[#111111]/20 bg-white px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-[#111111]/70 transition-colors hover:border-[#111111]/40 hover:text-[#111111]"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Retry
+                    </button>
                   )}
                 </div>
               </div>

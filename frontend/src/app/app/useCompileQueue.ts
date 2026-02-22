@@ -112,6 +112,8 @@ export function useCompileQueue({
     setStatus('compiling')
     setErrors([])
 
+    let retried = false
+
     try {
       const effectiveMd = adjustHeadingsForTemplate(manuscript, template)
       const body: Record<string, unknown> = {
@@ -195,6 +197,13 @@ export function useCompileQueue({
           if (gen !== compileGenRef.current) return
 
           if (!statusResp.ok) {
+            // 404 = job expired from server memory — auto-recompile once
+            if (statusResp.status === 404 && !retried) {
+              retried = true
+              setStatus('compiling')
+              setTimeout(() => { void compile(downloadAfter, exportPlatform) }, 300)
+              return
+            }
             networkErrors++
             if (networkErrors > 3) throw new Error('Lost connection to compile server.')
             continue
@@ -236,6 +245,14 @@ export function useCompileQueue({
             if (gen !== compileGenRef.current) return
 
             if (!pdfResp.ok) {
+              // Auto-retry on expired/restarted results (410) — recompile once
+              if ((pdfResp.status === 410 || pdfResp.status === 404) && !retried) {
+                retried = true
+                setStatus('compiling')
+                // Re-submit the compile instead of showing "expired" to the user
+                setTimeout(() => { void compile(downloadAfter, exportPlatform) }, 300)
+                return
+              }
               let payload: { message?: string; detail?: string } | null = null
               try { payload = await pdfResp.json() } catch { /* noop */ }
               pdfBlobRef.current = null
