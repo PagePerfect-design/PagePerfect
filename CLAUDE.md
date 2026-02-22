@@ -116,6 +116,14 @@ PagePerfect/
 │   ├── font-availability.js   # Font registry and fallback resolution
 │   ├── logger.js              # Structured logging utility
 │   ├── pdfx-def.ps            # PostScript preamble for Ghostscript PDF/X-1a conversion
+│   ├── routes/                # Express route modules (extracted from index.js)
+│   │   ├── health.js          # Health, templates, font status, root
+│   │   ├── stripe.js          # Webhook + payment creation
+│   │   ├── compile.js         # Compile, status, result, convert, batch, font upload
+│   │   ├── analysis.js        # 13 manuscript analysis endpoints
+│   │   ├── publishing.js      # KDP spine/gutter, preflight, cover dimensions
+│   │   ├── lulu.js            # Lulu print-on-demand API
+│   │   └── contact.js         # Contact form (Resend email)
 │   ├── filters/               # Pandoc Lua filters
 │   │   ├── drop-cap.lua       # Drop-cap formatting for fiction/literary templates
 │   │   ├── fountain.lua       # Screenplay formatting (Fountain syntax)
@@ -796,9 +804,9 @@ Six backend modules provide manuscript and output quality analysis. All return s
 
 ### Critical (blocks credibility)
 
-- **Marketing/delivery honesty:** Landing page says "KDP-ready PDF" but free tier exports watermarked (unusable for KDP). User discovers watermark AFTER download, not before.
-- **Preflight doesn't block export:** Failing preflight checks don't prevent download (`CompileShell.tsx:1661-1662`). Users can export non-compliant PDFs.
-- **Compile log analysis orphaned:** `analyzeCompileLog()` in `book-engineering.js:296-352` and `generateTypographicReport()` in `typography-assurance.js:301-344` are defined but never called from the compile worker.
+- ~~**Marketing/delivery honesty:**~~ **RESOLVED** — Free-tier download button now reads "Download Preview PDF (Watermarked)" and a pre-download amber notice warns users before they click. No more post-download surprise.
+- ~~**Preflight doesn't block export:**~~ **RESOLVED** — `LaunchOverlay.tsx` sets `canDownload = !checking && !hasFailure && !fetchError && pdfUrl`. Failing preflight checks disable the download button and show "Export blocked" message.
+- ~~**Compile log analysis orphaned:**~~ **RESOLVED** — `analyzeCompileLog()` and `generateTypographicReport()` are called in `compile-worker.js:465-476`. Results flow through compile status endpoint as `compileLog` and `typographyReport`.
 - ~~**Privacy policy contradiction:**~~ **RESOLVED** — Manuscripts are now session-scoped (purged on sign-out + 24h backend sweeper). Privacy policy Clause 01 updated to accurately describe session storage.
 
 ### High (limits growth)
@@ -806,7 +814,7 @@ Six backend modules provide manuscript and output quality analysis. All return s
 - **No PDF regression test suite:** Unit tests exist for security and grid system, but no golden-file PDF comparisons. Template changes could silently break layouts.
 - **No build manifest:** Pandoc 3.6.2 is pinned but TeX Live is not version-locked. No manifest saved with exported PDFs. `provenance.js` exists but integration is incomplete.
 - **Container hardening:** No per-process resource limits, no seccomp profile, no `--network none`, no read-only root filesystem.
-- **In-memory job results:** `jobResults` Map is lost on backend restart. Users waiting for PDFs lose their jobs.
+- **In-memory job results:** `jobResults` Map metadata is backed up to Redis (10-min TTL) but PDF file paths are not recoverable after restart. Users get "Server restarted. Please recompile." on result fetch after a backend redeploy.
 
 ### Medium (improvement opportunities)
 
