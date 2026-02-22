@@ -30,6 +30,20 @@ type FontAudit = {
   fonts: FontDetail[]
 }
 
+type ReadinessChecks = {
+  redis?: string
+  pocketbase?: string
+  pandoc?: string
+  lualatex?: string
+  disk?: string
+}
+
+type Readiness = {
+  ready: boolean
+  checks: ReadinessChecks
+  timestamp: string
+}
+
 type Details = {
   ok: boolean
   service?: string
@@ -42,6 +56,7 @@ type Details = {
 
 export default function StatusClient({ apiBase }: { apiBase: string }) {
   const [health, setHealth] = useState<Details | null>(null)
+  const [readiness, setReadiness] = useState<Readiness | null>(null)
   const [details, setDetails] = useState<Details | null>(null)
   const [fontAudit, setFontAudit] = useState<FontAudit | null>(null)
   const [fontExpanded, setFontExpanded] = useState(false)
@@ -53,12 +68,14 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
     setLoading(true)
     setError(null)
     try {
-      const [h, d, f] = await Promise.allSettled([
+      const [h, rd, d, f] = await Promise.allSettled([
         fetch('/api/health').then(r => r.json()),
+        fetch('/api/health/ready').then(r => r.json()),
         fetch('/api/health/details').then(r => r.ok ? r.json() : Promise.resolve({ ok: false })),
         fetch('/api/fonts/status').then(r => r.ok ? r.json() : Promise.resolve(null)),
       ])
       setHealth(h.status === 'fulfilled' ? h.value : { ok: false })
+      setReadiness(rd.status === 'fulfilled' ? rd.value : null)
       setDetails(d.status === 'fulfilled' ? d.value : { ok: false })
       setFontAudit(f.status === 'fulfilled' ? f.value : null)
       setTs(new Date().toLocaleString())
@@ -103,6 +120,43 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
           {error && <span className="text-sm font-mono text-danger">{error}</span>}
         </div>
       </div>
+
+      {/* Readiness probe card */}
+      {readiness && (
+        <div className="card p-5">
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <div className="text-xl font-bold text-text-primary">Subsystem Readiness</div>
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${readiness.ready ? 'bg-success text-surface' : 'bg-danger text-surface'}`}>
+              {readiness.ready ? 'All Systems Go' : 'Degraded'}
+            </span>
+          </div>
+          <ul className="divide-y divide-border">
+            {Object.entries(readiness.checks).map(([key, value]) => (
+              <li key={key} className="py-2 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span aria-hidden>
+                    {value === 'ok' ? (
+                      <span className="text-success">&#x25CF;</span>
+                    ) : value === 'not_configured' ? (
+                      <span className="text-text-ghost">&#x25CF;</span>
+                    ) : (
+                      <span className="text-danger">&#x25CF;</span>
+                    )}
+                  </span>
+                  <span className="font-mono text-sm text-text-primary">{key}</span>
+                </div>
+                <span className={`font-mono text-[11px] ${
+                  value === 'ok' ? 'text-success' :
+                  value === 'not_configured' ? 'text-text-ghost' :
+                  'text-danger'
+                }`}>
+                  {value}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Details card */}
       <div className="card p-5">

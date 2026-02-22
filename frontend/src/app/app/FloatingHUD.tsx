@@ -362,7 +362,7 @@ export default function FloatingHUD({
                       : 'text-[#111111]/40 hover:text-[#111111]/60'
                   }`}
                 >
-                  {mode === 'fast' ? 'Preview' : 'Full quality'}
+                  {mode === 'fast' ? 'Fast' : 'Full'}
                 </button>
               ))}
             </div>
@@ -374,7 +374,12 @@ export default function FloatingHUD({
                 onChange={(e) => onSafeModeChange(e.target.checked)}
                 className="h-3.5 w-3.5 rounded accent-[#FF3333]"
               />
-              <span className="text-[11px] text-[#111111]/50">Safe mode (skip citations)</span>
+              <div>
+                <span className="text-[11px] text-[#111111]/50">Standard mode</span>
+                <p className="text-[10px] leading-snug text-[#111111]/30">
+                  {safeMode ? 'Citations skipped — toggle off for bibliography processing' : 'Citations active — uses bibliography references'}
+                </p>
+              </div>
             </label>
 
             <div className="mt-3 border-t border-[#111111]/[0.06] pt-3">
