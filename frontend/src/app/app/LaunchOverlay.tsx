@@ -468,7 +468,7 @@ export default function LaunchOverlay({
                   className="group inline-flex h-12 w-full items-center justify-center gap-2.5 bg-[#FF3333] font-display text-[14px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <Download className="h-4 w-4" />
-                  {platform === 'ingram' ? 'Download PDF/X-1a' : 'Download Print PDF'}
+                  Download Preview PDF (Watermarked)
                 </button>
               )
             })()
@@ -525,11 +525,22 @@ export default function LaunchOverlay({
           </div>
         )}
 
-        {/* Watermark / credit notice */}
-        {lastDownloadWatermarked && (
+        {/* Pre-download watermark notice — visible before download for free tier */}
+        {!hasTier(userTier, 'publisher') && exportFormat === 'pdf' && (
+          <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-3 py-2.5 text-center">
+            <p className="font-mono text-[10px] font-medium text-amber-700/80">
+              Free tier — exported PDF will include a watermark.
+            </p>
+            <p className="mt-1 font-mono text-[10px] text-amber-700/50">
+              <a href="/pricing" className="underline hover:text-amber-800">Upgrade to Publisher</a> for clean, print-ready exports.
+            </p>
+          </div>
+        )}
+        {/* Post-download watermark confirmation */}
+        {lastDownloadWatermarked && hasTier(userTier, 'publisher') && (
           <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-3 py-2 text-center">
             <p className="font-mono text-[10px] text-amber-700/70">
-              Free tier — PDF includes watermark.{' '}
+              This export included a watermark.{' '}
               <a href="/pricing" className="underline hover:text-amber-800">Upgrade</a> for clean exports.
             </p>
           </div>
