@@ -31,27 +31,25 @@ const headingVariants = require('./heading-variants');
 const watermark = require('./watermark');
 
 // ── Redis (optional — gracefully degrades if not configured) ──
-// BullMQ accepts a pre-instantiated ioredis connection and clones it
-// internally for Queue, Worker, and QueueEvents.
-// IMPORTANT: ioredis does NOT accept { url: '...' } as an options object —
-// it silently falls back to localhost:6379. Pass the URL as the first arg.
+// BullMQ requires isolated ioredis connections for Queue, Worker, and QueueEvents
+// because Worker uses blocking Redis commands (BRPOPLPUSH) that would deadlock
+// a shared connection. We create a fresh connection for each component.
 let redis = null;
 let redisHealthy = false;
 
+// Helper to spawn fresh ioredis connections for BullMQ (which requires isolated connections)
+function createRedisConnection() {
+  const Redis = require('ioredis');
+  const opts = { maxRetriesPerRequest: null, enableOfflineQueue: false };
+  return process.env.REDIS_URL
+    ? new Redis(process.env.REDIS_URL, opts)
+    : new Redis({ host: process.env.REDIS_HOST || 'localhost', port: Number(process.env.REDIS_PORT || 6379), ...opts });
+}
+
 try {
   if (process.env.REDIS_URL || process.env.REDIS_HOST) {
-    const Redis = require('ioredis');
-
-    // Create the master connection instance
-    redis = process.env.REDIS_URL
-      ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null, enableOfflineQueue: false })
-      : new Redis({
-          host: process.env.REDIS_HOST || 'localhost',
-          port: Number(process.env.REDIS_PORT || 6379),
-          maxRetriesPerRequest: null,
-          enableOfflineQueue: false,
-        });
-
+    // Master connection for rate limiting and Stripe idempotency
+    redis = createRedisConnection();
     redis.on('connect', () => { redisHealthy = true; console.log('[redis] Connected'); });
     redis.on('error', (err) => { redisHealthy = false; console.error('[redis] Error:', err.message); });
     redis.on('close', () => { redisHealthy = false; });
@@ -70,7 +68,7 @@ let compileQueueEvents = null;
 // This avoids hammering Redis with Job.fromId() on every poll.
 const jobResults = new Map();
 
-// Sync fallback semaphore — caps concurrent compiles when Redis is down (D7/graceful degradation).
+// Sync fallback semaphore — caps concurrent compiles when Redis is down.
 const MAX_SYNC_CONCURRENT = Number(process.env.MAX_SYNC_CONCURRENT || 2);
 let activeSyncCompiles = 0;
 
@@ -80,34 +78,31 @@ const resultCleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [id, res] of jobResults) {
     if (res._storedAt && now - res._storedAt > RESULT_TTL_MS) {
-      // Clean up temp files if result was never fetched
       if (res.tmpBase) { fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {}); }
       jobResults.delete(id);
     }
   }
 }, 60_000);
-resultCleanupInterval.unref(); // Don't keep process alive
+resultCleanupInterval.unref();
 
 if (redis) {
   try {
     const { Queue, Worker, QueueEvents } = require('bullmq');
 
-    // Queue: used by the HTTP handler to enqueue jobs
-    // BullMQ clones the ioredis instance internally for each component.
-    compileQueue = new Queue('pp-compile', { connection: redis });
+    // Supply fresh, isolated connections to each BullMQ component
+    compileQueue = new Queue('pp-compile', { connection: createRedisConnection() });
 
-    // Worker: processes jobs with bounded concurrency
     compileWorker = new Worker('pp-compile', async (job) => {
       // DESIGN_TEMPLATES is defined later in this file — worker references it at runtime
       return processCompileJob(job, DESIGN_TEMPLATES);
     }, {
-      connection: redis,
+      connection: createRedisConnection(),
       concurrency: Number(process.env.COMPILE_CONCURRENCY || 3),
-      lockDuration: 60_000,      // 60s lock — lualatex can take 30-45s
-      stalledInterval: 30_000,   // Check for stalled jobs every 30s
-      maxStalledCount: 0,        // Do NOT retry stalled jobs — lualatex may still be running (D2)
-      removeOnComplete: { count: 200 },  // Keep last 200 completed for debugging
-      removeOnFail: { count: 500 },      // Keep last 500 failed for diagnostics
+      lockDuration: 60_000,
+      stalledInterval: 30_000,
+      maxStalledCount: 0,
+      removeOnComplete: { count: 200 },
+      removeOnFail: { count: 500 },
     });
 
     compileWorker.on('completed', (job, result) => {
@@ -126,15 +121,9 @@ if (redis) {
       console.error(`[queue] Job ${job?.id} failed:`, err.message);
     });
 
-    compileWorker.on('error', (err) => {
-      console.error('[queue:worker] Error:', err.message);
-    });
+    compileQueueEvents = new QueueEvents('pp-compile', { connection: createRedisConnection() });
 
-    // QueueEvents: push-based notifications via Redis Streams (D5 — avoids polling Redis)
-    compileQueueEvents = new QueueEvents('pp-compile', { connection: redis });
-
-    console.log('[queue] BullMQ compile queue initialized (concurrency: ' +
-      (process.env.COMPILE_CONCURRENCY || 3) + ')');
+    console.log(`[queue] BullMQ initialized (concurrency: ${process.env.COMPILE_CONCURRENCY || 3})`);
   } catch (err) {
     console.warn('[queue] BullMQ setup failed, using sync fallback:', err.message);
     compileQueue = null;
@@ -2326,6 +2315,9 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
 // ================================================================
 // Start Server
 // ================================================================
+
+// Root health check for Coolify container deployment validation
+app.get('/', (req, res) => res.status(200).send('PagePerfect Engine Active'));
 
 const server = app.listen(PORT, () => {
   console.log(`Backend listening on http://localhost:${PORT}`);
