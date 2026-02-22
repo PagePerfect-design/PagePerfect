@@ -271,12 +271,13 @@ async function processCompileJob(job, templateRegistry) {
   await fsp.writeFile(path.join(tmpBase, 'header.tex'), preamble.join('\n\n'), 'utf8');
 
   // Pandoc spawn
-  // Enable +hard_line_breaks for verse template so poetry line structure
-  // is preserved — every newline becomes a \\ in LaTeX output.
-  const hardBreaks = tplKey === 'verse' ? '+hard_line_breaks' : '';
-  const fromFmt = safeMode ? `--from=markdown${hardBreaks}-raw_tex-raw_attribute`
-    : PANDOC_HAS_CITEPROC ? `--from=markdown+citations${hardBreaks}-raw_tex-raw_attribute`
-    : `--from=markdown${hardBreaks}-raw_tex-raw_attribute`;
+  // Line break preservation is handled entirely by the text normalizer
+  // (Markdown hard breaks via trailing "  "). Do NOT add +hard_line_breaks
+  // here — it would double-break lines and crash LaTeX with:
+  //   ! LaTeX Error: There's no line here to end.
+  const fromFmt = safeMode ? '--from=markdown-raw_tex-raw_attribute'
+    : PANDOC_HAS_CITEPROC ? '--from=markdown+citations-raw_tex-raw_attribute'
+    : '--from=markdown-raw_tex-raw_attribute';
 
   const args = [
     mdPath, fromFmt, '--pdf-engine=lualatex',

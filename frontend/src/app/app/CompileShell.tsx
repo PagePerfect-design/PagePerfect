@@ -295,7 +295,13 @@ function detectGenre(md: string): DetectedGenre | null {
       const headingCount = nonEmpty.filter((l: string) => /^#{1,6}\s/.test(l.trim())).length
       const avgLength = nonEmpty.reduce((sum: number, l: string) => sum + l.trim().length, 0) / nonEmpty.length
 
-      if ((shortRatio > 0.7 && punctRatio < 0.4 && stanzaBreaks >= 1 && headingCount < 2) ||
+      // Negative signal: chapter-like headings mean prose, not poetry
+      // (must match backend/text-normalizer.js detectPoetry)
+      const chapterLikeCount = nonEmpty.filter((l: string) =>
+        /^(chapter|part|act|book|section|prologue|epilogue|foreword|afterword|introduction|conclusion|preface)\b/i.test(l.trim())
+      ).length
+      if (chapterLikeCount >= 2) { /* skip — this is prose */ }
+      else if ((shortRatio > 0.7 && punctRatio < 0.4 && stanzaBreaks >= 1 && headingCount < 2) ||
           (avgLength < 40 && stanzaBreaks >= 2)) {
         return { genre: 'specialist', template: 'verse', confidence: 'high', message: 'Poetry detected. Applied Verse layout with preserved line breaks.' }
       }
@@ -328,9 +334,11 @@ function detectGenre(md: string): DetectedGenre | null {
     return { genre: 'nonfiction', template: 'matrix', confidence: 'medium', message: 'Business report detected. Applied Matrix corporate style.' }
   }
 
-  // Fiction signals: chapters, dialogue-heavy
+  // Fiction signals: chapters (Markdown OR plain-text), dialogue-heavy
   const dialogueLines = (head.match(/^[""\u201C]/gm) || []).length
-  const chapterHeadings = (head.match(/^#{1,2}\s+(chapter|part|prologue|epilogue)\b/gim) || []).length
+  const mdChapterHeadings = (head.match(/^#{1,2}\s+(chapter|part|prologue|epilogue)\b/gim) || []).length
+  const plainChapterHeadings = (head.match(/^(chapter|part|prologue|epilogue)\b/gim) || []).length
+  const chapterHeadings = mdChapterHeadings || plainChapterHeadings
   if (chapterHeadings >= 2 || dialogueLines >= 5) {
     return { genre: 'fiction', template: 'paperback', confidence: 'low', message: 'Looks like fiction. Applied Paperback modern style.' }
   }
@@ -338,10 +346,14 @@ function detectGenre(md: string): DetectedGenre | null {
   return null
 }
 
+// Canonical list of plain-text heading keywords — must stay in sync with
+// backend/text-normalizer.js CHAPTER_PATTERNS and detectHeadingLine().
+const PLAIN_CHAPTER_RE = /^(chapter|part|act|book|section|prologue|epilogue|foreword|afterword|introduction|conclusion|preface|acknowledgements|acknowledgments|appendix|dedication)\b/gim
+
 function analyzeManuscript(md: string): Analysis {
   // Count both Markdown headings AND plain-text chapter headings
   const mdHeadings = (md.match(/^#{1,2}\s+/gm) || []).length
-  const plainChapters = (md.match(/^(chapter|part|act|prologue|epilogue|foreword|afterword|introduction|conclusion)\b/gim) || []).length
+  const plainChapters = (md.match(PLAIN_CHAPTER_RE) || []).length
   const chapters = mdHeadings || plainChapters
   const words = md.split(/\s+/).filter(w => w.length > 0).length
   const images = (md.match(/!\[/g) || []).length
@@ -2143,10 +2155,11 @@ export default function CompileShell() {
     return () => { if (manuscriptSaveRef.current) window.clearTimeout(manuscriptSaveRef.current) }
   }, [manuscript, title])
 
-  // Show compiling state immediately when ANY design parameter changes
-  // so the user sees visual feedback that a new compile is coming.
-  // Without this, margin/page-size/heading changes feel "dead" during the
-  // 1.5s debounce — users think nothing happened.
+  // VISUAL FEEDBACK ONLY — show overlay immediately when ANY design
+  // parameter changes so the UI feels responsive during the debounce window.
+  // This does NOT fire a network request. The actual compile() call lives
+  // in the debounced useEffect below (line ~2179), which resets its 1.5s
+  // timer on each change. Rapid clicks: many overlays, one network request.
   const prevTemplateRef = useRef(template)
   const prevVariantRef = useRef(headingVariant)
   const prevPageSizeRef = useRef(pageSize)

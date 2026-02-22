@@ -1799,6 +1799,31 @@ app.get('/api/compile/status/:id', async (req, res) => {
       const job = await compileQueue.getJob(id);
       if (job) {
         const state = await job.getState();
+        // Race-condition guard: BullMQ may report 'completed' before the
+        // worker.on('completed') callback fires to populate jobResults.
+        // If BullMQ says completed but we don't have the result yet,
+        // try to recover from job.returnvalue. If that's also missing,
+        // report 'active' to force another poll cycle instead of lying
+        // about completion and causing a 404 on /result/:id.
+        if (state === 'completed' && !jobResults.has(id)) {
+          if (job.returnvalue && typeof job.returnvalue === 'object') {
+            const rv = job.returnvalue;
+            rv._storedAt = Date.now();
+            jobResults.set(id, rv);
+            // Now return completed normally
+            return res.json({
+              jobId: id,
+              status: 'completed',
+              elapsed: rv.elapsed,
+              outputFormat: rv.outputFormat,
+              needsWatermark: rv.needsWatermark,
+              warnings: rv.warnings,
+              resultUrl: `/api/compile/result/${id}`,
+            });
+          }
+          // returnvalue not available yet — force another poll
+          return res.json({ jobId: id, status: 'active', progress: job.progress || 0 });
+        }
         return res.json({ jobId: id, status: state, progress: job.progress || 0 });
       }
     } catch (err) {
@@ -1817,7 +1842,23 @@ app.get('/api/compile/status/:id', async (req, res) => {
 
 app.get('/api/compile/result/:id', async (req, res) => {
   const { id } = req.params;
-  const result = jobResults.get(id);
+  let result = jobResults.get(id);
+
+  // Fallback: if in-memory map lost the result (process restart, race condition),
+  // try to recover from BullMQ's persisted job.returnvalue.
+  if (!result && compileQueue) {
+    try {
+      const job = await compileQueue.getJob(id);
+      if (job && job.returnvalue && typeof job.returnvalue === 'object') {
+        result = job.returnvalue;
+        result._storedAt = Date.now();
+        jobResults.set(id, result);
+        console.log(`[result] Recovered job ${id} from BullMQ returnvalue`);
+      }
+    } catch (err) {
+      console.error('[result] BullMQ fallback lookup failed:', err.message);
+    }
+  }
 
   if (!result) {
     return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });

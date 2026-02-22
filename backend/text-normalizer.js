@@ -84,27 +84,26 @@ function detectPoetry(text) {
 }
 
 /**
- * Detect if text already uses Markdown formatting.
- * If it does, we should touch it less aggressively.
+ * Detect if text already uses Markdown STRUCTURAL formatting.
+ *
+ * Only count block-level structural elements that prove the author
+ * intentionally organized their document with Markdown headings.
+ * Inline formatting (italic, bold, links) does NOT count — an 80,000-word
+ * Word doc with three italicized words should still get chapter detection.
  */
 function hasMarkdownStructure(text) {
   const lines = text.split('\n');
-  let markdownSignals = 0;
+  let structuralSignals = 0;
 
   for (const line of lines) {
     const t = line.trim();
-    if (/^#{1,6}\s/.test(t)) markdownSignals++;        // # Headings
-    if (/^\*\*[^*]+\*\*$/.test(t)) markdownSignals++;  // **Bold lines**
-    if (/^>\s/.test(t)) markdownSignals++;              // > Blockquotes
-    if (/^[-*+]\s/.test(t)) markdownSignals++;          // - List items
-    if (/^\d+\.\s/.test(t)) markdownSignals++;          // 1. Ordered lists
-    if (/^```/.test(t)) markdownSignals++;              // Code fences
-    if (/^\[.*\]\(.*\)/.test(t)) markdownSignals++;     // Links
-    if (/!\[.*\]/.test(t)) markdownSignals++;           // Images
+    // Only block-level structural elements count:
+    if (/^#{1,6}\s/.test(t)) structuralSignals++;   // # Headings — the decisive signal
+    if (/^```/.test(t)) structuralSignals++;         // Code fences
   }
 
-  // If we find 3+ markdown constructs, the user knows what they're doing
-  return markdownSignals >= 3;
+  // If the author used 3+ Markdown headings, they structured the doc themselves
+  return structuralSignals >= 3;
 }
 
 /**
@@ -197,12 +196,10 @@ function normalize(text, templateKey) {
         if (processed.length > 0 && processed[processed.length - 1].trim() !== '') {
           processed.push('');
         }
-        // Title-case the heading if it was all-caps
-        let headingText = line.trim();
-        if (headingText === headingText.toUpperCase() && headingText.length > 3) {
-          headingText = titleCase(headingText);
-        }
-        processed.push(`${prefix} ${headingText}`);
+        // NON-DESTRUCTIVE: preserve the user's original casing exactly.
+        // "CHAPTER III: THE CIA AND THE KGB" → "# CHAPTER III: THE CIA AND THE KGB"
+        // Let the LaTeX template handle typographic casing if needed.
+        processed.push(`${prefix} ${line.trim()}`);
         // Ensure blank line after heading
         if (i + 1 < lines.length && lines[i + 1].trim() !== '') {
           processed.push('');
@@ -266,25 +263,6 @@ function normalize(text, templateKey) {
   result = result.replace(/^\n+/, '');
 
   return result;
-}
-
-/**
- * Title-case a string (for ALL-CAPS headings).
- * Lowercases articles/prepositions/conjunctions unless first word.
- */
-function titleCase(str) {
-  const small = new Set([
-    'a', 'an', 'the', 'and', 'but', 'or', 'nor', 'for', 'yet', 'so',
-    'at', 'by', 'in', 'of', 'on', 'to', 'up', 'as', 'is', 'it',
-    'if', 'no', 'do', 'my', 'we', 'he', 'me', 'am',
-  ]);
-
-  return str.toLowerCase().replace(/\b\w+/g, (word, index) => {
-    if (index === 0 || !small.has(word)) {
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    }
-    return word;
-  });
 }
 
 module.exports = { normalize, detectPoetry, hasMarkdownStructure };
