@@ -26,6 +26,7 @@ const headingVariants = require('./heading-variants');
 const watermark = require('./watermark');
 const fontAvailability = require('./font-availability');
 const publishing = require('./publishing');
+const textNormalizer = require('./text-normalizer');
 
 const gridSystem = new GridSystem();
 const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000);
@@ -172,6 +173,12 @@ async function processCompileJob(job, templateRegistry) {
     needsWatermark = true;
   }
 
+  // ── Normalize text for format-agnostic input ──
+  // This transforms plain text, pasted Word content, or raw prose into
+  // well-structured Markdown. Handles chapter detection, poetry line
+  // preservation, scene breaks, etc. — so users never need to know Markdown.
+  manuscriptText = textNormalizer.normalize(manuscriptText, tplKey);
+
   // ── Compile in isolated temp dir ──
   const tmpBase = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-worker-'));
   const mdPath = path.join(tmpBase, 'input.md');
@@ -264,9 +271,12 @@ async function processCompileJob(job, templateRegistry) {
   await fsp.writeFile(path.join(tmpBase, 'header.tex'), preamble.join('\n\n'), 'utf8');
 
   // Pandoc spawn
-  const fromFmt = safeMode ? '--from=markdown-raw_tex-raw_attribute'
-    : PANDOC_HAS_CITEPROC ? '--from=markdown+citations-raw_tex-raw_attribute'
-    : '--from=markdown-raw_tex-raw_attribute';
+  // Enable +hard_line_breaks for verse template so poetry line structure
+  // is preserved — every newline becomes a \\ in LaTeX output.
+  const hardBreaks = tplKey === 'verse' ? '+hard_line_breaks' : '';
+  const fromFmt = safeMode ? `--from=markdown${hardBreaks}-raw_tex-raw_attribute`
+    : PANDOC_HAS_CITEPROC ? `--from=markdown+citations${hardBreaks}-raw_tex-raw_attribute`
+    : `--from=markdown${hardBreaks}-raw_tex-raw_attribute`;
 
   const args = [
     mdPath, fromFmt, '--pdf-engine=lualatex',

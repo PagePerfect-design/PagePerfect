@@ -277,6 +277,31 @@ function detectGenre(md: string): DetectedGenre | null {
   const head = md.split('\n').slice(0, 150).join('\n')
   const full = md
 
+  // Poetry: short lines, stanza breaks, low punctuation ratio
+  {
+    const lines = full.split('\n')
+    const nonEmpty = lines.filter((l: string) => l.trim().length > 0)
+    if (nonEmpty.length >= 3) {
+      const shortLines = nonEmpty.filter((l: string) => l.trim().length < 60).length
+      const shortRatio = shortLines / nonEmpty.length
+      let stanzaBreaks = 0
+      for (let i = 1; i < lines.length - 1; i++) {
+        if (lines[i].trim() === '' && lines[i - 1].trim() !== '' && lines[i + 1]?.trim() !== '') {
+          stanzaBreaks++
+        }
+      }
+      const terminalPunct = nonEmpty.filter((l: string) => /[.!?][\s"'"\u201D]*$/.test(l.trim())).length
+      const punctRatio = terminalPunct / nonEmpty.length
+      const headingCount = nonEmpty.filter((l: string) => /^#{1,6}\s/.test(l.trim())).length
+      const avgLength = nonEmpty.reduce((sum: number, l: string) => sum + l.trim().length, 0) / nonEmpty.length
+
+      if ((shortRatio > 0.7 && punctRatio < 0.4 && stanzaBreaks >= 1 && headingCount < 2) ||
+          (avgLength < 40 && stanzaBreaks >= 2)) {
+        return { genre: 'specialist', template: 'verse', confidence: 'high', message: 'Poetry detected. Applied Verse layout with preserved line breaks.' }
+      }
+    }
+  }
+
   // Screenplay: INT./EXT./FADE IN/CUT TO
   if (/\b(INT\.|EXT\.|FADE IN|FADE OUT|CUT TO|DISSOLVE TO)\b/.test(head)) {
     return { genre: 'specialist', template: 'cinema', confidence: 'high', message: 'Screenplay detected. Applied Cinema format.' }
@@ -314,7 +339,10 @@ function detectGenre(md: string): DetectedGenre | null {
 }
 
 function analyzeManuscript(md: string): Analysis {
-  const chapters = (md.match(/^#{1,2}\s+/gm) || []).length
+  // Count both Markdown headings AND plain-text chapter headings
+  const mdHeadings = (md.match(/^#{1,2}\s+/gm) || []).length
+  const plainChapters = (md.match(/^(chapter|part|act|prologue|epilogue|foreword|afterword|introduction|conclusion)\b/gim) || []).length
+  const chapters = mdHeadings || plainChapters
   const words = md.split(/\s+/).filter(w => w.length > 0).length
   const images = (md.match(/!\[/g) || []).length
   const hasFrontmatter = md.trimStart().startsWith('---')
@@ -865,15 +893,17 @@ function LevitatingBook({
               </div>
             )}
 
-            {/* Loading overlay with skeleton — shows during recompile when a PDF already exists */}
+            {/* Loading overlay — shows during recompile when a PDF already exists.
+                Uses status instead of just loading so the overlay appears IMMEDIATELY
+                when settings change (before the debounce fires compile). */}
             <AnimatePresence>
-              {loading && pdfUrl && (
+              {(status === 'compiling' || status === 'queued') && pdfUrl && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute inset-0 z-10 flex items-center justify-center bg-[#FDFCF8]/70 backdrop-blur-[2px]"
+                  transition={{ duration: 0.15 }}
+                  className="absolute inset-0 z-10 flex items-center justify-center bg-[#FDFCF8]/60 backdrop-blur-[2px]"
                 >
                   <div className="flex flex-col items-center gap-3">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
@@ -2113,19 +2143,34 @@ export default function CompileShell() {
     return () => { if (manuscriptSaveRef.current) window.clearTimeout(manuscriptSaveRef.current) }
   }, [manuscript, title])
 
-  // Clear PDF preview immediately when design parameters change
-  // so the user sees visual feedback that a new compile is coming
+  // Show compiling state immediately when ANY design parameter changes
+  // so the user sees visual feedback that a new compile is coming.
+  // Without this, margin/page-size/heading changes feel "dead" during the
+  // 1.5s debounce — users think nothing happened.
   const prevTemplateRef = useRef(template)
   const prevVariantRef = useRef(headingVariant)
+  const prevPageSizeRef = useRef(pageSize)
+  const prevMarginRef = useRef(marginPreset)
+  const prevSafeModeRef = useRef(safeMode)
+  const prevCompileModeRef = useRef(compileMode)
   useEffect(() => {
     if (stage !== 'design') return
-    if (prevTemplateRef.current !== template || prevVariantRef.current !== headingVariant) {
-      prevTemplateRef.current = template
-      prevVariantRef.current = headingVariant
-      // Show loading state immediately — don't wait for debounce
-      if (pdfUrl) setStatus('compiling')
-    }
-  }, [template, headingVariant, stage, pdfUrl])
+    const changed =
+      prevTemplateRef.current !== template ||
+      prevVariantRef.current !== headingVariant ||
+      prevPageSizeRef.current !== pageSize ||
+      prevMarginRef.current !== marginPreset ||
+      prevSafeModeRef.current !== safeMode ||
+      prevCompileModeRef.current !== compileMode
+    prevTemplateRef.current = template
+    prevVariantRef.current = headingVariant
+    prevPageSizeRef.current = pageSize
+    prevMarginRef.current = marginPreset
+    prevSafeModeRef.current = safeMode
+    prevCompileModeRef.current = compileMode
+    // Show loading state immediately — don't wait for debounce
+    if (changed && pdfUrl) setStatus('compiling')
+  }, [template, headingVariant, pageSize, marginPreset, safeMode, compileMode, stage, pdfUrl])
 
   // Debounced auto-compile in design stage
   // Uses 3s debounce for manuscript text changes (large payloads),
