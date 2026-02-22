@@ -2362,7 +2362,7 @@ export default function CompileShell() {
   const [manuscriptList, setManuscriptList] = useState<ManuscriptListItem[]>([])
   const [manuscriptListLoading, setManuscriptListLoading] = useState(false)
 
-  const { user, tier, pdfCredits, publisherWindowEnd, refreshUser } = useAuth()
+  const { session, user, tier, pdfCredits, publisherWindowEnd, refreshUser } = useAuth()
   const {
     manuscriptId,
     loadManuscript,
