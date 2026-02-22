@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-PagePerfect is a PDF generation system that converts Markdown manuscripts to professionally typeset PDFs using XeLaTeX. It implements Josef Müller-Brockmann's grid system principles (baseline grids, golden-ratio typography, proportional spacing). The app is a loosely-coupled monorepo with a React/Next.js frontend and a Node.js/Express backend.
+PagePerfect is a PDF generation system that converts Markdown manuscripts to professionally typeset PDFs using LuaLaTeX. It implements Josef Müller-Brockmann's grid system principles (baseline grids, golden-ratio typography, proportional spacing). The app is a loosely-coupled monorepo with a React/Next.js frontend and a Node.js/Express backend.
 
 The product targets authors, academics, and publishers who need professional typesetting without the complexity of InDesign or the limitations of consumer tools like Vellum (Mac-only, $500) or Atticus ($147, limited typography). PagePerfect undercuts all competitors with a free tier and a $199 lifetime option.
 
@@ -125,7 +125,7 @@ PagePerfect/
 │   │   └── cinema.latex       # Screenplay format
 │   ├── references/            # Sample .bib for citations
 │   ├── .env.example           # Environment variable template
-│   ├── Dockerfile             # Ubuntu 22.04, Node 18, Pandoc, texlive-xetex, Ghostscript
+│   ├── Dockerfile             # Ubuntu 22.04, Node 18, Pandoc, texlive-luatex, Ghostscript
 │   └── package.json
 │
 ├── CLAUDE.md                  # This file
@@ -146,7 +146,7 @@ PagePerfect/
 | Linting | ESLint 9 (next/core-web-vitals, next/typescript) |
 | Backend framework | Express 5.1 |
 | Backend language | JavaScript (CommonJS) |
-| PDF engine | Pandoc + XeLaTeX |
+| PDF engine | Pandoc + LuaLaTeX |
 | PDF/X conversion | Ghostscript (for IngramSpark/offset compliance) |
 | Containerization | Docker (Ubuntu 22.04) |
 | Auth & database | PocketBase (self-hosted via Coolify) |
@@ -216,7 +216,7 @@ User edits Markdown in browser
     → POST /api/compile (proxied via Next.js rewrites → Coolify backend)
     → Backend: sanitize inputs, write to temp dir
     → GridSystem calculates geometry/typography
-    → Spawn Pandoc with XeLaTeX + selected template
+    → Spawn Pandoc with LuaLaTeX + selected template
     → (Optional) --citeproc for bibliography processing
     → 45s timeout (COMPILE_TIMEOUT_MS)
     → Stream PDF back | Return JSON error with diagnostics

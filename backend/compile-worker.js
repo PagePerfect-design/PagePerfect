@@ -271,6 +271,28 @@ async function processCompileJob(job, templateRegistry) {
     const vp = headingVariants.getVariantPreamble(tplKey, headingVariant);
     if (vp) preamble.push(vp);
     if (needsWatermark) preamble.push(watermark.generateWatermarkPreamble());
+
+    // ── Template-specific preamble injections ──
+
+    // Lettrine drop caps for fiction/literary templates
+    if (textNormalizer.DROP_CAP_TEMPLATES.has(tplKey)) {
+      preamble.push([
+        '% ── Drop Cap (lettrine) ──',
+        '\\usepackage{lettrine}',
+        '\\renewcommand{\\LettrineFontHook}{\\bfseries}',
+        '\\setcounter{DefaultLines}{3}',
+      ].join('\n'));
+    }
+
+    // Underscore protection for technical templates
+    // (Also added directly in operator.latex and matrix.latex as belt-and-suspenders)
+    if (textNormalizer.UNDERSCORE_TEMPLATES.has(tplKey)) {
+      preamble.push([
+        '% ── Underscore protection ──',
+        '% Allows underscores in text mode without crashing (user_id, api_key)',
+        '\\ifdefined\\underscore\\else\\usepackage{underscore}\\fi',
+      ].join('\n'));
+    }
   } catch (err) {
     try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
     return { success: false, error: 'preamble_error', message: String(err) };
@@ -280,9 +302,40 @@ async function processCompileJob(job, templateRegistry) {
 
   // Pandoc spawn
   const hardBreaks = tplKey === 'verse' ? '+hard_line_breaks' : '';
-  const fromFmt = safeMode ? `--from=markdown${hardBreaks}-raw_tex-raw_attribute`
-    : PANDOC_HAS_CITEPROC ? `--from=markdown+citations${hardBreaks}-raw_tex-raw_attribute`
-    : `--from=markdown${hardBreaks}-raw_tex-raw_attribute`;
+
+  // ── Template-aware Pandoc format flags ──
+  // Disable tex_math_dollars for non-academic templates to prevent
+  // "$50 on the first job" from crashing LaTeX as a math expression.
+  const disableMath = !textNormalizer.MATH_TEMPLATES.has(tplKey)
+    ? '-tex_math_dollars' : '';
+
+  // Enable fenced_divs for cinema template (Fountain screenplay divs)
+  const fencedDivs = tplKey === 'cinema' ? '+fenced_divs' : '';
+
+  const fromFmt = safeMode
+    ? `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
+    : PANDOC_HAS_CITEPROC
+      ? `--from=markdown+citations${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
+      : `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`;
+
+  // ── Template-aware Lua filters ──
+  const luaFilters = [];
+  const filtersDir = path.join(__dirname, 'filters');
+
+  // Drop-cap filter for fiction/literary book-class templates
+  if (textNormalizer.DROP_CAP_TEMPLATES.has(tplKey)) {
+    luaFilters.push('--lua-filter', path.join(filtersDir, 'drop-cap.lua'));
+  }
+
+  // Table safety filter for editorial/multi-column templates
+  if (textNormalizer.TABLE_SAFETY_TEMPLATES.has(tplKey)) {
+    luaFilters.push('--lua-filter', path.join(filtersDir, 'table-safety.lua'));
+  }
+
+  // Fountain screenplay filter for cinema template
+  if (tplKey === 'cinema') {
+    luaFilters.push('--lua-filter', path.join(filtersDir, 'fountain.lua'));
+  }
 
   const args = [
     mdPath, fromFmt, '--pdf-engine=lualatex',
@@ -291,6 +344,7 @@ async function processCompileJob(job, templateRegistry) {
     '-H', path.join(tmpBase, 'header.tex'),
     '-V', `mainfont=${mainFont}`,
     ...(isFast ? [] : ['-V', 'microtype=true', '-V', 'csquotes=true']),
+    ...luaFilters,
     '-o', pdfPath,
     ...(safeMode ? [] : citeprocArgs(BIB_PATH)),
   ];

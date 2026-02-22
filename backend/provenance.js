@@ -97,7 +97,7 @@ function generateBuildMetadata(opts) {
     system: {
       engine: 'PagePerfect',
       version: '3.0',
-      pdfEngine: 'xelatex',
+      pdfEngine: 'lualatex',
       processor: 'pandoc',
     },
 
@@ -161,7 +161,7 @@ function generateMetadataPreamble(buildMeta) {
   return [
     '% ── Provenance & Build Metadata ──',
     '\\hypersetup{',
-    `  pdfproducer={PagePerfect ${buildMeta.system.version} / XeLaTeX},`,
+    `  pdfproducer={PagePerfect ${buildMeta.system.version} / LuaLaTeX},`,
     `  pdfcreator={PagePerfect Build ${safeStr(buildMeta.buildId)}},`,
     `  pdfsubject={Template: ${safeStr(buildMeta.config.template)} / Size: ${safeStr(buildMeta.config.pageSize)} / Margins: ${safeStr(buildMeta.config.marginPreset)}},`,
     `  pdfkeywords={PagePerfect, ${safeStr(buildMeta.config.template)}, ${safeStr(buildMeta.contentHash)}}`,

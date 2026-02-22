@@ -6,9 +6,37 @@
  *
  * The goal: users paste or type ANY text and get a beautiful book.
  * No Markdown knowledge required.
+ *
+ * Template-aware processing:
+ *   - cinema:   Fountain screenplay syntax → fenced divs for fountain.lua
+ *   - verse:    Poetry line-break preservation
+ *   - fiction:  Dollar-sign escaping (prevents tex_math_dollars crashes)
+ *   - all:      Universal cleanup, heading detection, scene breaks
  */
 
 'use strict';
+
+// ── Template classification ────────────────────────────────────
+// Templates where $...$ should NOT be interpreted as LaTeX math.
+// Only academic/technical templates keep math enabled.
+const MATH_TEMPLATES = new Set([
+  'thesis', 'chicago', 'symphony', 'international', 'operator', 'matrix',
+]);
+
+// Templates that benefit from lettrine drop caps (book class with chapters)
+const DROP_CAP_TEMPLATES = new Set([
+  'paperback', 'memoir', 'symphony',
+]);
+
+// Templates where \usepackage{underscore} is injected
+const UNDERSCORE_TEMPLATES = new Set([
+  'operator', 'matrix',
+]);
+
+// Templates that get the table-safety Lua filter
+const TABLE_SAFETY_TEMPLATES = new Set([
+  'chronicle', 'exhibit', 'international',
+]);
 
 // ── Chapter heading patterns ────────────────────────────────────
 // Matches common ways people write chapter headings in plain text.
@@ -141,6 +169,195 @@ function detectHeadingLine(line) {
   return 0;
 }
 
+// ── Fountain screenplay patterns ────────────────────────────────
+const SCENE_HEADING_RE = /^(?:\.(?=[A-Z])|(?:INT|EXT|EST|INT\.?\s*\/\s*EXT|I\/E)[\s.])/i;
+const TRANSITION_RE = /^(?:>|(?:[A-Z\s]+TO:|FADE (?:IN|OUT|TO BLACK)|CUT TO BLACK|SMASH CUT|TIME CUT|MATCH CUT))\s*$/;
+const CHARACTER_RE = /^([A-Z][A-Z0-9 ._\-']+)(\s*\((?:V\.?O\.?|O\.?S\.?|CONT'?D?|CONT'D|OFF|ON)\))?$/;
+const PARENTHETICAL_RE = /^\(.+\)$/;
+
+/**
+ * Detect if text looks like Fountain screenplay syntax.
+ * Checks for scene headings (INT./EXT.), character cues, and transitions.
+ */
+function detectFountain(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length < 5) return false;
+
+  let sceneHeadings = 0;
+  let characterCues = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (SCENE_HEADING_RE.test(lines[i])) sceneHeadings++;
+    if (CHARACTER_RE.test(lines[i]) && i > 0) characterCues++;
+  }
+
+  // Need at least 1 scene heading and 2 character cues to be a screenplay
+  return sceneHeadings >= 1 && characterCues >= 2;
+}
+
+/**
+ * Convert Fountain screenplay syntax to Markdown with fenced divs.
+ *
+ * Fenced divs (::: class ... :::) are processed by the fountain.lua
+ * Pandoc Lua filter into proper LaTeX screenplay geometry.
+ *
+ * @param {string} text - Raw Fountain text
+ * @returns {string} Markdown with fenced divs
+ */
+function normalizeFountain(text) {
+  const lines = text.split('\n');
+  const output = [];
+  let state = 'action'; // action | character | dialogue | parenthetical
+  let prevBlank = true;
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const trimmed = raw.trim();
+
+    // Blank line — resets state
+    if (trimmed === '') {
+      if (state === 'dialogue' || state === 'parenthetical') {
+        output.push(':::');
+        output.push('');
+      }
+      state = 'action';
+      prevBlank = true;
+      output.push('');
+      continue;
+    }
+
+    // ── Scene heading ──
+    if (SCENE_HEADING_RE.test(trimmed)) {
+      if (state === 'dialogue' || state === 'parenthetical') {
+        output.push(':::');
+        output.push('');
+      }
+      // Strip forced scene heading prefix (.) if present
+      const heading = trimmed.startsWith('.') ? trimmed.slice(1) : trimmed;
+      output.push(`# ${heading}`);
+      output.push('');
+      state = 'action';
+      prevBlank = false;
+      continue;
+    }
+
+    // ── Transition ──
+    if (TRANSITION_RE.test(trimmed) && prevBlank) {
+      if (state === 'dialogue' || state === 'parenthetical') {
+        output.push(':::');
+        output.push('');
+      }
+      const trans = trimmed.startsWith('>') ? trimmed.slice(1).trim() : trimmed;
+      output.push('::: transition');
+      output.push(trans);
+      output.push(':::');
+      output.push('');
+      state = 'action';
+      prevBlank = false;
+      continue;
+    }
+
+    // ── Character cue (must follow a blank line) ──
+    if (prevBlank && CHARACTER_RE.test(trimmed)) {
+      if (state === 'dialogue' || state === 'parenthetical') {
+        output.push(':::');
+        output.push('');
+      }
+      output.push('::: character');
+      output.push(trimmed);
+      output.push(':::');
+      output.push('');
+      state = 'character';
+      prevBlank = false;
+      continue;
+    }
+
+    // ── Parenthetical (follows character or is inside dialogue) ──
+    if ((state === 'character' || state === 'dialogue') && PARENTHETICAL_RE.test(trimmed)) {
+      if (state === 'dialogue') {
+        output.push(':::');
+        output.push('');
+      }
+      output.push('::: parenthetical');
+      output.push(trimmed);
+      output.push(':::');
+      output.push('');
+      state = 'character'; // Next non-blank line opens a new dialogue div
+      prevBlank = false;
+      continue;
+    }
+
+    // ── Dialogue (follows character or parenthetical) ──
+    if (state === 'character' || state === 'dialogue') {
+      if (state === 'character') {
+        // First line of dialogue — open the div
+        output.push('::: dialogue');
+      }
+      output.push(trimmed);
+      state = 'dialogue';
+      prevBlank = false;
+      continue;
+    }
+
+    // ── Action (everything else) ──
+    output.push(trimmed);
+    prevBlank = false;
+    state = 'action';
+  }
+
+  // Close any open dialogue div
+  if (state === 'dialogue' || state === 'parenthetical') {
+    output.push(':::');
+  }
+
+  return output.join('\n');
+}
+
+/**
+ * Escape bare dollar signs in prose to prevent Pandoc's tex_math_dollars
+ * extension from interpreting "$50" as LaTeX math.
+ *
+ * Only escapes dollar signs that look like currency (followed by a digit)
+ * or appear in pairs around prose text (not actual math expressions).
+ * Leaves code blocks and inline code untouched.
+ *
+ * @param {string} text - Markdown text
+ * @returns {string} Text with dollar signs escaped
+ */
+function escapeDollarSigns(text) {
+  const lines = text.split('\n');
+  let inCodeBlock = false;
+  const result = [];
+
+  for (const line of lines) {
+    // Track code fences
+    if (/^```/.test(line.trim())) {
+      inCodeBlock = !inCodeBlock;
+      result.push(line);
+      continue;
+    }
+
+    if (inCodeBlock) {
+      result.push(line);
+      continue;
+    }
+
+    // Escape dollar signs outside inline code spans
+    // Strategy: split by inline code (`...`), only escape in non-code parts
+    const parts = line.split(/(`[^`]+`)/);
+    const escaped = parts.map((part, idx) => {
+      // Odd indices are inline code — leave them alone
+      if (idx % 2 === 1) return part;
+      // Escape $ followed by digit (currency: $50, $1,000)
+      // Also escape $ followed by a letter when not likely math (e.g., "$total")
+      return part.replace(/\$/g, '\\$');
+    });
+    result.push(escaped.join(''));
+  }
+
+  return result.join('\n');
+}
+
 /**
  * Core normalizer: transform any text into clean Markdown.
  *
@@ -171,6 +388,18 @@ function normalize(text, templateKey) {
 
   // Trim trailing whitespace per line
   result = result.split('\n').map(l => l.replace(/\s+$/, '')).join('\n');
+
+  // ── Step 1b: Fountain screenplay conversion ──
+  // If cinema template is selected and text looks like Fountain syntax,
+  // convert to Markdown with fenced divs (processed by fountain.lua filter).
+  // This REPLACES standard heading detection for screenplays.
+  if (isCinema && !isAlreadyMarkdown && detectFountain(result)) {
+    result = normalizeFountain(result);
+    // Skip remaining prose-oriented processing — return after cleanup
+    result = result.replace(/([.!?;:])[^\S\n]{2,}/g, '$1 ');
+    result = result.replace(/^\n+/, '');
+    return result;
+  }
 
   // ── Step 2: Scene break normalization ──
   // Convert various scene break markers to standard Markdown thematic break
@@ -265,6 +494,14 @@ function normalize(text, templateKey) {
   // ── Step 6: Ensure document doesn't start with blank lines ──
   result = result.replace(/^\n+/, '');
 
+  // ── Step 7: Dollar-sign escaping for non-math templates ──
+  // Prevents Pandoc's tex_math_dollars from interpreting "$50" as math.
+  // Only applied to fiction/narrative/creative templates where LaTeX math
+  // is never expected. Academic and technical templates keep math enabled.
+  if (!MATH_TEMPLATES.has(templateKey)) {
+    result = escapeDollarSigns(result);
+  }
+
   return result;
 }
 
@@ -287,4 +524,15 @@ function titleCase(str) {
   });
 }
 
-module.exports = { normalize, detectPoetry, hasMarkdownStructure };
+module.exports = {
+  normalize,
+  detectPoetry,
+  hasMarkdownStructure,
+  detectFountain,
+  escapeDollarSigns,
+  // Template classification sets (used by compile-worker.js)
+  MATH_TEMPLATES,
+  DROP_CAP_TEMPLATES,
+  UNDERSCORE_TEMPLATES,
+  TABLE_SAFETY_TEMPLATES,
+};
