@@ -482,7 +482,7 @@ const ctx = {
 app.use(require('./routes/stripe')(ctx));
 app.use(require('./routes/health')(ctx));
 app.use(require('./routes/publishing')(ctx));
-app.use(require('./routes/lulu')());
+app.use(require('./routes/lulu')(ctx));
 app.use(require('./routes/analysis')(ctx));
 app.use(require('./routes/compile')(ctx));
 app.use(require('./routes/contact')());

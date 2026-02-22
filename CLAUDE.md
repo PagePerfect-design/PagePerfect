@@ -823,4 +823,4 @@ Six backend modules provide manuscript and output quality analysis. All return s
 - ~~**Pricing page inaccuracies:**~~ **RESOLVED** — "Compile quality: Full quality" changed to "Typesetting engine: LuaLaTeX". FAQ corrected.
 - ~~**"Safe Mode" naming:**~~ **RESOLVED** — Renamed to "Standard mode" with contextual help text in FloatingHUD.
 - **No image persistence:** User-uploaded images for manuscripts are ephemeral. No long-term asset storage strategy.
-- **Lulu webhook incomplete:** Webhook handler exists but status updates to PocketBase are not fully implemented.
+- ~~**Lulu webhook incomplete:**~~ **RESOLVED** — Webhook handler now persists status to PocketBase `print_orders` collection (upsert by `lulu_job_id`). Tracks all Lulu status transitions (CREATED → SHIPPED), extracts tracking info from SHIPPED events. Requires `print_orders` collection in PocketBase Admin.
