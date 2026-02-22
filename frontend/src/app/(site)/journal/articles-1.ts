@@ -573,4 +573,148 @@ export const ARTICLES_PART1: Article[] = [
       ],
     },
   },
+  {
+    slug: 'paragraph-indent',
+    title: 'The Paragraph Indent: Five Centuries of Evidence Against the Line Space',
+    description:
+      'Why every major tradition in book typography uses a first-line indent to separate paragraphs — and why the block-paragraph style that dominates screens is a regression when applied to the printed page.',
+    category: 'Typography',
+    date: '2026-03-01',
+    readTime: '5 min',
+    hook:
+      'Open any book printed between 1500 and 1970. The paragraphs are separated by a first-line indent — typically one em — with no extra vertical space between them. Open a website built in 2024. The paragraphs are separated by a full line of vertical space with no indent at all. Both conventions exist because they solve the same problem: signaling to the reader that one unit of thought has ended and another has begun. But they are not equivalent solutions. The indent preserves the vertical rhythm of the page. The line space breaks it. For five centuries, every compositor, punch-cutter, and type designer who cared about sustained reading chose the indent. The line space is a child of the typewriter and the screen — media where vertical rhythm either does not exist or cannot be controlled. Applying it to a typeset page is not a modernization. It is a loss of information.',
+    sections: [
+      {
+        heading: 'The Vertical Rhythm Argument',
+        paragraphs: [
+          'A baseline grid imposes a fixed vertical increment — say, 14.4 points for 12-point type with 120% leading — to which every line of text on the page adheres. When adjacent columns of text share the same baseline grid, their lines align horizontally across the spread, producing the visual coherence that readers perceive as professionalism. This alignment is the single most important structural property of a well-typeset page. It is also the first casualty of inter-paragraph line spaces.',
+          'When a full line of vertical space is inserted between paragraphs, every paragraph after the first is displaced by one baseline increment. If a page contains six paragraphs, the text block contains five gaps — five points at which the vertical rhythm resets. In a two-column layout, these gaps will almost never occur at the same vertical position in both columns, destroying the horizontal baseline alignment that the grid was designed to enforce. The indent, by contrast, adds zero vertical space. The last line of one paragraph and the first line of the next sit on consecutive baselines. The grid is unbroken. Bringhurst is explicit: "A textblock with block paragraphs and no paragraph indent is like a painting in which the weights and shapes are distributed equally across the canvas — monotonous and lifeless." He prescribes the indent as the default and treats block spacing as an exception requiring justification.',
+        ],
+      },
+      {
+        heading: 'The Density Argument: More Text, Same Legibility',
+        paragraphs: [
+          'A 300-page novel set with first-line indents and no inter-paragraph spacing will contain approximately 15% more text per page than the same novel set with block paragraphs separated by a full line space. This is not a trivial difference. In commercial publishing, it is the difference between a 300-page book and a 345-page book — a difference that affects printing costs, spine width, shipping weight, and retail price. For self-published authors using print-on-demand services where cost scales linearly with page count, the indent is not merely a typographic preference. It is an economic decision.',
+          'The density gain does not come at the expense of legibility. The indent provides the same paragraph-separation signal as the line space — "new thought begins here" — without consuming vertical real estate. Miles Tinker\'s research at the University of Minnesota found no statistically significant difference in reading speed or comprehension between indented paragraphs and block paragraphs in controlled experiments. The two methods are equally effective at signaling paragraph boundaries. But the indent achieves this with zero vertical cost, while the line space consumes one full baseline increment per paragraph. When the signals are equally effective, the method that preserves density and rhythm is objectively superior for sustained reading.',
+        ],
+      },
+      {
+        heading: 'The Historical Consensus',
+        paragraphs: [
+          'The first-line indent emerged in the late fifteenth century as printers transitioned from the pilcrow (¶) — a symbol inherited from medieval scribes — to a spatial signal. Early incunabula left blank spaces for rubricators to insert pilcrows by hand; when the hand-decoration step was omitted (whether by haste or economy), the blank space remained, and compositors discovered that the space alone was sufficient to signal a new paragraph. By the sixteenth century, the convention was universal. Aldus Manutius, Claude Garamond, Robert Estienne, and the Elzevir house all used first-line indents. No major printing house between 1500 and 1900 used inter-paragraph line spaces for book-length body text.',
+          'The block-paragraph convention has a precise origin: the typewriter. On a mechanical typewriter, controlling first-line indentation required the operator to manually press the tab key or space bar — an action prone to inconsistency. The carriage return, by contrast, reliably produced a full line advance. When typed manuscripts were the primary input format for correspondence, business documents, and eventually web pages, the block paragraph became the default because it was the path of least resistance for the input device. HTML formalized this when browsers implemented <p> elements with default top and bottom margins and no first-line indent. The convention spread not because it was superior but because the tools made it easier.',
+        ],
+      },
+      {
+        heading: 'When Block Paragraphs Are Correct',
+        paragraphs: [
+          'Block paragraphs with inter-paragraph spacing are the correct choice in specific contexts. Technical documentation, where paragraphs are often interspersed with code blocks, lists, and diagrams, benefits from the additional vertical separation because it disambiguates paragraph boundaries from the boundaries of adjacent non-text elements. Business letters use block paragraphs by long convention, and violating that convention would read as eccentric rather than refined. Screen-based reading at typical web line lengths (often exceeding 90 characters) benefits from the extra spatial cue because the reading conditions — backlit screens, variable fonts, distracting surroundings — degrade the reader\'s ability to detect the subtle indent signal.',
+          'Tschichold acknowledged this distinction in "The New Typography" (1928), where he advocated block paragraphs for modernist commercial printing — advertising, catalogs, ephemera — while maintaining the indent for book-length texts. His reasoning was functional, not ideological: in short documents where the reader enters and exits frequently, the line space helps the eye locate its position after an interruption. In sustained reading, where the reader proceeds linearly through hundreds of pages, the line space becomes a rhythmic disturbance that accumulates across the length of the work. The indent is for the reader who stays. The line space is for the reader who dips in and out.',
+        ],
+      },
+    ],
+    conclusion: {
+      heading: 'The Actionable Rule',
+      paragraphs: [
+        'For any document intended for sustained, linear reading — books, dissertations, long-form essays, manuscripts — use a first-line indent of one em (equal to the body type size) with no additional vertical space between paragraphs. Omit the indent on the first paragraph after a chapter title, section heading, or block element (the reader does not need a paragraph signal when the preceding element already provides a structural break). Align all text to the baseline grid.',
+        'Reserve block paragraphs for documents where reading is non-linear: technical manuals, correspondence, web pages, and any format where the reader routinely interrupts and resumes. The choice between indent and line space is not a style preference. It is a functional decision with a five-century evidence base. For the printed page and sustained reading, the indent preserves what matters most — vertical rhythm, text density, and the unbroken flow of the reader\'s eye from one thought to the next.',
+      ],
+    },
+  },
+  {
+    slug: 'widows-orphans-ragged-bottom',
+    title: 'Widows, Orphans, and the Cost of the Ragged Bottom',
+    description:
+      'The three typographic defects that separate professional composition from desktop publishing — and why eliminating them is a matter of engineering, not taste.',
+    category: 'Layout',
+    date: '2026-03-15',
+    readTime: '5 min',
+    hook:
+      'In the composing rooms of hot-metal typesetting shops, a widow was grounds for resetting an entire page. The term — a single word or short line stranded at the top of a new page — carried professional stigma: a compositor who left widows in finished galleys was a compositor who did not care about his work. The orphan (a single opening line stranded at the bottom of a page) and the ragged bottom (uneven page depths caused by careless break decisions) carried the same indictment. These are not aesthetic preferences. They are defects — measurable disruptions to reading rhythm and page consistency that every professional typesetting system has sought to eliminate since Gutenberg. That modern word processors produce them by default is not evidence that they are acceptable. It is evidence that modern word processors are not typesetting systems.',
+    sections: [
+      {
+        heading: 'Defining the Defects',
+        paragraphs: [
+          'The terminology is precise, though usage has drifted. In the tradition codified by Geoffrey Dowding in "Finer Points in the Spacing and Arrangement of Type" (1954), a widow is a short line — typically less than the paragraph indent width — that falls at the top of a page or column. It is the terminal fragment of a paragraph whose body resides on the previous page. An orphan is the first line of a paragraph that falls at the bottom of a page, with the remainder of the paragraph pushed to the next page. Both are page-break failures: they place a line in a position where it is visually isolated from the paragraph to which it belongs.',
+          'The ragged bottom is the downstream consequence of widow and orphan avoidance done badly. When a typesetting system pushes a widow or orphan to the next page to eliminate the defect, it shortens the page from which the line was removed, leaving the text block one or more lines short of the standard page depth. If the facing page is full-depth, the spread has mismatched text blocks — a visible asymmetry that signals careless composition. The challenge of professional page-breaking is to eliminate widows and orphans without creating ragged bottoms: to solve all three problems simultaneously.',
+        ],
+      },
+      {
+        heading: 'The Reading Cost of Stranded Lines',
+        paragraphs: [
+          'A widow at the top of a page forces the reader to perform a cognitive recovery. The reader arrives at a new page and encounters a fragment — a word or partial phrase — that belongs to a thought begun on the previous page. To comprehend the fragment, the reader must hold the preceding context in working memory across the physical interruption of the page turn. This is not a catastrophic failure, but it is a measurable friction. Research on working memory by George Miller and subsequent investigators has established that the capacity for holding information across interruptions is limited and degrades with the length and severity of the interruption.',
+          'The orphan imposes a different cost. A single line at the bottom of a page, separated from the paragraph it introduces, gives the reader insufficient context to begin processing the new thought. The reader either reads the orphan line and forgets it by the time the continuation appears on the next page, or learns to skip single lines at page bottoms — a scanning behavior that risks missing content. Either outcome represents a failure of the composition to support the reading process. Jan Tschichold, in "The Form of the Book," was unequivocal: "Widows and orphans are intolerable in good typography. No truly well-composed book can contain them."',
+        ],
+      },
+      {
+        heading: 'The Compositor\'s Toolbox: How Professionals Solve Page Breaks',
+        paragraphs: [
+          'Hot-metal compositors had four primary tools for eliminating widows and orphans without creating ragged bottoms. First, tracking adjustment: imperceptibly tightening or loosening the letter-spacing of a paragraph to gain or lose a line. A tracking change of plus or minus 10 units (approximately 0.5% of the em) across a full paragraph is invisible to the reader but can pull a widow back onto the previous page or push an orphan forward to join its paragraph. Second, vertical justification: distributing fractional amounts of extra space across all inter-paragraph gaps on a page to stretch a short text block to full depth, provided the added space does not exceed one-half baseline increment per gap.',
+          'Third, editorial adjustment: working with the author to add or remove a word from a problematic paragraph — a practice common in newspaper and magazine production, where editors understood that a three-word change could save a page of recomposition. Fourth, and most drastic, rebreaking: adjusting the page breaks of the preceding two or three pages to redistribute lines so that the problematic break falls in a different position. This cascading rebreak was labor-intensive in hot metal but is trivial for software — yet most modern typesetting tools, including consumer word processors, do not attempt it. They solve widows and orphans locally, one page at a time, producing ragged bottoms that a competent compositor would never accept.',
+        ],
+      },
+      {
+        heading: 'The Knuth-Plass Algorithm and Global Optimization',
+        paragraphs: [
+          'Donald Knuth, in developing TeX in the late 1970s, recognized that page-breaking — like line-breaking — is a global optimization problem. His line-breaking algorithm, designed with Michael Plass and published in 1981, evaluates all possible line breaks in a paragraph simultaneously and selects the combination that minimizes a total "badness" score accounting for loose lines, tight lines, hyphenation, and adjacent-line variation. The algorithm produces demonstrably superior results to the greedy line-breaking used by word processors, which decides each line break in isolation without considering its downstream effects.',
+          'Knuth extended this principle to page-breaking, though with acknowledged limitations. TeX\'s page-breaking is less globally optimal than its line-breaking because the interactions between pages — figures, footnotes, section headings, keep-together constraints — create a combinatorial space too large for the dynamic programming approach that works at line level. Nevertheless, TeX\'s page-breaking remains the benchmark against which all other systems are measured. Its widow and orphan penalties — configurable numerical values that increase the "cost" of bad breaks — allow the compositor to express priorities ("I will accept a slightly loose page before I accept a widow") in quantitative terms. This is the engineering approach to page composition: define the defects, assign costs, and let the algorithm minimize total cost across the document.',
+        ],
+      },
+    ],
+    conclusion: {
+      heading: 'The Actionable Rule',
+      paragraphs: [
+        'Set widow and orphan penalties to their maximum values in your typesetting system. TeX and LaTeX provide \\widowpenalty and \\clubpenalty (set both to 10000 for absolute prohibition). Verify every page break in the final proof: no single lines stranded at page tops or bottoms, no text blocks more than one line short of the standard page depth. When a bad break cannot be resolved by penalty settings alone, use micro-tracking adjustments (plus or minus 0.5%) or editorial changes to gain or lose the necessary line.',
+        'Widows, orphans, and ragged bottoms are the most visible signatures of amateur typesetting. They are also the most mechanically solvable — any system that can break lines can break pages, and any system that can break pages can be configured to reject bad breaks. The reader will never notice their absence. But the reader will notice their presence — as a vague sense that the book was not made with care. Eliminating these defects is not perfectionism. It is the minimum standard of professional composition.',
+      ],
+    },
+  },
+  {
+    slug: 'two-typefaces-one-system',
+    title: 'Two Typefaces, One System: The Science of Pairing Display and Body Faces',
+    description:
+      'Why two typefaces are almost always enough, why contrast rather than similarity is the governing principle, and how to select a display-body pair that functions as a coherent typographic system.',
+    category: 'Design Systems',
+    date: '2026-04-01',
+    readTime: '5 min',
+    hook:
+      'Massimo Vignelli claimed a designer needs no more than five or six typefaces in an entire career. Jan Tschichold used fewer in practice. Wim Crouwel built one of the twentieth century\'s most influential design practices on a single family — Neue Haas Grotesk, later renamed Helvetica. The impulse to collect typefaces is natural; the discipline to restrict them is professional. For the vast majority of documents — books, reports, proposals, marketing materials — two typefaces are not a limitation. They are the system. One for display (headings, labels, navigation), one for body (continuous reading). The pairing succeeds or fails on a single principle that most designers get backwards: the two faces must contrast, not harmonize.',
+    sections: [
+      {
+        heading: 'Why Two Is the Right Number',
+        paragraphs: [
+          'A typographic system must accomplish two tasks: establish hierarchy and maintain consistency. Hierarchy requires visible differentiation between levels — the reader must instantly perceive that a heading is not body text, that a caption is not a heading. Consistency requires that every instance of a given level looks identical — every heading shares the same face, weight, and size; every paragraph shares the same treatment. Two typefaces satisfy both requirements with the minimum possible complexity. The display face handles all hierarchical differentiation above the body level. The body face handles continuous reading. Every element on the page belongs to one system or the other.',
+          'Three typefaces introduce a classification problem: which elements belong to the third face? The answer is inevitably arbitrary — captions in the third face? Pull quotes? Footnotes? — and every arbitrary assignment is a decision that must be maintained consistently across the entire document. Four typefaces compound the problem. Robert Bringhurst addresses this directly in "The Elements of Typographic Style": "Typography that uses two families with clear structural differences should be able to handle most situations with ease." He treats the two-family system as the default and any addition as an exception requiring explicit justification.',
+        ],
+      },
+      {
+        heading: 'The Contrast Principle',
+        paragraphs: [
+          'The most common pairing error is selecting two typefaces that are too similar. Two geometric sans-serifs (Futura and Avenir), two old-style serifs (Garamond and Caslon), or two humanist sans-serifs (Gill Sans and Frutiger) create pairs whose differences are perceptible only to type designers. The reader cannot distinguish between them at a glance, which means the pair fails its primary function: creating instant visual hierarchy. The faces compete rather than collaborate, producing what typographers call a "near-miss" — a dissonance worse than either using a single face or choosing two that are obviously different.',
+          'Effective pairing requires structural contrast along at least two axes. The most reliable axis is classification: a sans-serif display face paired with a serif body face, or vice versa. This provides immediate visual differentiation because the reader\'s pattern-recognition system distinguishes "has serifs" from "does not have serifs" pre-attentively — in the same 200-millisecond window that detects color anomalies. The second axis is typically weight or proportion: a condensed, high-contrast display face paired with a wide, low-contrast body face, or a geometric display face paired with a humanist body face. The greater the structural difference, the clearer the hierarchy and the more cohesive the system appears — a counterintuitive result that follows from the Gestalt principle of contrast.',
+        ],
+      },
+      {
+        heading: 'Structural Compatibility: The Hidden Constraint',
+        paragraphs: [
+          'Contrast governs the macro relationship between display and body faces. But at the micro level, the two faces must share enough structural DNA to coexist on the same page without visual friction. The critical shared properties are x-height proportion, stroke axis, and color (the overall darkness of a text block, determined by stroke weight relative to counter size). When two faces share similar x-height proportions, text set in one face at a given size will occupy roughly the same vertical space as text set in the other — ensuring that the baseline grid accommodates both without adjustment.',
+          'Tim Brown, formerly of Adobe Fonts, formalized this as "type pairing by metrics" — selecting faces whose proportional measurements (x-height to cap-height ratio, average character width, ascender and descender lengths) fall within compatible ranges even when their stylistic characteristics differ dramatically. Inter Tight (a grotesque sans-serif) and Source Serif 4 (a transitional serif) exemplify this approach: their x-heights are within 3% of each other at the same point size, their stroke weights produce comparable color, and their proportions allow them to share a baseline grid — yet their structural contrast (geometric vs. bracketed, uniform vs. modulated) creates unambiguous hierarchy. The pairing works not because the faces resemble each other but because their invisible measurements are aligned while their visible characteristics diverge.',
+        ],
+      },
+      {
+        heading: 'The Superfamily Alternative',
+        paragraphs: [
+          'The type industry\'s response to the pairing problem has been the superfamily — a coordinated set of faces designed from the outset to work together. Lucas de Groot\'s Thesis (TheSans, TheSerif, TheMix) was among the first, released in 1994 with shared proportions, x-heights, and widths across sans-serif, serif, and semi-serif variants. More recent superfamilies include IBM Plex (Sans, Serif, Mono), Noto (Sans, Serif, covering 1,000+ languages), and Alegreya (serif and sans with matched optical sizes). The superfamily guarantees metric compatibility by construction — every variant shares the same skeleton.',
+          'The trade-off is reduced contrast. Because superfamily members are designed to harmonize, the structural differences between the serif and sans-serif variants are typically more subtle than those between independently designed faces. A Thesis Sans heading above a Thesis Serif paragraph is clearly differentiated but lacks the dramatic contrast of, say, a Futura heading above a Garamond paragraph. For documents where visual drama serves the purpose — advertising, editorial design, book covers — independent pairings offer more range. For documents where systematic consistency is paramount — corporate reports, technical documentation, multi-author publications — superfamilies offer lower risk and guaranteed compatibility.',
+        ],
+      },
+    ],
+    conclusion: {
+      heading: 'The Actionable Rule',
+      paragraphs: [
+        'Select two typefaces: one sans-serif for display (headings, labels, navigation, UI elements), one serif for body (continuous reading, paragraphs, block quotes, footnotes). Ensure they contrast along classification (serif vs. sans) and at least one additional axis (geometric vs. humanist, condensed vs. wide, high-contrast vs. low-contrast). Verify metric compatibility by setting both at the same point size and comparing x-heights, cap-heights, and overall color. If the x-heights differ by more than 5%, adjust the display size to compensate.',
+        'Do not add a third typeface unless you can identify a structural role that neither the display face nor the body face can fulfill — and even then, consider first whether a weight or style variant of an existing face can serve instead. Every typeface added to the system is a maintenance liability: a new variable that must be tracked across every page, every template, and every revision. Two faces, systematically applied, will serve any document from a business card to a 600-page monograph. The constraint is not a limitation. It is the mechanism by which the system remains a system.',
+      ],
+    },
+  },
 ]
