@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -14,34 +14,23 @@ import {
 // ── Markdown ↔ HTML conversion helpers ──
 
 function markdownToHtml(md: string): string {
-  // Lightweight Markdown → HTML for TipTap ingestion
-  // Handles: headings, bold, italic, lists, blockquotes, code, hr
   let html = md
-    // Headings (must come before other inline patterns)
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')
     .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    // Horizontal rules
     .replace(/^---+$/gm, '<hr>')
-    // Blockquotes
     .replace(/^> (.+)$/gm, '<blockquote><p>$1</p></blockquote>')
-    // Bold and italic
     .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // Inline code
     .replace(/`([^`]+)`/g, '<code>$1</code>')
-    // Unordered lists
     .replace(/^- (.+)$/gm, '<li>$1</li>')
-    // Ordered lists
     .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
 
-  // Wrap consecutive <li> in <ul>
   html = html.replace(/(<li>.*?<\/li>\n?)+/g, (match) => {
     return `<ul>${match}</ul>`
   })
 
-  // Wrap remaining plain text lines in <p> tags
   html = html
     .split('\n')
     .map(line => {
@@ -56,7 +45,6 @@ function markdownToHtml(md: string): string {
 }
 
 function htmlToMarkdown(html: string): string {
-  // HTML → Markdown for compile pipeline
   const md = html
     .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
     .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
@@ -79,14 +67,14 @@ function htmlToMarkdown(html: string): string {
     })
     .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, '') // Strip remaining HTML tags
+    .replace(/<[^>]+>/g, '')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
-    .replace(/\n{3,}/g, '\n\n') // Collapse excessive newlines
+    .replace(/\n{3,}/g, '\n\n')
 
   return md.trim() + '\n'
 }
@@ -123,6 +111,9 @@ function ToolbarButton({
 }
 
 // ── Main Component ──
+// NOTE: This component does NOT sync external markdown changes back into TipTap.
+// TipTap owns its own document state. To load different content (e.g. switching
+// manuscripts), remount this component by changing its React `key` in the parent.
 
 export default function RichTextEditor({
   markdown,
@@ -133,10 +124,6 @@ export default function RichTextEditor({
   onChange: (md: string) => void
   onClose: () => void
 }) {
-  const isUpdatingRef = useRef(false)
-  // Track what the editor last emitted so we can skip echo-backs
-  const lastEmittedRef = useRef(markdown)
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -155,25 +142,11 @@ export default function RichTextEditor({
       },
     },
     onUpdate: ({ editor: ed }) => {
-      if (isUpdatingRef.current) return
       const html = ed.getHTML()
       const md = htmlToMarkdown(html)
-      lastEmittedRef.current = md
       onChange(md)
     },
   })
-
-  // Sync external markdown changes into editor (skip echo-backs from our own onUpdate)
-  useEffect(() => {
-    if (!editor) return
-    if (markdown === lastEmittedRef.current) return
-
-    isUpdatingRef.current = true
-    const html = markdownToHtml(markdown)
-    editor.commands.setContent(html, { emitUpdate: false })
-    lastEmittedRef.current = markdown
-    isUpdatingRef.current = false
-  }, [markdown, editor])
 
   const toggleHeading = useCallback((level: 1 | 2 | 3) => {
     if (!editor) return
