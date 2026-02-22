@@ -43,6 +43,7 @@ export type CompileQuality = {
   typographyGrade: string | null
   overfullBoxes: number
   underfullBoxes: number
+  buildId: string | null
 } | null
 
 export const PREFS_KEY = 'pp-prefs-v1'

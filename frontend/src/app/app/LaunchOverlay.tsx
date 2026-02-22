@@ -575,6 +575,7 @@ export default function LaunchOverlay({
 
         <p className="mt-3 text-center font-mono text-[10px] text-[#111111]/25">
           {TEMPLATE_INFO[template]?.name} / {PAGE_SIZES[pageSize]?.label} / {title || 'Untitled'}
+          {quality?.buildId && <> / {quality.buildId.slice(0, 20)}</>}
         </p>
       </motion.div>
     </motion.div>

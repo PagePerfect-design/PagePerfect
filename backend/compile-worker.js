@@ -475,6 +475,21 @@ async function processCompileJob(job, templateRegistry) {
     log.warn({ err: err.message }, 'Typography report generation failed');
   }
 
+  // Create export snapshot for provenance audit trail
+  let exportSnapshot = null;
+  if (buildMeta) {
+    try {
+      exportSnapshot = provenance.createExportSnapshot(buildMeta, {
+        success: true,
+        compileTimeMs: result.elapsed,
+        preflightPassed: null, // preflight runs client-side separately
+        lintIssueCount: compileLog.overfullBoxes.length + compileLog.underfullBoxes.length,
+      });
+    } catch (err) {
+      log.warn({ err: err.message }, 'Export snapshot creation failed');
+    }
+  }
+
   return {
     success: true,
     pdfPath: finalPdfPath,
@@ -492,6 +507,7 @@ async function processCompileJob(job, templateRegistry) {
     } : null,
     warnings,
     outputFormat: finalFormat,
+    exportSnapshot,
     userId, userTier,
     isDownload,
     template: tplKey,

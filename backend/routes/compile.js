@@ -253,7 +253,7 @@ module.exports = function compileRoutes(ctx) {
     const cached = await ctx.getJobResult(id);
     if (cached) {
       if (cached._redisOnly && cached.success) return res.status(410).json({ jobId: id, status: 'expired', error: 'restart_expired', message: 'Server restarted during compilation. Please recompile.' });
-      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, resultUrl: `/api/compile/result/${id}` });
+      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, resultUrl: `/api/compile/result/${id}` });
       return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, warnings: cached.warnings, detail: cached.detail });
     }
     if (ctx.compileQueue) {

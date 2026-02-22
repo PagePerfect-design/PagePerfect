@@ -75,6 +75,11 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
           </span>
         </div>
       )}
+      {quality.buildId && (
+        <div className="border border-[#111111]/[0.06] bg-[#111111]/[0.02] px-2 py-1" title={quality.buildId}>
+          <span className="font-mono text-[8px] text-[#111111]/30">{quality.buildId.slice(0, 20)}</span>
+        </div>
+      )}
     </motion.div>
   )
 }
