@@ -58,7 +58,22 @@ export default function JournalPage() {
       <section className="py-12 md:py-16">
         <div className="mx-auto max-w-7xl px-6 md:px-8">
           <div className="grid grid-cols-1 gap-0 md:grid-cols-[220px_1fr] md:gap-16">
-            {/* Sidebar — category index */}
+            {/* Mobile — horizontal scrollable category bar */}
+            <div className="mb-6 md:hidden">
+              <div className="scrollbar-hide -mx-6 flex gap-2 overflow-x-auto px-6 pb-2">
+                {Object.entries(categoryCounts).map(([cat, count]) => (
+                  <span
+                    key={cat}
+                    className="inline-flex shrink-0 items-center gap-1.5 border border-[#111111]/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#333333]"
+                  >
+                    {cat}
+                    <span className="text-[#111111]/30">{count}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Sidebar — category index (desktop) */}
             <aside className="hidden md:block">
               <div className="sticky top-16">
                 <SectionLabel>Categories</SectionLabel>
@@ -126,16 +141,16 @@ export default function JournalPage() {
             Every principle in these essays is built into PagePerfect — baseline grids,
             golden-ratio scales, and 12 templates engineered for readability and conversion.
           </p>
-          <div className="mt-8 flex items-center gap-4">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <Link
               href="/app"
-              className="border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222] hover:border-[#E52222]"
+              className="inline-flex h-11 items-center justify-center border border-[#FF3333] bg-[#FF3333] px-8 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222] hover:border-[#E52222]"
             >
               Open the Editor &rarr;
             </Link>
             <Link
               href="/docs"
-              className="border border-[#111111]/20 px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-75 hover:border-[#111111] hover:text-[#111111]"
+              className="inline-flex h-11 items-center justify-center border border-[#111111]/20 px-8 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-75 hover:border-[#111111] hover:text-[#111111]"
             >
               Read Docs
             </Link>

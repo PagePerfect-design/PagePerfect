@@ -134,7 +134,7 @@ function TierRow({
     >
       <div className="grid grid-cols-1 gap-4 py-12 md:grid-cols-[6rem_1fr_1fr] md:items-baseline md:gap-12 md:py-16">
         {/* Tier number — large, ghosted */}
-        <span className="font-display text-[4rem] font-extrabold leading-none tracking-tighter text-[#111111]/[0.06] transition-colors duration-500 group-hover:text-[#FF3333]/20 md:text-[5rem]">
+        <span className="font-display text-[3rem] font-extrabold leading-none tracking-tighter text-[#111111]/[0.06] transition-colors duration-500 group-hover:text-[#FF3333]/20 sm:text-[4rem] md:text-[5rem]">
           {tier.num}
         </span>
 
@@ -156,7 +156,7 @@ function TierRow({
         </div>
 
         {/* Price + aside + CTA */}
-        <div className="border-l border-[#111111] pl-6">
+        <div className="border-l-0 md:border-l md:border-[#111111] md:pl-6">
           <div className="flex items-baseline gap-2">
             <span className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-[#111111] md:text-[2.5rem]">
               {tier.price}
@@ -173,7 +173,7 @@ function TierRow({
               <Link
                 href={cta.disabled ? '#' : tier.href}
                 aria-disabled={cta.disabled}
-                className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${buttonClass}`}
+                className={`group/btn inline-flex h-11 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${buttonClass}`}
               >
                 {cta.label}
                 {!cta.disabled && (
@@ -184,7 +184,7 @@ function TierRow({
               <button
                 disabled={cta.disabled || isLoading}
                 onClick={() => onUpgrade(tier.key as 'publisher' | 'studio')}
-                className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${buttonClass}`}
+                className={`group/btn inline-flex h-11 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${buttonClass}`}
               >
                 {isLoading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -583,11 +583,11 @@ export default function PricingPage() {
             initial={{ opacity: 0 }}
             animate={compareInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.6, delay: 0.2, ease }}
-            className="-mx-6 overflow-x-auto px-6 md:mx-0 md:px-0"
           >
-            <div className="min-w-[640px]">
+            {/* Desktop table — hidden on mobile */}
+            <div className="hidden md:block">
               {/* Header row */}
-              <div className="grid grid-cols-[1fr_repeat(3,_minmax(0,_8rem))] gap-x-4 pb-4 md:gap-x-6">
+              <div className="grid grid-cols-[1fr_repeat(3,_minmax(0,_8rem))] gap-x-6 pb-4">
                 <div />
                 {TIER_NAMES.map((name, i) => (
                   <div key={name} className="text-right">
@@ -598,12 +598,11 @@ export default function PricingPage() {
                 ))}
               </div>
 
-              {/* Feature rows */}
               {COMPARISON.map((row) => (
                 <Fragment key={row.feature}>
                   <div className="h-px bg-[#111111]/10" />
-                  <div className="grid grid-cols-[1fr_repeat(3,_minmax(0,_8rem))] items-baseline gap-x-4 py-4 md:gap-x-6">
-                    <span className="font-body text-[14px] text-[#111111]/70 md:text-[15px]">
+                  <div className="grid grid-cols-[1fr_repeat(3,_minmax(0,_8rem))] items-baseline gap-x-6 py-4">
+                    <span className="font-body text-[15px] text-[#111111]/70">
                       {row.feature}
                     </span>
                     {row.values.map((val, i) => (
@@ -622,6 +621,31 @@ export default function PricingPage() {
                 </Fragment>
               ))}
               <div className="h-px bg-[#111111]/10" />
+            </div>
+
+            {/* Mobile stacked cards — one tier per card */}
+            <div className="space-y-8 md:hidden">
+              {TIER_NAMES.map((name, ti) => (
+                <div key={name} className="border-t border-[#111111]/10 pt-6">
+                  <h3 className={`mb-5 font-mono text-[13px] uppercase tracking-[0.15em] ${ti === 1 ? 'text-[#FF3333]' : 'text-[#111111]'}`}>
+                    {name}
+                  </h3>
+                  <div className="space-y-3">
+                    {COMPARISON.map((row) => (
+                      <div key={row.feature} className="flex items-baseline justify-between gap-4">
+                        <span className="font-body text-[14px] text-[#111111]/70">{row.feature}</span>
+                        <span className={`shrink-0 text-right font-mono text-[12px] ${
+                          row.values[ti] === '\u2014'
+                            ? 'text-[#111111]/25'
+                            : 'text-[#111111]/70'
+                        }`}>
+                          {row.values[ti]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </motion.div>
         </div>
