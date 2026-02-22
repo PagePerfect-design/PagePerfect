@@ -37,10 +37,15 @@ const watermark = require('./watermark');
 let redis = null;
 let redisHealthy = false;
 
-// Helper to spawn fresh ioredis connections for BullMQ (which requires isolated connections)
-function createRedisConnection() {
+// Helper to spawn fresh ioredis connections.
+// BullMQ requires enableOfflineQueue: false and maxRetriesPerRequest: null.
+// The master connection (rate limiting, Stripe) keeps enableOfflineQueue: true
+// so commands can queue while Redis connects.
+function createRedisConnection({ forBullMQ = false } = {}) {
   const Redis = require('ioredis');
-  const opts = { maxRetriesPerRequest: null, enableOfflineQueue: false };
+  const opts = forBullMQ
+    ? { maxRetriesPerRequest: null, enableOfflineQueue: false }
+    : { maxRetriesPerRequest: null };
   return process.env.REDIS_URL
     ? new Redis(process.env.REDIS_URL, opts)
     : new Redis({ host: process.env.REDIS_HOST || 'localhost', port: Number(process.env.REDIS_PORT || 6379), ...opts });
@@ -90,13 +95,13 @@ if (redis) {
     const { Queue, Worker, QueueEvents } = require('bullmq');
 
     // Supply fresh, isolated connections to each BullMQ component
-    compileQueue = new Queue('pp-compile', { connection: createRedisConnection() });
+    compileQueue = new Queue('pp-compile', { connection: createRedisConnection({ forBullMQ: true }) });
 
     compileWorker = new Worker('pp-compile', async (job) => {
       // DESIGN_TEMPLATES is defined later in this file — worker references it at runtime
       return processCompileJob(job, DESIGN_TEMPLATES);
     }, {
-      connection: createRedisConnection(),
+      connection: createRedisConnection({ forBullMQ: true }),
       concurrency: Number(process.env.COMPILE_CONCURRENCY || 3),
       lockDuration: 60_000,
       stalledInterval: 30_000,
@@ -121,7 +126,7 @@ if (redis) {
       console.error(`[queue] Job ${job?.id} failed:`, err.message);
     });
 
-    compileQueueEvents = new QueueEvents('pp-compile', { connection: createRedisConnection() });
+    compileQueueEvents = new QueueEvents('pp-compile', { connection: createRedisConnection({ forBullMQ: true }) });
 
     console.log(`[queue] BullMQ initialized (concurrency: ${process.env.COMPILE_CONCURRENCY || 3})`);
   } catch (err) {
