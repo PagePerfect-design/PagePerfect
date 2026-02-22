@@ -28,6 +28,7 @@ import { SAMPLE_MD } from './sample'
 import PublishingSystems from './PublishingSystems'
 import { useAuth } from '@/lib/auth-context'
 import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
+import { loadManuscript, saveManuscript } from '@/lib/manuscript-store'
 
 /* ═══════════════════════════════════════════════════════════════════
    TYPES & CONSTANTS
@@ -70,8 +71,6 @@ type PreflightResult = {
 }
 
 const PREFS_KEY = 'pp-prefs-v1'
-const MANUSCRIPT_KEY = 'pp-manuscript-v1'
-const TITLE_KEY = 'pp-title-v1'
 type Prefs = {
   template: TemplateKey
   pageSize: PageSize
@@ -2101,6 +2100,7 @@ export default function CompileShell() {
 
   // Load saved preferences and manuscript on mount
   useEffect(() => {
+    // Preferences: small data — stays in localStorage (sync)
     try {
       const raw = localStorage.getItem(PREFS_KEY)
       if (raw) {
@@ -2113,13 +2113,11 @@ export default function CompileShell() {
         if (typeof p.title === 'string' && p.title.trim()) setTitle(p.title)
       }
     } catch { /* ignore */ }
-    // Restore manuscript from auto-save
-    try {
-      const savedMs = localStorage.getItem(MANUSCRIPT_KEY)
+    // Manuscript: large data — loaded from IndexedDB (async)
+    loadManuscript().then(({ manuscript: savedMs, title: savedTitle }) => {
       if (savedMs && savedMs.trim()) setManuscript(savedMs)
-      const savedTitle = localStorage.getItem(TITLE_KEY)
       if (savedTitle && savedTitle.trim()) setTitle(savedTitle)
-    } catch { /* ignore */ }
+    })
   }, [])
 
   // Save preferences
@@ -2129,16 +2127,13 @@ export default function CompileShell() {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)) } catch { /* ignore */ }
   }, [template, headingVariant, pageSize, marginPreset, safeMode, title, stage])
 
-  // Auto-save manuscript to localStorage (3s debounce)
+  // Auto-save manuscript to IndexedDB (3s debounce)
   const manuscriptSaveRef = useRef<number | null>(null)
   useEffect(() => {
     if (!manuscript) return
     if (manuscriptSaveRef.current) window.clearTimeout(manuscriptSaveRef.current)
     manuscriptSaveRef.current = window.setTimeout(() => {
-      try {
-        localStorage.setItem(MANUSCRIPT_KEY, manuscript)
-        localStorage.setItem(TITLE_KEY, title)
-      } catch { /* quota exceeded — ignore */ }
+      saveManuscript(manuscript, title)
     }, 3000)
     return () => { if (manuscriptSaveRef.current) window.clearTimeout(manuscriptSaveRef.current) }
   }, [manuscript, title])

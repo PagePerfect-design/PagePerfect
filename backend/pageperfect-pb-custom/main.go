@@ -185,6 +185,28 @@ func main() {
 		log.Printf("[resend] Frontend URL: %s", frontendURL)
 	}
 
+	// ── SQLite tuning for concurrent write safety ──────────────────────
+	// PocketBase enables WAL mode by default, but the default busy_timeout
+	// is very short. Under concurrent writes (50 users compiling + credit
+	// deductions), SQLite will throw "database is locked" errors.
+	// Setting busy_timeout to 5000ms tells SQLite to wait up to 5 seconds
+	// for a write lock instead of failing immediately.
+	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
+		_, err := app.DB().NewQuery("PRAGMA busy_timeout = 5000").Execute()
+		if err != nil {
+			log.Printf("[sqlite] WARNING: failed to set busy_timeout: %v", err)
+		} else {
+			log.Println("[sqlite] busy_timeout set to 5000ms")
+		}
+
+		// Verify WAL mode is active (PocketBase default, but worth confirming)
+		var journalMode string
+		app.DB().NewQuery("PRAGMA journal_mode").Row(&journalMode)
+		log.Printf("[sqlite] journal_mode = %s", journalMode)
+
+		return e.Next()
+	})
+
 	// Intercept all system emails and send via Resend HTTP API (bypasses SMTP entirely)
 	const users = "users"
 
