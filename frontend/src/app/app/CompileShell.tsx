@@ -109,7 +109,7 @@ function EditorOverlay({
   onChange: (m: string) => void
   onClose: () => void
 }) {
-  const [editorMode, setEditorMode] = useState<'markdown' | 'richtext'>('richtext')
+  const [editorMode, setEditorMode] = useState<'markdown' | 'richtext'>('markdown')
 
   return (
     <motion.div
