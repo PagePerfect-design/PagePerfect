@@ -27,8 +27,10 @@ RUN curl -fsSL -o /tmp/pandoc.deb \
 # LuaLaTeX is the primary PDF engine — generates PDFs directly without xdvipdfmx,
 # avoiding the OpenType font embedding bugs in TeX Live 2021's xdvipdfmx driver.
 # XeLaTeX kept as fallback.
+# NOTE: TeX Live is pinned to Ubuntu 22.04's repo version (2021.20220204-1).
+# To upgrade, bump the base image or pin via tlmgr after install.
 RUN apt-get update && apt-get install -y \
-    texlive-latex-base \
+    texlive-latex-base=2021.20220204-1 \
     texlive-latex-extra \
     texlive-fonts-recommended \
     texlive-fonts-extra \
@@ -87,5 +89,5 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:4000/api/health || exit 1
 
-# Start server
-CMD ["node", "index.js"]
+# Start server — cap V8 heap to prevent unbounded memory growth under load
+CMD ["node", "--max-old-space-size=512", "index.js"]

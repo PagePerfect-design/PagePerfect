@@ -9,7 +9,7 @@
 // This implementation follows Müller-Brockmann's principles of:
 // - Systematic organization and rationalization
 // - Baseline grid for consistent vertical rhythm
-// - Typographic scale based on proportional relationships
+// - Proportional typographic scale tuned for print readability
 // - Grid-based spacing for visual harmony
 
 /**
@@ -28,10 +28,11 @@ class GridSystem {
       basic: 12      // 12pt baseline for Minimal template
     };
     
-    // Typographic scale based on golden ratio (1.618)
+    // Proportional typographic scale — ratios tuned for print readability
+    // (H1 2.25× / H2 1.75× / H3 1.375× produce ~1.28× step progression)
     this.scale = {
       h1: 2.25,    // 27pt for 12pt base, 24.75pt for 11pt base
-      h2: 1.75,    // 21pt for 12pt base, 19.25pt for 11pt base  
+      h2: 1.75,    // 21pt for 12pt base, 19.25pt for 11pt base
       h3: 1.375,   // 16.5pt for 12pt base, 15.125pt for 11pt base
       body: 1,     // 12pt for academic, 11pt for trade
       small: 0.875 // 10.5pt for 12pt base, 9.625pt for 11pt base

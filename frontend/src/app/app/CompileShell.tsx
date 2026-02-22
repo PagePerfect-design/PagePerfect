@@ -30,7 +30,7 @@ import {
   Shield,
 } from 'lucide-react'
 
-import { SAMPLE_MD } from './sample'
+import { SAMPLES } from './sample'
 import PublishingSystems from './PublishingSystems'
 import { useAuth } from '@/lib/auth-context'
 import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
@@ -443,7 +443,7 @@ function PortalStage({
   onResume,
 }: {
   onAccept: (text: string, title: string, detectedTemplate?: TemplateKey) => void
-  onLoadSample: () => void
+  onLoadSample: (sampleKey: string) => void
   onOpenManuscripts?: () => void
   isLoggedIn?: boolean
   hasResumable?: boolean
@@ -649,12 +649,17 @@ function PortalStage({
                 Browse files
               </button>
               <span className="text-[#111111]/40">|</span>
-              <button
-                onClick={onLoadSample}
-                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
-              >
-                Try sample
-              </button>
+              {SAMPLES.map((s, i) => (
+                <span key={s.key} className="inline-flex items-center gap-1">
+                  {i > 0 && <span className="text-[#111111]/20">/</span>}
+                  <button
+                    onClick={() => onLoadSample(s.key)}
+                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
+                  >
+                    {s.label} sample
+                  </button>
+                </span>
+              ))}
               {isLoggedIn && onOpenManuscripts && (
                 <>
                   <span className="text-[#111111]/40">|</span>
@@ -2775,9 +2780,11 @@ export default function CompileShell() {
     setStage('design')
   }
 
-  function handleLoadSample() {
-    setManuscript(SAMPLE_MD)
-    setTitle('Maritime Trade in the 17th Century')
+  function handleLoadSample(sampleKey: string) {
+    const sample = SAMPLES.find(s => s.key === sampleKey) || SAMPLES[0]
+    setManuscript(sample.md)
+    setTitle(sample.title)
+    setTemplate(sample.template)
     setStage('design')
   }
 
