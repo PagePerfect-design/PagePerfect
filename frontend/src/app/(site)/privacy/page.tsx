@@ -46,7 +46,7 @@ export default function PrivacyPage() {
       <section className="border-b-2 border-[#111111] py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-6 md:px-8">
           <p className="mb-3 font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50">
-            Legal — Effective 21 February 2026
+            Legal — Effective 22 February 2026
           </p>
           <h1
             className="font-display text-h1 font-extrabold tracking-tighter text-[#111111]"
@@ -76,22 +76,27 @@ export default function PrivacyPage() {
             number="01"
             promise={
               <>
-                We do not save your book.<br /><br />
-                Your manuscript is sent to our servers, compiled into a PDF, and immediately
-                deleted. We do not read it. We do not store it. We do not use it to train AI.
+                Your manuscript is stored only for your active session.<br /><br />
+                While you&rsquo;re working, we keep a copy so you don&rsquo;t lose progress
+                if you refresh or lose connection. When you sign out, it&rsquo;s deleted. If
+                you forget to sign out, it&rsquo;s automatically purged within 24&nbsp;hours.
+                We do not read it. We do not use it to train AI.
               </>
             }
             legal={
               <>
-                <strong>01. Transient Data Processing.</strong> Upon submission via the
-                &ldquo;Compile&rdquo; function, user-provided text files (.txt, .md, .docx) are
-                held in temporary server memory solely for the duration of the LuaLaTeX compilation
-                process. Upon successful generation of the output file (.pdf) or upon compilation
-                failure, the source material is permanently purged from active systems via
-                filesystem deletion of the temporary directory. No copy, cache, backup, or
-                derivative of the manuscript content is retained beyond the compilation session.
-                eazyaccess ltd does not perform any content analysis, machine learning training,
-                or natural language processing on user manuscripts.
+                <strong>01. Session-Scoped Data Processing.</strong> For authenticated users,
+                manuscript content is temporarily persisted in the PagePerfect database for the
+                sole purpose of session recovery (preventing data loss from page refreshes,
+                network interruptions, or browser crashes). This data is automatically deleted
+                (a)&nbsp;upon user-initiated sign-out, or (b)&nbsp;within 24&nbsp;hours of the
+                last edit, whichever occurs first. For anonymous (unauthenticated) users, no
+                server-side manuscript storage occurs; text is held in temporary server memory
+                solely for the duration of each compilation and purged immediately upon completion
+                or failure. In both cases, eazyaccess ltd does not perform any content analysis,
+                machine learning training, or natural language processing on user manuscripts.
+                Local browser storage (IndexedDB) is used independently for client-side session
+                recovery and is not transmitted to eazyaccess ltd servers.
               </>
             }
           />
@@ -101,7 +106,8 @@ export default function PrivacyPage() {
             promise={
               <>
                 Your account stores the minimum.<br /><br />
-                Email, display name, and which tier you pay for. That&rsquo;s the entire record.
+                Email, display name, and which tier you pay for. Manuscripts exist only for
+                session recovery and are automatically deleted (see Section&nbsp;01).
                 We do not profile you. We do not sell your data.
               </>
             }
@@ -111,10 +117,12 @@ export default function PrivacyPage() {
                 collected and stored in our self-hosted PocketBase database: email address, display
                 name (optional, user-provided), authentication method (email/password or OAuth
                 provider token), subscription tier (Drafter, Publisher, or Studio), and Stripe
-                customer/subscription identifiers for paying users. No additional personal data is
-                collected, inferred, or purchased from third-party data brokers. eazyaccess ltd does
-                not sell, rent, license, or otherwise commercialise user personal data to any third
-                party under any circumstances.
+                customer/subscription identifiers for paying users. Manuscript content is stored
+                temporarily for session recovery as described in Section&nbsp;01 and is not
+                considered permanent account data. No additional personal data is collected,
+                inferred, or purchased from third-party data brokers. eazyaccess ltd does not sell,
+                rent, license, or otherwise commercialise user personal data to any third party
+                under any circumstances.
               </>
             }
           />
@@ -220,11 +228,12 @@ export default function PrivacyPage() {
               <>
                 <strong>07. Data Deletion &amp; Portability.</strong> Users may request complete
                 account deletion by contacting privacy@pageperfect.studio. Upon verified request,
-                eazyaccess ltd will permanently delete: the user record, all associated compilation
-                metadata, and the Stripe customer association (note: Stripe retains its own records
-                per their data retention policy and applicable financial regulations). Deletion is
-                executed within 30 calendar days of verified request. Users may export their account
-                data in JSON format prior to deletion upon request.
+                eazyaccess ltd will permanently delete: the user record, all associated manuscript
+                data (if any session-scoped records remain), all compilation metadata, and the
+                Stripe customer association (note: Stripe retains its own records per their data
+                retention policy and applicable financial regulations). Deletion is executed within
+                30 calendar days of verified request. Users may export their account data in JSON
+                format prior to deletion upon request.
               </>
             }
           />
@@ -302,7 +311,7 @@ export default function PrivacyPage() {
       <section className="border-t-2 border-[#111111] py-12">
         <div className="mx-auto max-w-7xl px-6 md:px-8">
           <p className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50">
-            Document version 1.0 — 21 February 2026
+            Document version 1.1 — 22 February 2026
           </p>
           <p className="mt-3 font-body text-sm leading-relaxed text-[#333333]">
             This policy is written in plain English because we believe clarity is a legal

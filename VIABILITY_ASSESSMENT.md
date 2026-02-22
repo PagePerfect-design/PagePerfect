@@ -352,3 +352,64 @@ A second assessment graded PagePerfect **C+** with different concerns. This sect
 8. Lulu webhook integration incomplete
 9. "Safe Mode" naming is confusing
 10. No collaboration or sharing features
+
+---
+
+## Appendix: Third Assessment Counter-Analysis (B- Grade, Privacy-Focused)
+
+A third assessment graded PagePerfect **B-** and identified a critical privacy/storage contradiction. This section audits those claims.
+
+### Section 2: Product Strategy — Claim-by-Claim
+
+| # | Claim | Verdict | Evidence |
+|---|-------|---------|----------|
+| 1 | "Narrative dishonesty: privacy policy says no storage but PocketBase stores manuscripts" | **TRUE — NOW FIXED** | Privacy policy (`/privacy`) Clause 01 said "We do not save your book." `use-manuscript.ts` saved full content to PocketBase indefinitely. **Fix applied:** (a) Session-scoped storage with purge on sign-out (`auth-context.tsx`), (b) 24-hour backend sweeper for orphaned manuscripts (`index.js`), (c) Privacy policy rewritten to accurately describe session-scoped storage, (d) CompileShell.tsx "never stored" text updated. |
+| 2 | "Lifetime pricing without CPU caps" | **VALID but low priority** | Studio tier ($199) has no export quota. At 3 concurrent BullMQ workers, a Studio user doing 50 exports/month costs ~$2 in compute. Risk is at scale (>1000 users), not now. Skipping — user directive to focus on working app, not pricing. |
+| 3 | "Weak competitive wedge" | **VALID** | Same as previous assessments. Preflight + platform compliance is the differentiator but it's not productized. |
+| 4 | "Moat fragility: templates are reproducible" | **PARTIALLY VALID** | Templates alone aren't a moat, but the full pipeline (grid system + font embedding + platform compliance + preflight) is non-trivial to replicate. |
+| 5 | "Pricing disconnect: no retention loop" | **VALID but deferred** | Per user direction — not focusing on pricing until working app is complete. |
+
+### Section 3: UX — Claim-by-Claim
+
+| # | Claim | Verdict | Evidence |
+|---|-------|---------|----------|
+| 1 | "Acceptance contract is friction" | **NEEDS VERIFICATION** | References `PLAN.md` which is an internal planning doc, not user-facing UI. Would need to check CompileShell's Launch stage for checkbox sequence. |
+| 2 | "Mobile desktop gate" | **TRUE** | `CompileShell.tsx` blocks mobile users. This is intentional — PDF compilation + preview needs a desktop viewport. A mobile "edit-only" mode is a valid enhancement. |
+| 3 | "Safe Mode is confusing" | **TRUE** | Same as previous assessments. Rename to "Standard" vs. "Citation Mode." |
+| 4 | "Information overload: no guided search" | **PARTIALLY TRUE** | Genre tabs exist (Fiction/Non-Fiction/Specialist) with auto-detection (`CompileShell.tsx:283-346`). But no "Help me choose" wizard. |
+| 5 | "Empty state paralysis" | **PARTIALLY TRUE** | Portal stage has Paste/Upload/Sample options — not blank. But the sample button requires a click rather than auto-loading. |
+
+### Section 4: Technical — Claim-by-Claim
+
+| # | Claim | Verdict | Evidence |
+|---|-------|---------|----------|
+| 1 | "Sync fallback blocks event loop" | **FALSE** | The "sync fallback" uses async `spawn()` (not `spawnSync`), wrapped in Promises. It doesn't block the event loop. Max 2 concurrent via semaphore. It's a misnomer — "direct processing" would be more accurate. |
+| 2 | "In-memory jobResults lost on restart" | **TRUE** | Same as previous assessments. Redis persistence is the correct fix. |
+| 3 | "Lulu webhook TODO" | **TRUE** | `index.js:1070` — `// TODO: Update order status in database`. Tracked in PLAN.md as C4. |
+| 4 | "Missing PDF/X post-verification" | **VALID** | Ghostscript converts to PDF/X-1a but no automated compliance check post-conversion. |
+| 5 | "Weak disk cleanup (hourly too slow)" | **OVERSTATED** | Per-job cleanup runs on success AND failure. Hourly sweeper catches orphans from crashes. A burst of simultaneous crashes filling /tmp would require server-level monitoring, not application-level. |
+
+### Section 5: Security — Claim-by-Claim
+
+| # | Claim | Verdict | Evidence |
+|---|-------|---------|----------|
+| 1 | "LaTeX RCE under-sanitized" | **PARTIALLY VALID** | Same as previous assessment. `-raw_tex` is the primary defense; 14-pattern detection is defense-in-depth. gVisor is ideal hardening but not existential. |
+| 2 | "Privacy policy vs. reality" | **TRUE — NOW FIXED** | See Section 2.1 above. Session-scoped storage with purge + sweeper + updated policy. |
+| 3 | "Stripe webhook idempotency volatility" | **PARTIALLY TRUE** | Assessment claims in-memory Set. Actually uses **Redis SETNX with 72h TTL** (primary) and in-memory Set+FIFO (fallback when Redis is down). The fallback loses state on restart, but Redis is the primary path. |
+| 4 | "Unauthenticated result leak via job ID" | **PARTIALLY VALID** | Anonymous compile results use a secret token for access (not just job ID). But the token is returned to the client at enqueue time — a MITM could intercept it. HTTPS mitigates this for production. |
+
+### Section 9: Contradictions — Updated Status
+
+| Contradiction | Status |
+|--------------|--------|
+| "Privacy" vs. Database Sync | **RESOLVED** — Session-scoped storage with purge on sign-out + 24h sweeper. Privacy policy updated to match. |
+| "Professional" vs. "Manual" | **VALID** — .docx upload mitigates Markdown barrier. BibTeX is opt-in (safe mode default). But no WYSIWYG toolbar. |
+| "Grid Systems" vs. "KDP Constraints" | **NOT CONTRADICTORY** — Grid system calculates geometry that respects KDP constraints. `publishing.js` validates against platform specs. They're complementary, not competing. |
+
+### Fixes Applied in This Session
+
+1. **`use-manuscript.ts`** — Added `purgeUserManuscripts()` function that deletes all PocketBase manuscripts for a user
+2. **`auth-context.tsx`** — Sign-out now calls `purgeUserManuscripts()` before clearing auth token
+3. **`backend/index.js`** — Added manuscript expiry sweeper (24h TTL, runs every 6h, 30s boot delay)
+4. **`privacy/page.tsx`** — Clause 01 rewritten for session-scoped storage. Clause 02 updated. Clause 07 updated. Version bumped to 1.1.
+5. **`CompileShell.tsx`** — "Your text is never stored" → "Your text is stored only for your active session"
