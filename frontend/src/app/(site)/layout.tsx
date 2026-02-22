@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import NavAuth from '@/components/NavAuth'
 import CompositorMark from '@/components/CompositorMark'
+import MobileNav from '@/components/MobileNav'
 import CookieConsent from '@/components/CookieConsent'
 
 function Nav() {
@@ -12,7 +13,8 @@ function Nav() {
             <CompositorMark size={26} />
             PagePerfect
           </Link>
-          <div className="flex items-center gap-6">
+          {/* Desktop nav */}
+          <div className="hidden items-center gap-6 md:flex">
             <Link href="/pricing" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Pricing</Link>
             <Link href="/journal" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Journal</Link>
             <NavAuth />
@@ -23,6 +25,8 @@ function Nav() {
               Open Editor
             </Link>
           </div>
+          {/* Mobile nav */}
+          <MobileNav />
         </div>
       </div>
     </nav>

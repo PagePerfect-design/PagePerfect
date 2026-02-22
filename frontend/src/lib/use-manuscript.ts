@@ -6,12 +6,30 @@ import type { ManuscriptRecord } from './database.types'
 
 const MANUSCRIPT_KEY = 'pp-manuscript-v1'
 const TITLE_KEY = 'pp-title-v1'
+const MANUSCRIPT_ID_KEY = 'pp-manuscript-id-v1'
+const MANUSCRIPT_USER_KEY = 'pp-manuscript-user-v1'
 
 // Debounce interval for PocketBase saves (5s — less aggressive than localStorage)
 const PB_SAVE_DEBOUNCE_MS = 5000
 
-type ManuscriptState = {
+export type ManuscriptState = {
   id: string | null
+  title: string
+  content: string
+  template: string
+  pageSize: string
+  marginPreset: string
+  safeMode: boolean
+}
+
+export type ManuscriptListItem = {
+  id: string
+  title: string
+  updated: string
+}
+
+export type LoadedManuscript = {
+  id: string
   title: string
   content: string
   template: string
@@ -23,16 +41,18 @@ type ManuscriptState = {
 type UseManuscriptReturn = {
   /** PocketBase record ID (null if not persisted yet) */
   manuscriptId: string | null
-  /** Load a manuscript from PocketBase by ID */
-  loadManuscript: (id: string) => Promise<void>
+  /** Load a manuscript from PocketBase by ID — returns the record data */
+  loadManuscript: (id: string) => Promise<LoadedManuscript | null>
   /** List user's manuscripts */
-  listManuscripts: () => Promise<Array<{ id: string; title: string; updated: string }>>
+  listManuscripts: () => Promise<ManuscriptListItem[]>
   /** Save current state to PocketBase (debounced) */
   saveManuscript: (state: ManuscriptState) => void
   /** Force an immediate save (e.g., before navigation) */
   saveNow: (state: ManuscriptState) => Promise<void>
   /** Delete a manuscript */
   deleteManuscript: (id: string) => Promise<void>
+  /** Start a new manuscript (clears manuscriptId) */
+  newManuscript: () => void
   /** Whether a PocketBase save is in progress */
   saving: boolean
   /** Last save error, if any */
@@ -46,14 +66,43 @@ type UseManuscriptReturn = {
  * synced to the `manuscripts` collection. Anonymous users fall back to
  * localStorage (handled by CompileShell's existing logic).
  *
+ * manuscriptId is persisted to localStorage so it survives page reloads.
+ * This prevents duplicate records from being created on each session.
+ *
  * @param userId — current user ID from useAuth(), or null for anonymous
  */
 export function useManuscript(userId: string | null): UseManuscriptReturn {
-  const [manuscriptId, setManuscriptId] = useState<string | null>(null)
+  const [manuscriptId, setManuscriptIdRaw] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastSavedRef = useRef<string>('')
+
+  // Wrap setManuscriptId to also persist to localStorage
+  const setManuscriptId = useCallback((id: string | null) => {
+    setManuscriptIdRaw(id)
+    try {
+      if (id) {
+        localStorage.setItem(MANUSCRIPT_ID_KEY, id)
+        if (userId) localStorage.setItem(MANUSCRIPT_USER_KEY, userId)
+      } else {
+        localStorage.removeItem(MANUSCRIPT_ID_KEY)
+        localStorage.removeItem(MANUSCRIPT_USER_KEY)
+      }
+    } catch { /* ignore */ }
+  }, [userId])
+
+  // Restore manuscriptId from localStorage on mount (only if same user)
+  useEffect(() => {
+    if (!userId) return
+    try {
+      const storedUser = localStorage.getItem(MANUSCRIPT_USER_KEY)
+      const storedId = localStorage.getItem(MANUSCRIPT_ID_KEY)
+      if (storedId && storedUser === userId) {
+        setManuscriptIdRaw(storedId)
+      }
+    } catch { /* ignore */ }
+  }, [userId])
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -62,7 +111,7 @@ export function useManuscript(userId: string | null): UseManuscriptReturn {
     }
   }, [])
 
-  const listManuscripts = useCallback(async () => {
+  const listManuscripts = useCallback(async (): Promise<ManuscriptListItem[]> => {
     if (!userId || !isPocketBaseConfigured) return []
     try {
       const pb = createClient()
@@ -81,8 +130,8 @@ export function useManuscript(userId: string | null): UseManuscriptReturn {
     }
   }, [userId])
 
-  const loadManuscript = useCallback(async (id: string) => {
-    if (!isPocketBaseConfigured) return
+  const loadManuscript = useCallback(async (id: string): Promise<LoadedManuscript | null> => {
+    if (!isPocketBaseConfigured) return null
     try {
       const pb = createClient()
       const record = await pb.collection('manuscripts').getOne(id) as unknown as ManuscriptRecord
@@ -92,10 +141,20 @@ export function useManuscript(userId: string | null): UseManuscriptReturn {
         localStorage.setItem(MANUSCRIPT_KEY, record.content)
         localStorage.setItem(TITLE_KEY, record.title)
       } catch { /* ignore */ }
+      return {
+        id: record.id,
+        title: record.title,
+        content: record.content,
+        template: record.template,
+        pageSize: record.page_size,
+        marginPreset: record.margin_preset,
+        safeMode: record.safe_mode,
+      }
     } catch {
       setSaveError('Failed to load manuscript')
+      return null
     }
-  }, [])
+  }, [setManuscriptId])
 
   const saveNow = useCallback(async (state: ManuscriptState) => {
     if (!userId || !isPocketBaseConfigured) return
@@ -133,7 +192,7 @@ export function useManuscript(userId: string | null): UseManuscriptReturn {
     } finally {
       setSaving(false)
     }
-  }, [userId, manuscriptId])
+  }, [userId, manuscriptId, setManuscriptId])
 
   const saveManuscript = useCallback((state: ManuscriptState) => {
     if (!userId || !isPocketBaseConfigured) return
@@ -153,7 +212,12 @@ export function useManuscript(userId: string | null): UseManuscriptReturn {
     } catch {
       setSaveError('Failed to delete manuscript')
     }
-  }, [manuscriptId])
+  }, [manuscriptId, setManuscriptId])
+
+  const newManuscript = useCallback(() => {
+    setManuscriptId(null)
+    lastSavedRef.current = ''
+  }, [setManuscriptId])
 
   return {
     manuscriptId,
@@ -162,6 +226,7 @@ export function useManuscript(userId: string | null): UseManuscriptReturn {
     saveManuscript,
     saveNow,
     deleteManuscript,
+    newManuscript,
     saving,
     saveError,
   }
