@@ -524,12 +524,36 @@ function titleCase(str) {
   });
 }
 
+/**
+ * Strip remote image URLs from Markdown.
+ *
+ * Pandoc will attempt to fetch any remote image URL (http/https) during
+ * compilation, which can be abused to saturate bandwidth, fill disk, or
+ * stall workers. This function replaces remote image references with a
+ * text placeholder. Local/relative paths are left untouched.
+ *
+ * @param {string} md - Markdown text
+ * @returns {{ text: string, stripped: number }} Cleaned text + count of stripped images
+ */
+function stripRemoteImages(md) {
+  let stripped = 0;
+  const text = md.replace(
+    /!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g,
+    (_match, alt) => {
+      stripped++;
+      return `[Remote image removed: ${alt || 'untitled'}]`;
+    }
+  );
+  return { text, stripped };
+}
+
 module.exports = {
   normalize,
   detectPoetry,
   hasMarkdownStructure,
   detectFountain,
   escapeDollarSigns,
+  stripRemoteImages,
   // Template classification sets (used by compile-worker.js)
   MATH_TEMPLATES,
   DROP_CAP_TEMPLATES,

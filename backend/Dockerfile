@@ -49,6 +49,8 @@ RUN apt-get update && apt-get install -y \
     fonts-sil-scheherazade \
     # Cyrillic support
     fonts-paratype \
+    # Emoji font — fallback for Unicode emoji in manuscripts
+    fonts-noto-color-emoji \
     # fontconfig for runtime font probing (fc-list)
     fontconfig \
     && rm -rf /var/lib/apt/lists/*
