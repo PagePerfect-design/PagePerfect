@@ -179,29 +179,30 @@ const MARGIN_INFO: Record<MarginPreset, { label: string; desc: string }> = {
 /** Translate raw pandoc/LuaLaTeX errors into plain English. */
 function translateError(raw: string): string {
   const s = raw.trim()
-  const patterns: [RegExp, string][] = [
-    [/Missing \$ inserted/i, 'Your text contains a special character (like _ or ^) that needs escaping. Wrap math symbols in $...$ or remove them.'],
-    [/Undefined control sequence.*\\(\w+)/i, 'Unknown command "\\$1" in your manuscript. Remove it or check the spelling.'],
-    [/Undefined control sequence/i, 'Your manuscript contains an unrecognized command. Check for stray backslashes.'],
-    [/Missing \\begin\{document\}/i, 'Template configuration error. Try a different template or contact support.'],
-    [/Runaway argument/i, 'Unmatched bracket or brace in your text. Check for missing } or ].'],
-    [/Emergency stop/i, 'The typesetter encountered a critical error and stopped. Simplify your manuscript and try again.'],
-    [/I can't find file.*`([^']+)'/i, 'Referenced file "$1" was not found. Check your file references.'],
-    [/Package fontspec Error.*"([^"]+)"/i, 'The font "$1" is not available on the server. Try a different template.'],
-    [/luaotfload.*cannot/i, 'A font could not be loaded. Try a different template.'],
-    [/Font.*not found/i, 'A required font is not installed. Try a different template.'],
-    [/Undefined citation.*`([^']+)'/i, 'Citation "$1" not found in your bibliography. Check the key or enable Safe Mode.'],
-    [/I couldn.t open.*\.bib/i, 'Bibliography file not found. Enable Safe Mode to skip citations.'],
-    [/Package .* Error/i, 'A LaTeX package reported an error. Try a different template.'],
-    [/! LaTeX Error:\s*(.*)/i, '$1'],
-    [/(?:xelatex|lualatex).*not found/i, 'Server configuration error. The typesetting engine is not available.'],
-    [/pandoc.*not found/i, 'Server configuration error. The document converter is not available.'],
-    [/Error\s+\d+\s+\(driver return code\)/i, 'The PDF engine encountered a driver error. Try a different template or simplify your manuscript.'],
-    [/timed?\s*out/i, 'Compilation timed out. Your manuscript may be too large — try splitting it into smaller sections.'],
-    [/Compile failed \(status (\d+)\)/i, 'The server returned an error (code $1). Please try again.'],
+  const patterns: [RegExp, (m: RegExpMatchArray) => string][] = [
+    [/Missing \$ inserted/i, () => 'Your text contains a special character (like _ or ^) that needs escaping. Wrap math symbols in $...$ or remove them.'],
+    [/Undefined control sequence.*\\(\w+)/i, (m) => `Unknown command "\\${m[1]}" in your manuscript. Remove it or check the spelling.`],
+    [/Undefined control sequence/i, () => 'Your manuscript contains an unrecognized command. Check for stray backslashes.'],
+    [/Missing \\begin\{document\}/i, () => 'Template configuration error. Try a different template or contact support.'],
+    [/Runaway argument/i, () => 'Unmatched bracket or brace in your text. Check for missing } or ].'],
+    [/Emergency stop/i, () => 'The typesetter encountered a critical error and stopped. Simplify your manuscript and try again.'],
+    [/I can't find file.*`([^']+)'/i, (m) => `Referenced file "${m[1]}" was not found. Check your file references.`],
+    [/Package fontspec Error.*"([^"]+)"/i, (m) => `The font "${m[1]}" is not available on the server. Try a different template.`],
+    [/luaotfload.*cannot/i, () => 'A font could not be loaded. Try a different template.'],
+    [/Font.*not found/i, () => 'A required font is not installed. Try a different template.'],
+    [/Undefined citation.*`([^']+)'/i, (m) => `Citation "${m[1]}" not found in your bibliography. Check the key or enable Safe Mode.`],
+    [/I couldn.t open.*\.bib/i, () => 'Bibliography file not found. Enable Safe Mode to skip citations.'],
+    [/Package .* Error/i, () => 'A LaTeX package reported an error. Try a different template.'],
+    [/! LaTeX Error:\s*(.*)/i, (m) => m[1]],
+    [/(?:xelatex|lualatex).*not found/i, () => 'Server configuration error. The typesetting engine is not available.'],
+    [/pandoc.*not found/i, () => 'Server configuration error. The document converter is not available.'],
+    [/Error\s+\d+\s+\(driver return code\)/i, () => 'The PDF engine encountered a driver error. Try a different template or simplify your manuscript.'],
+    [/timed?\s*out/i, () => 'Compilation timed out. Your manuscript may be too large — try splitting it into smaller sections.'],
+    [/Compile failed \(status (\d+)\)/i, (m) => `The server returned an error (code ${m[1]}). Please try again.`],
   ]
-  for (const [re, replacement] of patterns) {
-    if (re.test(s)) return s.replace(re, replacement)
+  for (const [re, fn] of patterns) {
+    const match = s.match(re)
+    if (match) return fn(match)
   }
   return s
 }
@@ -860,11 +861,13 @@ function LevitatingBook({
   loading,
   status,
   errors,
+  isWatermarked,
 }: {
   pdfUrl: string | null
   loading: boolean
   status: Status
   errors: CompileError[]
+  isWatermarked: boolean
 }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center pb-24 pt-16">
@@ -890,11 +893,23 @@ function LevitatingBook({
             }}
           >
             {pdfUrl ? (
-              <iframe
-                title="PDF preview"
-                src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
-                className="h-full w-full"
-              />
+              <>
+                <iframe
+                  title="PDF preview"
+                  src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
+                  className="h-full w-full"
+                />
+                {isWatermarked && (
+                  <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
+                    <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">
+                      Free preview — watermarked
+                    </span>
+                    <a href="/pricing" className="font-mono text-[10px] font-medium uppercase tracking-wider text-white underline decoration-white/50 hover:decoration-white">
+                      Upgrade
+                    </a>
+                  </div>
+                )}
+              </>
             ) : loading ? (
               <BookSkeleton />
             ) : status === 'error' && errors.length > 0 ? (
@@ -1579,7 +1594,6 @@ function LaunchOverlay({
   onDownload,
   lastDownloadWatermarked,
   userTier,
-  userCredits,
   publisherWindowEnd,
 }: {
   title: string
@@ -1597,7 +1611,6 @@ function LaunchOverlay({
   onDownload: (platform: Platform) => void
   lastDownloadWatermarked: boolean
   userTier: string
-  userCredits: number
   publisherWindowEnd: string | null
 }) {
   const PAPER_STOCK_LABELS: Record<PaperStock, string> = { white: 'white paper', cream: 'cream paper' }
@@ -1969,7 +1982,6 @@ function LaunchOverlay({
                   />
                   <span className="font-mono text-[10px] leading-relaxed text-[#111111]/50">
                     I accept this preflight report and authorize the export.
-                    {userCredits > 0 && !hasTier(userTier, 'publisher') && ' This will consume 1 PDF credit.'}
                   </span>
                 </label>
               </div>
@@ -1982,7 +1994,7 @@ function LaunchOverlay({
           {exportFormat === 'pdf' ? (
             (() => {
               // Paid users see the contract gate; free/watermarked users download directly
-              const isPaidDownload = hasTier(userTier, 'publisher') || (userCredits > 0 && userTier === 'drafter')
+              const isPaidDownload = hasTier(userTier, 'publisher')
               if (isPaidDownload && !showContract) {
                 return (
                   <button
@@ -2062,11 +2074,13 @@ function LaunchOverlay({
           )}
         </div>
 
-        {/* Failure message */}
+        {/* Failure message — blocks export */}
         {exportFormat === 'pdf' && !checking && hasFailure && (
-          <p className="mt-3 text-center font-mono text-[10px] text-red-500/60">
-            One or more checks failed. Fix the issues above before downloading.
-          </p>
+          <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-center">
+            <p className="font-mono text-[10px] font-medium text-red-600">
+              Export blocked — one or more preflight checks failed. Fix the issues above.
+            </p>
+          </div>
         )}
 
         {/* Watermark / credit notice */}
@@ -2074,15 +2088,9 @@ function LaunchOverlay({
           <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-3 py-2 text-center">
             <p className="font-mono text-[10px] text-amber-700/70">
               Free tier — PDF includes watermark.{' '}
-              <a href="/pricing" className="underline hover:text-amber-800">Upgrade</a>{' '}
-              or buy a single clean PDF for $2.99.
+              <a href="/pricing" className="underline hover:text-amber-800">Upgrade</a> for clean exports.
             </p>
           </div>
-        )}
-        {userTier === 'drafter' && userCredits > 0 && (
-          <p className="mt-2 text-center font-mono text-[10px] text-emerald-600/60">
-            {userCredits} clean PDF credit{userCredits !== 1 ? 's' : ''} remaining
-          </p>
         )}
         {publisherWindowEnd && new Date(publisherWindowEnd) > new Date() && (
           <p className="mt-2 text-center font-mono text-[10px] text-emerald-600/60">
@@ -2361,7 +2369,7 @@ export default function CompileShell() {
   const [manuscriptList, setManuscriptList] = useState<ManuscriptListItem[]>([])
   const [manuscriptListLoading, setManuscriptListLoading] = useState(false)
 
-  const { session, user, tier, pdfCredits, publisherWindowEnd, refreshUser } = useAuth()
+  const { session, user, tier, publisherWindowEnd, refreshUser } = useAuth()
   const {
     manuscriptId,
     loadManuscript,
@@ -2923,6 +2931,7 @@ export default function CompileShell() {
               loading={loading}
               status={status}
               errors={errors}
+              isWatermarked={!hasTier(tier, 'publisher') && !!pdfUrl}
             />
 
             {/* Layer 2: Top Bar */}
@@ -3075,7 +3084,6 @@ export default function CompileShell() {
             onDownload={handleDownload}
             lastDownloadWatermarked={lastDownloadWatermarked}
             userTier={tier}
-            userCredits={pdfCredits}
             publisherWindowEnd={publisherWindowEnd}
           />
         )}

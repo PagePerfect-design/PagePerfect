@@ -15,8 +15,8 @@ export function Hero() {
 
           <p className="mt-8 max-w-md font-body text-sm leading-[1.7] text-[#111111]/50 md:text-base md:leading-[1.7]">
             Paste your manuscript. Pick a trim size.
-            Get a KDP-compliant, print-ready PDF in under a minute &mdash;
-            no LaTeX knowledge, no InDesign, no fighting Word.
+            Preview your book for free &mdash; export KDP-ready PDFs from $19.99.
+            No LaTeX knowledge, no InDesign, no fighting Word.
           </p>
 
           <div className="mt-10 flex flex-col items-start gap-6">

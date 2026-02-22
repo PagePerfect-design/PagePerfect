@@ -55,7 +55,7 @@ const TIERS = [
 const COMPARISON: { feature: string; values: [string, string, string] }[] = [
   { feature: 'PDF output',              values: ['Watermarked',  '1 manuscript',    'Unlimited'] },
   { feature: 'Page sizes',              values: ['6 standard',   'All 19',          'All 19'] },
-  { feature: 'Compile quality',         values: ['Fast mode',    'Full quality',    'Full quality'] },
+  { feature: 'Compile quality',         values: ['Full quality',  'Full quality',    'Full quality'] },
   { feature: 'Amazon KDP formats',      values: ['\u2014',       'Included',        'Included'] },
   { feature: 'Citations & bibliography', values: ['\u2014',       'Included',        'Included'] },
   { feature: 'PDF/X-1a compliance',     values: ['\u2014',       'Included',        'Included'] },
@@ -70,7 +70,7 @@ const TIER_NAMES = ['Drafter', 'Publisher', 'Studio'] as const
 const FAQ = [
   {
     q: 'Can I use the free tier for real books?',
-    a: 'Yes. The free tier is fully functional \u2014 unlimited manuscripts, all 15 templates, real-time preview. The only limitations are a small watermark on exported PDFs and 6 standard page sizes. Design your entire book for free, then pay once to export.',
+    a: 'The free tier gives you unlimited manuscripts, all 15 templates, full-quality compilation, and real-time preview. Exported PDFs include a watermark and page sizes are limited to 6 standard options. Design your entire book for free, then pay once to export without the watermark.',
   },
   {
     q: 'What happens after I pay for one manuscript?',
@@ -386,22 +386,31 @@ function SuccessBanner({ tier }: { tier: string }) {
       transition={{ duration: 0.5, ease }}
       className="mx-auto mb-8 max-w-6xl px-6 md:px-8"
     >
-      <div className="flex items-center gap-4 border border-emerald-600/20 bg-emerald-600/[0.05] px-6 py-4">
-        <div className="flex h-8 w-8 items-center justify-center bg-emerald-600/15">
-          <Check className="h-4 w-4 text-emerald-700" />
+      <div className="flex items-center justify-between gap-4 border border-emerald-600/20 bg-emerald-600/[0.05] px-6 py-4">
+        <div className="flex items-center gap-4">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-emerald-600/15">
+            <Check className="h-4 w-4 text-emerald-700" />
+          </div>
+          <div>
+            <p className="font-display text-[15px] font-semibold text-[#111111]">
+              {tier === 'publisher'
+                ? 'Manuscript unlocked'
+                : 'Welcome to Studio'}
+            </p>
+            <p className="font-body text-[13px] text-[#111111]/50">
+              {tier === 'publisher'
+                ? 'Your print-ready export is unlocked. You have 14 days of unlimited re-exports.'
+                : 'Lifetime access activated. All features are now unlocked.'}
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="font-display text-[15px] font-semibold text-[#111111]">
-            {tier === 'publisher'
-              ? 'Manuscript unlocked'
-              : 'Welcome to Studio'}
-          </p>
-          <p className="font-body text-[13px] text-[#111111]/50">
-            {tier === 'publisher'
-              ? 'Your print-ready export is unlocked. You have 14 days of unlimited re-exports.'
-              : 'Lifetime access activated. All features are now unlocked.'}
-          </p>
-        </div>
+        <Link
+          href="/app"
+          className="inline-flex h-10 shrink-0 items-center gap-2 bg-[#FF3333] px-6 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222]"
+        >
+          Go to Editor
+          <ArrowRight className="h-3 w-3" />
+        </Link>
       </div>
     </motion.div>
   )

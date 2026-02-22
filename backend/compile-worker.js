@@ -33,6 +33,7 @@ const headingVariants = require('./heading-variants');
 const watermark = require('./watermark');
 const fontAvailability = require('./font-availability');
 const publishing = require('./publishing');
+const typographyAssurance = require('./typography-assurance');
 const textNormalizer = require('./text-normalizer');
 const latexSanitizer = require('./latex-sanitizer');
 const {
@@ -108,13 +109,13 @@ async function verifyUserTierById(userId) {
         if (tier === 'drafter' && record.publisher_window_end) {
           if (new Date(record.publisher_window_end) > new Date()) tier = 'publisher';
         }
-        return { userId: record.id, tier, credits: Number(record.pdf_credits) || 0 };
+        return { userId: record.id, tier };
       }
     }
   } catch (err) {
     log.error({ err: err.message }, 'Tier re-verification failed');
   }
-  return { userId, tier: 'drafter', credits: 0 };
+  return { userId, tier: 'drafter' };
 }
 
 // ================================================================
@@ -451,6 +452,17 @@ async function processCompileJob(job, templateRegistry) {
 
   const compileLog = bookEngineering.analyzeCompileLog(result.stderr);
 
+  // Generate typography quality report (pre-analysis + compile log)
+  let typographyReport = null;
+  try {
+    const preAnalysis = typographyAssurance.analyzeTypography({
+      template: tplKey, pageSize, marginPreset, extensions,
+    });
+    typographyReport = typographyAssurance.generateTypographicReport(preAnalysis, compileLog);
+  } catch (err) {
+    log.warn({ err: err.message }, 'Typography report generation failed');
+  }
+
   return {
     success: true,
     pdfPath: finalPdfPath,
@@ -461,9 +473,14 @@ async function processCompileJob(job, templateRegistry) {
     needsWatermark,
     fontFallback: fontRes.isFallback ? `${fontRes.original} -> ${fontRes.resolved}` : null,
     compileLog: { overfull: compileLog.overfullBoxes.length, underfull: compileLog.underfullBoxes.length },
+    typographyReport: typographyReport ? {
+      score: typographyReport.score,
+      grade: typographyReport.grade,
+      compileStats: typographyReport.compileStats || null,
+    } : null,
     warnings,
     outputFormat: finalFormat,
-    userId, userTier, userCredits: user.credits,
+    userId, userTier,
     isDownload,
     template: tplKey,
     pageSize,
