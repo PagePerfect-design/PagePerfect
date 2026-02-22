@@ -83,11 +83,12 @@
 ### B2. Pricing table mobile layout (Critical)
 - **Problem:** `min-w-[640px]` forces horizontal scroll on phones.
 - **Fix:**
-  - [ ] Desktop (md+): current Swiss-style table grid unchanged
-  - [ ] Mobile: stacked card layout, one tier per card
-  - [ ] Responsive tier number sizing
+  - [x] Desktop (md+): current Swiss-style table grid unchanged
+  - [x] Mobile: stacked card layout, one tier per card
+  - [x] Responsive tier number sizing (3rem → 4rem → 5rem)
+  - [x] Price column: removed left border on mobile
 - **Files:** `frontend/src/app/(site)/pricing/page.tsx`
-- **Signed off:** [ ]
+- **Signed off:** [x] 2026-02-22
 
 ### B3. Editor mobile gate (Critical)
 - **Problem:** Editor is desktop-only — PDF preview, dock toolbar, split-pane all break on mobile.
@@ -100,29 +101,32 @@
 - **Signed off:** [x] 2026-02-22
 
 ### B4. Touch targets (High)
-- [ ] Footer links: 44px min tap zones
-- [ ] Pricing CTA buttons: increase to 44px
-- **Files:** `(site)/layout.tsx`, `pricing/page.tsx`
-- **Signed off:** [ ]
+- [x] Footer links: 44px min tap zones via `min-h-[44px]` + `inline-flex items-center`
+- [x] Pricing CTA buttons: increased to `h-11` (44px)
+- [x] Journal CTA buttons: 44px height with `h-11`, stacked on mobile
+- **Files:** `(site)/layout.tsx`, `pricing/page.tsx`, `journal/page.tsx`
+- **Signed off:** [x] 2026-02-22
 
 ### B5. Journal & Docs mobile sidebar (High)
-- [ ] Journal: horizontal scrollable category filter bar on mobile
-- [ ] Docs: collapsible "Sections" button on mobile
-- **Files:** `journal/page.tsx`, `docs/page.tsx`
-- **Signed off:** [ ]
+- [x] Journal: horizontal scrollable category chips on mobile with `scrollbar-hide`
+- [x] Docs: collapsible "Sections" button on mobile via `DocsMobileNav.tsx`
+- [x] Docs mobile nav: 44px link targets, grouped sections, auto-close on navigate
+- **Files:** `journal/page.tsx`, `docs/page.tsx`, `docs/DocsNav.tsx`, `docs/DocsMobileNav.tsx`
+- **Signed off:** [x] 2026-02-22
 
 ### B6. Typography & spacing polish (Medium)
-- [ ] Responsive font sizing for pricing tier numbers
-- [ ] Docs content padding adjustments for small screens
-- **Files:** `pricing/page.tsx`, `docs/page.tsx`
-- **Signed off:** [ ]
+- [x] Responsive font sizing for pricing tier numbers (3rem/4rem/5rem breakpoints)
+- [x] Docs content padding: `px-6 py-8` on mobile, increasing at md/lg breakpoints
+- [x] Docs template card padding: `1.25rem` mobile → `1.5rem 2rem` desktop
+- **Files:** `pricing/page.tsx`, `docs/page.tsx`, `globals.css`
+- **Signed off:** [x] 2026-02-22
 
 ### B7. Global mobile CSS utilities (Medium)
-- [ ] `:active` states for touch feedback
-- [ ] Scrollbar hide utility for horizontal scroll
-- [ ] Skip-link mobile accessibility
+- [x] `:active` states for touch feedback (opacity 0.7 on `hover: none` devices)
+- [x] `.scrollbar-hide` utility for horizontal scroll containers
+- [x] Skip-link mobile accessibility (repositioned, larger tap zone)
 - **Files:** `globals.css`
-- **Signed off:** [ ]
+- **Signed off:** [x] 2026-02-22
 
 ---
 
@@ -130,17 +134,17 @@
 
 ### C1. Add `tsc --noEmit` to frontend CI
 - **Problem:** Turbopack build skips type-checking. TS errors ship silently.
-- [ ] Add `tsc --noEmit` step to `.github/workflows/ci.yml` frontend job
-- **Signed off:** [ ]
+- [x] Added `npx tsc --noEmit` step before `npm run build` in `.github/workflows/ci.yml`
+- **Signed off:** [x] 2026-02-22
 
 ### C2. Add `.dockerignore`
 - **Problem:** `COPY . .` pulls in node_modules, tests, .env files.
-- [ ] Create `backend/.dockerignore` excluding node_modules, tests, .env, *.pdf
-- **Signed off:** [ ]
+- [x] Created `backend/.dockerignore` excluding node_modules, tests, .env, *.pdf, *.md
+- **Signed off:** [x] 2026-02-22
 
 ### C3. Switch Dockerfile to `npm ci`
-- [ ] Change `npm install --omit=dev` to `npm ci --omit=dev` for reproducible builds
-- **Signed off:** [ ]
+- [x] Changed `npm install --omit=dev` to `npm ci --omit=dev` for reproducible builds
+- **Signed off:** [x] 2026-02-22
 
 ### C4. Lulu webhook TODO
 - **Problem:** `index.js:1033` — Lulu webhook events are acknowledged but status is not persisted.
@@ -160,7 +164,7 @@
 | 5 | A5 — Preflight Acceptance Contract | Feature | DONE |
 | 6 | B1 — Mobile nav | Mobile | DONE |
 | 7 | B3 — Editor mobile gate | Mobile | DONE |
-| 8 | B2 — Pricing mobile | Mobile | TODO |
-| 9 | B4–B7 — Touch/sidebar/polish | Mobile | TODO |
-| 10 | C1–C3 — CI fixes | Infra | TODO |
+| 8 | B2 — Pricing mobile | Mobile | DONE |
+| 9 | B4–B7 — Touch/sidebar/polish | Mobile | DONE |
+| 10 | C1–C3 — CI fixes | Infra | DONE |
 | 11 | C4 — Lulu webhook | Infra | TODO |

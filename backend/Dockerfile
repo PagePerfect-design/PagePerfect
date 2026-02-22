@@ -64,7 +64,7 @@ WORKDIR /app
 
 # Install server deps
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
 
 # Copy the rest (server code, templates, references)
 COPY . .

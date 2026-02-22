@@ -2,6 +2,7 @@ import CopyCitation from '@/components/CopyCitation'
 import AuthorGuideTools from '@/components/AuthorGuideTools'
 import RequirementsCheck from './RequirementsCheck'
 import DocsNav from './DocsNav'
+import DocsMobileNav from './DocsMobileNav'
 
 export const metadata = {
   title: 'Operating the Engine — PagePerfect',
@@ -247,7 +248,10 @@ export default function DocsPage() {
         </aside>
 
         {/* ── Main content ── */}
-        <main id="main" className="min-w-0 px-8 py-12 md:px-16 lg:px-20 xl:px-24" style={{ maxWidth: '52rem' }}>
+        <main id="main" className="min-w-0 px-6 py-8 md:px-16 md:py-12 lg:px-20 xl:px-24" style={{ maxWidth: '52rem' }}>
+
+          {/* Mobile section nav — collapsible */}
+          <DocsMobileNav />
 
           {/* ══════════════════════════════════════════════════════════
               01 — QUICK START
