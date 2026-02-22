@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import NavAuth from '@/components/NavAuth'
 import CompositorMark from '@/components/CompositorMark'
+import MobileNav from '@/components/MobileNav'
 import CookieConsent from '@/components/CookieConsent'
 
 function Nav() {
@@ -12,7 +13,8 @@ function Nav() {
             <CompositorMark size={26} />
             PagePerfect
           </Link>
-          <div className="flex items-center gap-6">
+          {/* Desktop nav */}
+          <div className="hidden items-center gap-6 md:flex">
             <Link href="/pricing" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Pricing</Link>
             <Link href="/journal" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Journal</Link>
             <NavAuth />
@@ -23,6 +25,8 @@ function Nav() {
               Open Editor
             </Link>
           </div>
+          {/* Mobile nav */}
+          <MobileNav />
         </div>
       </div>
     </nav>
@@ -48,22 +52,22 @@ function Footer() {
           {/* Links */}
           <div>
             <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">Product</p>
-            <div className="flex flex-col gap-2.5">
-              <Link href="/app" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Editor</Link>
-              <Link href="/pricing" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Pricing</Link>
-              <Link href="/journal" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Journal</Link>
-              <Link href="/docs" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Documentation</Link>
+            <div className="flex flex-col gap-0 md:gap-2.5">
+              <Link href="/app" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Editor</Link>
+              <Link href="/pricing" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Pricing</Link>
+              <Link href="/journal" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Journal</Link>
+              <Link href="/docs" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Documentation</Link>
             </div>
           </div>
 
           <div>
             <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">Legal</p>
-            <div className="flex flex-col gap-2.5">
-              <Link href="/privacy" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Data &amp; Privacy</Link>
-              <Link href="/terms" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Operating Agreement</Link>
-              <Link href="/cookies" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Tracking &amp; Telemetry</Link>
-              <Link href="/philosophy" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Philosophy</Link>
-              <Link href="/status" className="font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Status</Link>
+            <div className="flex flex-col gap-0 md:gap-2.5">
+              <Link href="/privacy" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Data &amp; Privacy</Link>
+              <Link href="/terms" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Operating Agreement</Link>
+              <Link href="/cookies" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Tracking &amp; Telemetry</Link>
+              <Link href="/philosophy" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Philosophy</Link>
+              <Link href="/status" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Status</Link>
             </div>
           </div>
 

@@ -6,18 +6,21 @@ import { motion, useScroll, useTransform, useInView, type MotionValue } from 'fr
 import { Reveal } from './Reveal'
 
 const TEMPLATES = [
-  { key: 'symphony',    name: 'Symphony',     tag: 'Fiction',    color: '#3b82f6', shadow: '0 20px 50px -12px rgba(59,130,246,0.5)' },
+  // ── ICP-first: templates a deadline indie author actually needs ──
   { key: 'paperback',   name: 'Paperback',    tag: 'Fiction',    color: '#06b6d4', shadow: '0 20px 50px -12px rgba(6,182,212,0.5)' },
-  { key: 'memoir',      name: 'Memoir',       tag: 'Fiction',    color: '#d97706', shadow: '0 20px 50px -12px rgba(217,119,6,0.5)' },
-  { key: 'chronicle',   name: 'Chronicle',    tag: 'Editorial',  color: '#10b981', shadow: '0 20px 50px -12px rgba(16,185,129,0.5)' },
+  { key: 'memoir',      name: 'Memoir',       tag: 'Nonfiction', color: '#d97706', shadow: '0 20px 50px -12px rgba(217,119,6,0.5)' },
   { key: 'chicago',     name: 'Chicago',      tag: 'Academic',   color: '#94a3b8', shadow: '0 20px 50px -12px rgba(148,163,184,0.4)' },
-  { key: 'thesis',      name: 'Thesis',       tag: 'Academic',   color: '#64748b', shadow: '0 20px 50px -12px rgba(100,116,139,0.4)' },
-  { key: 'exhibit',     name: 'Exhibit',      tag: 'Trade',      color: '#f59e0b', shadow: '0 20px 50px -12px rgba(245,158,11,0.5)' },
-  { key: 'matrix',      name: 'Matrix',       tag: 'Business',   color: '#8b5cf6', shadow: '0 20px 50px -12px rgba(139,92,246,0.5)' },
-  { key: 'verse',       name: 'Verse',        tag: 'Poetry',     color: '#a78bfa', shadow: '0 20px 50px -12px rgba(167,139,250,0.5)' },
-  { key: 'avantgarde',  name: 'Avant-Garde',  tag: 'Creative',   color: '#f43f5e', shadow: '0 20px 50px -12px rgba(244,63,94,0.5)' },
-  { key: 'operator',    name: 'Operator',     tag: 'Technical',  color: '#0ea5e9', shadow: '0 20px 50px -12px rgba(14,165,233,0.5)' },
+  { key: 'symphony',    name: 'Symphony',     tag: 'Fiction',    color: '#3b82f6', shadow: '0 20px 50px -12px rgba(59,130,246,0.5)' },
   { key: 'minimal',     name: 'Minimal',      tag: 'Basic',      color: '#cbd5e1', shadow: '0 20px 50px -12px rgba(203,213,225,0.3)' },
+  { key: 'thesis',      name: 'Thesis',       tag: 'Academic',   color: '#64748b', shadow: '0 20px 50px -12px rgba(100,116,139,0.4)' },
+  { key: 'heirloom',    name: 'Heirloom',     tag: 'Cookbook',    color: '#f59e0b', shadow: '0 20px 50px -12px rgba(245,158,11,0.5)' },
+  { key: 'verse',       name: 'Verse',        tag: 'Poetry',     color: '#a78bfa', shadow: '0 20px 50px -12px rgba(167,139,250,0.5)' },
+  { key: 'operator',    name: 'Operator',     tag: 'Technical',  color: '#0ea5e9', shadow: '0 20px 50px -12px rgba(14,165,233,0.5)' },
+  { key: 'matrix',      name: 'Matrix',       tag: 'Business',   color: '#8b5cf6', shadow: '0 20px 50px -12px rgba(139,92,246,0.5)' },
+  // ── Specialist templates — still accessible, not hero-featured ──
+  { key: 'chronicle',   name: 'Chronicle',    tag: 'Editorial',  color: '#10b981', shadow: '0 20px 50px -12px rgba(16,185,129,0.5)' },
+  { key: 'exhibit',     name: 'Exhibit',      tag: 'Trade',      color: '#f59e0b', shadow: '0 20px 50px -12px rgba(245,158,11,0.5)' },
+  { key: 'avantgarde',  name: 'Avant-Garde',  tag: 'Creative',   color: '#f43f5e', shadow: '0 20px 50px -12px rgba(244,63,94,0.5)' },
 ]
 
 function BookCover({ color }: { color: string }) {
@@ -149,12 +152,12 @@ export function TemplateShowcase() {
           <div className="mb-16 text-center md:mb-20">
             <div className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-white/20">Templates</div>
             <h2 className="glow-text font-display text-display-lg font-bold tracking-tighter text-white">
-              Fifteen templates. Three heading styles.{' '}
-              <span className="gradient-accent-text">Forty-five looks</span>.
+              Pick a design.{' '}
+              <span className="gradient-accent-text">We handle the rest</span>.
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-xl text-white/30">
-              Every template is a complete typographic system — each with Classic, Modern, and Bold heading variants.
-              Pick one. Your text does the rest.
+              Fiction, nonfiction, academic, cookbook, poetry &mdash; each template is a complete
+              typographic system tuned for its genre. Three heading variants per template.
             </p>
           </div>
         </Reveal>

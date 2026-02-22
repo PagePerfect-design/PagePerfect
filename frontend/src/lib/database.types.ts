@@ -33,7 +33,7 @@
  *     - error_message: text (optional)
  */
 
-export type Tier = 'drafter' | 'single' | 'publisher' | 'studio'
+export type Tier = 'drafter' | 'publisher' | 'studio'
 
 export interface UserRecord {
   id: string

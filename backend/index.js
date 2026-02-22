@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const morgan = require('morgan');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
@@ -14,6 +13,9 @@ const { spawn, execSync } = require('child_process');
 const GridSystem = require('./grid-system');
 const publishing = require('./publishing');
 const lulu = require('./lulu');
+const latexSanitizer = require('./latex-sanitizer');
+const compileUtils = require('./compile-utils');
+const log = require('./logger');
 
 // ── Publishing Systems ──
 const manuscriptStructure = require('./manuscript-structure');
@@ -55,12 +57,12 @@ try {
   if (process.env.REDIS_URL || process.env.REDIS_HOST) {
     // Master connection for rate limiting and Stripe idempotency
     redis = createRedisConnection();
-    redis.on('connect', () => { redisHealthy = true; console.log('[redis] Connected'); });
-    redis.on('error', (err) => { redisHealthy = false; console.error('[redis] Error:', err.message); });
+    redis.on('connect', () => { redisHealthy = true; log.info({ module: 'redis' }, 'Connected'); });
+    redis.on('error', (err) => { redisHealthy = false; log.error({ module: 'redis', err: err.message }, 'Connection error'); });
     redis.on('close', () => { redisHealthy = false; });
   }
 } catch (err) {
-  console.warn('[redis] Not available:', err.message);
+  log.warn({ module: 'redis', err: err.message }, 'Not available');
 }
 
 // ── BullMQ Compile Queue (only when Redis is available) ──
@@ -150,7 +152,7 @@ if (redis) {
     compileWorker.on('completed', (job, result) => {
       result._storedAt = Date.now();
       jobResults.set(job.id, result);
-      console.log(`[queue] Job ${job.id} completed in ${result.elapsed || '?'}ms`);
+      log.info({ module: 'queue', jobId: job.id, elapsed: result.elapsed || '?' }, 'Job completed');
     });
 
     compileWorker.on('failed', (job, err) => {
@@ -160,14 +162,14 @@ if (redis) {
         error: 'worker_error',
         message: err.message || 'Compilation failed unexpectedly.',
       });
-      console.error(`[queue] Job ${job?.id} failed:`, err.message);
+      log.error({ module: 'queue', jobId: job?.id, err: err.message }, 'Job failed');
     });
 
     compileQueueEvents = new QueueEvents('pp-compile', { connection: createRedisConnection({ forBullMQ: true }) });
 
-    console.log(`[queue] BullMQ initialized (concurrency: ${process.env.COMPILE_CONCURRENCY || 3})`);
+    log.info({ module: 'queue', concurrency: process.env.COMPILE_CONCURRENCY || 3 }, 'BullMQ initialized');
   } catch (err) {
-    console.warn('[queue] BullMQ setup failed, using sync fallback:', err.message);
+    log.warn({ module: 'queue', err: err.message }, 'BullMQ setup failed, using sync fallback');
     compileQueue = null;
     compileWorker = null;
   }
@@ -189,10 +191,10 @@ try {
     const minor = parseInt(match[2], 10);
     PANDOC_VERSION = `${match[1]}.${match[2]}${match[3] ? '.' + match[3] : ''}`;
     PANDOC_HAS_CITEPROC = major > 2 || (major === 2 && minor >= 11);
-    console.log(`[startup] Pandoc ${PANDOC_VERSION} detected — citeproc: ${PANDOC_HAS_CITEPROC ? 'built-in' : 'filter fallback'} — pdf-engine: lualatex`);
+    log.info({ module: 'startup', pandocVersion: PANDOC_VERSION, citeproc: PANDOC_HAS_CITEPROC ? 'built-in' : 'filter fallback', pdfEngine: 'lualatex' }, 'Pandoc detected');
   }
 } catch (e) {
-  console.warn('[startup] Could not detect Pandoc version, assuming built-in --citeproc');
+  log.warn({ module: 'startup' }, 'Could not detect Pandoc version, assuming built-in --citeproc');
 }
 
 /** Returns the args needed to enable citation processing */
@@ -220,12 +222,16 @@ const ALLOWED_ORIGINS = [
   process.env.FRONTEND_URL, // e.g. https://pageperfect.studio
 ].filter(Boolean);
 
-// Match Vercel preview/branch deployment URLs for the project
+// Match Vercel preview/branch deployment URLs for the project.
+// Pattern: page-perfect-<deployment-hash>-<team-slug>.vercel.app
+// The hash is exactly 9 lowercase alphanumeric chars. The team slug
+// follows Vercel's naming rules (lowercase alphanumeric + hyphens).
 function isAllowedOrigin(origin) {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.includes(origin)) return true;
-  // Vercel preview deployments: <project>-<hash>-<team>.vercel.app
-  if (/^https:\/\/page-perfect[a-z0-9-]*\.vercel\.app$/.test(origin)) return true;
+  // Strict pattern: page-perfect-<hash9>-<team>.vercel.app
+  // Prevents attacker-controlled "page-perfect-evil.vercel.app" from matching.
+  if (/^https:\/\/page-perfect-[a-z0-9]{9}-[a-z0-9-]+\.vercel\.app$/.test(origin)) return true;
   return false;
 }
 
@@ -309,8 +315,14 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
-// Request logging
-app.use(morgan('tiny'));
+// Request logging — pino-based structured logging
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    log.info({ method: req.method, url: req.originalUrl, status: res.statusCode, ms: Date.now() - start }, 'request');
+  });
+  next();
+});
 
 // Body parsing
 app.use(express.json({ limit: '5mb' }));
@@ -334,7 +346,7 @@ let RedisStoreClass;
 if (redis) {
   try {
     RedisStoreClass = require('rate-limit-redis').RedisStore;
-    console.log('[rate-limit] Using Redis store');
+    log.info({ module: 'rate-limit' }, 'Using Redis store');
   } catch { /* rate-limit-redis not installed — fall back to in-memory */ }
 }
 function createRedisStore(prefix) {
@@ -377,14 +389,15 @@ try {
 
 // Track processed Stripe event IDs to prevent duplicate webhook handling.
 // Primary: Redis SETNX with 72h TTL (survives container rebuilds).
-// Fallback: in-memory Set (when Redis is unavailable).
-const processedStripeEvents = new Set();
+// Fallback: in-memory array (FIFO eviction when Redis is unavailable).
+const processedStripeEventsSet = new Set();
+const processedStripeEventsQueue = [];  // FIFO queue for eviction order
 const MAX_STRIPE_EVENTS = 10000;
 const STRIPE_IDEM_TTL = 72 * 60 * 60; // 72 hours in seconds
 
 /**
  * Check if a Stripe event was already processed. Returns true if duplicate.
- * Uses Redis SETNX when available; falls back to in-memory Set.
+ * Uses Redis SETNX when available; falls back to in-memory FIFO queue.
  */
 async function isStripeEventProcessed(eventId) {
   if (redis && redisHealthy) {
@@ -393,21 +406,23 @@ async function isStripeEventProcessed(eventId) {
       const wasSet = await redis.set(`pp:stripe:${eventId}`, '1', 'EX', STRIPE_IDEM_TTL, 'NX');
       return wasSet === null; // null means key already existed = duplicate
     } catch (err) {
-      console.warn('[stripe:idem] Redis SETNX failed, falling back to memory:', err.message);
+      log.warn({ module: 'stripe:idem', err: err.message }, 'Redis SETNX failed, falling back to memory');
     }
   }
-  // Fallback: in-memory
-  if (processedStripeEvents.has(eventId)) return true;
-  processedStripeEvents.add(eventId);
-  if (processedStripeEvents.size > MAX_STRIPE_EVENTS) {
-    const first = processedStripeEvents.values().next().value;
-    processedStripeEvents.delete(first);
+  // Fallback: in-memory with FIFO eviction (oldest events removed first)
+  if (processedStripeEventsSet.has(eventId)) return true;
+  processedStripeEventsSet.add(eventId);
+  processedStripeEventsQueue.push(eventId);
+  while (processedStripeEventsQueue.length > MAX_STRIPE_EVENTS) {
+    const oldest = processedStripeEventsQueue.shift();
+    processedStripeEventsSet.delete(oldest);
   }
   return false;
 }
 
 // ── PocketBase Admin Client (server-side only) ──
 const POCKETBASE_URL = (process.env.POCKETBASE_URL || '').replace(/\/+$/, '');
+const PB_TIMEOUT_MS = Number(process.env.PB_TIMEOUT_MS || 5000);
 let pbAdminToken = null;
 let pbTokenExpiry = 0;
 
@@ -420,6 +435,7 @@ async function getPbAdminToken() {
     const resp = await fetch(`${POCKETBASE_URL}/api/collections/_superusers/auth-with-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(PB_TIMEOUT_MS),
       body: JSON.stringify({
         identity: process.env.POCKETBASE_ADMIN_EMAIL,
         password: process.env.POCKETBASE_ADMIN_PASSWORD,
@@ -427,7 +443,7 @@ async function getPbAdminToken() {
     });
     if (!resp.ok) {
       const body = await resp.text().catch(() => '');
-      console.error('PocketBase admin auth failed:', resp.status, body);
+      log.error({ module: 'pocketbase', status: resp.status, body }, 'Admin auth failed');
       return null;
     }
     const data = await resp.json();
@@ -436,17 +452,18 @@ async function getPbAdminToken() {
     pbTokenExpiry = Date.now() + 115 * 60 * 1000;
     return pbAdminToken;
   } catch (err) {
-    console.error('PocketBase admin auth error:', err.message);
+    log.error({ module: 'pocketbase', err: err.message }, 'Admin auth error');
     return null;
   }
 }
 
-// Helper: fetch from PocketBase with admin auth
-async function pbFetch(path, options = {}) {
+// Helper: fetch from PocketBase with admin auth + timeout
+async function pbFetch(pbPath, options = {}) {
   const token = await getPbAdminToken();
   if (!token) return null;
-  const resp = await fetch(`${POCKETBASE_URL}${path}`, {
+  const resp = await fetch(`${POCKETBASE_URL}${pbPath}`, {
     ...options,
+    signal: AbortSignal.timeout(PB_TIMEOUT_MS),
     headers: {
       'Content-Type': 'application/json',
       Authorization: token,
@@ -472,6 +489,7 @@ async function verifyUserTier(req) {
     const authResp = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-refresh`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(PB_TIMEOUT_MS),
     });
     if (authResp && authResp.ok) {
       const authData = await authResp.json();
@@ -497,7 +515,7 @@ async function verifyUserTier(req) {
       }
     }
   } catch (err) {
-    console.error('[auth] Tier verification failed:', err.message);
+    log.error({ module: 'auth', err: err.message }, 'Tier verification failed');
   }
   return { userId: null, tier: 'anonymous', credits: 0, publisherWindowEnd: null };
 }
@@ -528,20 +546,20 @@ app.post('/api/stripe/webhook',
         process.env.STRIPE_WEBHOOK_SECRET,
       );
     } catch (err) {
-      console.error('Stripe webhook signature verification failed:', err.message);
+      log.error({ module: 'stripe', err: err.message }, 'Webhook signature verification failed');
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
     // Idempotency — skip already-processed events (Redis SETNX + in-memory fallback)
     if (await isStripeEventProcessed(event.id)) {
-      console.log(`Stripe webhook already processed: ${event.id}, skipping`);
+      log.info({ module: 'stripe', eventId: event.id }, 'Webhook already processed, skipping');
       return res.json({ received: true, duplicate: true });
     }
 
     // Helper: upgrade a user's tier in PocketBase
     async function upgradeTier(userId, tier, customerId, subscriptionId) {
       if (!isPocketBaseConfigured) {
-        console.error('PocketBase not configured — cannot update user tier');
+        log.error({ module: 'stripe' }, 'PocketBase not configured — cannot update user tier');
         return;
       }
       const update = { tier, stripe_customer_id: customerId };
@@ -553,45 +571,39 @@ app.post('/api/stripe/webhook',
           body: JSON.stringify(update),
         });
         if (!resp || !resp.ok) {
-          console.error('Failed to update user tier:', resp?.status);
+          log.error({ module: 'stripe', status: resp?.status }, 'Failed to update user tier');
         } else {
-          console.log(`User ${userId} upgraded to ${tier}`);
+          log.info({ module: 'stripe', userId, tier }, 'User upgraded');
         }
       } catch (err) {
-        console.error('Failed to update user tier:', err.message);
+        log.error({ module: 'stripe', err: err.message }, 'Failed to update user tier');
       }
     }
 
     // Helper: increment pdf_credits for a user (Single tier purchase)
+    // Uses PocketBase's built-in `pdf_credits+` syntax for atomic increment,
+    // avoiding the read-then-write race condition.
     async function incrementCredits(userId, customerId) {
       if (!isPocketBaseConfigured) {
-        console.error('PocketBase not configured — cannot increment credits');
+        log.error({ module: 'stripe' }, 'PocketBase not configured — cannot increment credits');
         return;
       }
       try {
-        // Fetch current credits
-        const resp = await pbFetch(`/api/collections/users/records/${userId}`);
-        if (!resp || !resp.ok) {
-          console.error('Failed to fetch user for credit increment:', resp?.status);
-          return;
-        }
-        const user = await resp.json();
-        const currentCredits = Number(user.pdf_credits) || 0;
-        const update = {
-          pdf_credits: currentCredits + 1,
-          stripe_customer_id: customerId,
-        };
         const patchResp = await pbFetch(`/api/collections/users/records/${userId}`, {
           method: 'PATCH',
-          body: JSON.stringify(update),
+          body: JSON.stringify({
+            'pdf_credits+': 1,
+            stripe_customer_id: customerId,
+          }),
         });
         if (patchResp && patchResp.ok) {
-          console.log(`User ${userId} credited +1 PDF (total: ${currentCredits + 1})`);
+          const updated = await patchResp.json();
+          log.info({ module: 'stripe', userId, totalCredits: updated.pdf_credits }, 'User credited +1 PDF');
         } else {
-          console.error('Failed to increment credits:', patchResp?.status);
+          log.error({ module: 'stripe', status: patchResp?.status }, 'Failed to increment credits');
         }
       } catch (err) {
-        console.error('Failed to increment credits:', err.message);
+        log.error({ module: 'stripe', err: err.message }, 'Failed to increment credits');
       }
     }
 
@@ -599,13 +611,13 @@ app.post('/api/stripe/webhook',
     // If the user already has an active window, extends from the current end date.
     async function activatePublisherWindow(userId, customerId) {
       if (!isPocketBaseConfigured) {
-        console.error('PocketBase not configured — cannot activate publisher window');
+        log.error({ module: 'stripe' }, 'PocketBase not configured — cannot activate publisher window');
         return;
       }
       try {
         const resp = await pbFetch(`/api/collections/users/records/${userId}`);
         if (!resp || !resp.ok) {
-          console.error('Failed to fetch user for window activation:', resp?.status);
+          log.error({ module: 'stripe', status: resp?.status }, 'Failed to fetch user for window activation');
           return;
         }
         const user = await resp.json();
@@ -624,12 +636,12 @@ app.post('/api/stripe/webhook',
           }),
         });
         if (patchResp && patchResp.ok) {
-          console.log(`User ${userId} Publisher window activated until ${windowEnd.toISOString()}`);
+          log.info({ module: 'stripe', userId, windowEnd: windowEnd.toISOString() }, 'Publisher window activated');
         } else {
-          console.error('Failed to activate Publisher window:', patchResp?.status);
+          log.error({ module: 'stripe', status: patchResp?.status }, 'Failed to activate Publisher window');
         }
       } catch (err) {
-        console.error('Failed to activate Publisher window:', err.message);
+        log.error({ module: 'stripe', err: err.message }, 'Failed to activate Publisher window');
       }
     }
 
@@ -640,7 +652,7 @@ app.post('/api/stripe/webhook',
         const pi = event.data.object;
         const tier = pi.metadata?.tier;
         const userId = pi.metadata?.user_id;
-        console.log(`PaymentIntent succeeded: customer=${pi.customer}, tier=${tier}, user=${userId}`);
+        log.info({ module: 'stripe', customer: pi.customer, tier, userId }, 'PaymentIntent succeeded');
 
         if (userId && tier === 'single') {
           // Single PDF — $2.99 one-time: increment pdf_credits by 1
@@ -659,7 +671,7 @@ app.post('/api/stripe/webhook',
         const session = event.data.object;
         const tier = session.metadata?.tier;
         const userId = session.metadata?.user_id;
-        console.log(`Checkout completed: customer=${session.customer}, tier=${tier}, user=${userId}`);
+        log.info({ module: 'stripe', customer: session.customer, tier, userId }, 'Checkout completed');
 
         if (userId && tier) {
           await upgradeTier(userId, tier, session.customer, session.subscription || null);
@@ -668,19 +680,21 @@ app.post('/api/stripe/webhook',
       }
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
-        console.log(`Subscription cancelled for customer ${sub.customer}`);
+        log.info({ module: 'stripe', customer: sub.customer }, 'Subscription cancelled');
 
         if (!isPocketBaseConfigured) {
-          console.error('PocketBase not configured — cannot downgrade user');
+          log.error({ module: 'stripe' }, 'PocketBase not configured — cannot downgrade user');
           break;
         }
 
         try {
-          // Find the user by stripe_customer_id
-          const filter = encodeURIComponent(`stripe_customer_id='${sub.customer}'`);
+          // Find the user by stripe_customer_id.
+          // Sanitize the customer ID to prevent filter injection (only allow Stripe customer IDs: cus_*)
+          const custId = String(sub.customer).replace(/[^a-zA-Z0-9_]/g, '');
+          const filter = encodeURIComponent(`stripe_customer_id='${custId}'`);
           const listResp = await pbFetch(`/api/collections/users/records?filter=${filter}`);
           if (!listResp || !listResp.ok) {
-            console.error('Failed to find user for downgrade');
+            log.error({ module: 'stripe' }, 'Failed to find user for downgrade');
             break;
           }
           const { items } = await listResp.json();
@@ -691,19 +705,19 @@ app.post('/api/stripe/webhook',
               body: JSON.stringify({ tier: 'drafter', stripe_subscription_id: '' }),
             });
             if (patchResp && patchResp.ok) {
-              console.log(`Customer ${sub.customer} downgraded to drafter`);
+              log.info({ module: 'stripe', customer: sub.customer }, 'Customer downgraded to drafter');
             } else {
-              console.error('Failed to downgrade user:', patchResp?.status);
+              log.error({ module: 'stripe', status: patchResp?.status }, 'Failed to downgrade user');
             }
           }
         } catch (err) {
-          console.error('Failed to downgrade user:', err.message);
+          log.error({ module: 'stripe', err: err.message }, 'Failed to downgrade user');
         }
         break;
       }
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
-        console.log(`Payment failed: customer=${invoice.customer}, attempt=${invoice.attempt_count}`);
+        log.info({ module: 'stripe', customer: invoice.customer, attempt: invoice.attempt_count }, 'Payment failed');
         break;
       }
       default:
@@ -806,7 +820,7 @@ app.post('/api/stripe/create-payment', async (req, res) => {
       });
     }
   } catch (err) {
-    console.error('Stripe payment creation error:', err.message);
+    log.error({ module: 'stripe', err: err.message }, 'Payment creation error');
     res.status(500).json({ error: 'Failed to create payment' });
   }
 });
@@ -1015,7 +1029,7 @@ app.post('/api/lulu/cost-estimate', async (req, res) => {
     });
     res.json({ podPackageId, ...result });
   } catch (err) {
-    console.error('[lulu/cost-estimate]', err.message);
+    log.error({ module: 'lulu/cost-estimate', err: err.message }, 'Cost estimate failed');
     res.status(err.status || 500).json({ error: 'lulu_error', message: err.message, detail: err.body });
   }
 });
@@ -1028,7 +1042,7 @@ app.post('/api/lulu/print-job', async (req, res) => {
     const result = await lulu.createPrintJob(req.body);
     res.json(result);
   } catch (err) {
-    console.error('[lulu/print-job]', err.message);
+    log.error({ module: 'lulu/print-job', err: err.message }, 'Create print job failed');
     res.status(err.status || 500).json({ error: 'lulu_error', message: err.message, detail: err.body });
   }
 });
@@ -1041,7 +1055,7 @@ app.get('/api/lulu/print-job/:id', async (req, res) => {
     const result = await lulu.getPrintJob(req.params.id);
     res.json(result);
   } catch (err) {
-    console.error('[lulu/print-job]', err.message);
+    log.error({ module: 'lulu/print-job', err: err.message }, 'Get print job failed');
     res.status(err.status || 500).json({ error: 'lulu_error', message: err.message, detail: err.body });
   }
 });
@@ -1052,7 +1066,7 @@ app.post('/api/lulu/webhook', express.raw({ type: 'application/json' }), (req, r
     return res.status(401).json({ error: 'Invalid webhook signature' });
   }
   const event = JSON.parse(req.body.toString());
-  console.log(`[lulu/webhook] Print job ${event.id} status: ${event.status?.name || 'unknown'}`);
+  log.info({ module: 'lulu/webhook', jobId: event.id, status: event.status?.name || 'unknown' }, 'Print job status update');
   // TODO: Update order status in database
   res.json({ received: true });
 });
@@ -1311,7 +1325,7 @@ app.post('/api/convert', convertLimiter, express.raw({ type: '*/*', limit: '10mb
     if (code === 0 && stdout.length > 0) {
       return res.json({ markdown: stdout });
     }
-    console.error(`[convert] pandoc exit ${code}: ${stderr.slice(0, 500)}`);
+    log.error({ module: 'convert', exitCode: code, stderr: stderr.slice(0, 500) }, 'Pandoc conversion failed');
     return res.status(500).json({ error: 'conversion_failed', message: 'Failed to convert .docx to Markdown.', detail: sanitizeStderr(stderr.slice(0, 300)) });
   });
 });
@@ -1648,15 +1662,17 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     return res.status(403).json({ error: 'tier_required', message: `Page size "${pageSize}" requires a paid plan.`, requiredTier: 'publisher' });
   if (!safeMode && !hasTier(userTier, 'publisher')) safeMode = true;
 
-  // Sanitize inputs
+  // Sanitize inputs — LaTeX-safe title for compile pipeline
   if (typeof title !== 'string' || !title.trim()) title = 'Manuscript';
   title = title.replace(/[\r\n]/g, ' ').slice(0, 200);
+  // NOTE: The compile worker applies latexSanitizer.sanitizeTitle() before
+  // passing to Pandoc. The raw title is preserved here for filename generation.
   if (!ALL_SIZES.has(pageSize)) pageSize = 'letter';
   if (!ALL_MARGINS.has(marginPreset)) marginPreset = 'normal';
 
-  // Extract auth token to pass to worker for re-verification
-  const authHeader = req.headers.authorization;
-  const authToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  // SECURITY: Pass userId (not auth token) to worker for re-verification.
+  // The worker uses the admin token to look up the user's tier directly,
+  // avoiding storage of user auth tokens in Redis.
 
   // ── Async path: enqueue to BullMQ ──────────────────────────
   if (compileQueue && redisHealthy) {
@@ -1698,7 +1714,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         customFonts: customFonts || null,
         headingVariant,
         isDownload,
-        authToken,
+        userId: user.userId,  // Pass userId, NOT auth token
         extensions: req.body.extensions || null,
       }, {
         jobId: queueKey,
@@ -1706,16 +1722,24 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         priority: hasTier(userTier, 'publisher') ? 1 : 5,
       });
 
-      console.log(`[compile] Enqueued job ${queueKey} (tier=${userTier}, download=${isDownload})`);
+      // Generate a one-time access secret for anonymous jobs.
+      // This prevents job ID enumeration attacks.
+      const resultSecret = !user.userId ? crypto.randomBytes(16).toString('hex') : null;
+      if (resultSecret) {
+        jobResults.set(`${queueKey}:secret`, resultSecret);
+      }
+
+      log.info({ module: 'compile', jobId: queueKey, tier: userTier, download: isDownload }, 'Enqueued job');
       return res.status(202).json({
         jobId: queueKey,
         status: 'queued',
         message: 'Compilation queued.',
         statusUrl: `/api/compile/status/${queueKey}`,
         resultUrl: `/api/compile/result/${queueKey}`,
+        ...(resultSecret ? { resultSecret } : {}),
       });
     } catch (err) {
-      console.error('[compile] Enqueue failed, falling through to sync:', err.message);
+      log.error({ module: 'compile', err: err.message }, 'Enqueue failed, falling through to sync');
       // Fall through to sync path
     }
   }
@@ -1739,7 +1763,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
         manuscriptPath, template, title, pageSize, marginPreset,
         safeMode, compileMode, outputFormat,
         customFonts: customFonts || null,
-        headingVariant, isDownload, authToken,
+        headingVariant, isDownload, userId: user.userId,
         extensions: req.body.extensions || null,
       },
     };
@@ -1770,16 +1794,19 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     res.setHeader('Cache-Control', 'no-store');
 
-    // Credit deduction for sync path
+    // Credit deduction for sync path — atomic decrement to prevent race conditions
     if (result.isDownload && result.userId && result.userCredits > 0
       && !hasTier(result.userTier, 'publisher') && isPocketBaseConfigured) {
       try {
-        await pbFetch(`/api/collections/users/records/${result.userId}`, {
+        const patchResp = await pbFetch(`/api/collections/users/records/${result.userId}`, {
           method: 'PATCH',
-          body: JSON.stringify({ pdf_credits: result.userCredits - 1 }),
+          body: JSON.stringify({ 'pdf_credits-': 1 }),
         });
-        res.setHeader('X-PP-Credits-Remaining', String(result.userCredits - 1));
-      } catch (e) { console.error('[compile:sync] Credit deduction failed:', e.message); }
+        if (patchResp && patchResp.ok) {
+          const updated = await patchResp.json();
+          res.setHeader('X-PP-Credits-Remaining', String(updated.pdf_credits));
+        }
+      } catch (e) { log.error({ module: 'compile:sync', err: e.message }, 'Credit deduction failed'); }
     }
 
     const stream = fs.createReadStream(result.pdfPath);
@@ -1789,7 +1816,7 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     });
     stream.pipe(res);
   } catch (err) {
-    console.error('[compile:sync] Error:', err.message);
+    log.error({ module: 'compile:sync', err: err.message }, 'Compilation error');
     if (!res.headersSent) {
       res.status(500).json({ error: 'compile_failed', message: err.message });
     }
@@ -1839,7 +1866,7 @@ app.get('/api/compile/status/:id', async (req, res) => {
         return res.json({ jobId: id, status: state, progress: job.progress || 0 });
       }
     } catch (err) {
-      console.error('[status] Error fetching job:', err.message);
+      log.error({ module: 'status', err: err.message }, 'Error fetching job');
     }
   }
 
@@ -1869,6 +1896,17 @@ app.get('/api/compile/result/:id', async (req, res) => {
     if (requester.userId !== result.userId) {
       return res.status(403).json({ error: 'forbidden', message: 'Not authorized to access this result.' });
     }
+  } else {
+    // Anonymous job — require the result secret from the 202 response.
+    // Prevents job ID enumeration attacks.
+    const storedSecret = jobResults.get(`${id}:secret`);
+    if (storedSecret) {
+      const providedSecret = req.query.secret || req.headers['x-pp-result-secret'];
+      if (providedSecret !== storedSecret) {
+        return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
+      }
+      jobResults.delete(`${id}:secret`); // One-time use
+    }
   }
 
   // Verify PDF still exists on disk
@@ -1877,22 +1915,25 @@ app.get('/api/compile/result/:id', async (req, res) => {
     return res.status(410).json({ error: 'expired', message: 'Result has expired. Please recompile.' });
   }
 
-  // ── Credit deduction at delivery (A3) — only once ──
+  // ── Credit deduction at delivery (A3) — only once, atomic ──
   if (result.isDownload && result.userId && !result._creditDeducted
     && result.userCredits > 0 && !hasTier(result.userTier, 'publisher')
     && isPocketBaseConfigured) {
     try {
       const freshUser = await verifyUserTier(req);
       if (freshUser.credits > 0) {
-        await pbFetch(`/api/collections/users/records/${result.userId}`, {
+        const patchResp = await pbFetch(`/api/collections/users/records/${result.userId}`, {
           method: 'PATCH',
-          body: JSON.stringify({ pdf_credits: freshUser.credits - 1 }),
+          body: JSON.stringify({ 'pdf_credits-': 1 }),
         });
         result._creditDeducted = true;
-        res.setHeader('X-PP-Credits-Remaining', String(freshUser.credits - 1));
-        console.log(`[result] Deducted 1 credit for user ${result.userId}`);
+        if (patchResp && patchResp.ok) {
+          const updated = await patchResp.json();
+          res.setHeader('X-PP-Credits-Remaining', String(updated.pdf_credits));
+        }
+        log.info({ module: 'result', userId: result.userId }, 'Deducted 1 credit');
       }
-    } catch (e) { console.error('[result] Credit deduction failed:', e.message); }
+    } catch (e) { log.error({ module: 'result', err: e.message }, 'Credit deduction failed'); }
   }
 
   // ── Stream PDF ──
@@ -1985,7 +2026,7 @@ app.post('/api/fonts/upload', fontUpload.single('font'), async (req, res) => {
     try { fs.rmSync(path.dirname(req.file.path), { recursive: true, force: true }); } catch {}
   }, 60 * 60 * 1000);
 
-  console.log(`[fonts] Uploaded custom font: ${req.file.originalname} (${req.file.size} bytes) → ${fontId}`);
+  log.info({ module: 'fonts', originalName: req.file.originalname, size: req.file.size, fontId }, 'Uploaded custom font');
 
   res.json({
     fontId,
@@ -2085,7 +2126,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
 
   const preambleStr = preambleParts.join('\n\n');
 
-  console.log(`[batch] Starting batch compile: ${validSizes.length} sizes for template=${tplKey} variant=${batchVariant}`);
+  log.info({ module: 'batch', sizeCount: validSizes.length, template: tplKey, variant: batchVariant }, 'Starting batch compile');
 
   // ── Compile each page size sequentially ──
   const pdfs = []; // { name, path, tmpBase }
@@ -2193,7 +2234,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
     for (const pdf of pdfs) {
       try { fs.rmSync(pdf.tmpBase, { recursive: true, force: true }); } catch {}
     }
-    console.log(`[batch] Completed: ${pdfs.length}/${validSizes.length} sizes, ${errors.length} errors`);
+    log.info({ module: 'batch', completed: pdfs.length, total: validSizes.length, errors: errors.length }, 'Batch compile completed');
   });
 
   archive.on('error', (err) => {
@@ -2248,7 +2289,7 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   // ── Send via Resend ──
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) {
-    console.warn('[contact] RESEND_API_KEY not configured — cannot send email');
+    log.warn({ module: 'contact' }, 'RESEND_API_KEY not configured — cannot send email');
     return res.status(503).json({ error: 'not_configured', message: 'Contact service is not configured.' });
   }
 
@@ -2350,10 +2391,10 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
       ].join('\n'),
     });
 
-    console.log(`[contact] Format request from ${email} sent successfully`);
+    log.info({ module: 'contact', email }, 'Format request sent successfully');
     res.json({ ok: true });
   } catch (err) {
-    console.error('[contact] Resend error:', err.message || err);
+    log.error({ module: 'contact', err: err.message || err }, 'Resend error');
     res.status(500).json({ error: 'send_failed', message: 'Failed to send message. Please try again.' });
   }
 });
@@ -2366,14 +2407,17 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
 app.get('/', (req, res) => res.status(200).send('PagePerfect Engine Active'));
 
 const server = app.listen(PORT, () => {
-  console.log(`Backend listening on http://localhost:${PORT}`);
-  console.log(`  CORS: ${process.env.NODE_ENV === 'production' ? ALLOWED_ORIGINS.join(', ') : 'permissive (dev)'}`);
-  console.log(`  Stripe: ${stripe ? 'configured' : 'not configured'}`);
-  console.log(`  Lulu: ${lulu.isConfigured() ? `configured (${lulu.getBaseUrl()})` : 'not configured'}`);
-  console.log(`  Resend: ${process.env.RESEND_API_KEY ? 'configured' : 'not configured'}`);
-  console.log(`  Templates: ${Object.keys(DESIGN_TEMPLATES).length}`);
-  console.log(`  Rate limit: 20 compiles/min, 120 requests/min`);
-  console.log(`  Queue: ${compileQueue ? 'BullMQ (concurrency ' + (process.env.COMPILE_CONCURRENCY || 3) + ')' : 'sync fallback'}`);
+  log.info({
+    module: 'startup',
+    port: PORT,
+    cors: process.env.NODE_ENV === 'production' ? ALLOWED_ORIGINS.join(', ') : 'permissive (dev)',
+    stripe: stripe ? 'configured' : 'not configured',
+    lulu: lulu.isConfigured() ? `configured (${lulu.getBaseUrl()})` : 'not configured',
+    resend: process.env.RESEND_API_KEY ? 'configured' : 'not configured',
+    templates: Object.keys(DESIGN_TEMPLATES).length,
+    rateLimit: '20 compiles/min, 120 requests/min',
+    queue: compileQueue ? 'BullMQ (concurrency ' + (process.env.COMPILE_CONCURRENCY || 3) + ')' : 'sync fallback',
+  }, `Backend listening on http://localhost:${PORT}`);
 });
 
 // ================================================================
@@ -2387,17 +2431,17 @@ const server = app.listen(PORT, () => {
 // 5. Exit
 
 async function gracefulShutdown(signal) {
-  console.log(`[shutdown] ${signal} received, shutting down gracefully...`);
+  log.info({ module: 'shutdown', signal }, 'Received signal, shutting down gracefully');
 
   // 1. Stop accepting new connections
-  server.close(() => { console.log('[shutdown] HTTP server closed'); });
+  server.close(() => { log.info({ module: 'shutdown' }, 'HTTP server closed'); });
 
   // 2. Close worker — waits for active jobs to finish (up to lockDuration)
   if (compileWorker) {
     try {
       await compileWorker.close();
-      console.log('[shutdown] BullMQ worker closed');
-    } catch (err) { console.error('[shutdown] Worker close error:', err.message); }
+      log.info({ module: 'shutdown' }, 'BullMQ worker closed');
+    } catch (err) { log.error({ module: 'shutdown', err: err.message }, 'Worker close error'); }
   }
 
   // 3. Close queue and events
@@ -2410,14 +2454,22 @@ async function gracefulShutdown(signal) {
 
   // 4. Disconnect Redis
   if (redis) {
-    try { await redis.quit(); console.log('[shutdown] Redis disconnected'); }
+    try { await redis.quit(); log.info({ module: 'shutdown' }, 'Redis disconnected'); }
     catch { try { redis.disconnect(); } catch {} }
   }
 
   // 5. Clear cleanup interval
   clearInterval(resultCleanupInterval);
 
-  console.log('[shutdown] Cleanup complete, exiting');
+  // 6. Clean up any remaining temp files from in-memory results
+  for (const [id, res] of jobResults) {
+    if (res.tmpBase) {
+      try { fs.rmSync(res.tmpBase, { recursive: true, force: true }); } catch {}
+    }
+  }
+  jobResults.clear();
+
+  log.info({ module: 'shutdown' }, 'Cleanup complete, exiting');
   process.exit(0);
 }
 

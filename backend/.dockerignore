@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log*
+.env
+.env.*
+*.pdf
+test*.pdf
+*-test.pdf
+tests/
+__tests__/
+*.test.js
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+*.md

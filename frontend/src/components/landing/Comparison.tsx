@@ -14,8 +14,8 @@ export function Comparison() {
             Different book.
           </h2>
           <p className="mt-5 max-w-lg font-body text-sm leading-[1.7] text-[#333333]">
-            On the left, a manuscript in Word. On the right,
-            the same text, typeset with PagePerfect.
+            On the left, a manuscript pasted from Word. On the right,
+            the same text &mdash; KDP-ready, print-compliant, uploaded tonight.
           </p>
         </div>
 
@@ -98,9 +98,9 @@ export function Comparison() {
         {/* ── Annotations ── */}
         <div className="mt-8 grid grid-cols-1 gap-6 border-t border-[#111111]/20 pt-6 sm:grid-cols-3">
           {[
-            { label: 'Margins', desc: 'Golden-ratio proportions replace cramped Word defaults' },
-            { label: 'Typography', desc: 'Baseline grid locks every line to a consistent rhythm' },
-            { label: 'Structure', desc: 'Drop caps, em-dashes, and proper chapter openings' },
+            { label: 'Margins', desc: 'Correct bleed, gutter, and trim \u2014 no KDP rejection for margin errors' },
+            { label: 'Typography', desc: 'Professional line spacing and page breaks \u2014 no more orphaned lines' },
+            { label: 'Structure', desc: 'Chapter openings, running heads, and page numbers \u2014 ready to upload' },
           ].map((item) => (
             <div key={item.label}>
               <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">

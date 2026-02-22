@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react'
 
-type NavSection = {
+export type NavSection = {
   id: string
   label: string
   group?: string
 }
 
-const SECTIONS: NavSection[] = [
+export const SECTIONS: NavSection[] = [
   { group: 'Getting Started', id: 'quickstart', label: 'Quick Start' },
   { id: 'requirements', label: 'Requirements Check' },
   { group: 'Editor', id: 'editor', label: 'Editor Guide' },

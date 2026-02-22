@@ -20,8 +20,8 @@ const TIERS = [
     name: 'Drafter',
     price: 'Free',
     period: 'forever',
-    body: 'Everything you need to draft and test. All 15 templates, unlimited manuscripts, real-time preview. Watermarked output.',
-    aside: 'Zero friction. See the grid in action before you pay a cent.',
+    body: 'Test your manuscript before you pay. All 15 templates, unlimited manuscripts, real-time preview. See exactly how your book will look on every page size.',
+    aside: 'Watermarked output. No account required.',
     cta: 'Start Drafting',
     href: '/app',
   },
@@ -32,8 +32,8 @@ const TIERS = [
     price: '$19.99',
     period: 'per manuscript',
     recommended: true,
-    body: 'One flawless, print-ready manuscript. Unlocks PDF/X-1a compliance for Amazon KDP and IngramSpark. All 19 page sizes, citations, and bibliography support. Includes 14 days of unlimited re-exports to fix final typos.',
-    aside: 'No subscription. Pay only when the book is finished.',
+    body: 'One manuscript, print-ready tonight. Watermark-free PDF with correct bleed, margins, and trim for Amazon KDP and IngramSpark. All 19 page sizes, citations, and bibliography support. 14 days of unlimited re-exports to fix final typos.',
+    aside: 'No subscription. Pay when your book is ready to ship.',
     cta: 'Typeset My Book',
     href: '/app',
   },
@@ -43,8 +43,8 @@ const TIERS = [
     name: 'Studio',
     price: '$199',
     period: 'once',
-    body: 'Lifetime access to the engine. Unlimited watermark-free exports, automated EPUB generation, custom OpenType font uploads, and batch exporting for multi-book series.',
-    aside: 'Pay once, own it forever. For prolific authors and publishers.',
+    body: 'Lifetime access for every book you write. Unlimited watermark-free exports, EPUB generation, custom font uploads, and batch exporting for multi-book series.',
+    aside: 'Pay once. For authors with more than one book ahead of them.',
     cta: 'Get Studio',
     href: '/app',
   },
@@ -70,19 +70,19 @@ const TIER_NAMES = ['Drafter', 'Publisher', 'Studio'] as const
 const FAQ = [
   {
     q: 'Can I use the free tier for real books?',
-    a: 'Yes. The free tier is fully functional \u2014 unlimited manuscripts, all 15 templates, real-time preview. The only limitation is a small PagePerfect watermark on exported PDFs and 6 standard page sizes.',
+    a: 'Yes. The free tier is fully functional \u2014 unlimited manuscripts, all 15 templates, real-time preview. The only limitations are a small watermark on exported PDFs and 6 standard page sizes. Design your entire book for free, then pay once to export.',
   },
   {
     q: 'What happens after I pay for one manuscript?',
-    a: 'You get 14 days of unlimited re-exports for that manuscript. Fix typos, adjust margins, change templates \u2014 re-export as many times as you need. No surprises, no recurring charges.',
+    a: 'You get 14 days of unlimited re-exports for that manuscript. Fix typos, adjust margins, change templates \u2014 re-export as many times as you need. No subscription, no recurring charges.',
   },
   {
-    q: 'How does this compare to Vellum ($500)?',
-    a: 'Vellum is Mac-only with 26 curated styles and consumer-grade typography. PagePerfect runs in any browser, uses LuaLaTeX for professional typesetting with baseline grids and golden-ratio scales, and starts free.',
+    q: 'Will my PDF pass KDP\u2019s automated review?',
+    a: 'That\u2019s what we\u2019re built for. PagePerfect generates PDFs with correct bleed, margins, gutter, and trim for all standard KDP and IngramSpark sizes. Fonts are embedded, not referenced.',
   },
   {
-    q: 'How does this compare to Atticus ($147)?',
-    a: 'Atticus has known performance issues \u2014 typing lag on long documents, import corruption, no offline mode. PagePerfect is faster (server-side compilation), produces higher-quality typography, and has a free tier.',
+    q: 'I\u2019m used to Vellum / Atticus \u2014 why switch?',
+    a: 'PagePerfect runs in any browser (not Mac-only), uses a professional typesetting engine for higher-quality output, and lets you preview everything for free before paying. Try it side by side with your current tool.',
   },
   {
     q: 'Does Studio include EPUB export?',
@@ -90,7 +90,7 @@ const FAQ = [
   },
   {
     q: 'Is my manuscript data safe?',
-    a: 'Your text is sent to our server only for compilation and is immediately deleted after the PDF is generated. All processing happens in isolated temporary directories that are cleaned up after each compile.',
+    a: 'Your text is sent to our server only for compilation. All processing happens in isolated temporary directories that are automatically cleaned up within minutes of each compile. We do not store your manuscript text.',
   },
 ]
 
@@ -134,7 +134,7 @@ function TierRow({
     >
       <div className="grid grid-cols-1 gap-4 py-12 md:grid-cols-[6rem_1fr_1fr] md:items-baseline md:gap-12 md:py-16">
         {/* Tier number — large, ghosted */}
-        <span className="font-display text-[4rem] font-extrabold leading-none tracking-tighter text-[#111111]/[0.06] transition-colors duration-500 group-hover:text-[#FF3333]/20 md:text-[5rem]">
+        <span className="font-display text-[3rem] font-extrabold leading-none tracking-tighter text-[#111111]/[0.06] transition-colors duration-500 group-hover:text-[#FF3333]/20 sm:text-[4rem] md:text-[5rem]">
           {tier.num}
         </span>
 
@@ -156,7 +156,7 @@ function TierRow({
         </div>
 
         {/* Price + aside + CTA */}
-        <div className="border-l border-[#111111] pl-6">
+        <div className="border-l-0 md:border-l md:border-[#111111] md:pl-6">
           <div className="flex items-baseline gap-2">
             <span className="font-display text-[2rem] font-extrabold leading-none tracking-tighter text-[#111111] md:text-[2.5rem]">
               {tier.price}
@@ -173,7 +173,7 @@ function TierRow({
               <Link
                 href={cta.disabled ? '#' : tier.href}
                 aria-disabled={cta.disabled}
-                className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${buttonClass}`}
+                className={`group/btn inline-flex h-11 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${buttonClass}`}
               >
                 {cta.label}
                 {!cta.disabled && (
@@ -184,7 +184,7 @@ function TierRow({
               <button
                 disabled={cta.disabled || isLoading}
                 onClick={() => onUpgrade(tier.key as 'publisher' | 'studio')}
-                className={`group/btn inline-flex h-10 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${buttonClass}`}
+                className={`group/btn inline-flex h-11 items-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.1em] transition-all duration-200 ${buttonClass}`}
               >
                 {isLoading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -523,7 +523,7 @@ export default function PricingPage() {
             transition={{ duration: 0.7, delay: 0.2, ease }}
             className="mt-6 max-w-xl font-body text-lg leading-relaxed text-[#111111]/60"
           >
-            The free tier is genuinely useful &mdash; not a demo. Upgrade when your book is ready for print.
+            Design your entire book for free. Pay once when it&apos;s ready to upload to KDP.
           </motion.p>
         </div>
       </section>
@@ -583,11 +583,11 @@ export default function PricingPage() {
             initial={{ opacity: 0 }}
             animate={compareInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.6, delay: 0.2, ease }}
-            className="-mx-6 overflow-x-auto px-6 md:mx-0 md:px-0"
           >
-            <div className="min-w-[640px]">
+            {/* Desktop table — hidden on mobile */}
+            <div className="hidden md:block">
               {/* Header row */}
-              <div className="grid grid-cols-[1fr_repeat(3,_minmax(0,_8rem))] gap-x-4 pb-4 md:gap-x-6">
+              <div className="grid grid-cols-[1fr_repeat(3,_minmax(0,_8rem))] gap-x-6 pb-4">
                 <div />
                 {TIER_NAMES.map((name, i) => (
                   <div key={name} className="text-right">
@@ -598,12 +598,11 @@ export default function PricingPage() {
                 ))}
               </div>
 
-              {/* Feature rows */}
               {COMPARISON.map((row) => (
                 <Fragment key={row.feature}>
                   <div className="h-px bg-[#111111]/10" />
-                  <div className="grid grid-cols-[1fr_repeat(3,_minmax(0,_8rem))] items-baseline gap-x-4 py-4 md:gap-x-6">
-                    <span className="font-body text-[14px] text-[#111111]/70 md:text-[15px]">
+                  <div className="grid grid-cols-[1fr_repeat(3,_minmax(0,_8rem))] items-baseline gap-x-6 py-4">
+                    <span className="font-body text-[15px] text-[#111111]/70">
                       {row.feature}
                     </span>
                     {row.values.map((val, i) => (
@@ -622,6 +621,31 @@ export default function PricingPage() {
                 </Fragment>
               ))}
               <div className="h-px bg-[#111111]/10" />
+            </div>
+
+            {/* Mobile stacked cards — one tier per card */}
+            <div className="space-y-8 md:hidden">
+              {TIER_NAMES.map((name, ti) => (
+                <div key={name} className="border-t border-[#111111]/10 pt-6">
+                  <h3 className={`mb-5 font-mono text-[13px] uppercase tracking-[0.15em] ${ti === 1 ? 'text-[#FF3333]' : 'text-[#111111]'}`}>
+                    {name}
+                  </h3>
+                  <div className="space-y-3">
+                    {COMPARISON.map((row) => (
+                      <div key={row.feature} className="flex items-baseline justify-between gap-4">
+                        <span className="font-body text-[14px] text-[#111111]/70">{row.feature}</span>
+                        <span className={`shrink-0 text-right font-mono text-[12px] ${
+                          row.values[ti] === '\u2014'
+                            ? 'text-[#111111]/25'
+                            : 'text-[#111111]/70'
+                        }`}>
+                          {row.values[ti]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </motion.div>
         </div>
@@ -693,7 +717,7 @@ export default function PricingPage() {
               No signup required.
             </h2>
             <p className="mt-6 font-body text-lg leading-relaxed text-[#111111]/60">
-              Open the editor, paste your manuscript, and see professional typesetting in seconds.
+              Paste your manuscript, pick your trim size, and see a print-ready preview in seconds.
             </p>
             <div className="mt-10 flex items-center gap-6">
               <Link

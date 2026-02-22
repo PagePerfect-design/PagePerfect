@@ -5,9 +5,15 @@
  * Each job receives only lightweight metadata — the manuscript is written
  * to a temp file BEFORE enqueue and the path is passed via job data.
  *
+ * SECURITY FIXES APPLIED:
+ *   - LaTeX sanitization on all user-supplied strings (title, font names)
+ *   - Auth re-verified via userId + admin token (no user auth token in Redis)
+ *   - Injection detection on manuscript text
+ *   - Font names validated against registry
+ *
  * CRITICAL: Auth and watermark decisions are RE-VERIFIED at compile time,
  * NOT trusted from the enqueue snapshot. A user's tier or credits may
- * change while a job waits in the queue. (Fixes A1, A2)
+ * change while a job waits in the queue.
  */
 
 const fs = require('fs');
@@ -15,6 +21,7 @@ const fsp = require('fs').promises;
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
+const log = require('./logger').child({ module: 'worker' });
 
 // ── Backend modules ──
 const GridSystem = require('./grid-system');
@@ -27,85 +34,75 @@ const watermark = require('./watermark');
 const fontAvailability = require('./font-availability');
 const publishing = require('./publishing');
 const textNormalizer = require('./text-normalizer');
+const latexSanitizer = require('./latex-sanitizer');
+const {
+  PANDOC_HAS_CITEPROC,
+  citeprocArgs,
+  sanitizeStderr,
+  stripCitations,
+  styleWarnings,
+  parseMissingCitations,
+  parseMissingPackages,
+  hasTier,
+  POCKETBASE_URL,
+  isPocketBaseConfigured,
+  BIB_PATH,
+} = require('./compile-utils');
 
 const gridSystem = new GridSystem();
 const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000);
-const BIB_PATH = path.resolve(__dirname, 'references/references.bib');
-
-// ── Pandoc version detection ──
-let PANDOC_HAS_CITEPROC = true;
-try {
-  const { execSync } = require('child_process');
-  const ver = execSync('pandoc --version', { encoding: 'utf8', timeout: 5000 });
-  const m = ver.match(/pandoc(?:\.exe)?\s+(\d+)\.(\d+)/);
-  if (m) PANDOC_HAS_CITEPROC = parseInt(m[1]) > 2 || (parseInt(m[1]) === 2 && parseInt(m[2]) >= 11);
-} catch { /* assume built-in */ }
-
-function citeprocArgs(bibPath) {
-  return PANDOC_HAS_CITEPROC
-    ? ['--citeproc', `--bibliography=${bibPath}`]
-    : ['--filter', 'pandoc-citeproc', `--bibliography=${bibPath}`];
-}
-
-function sanitizeStderr(raw) {
-  return String(raw)
-    .replace(/\/tmp\/pp-[a-zA-Z0-9_-]+\//g, '[workspace]/')
-    .replace(/\/home\/[a-zA-Z0-9_-]+\//g, '[home]/')
-    .replace(/\/app\/[a-zA-Z0-9_/-]*templates\//g, '[templates]/')
-    .replace(/\/usr\/local\/[a-zA-Z0-9_/-]+/g, '[system]');
-}
-
-function stripCitations(md) {
-  return md.replace(/\[[^[\]]*@[^[\]]*\]/g, '(citation)').replace(/@([A-Za-z0-9:_\-]+)/g, '$1');
-}
-
-function styleWarnings(md) {
-  const w = [];
-  if (/[.!?]\s{2,}[A-Z(]/g.test(md)) w.push('Detected double spaces after punctuation.');
-  return w;
-}
-
-function parseMissingCitations(stderr) {
-  const keys = new Set();
-  for (const re of [
-    /Undefined citation\s*[: ]\s*'([^']+)'/gi,
-    /citation ['"]?([A-Za-z0-9:_\-]+)['"]?\s+undefined/gi,
-    /reference\s+([A-Za-z0-9:_\-]+)\s+not found/gi,
-    /could not find citation\s+['"]?([A-Za-z0-9:_\-]+)['"]?/gi,
-  ]) { let m; while ((m = re.exec(stderr)) !== null) keys.add(m[1]); }
-  return [...keys];
-}
-
-function parseMissingPackages(stderr) {
-  const pkgs = new Set();
-  const re = /LaTeX Error:\s*File\s+[`']([^`']+)\.sty['`]\s+not found/gi;
-  let m; while ((m = re.exec(stderr)) !== null) pkgs.add(m[1]);
-  return [...pkgs];
-}
 
 // ================================================================
-// PocketBase auth — re-verified at compile time
+// PocketBase auth — re-verified at compile time via admin token
 // ================================================================
 
-const POCKETBASE_URL = (process.env.POCKETBASE_URL || '').replace(/\/+$/, '');
-const isPocketBaseConfigured = !!(POCKETBASE_URL && process.env.POCKETBASE_ADMIN_EMAIL);
-const TIER_LEVEL = { anonymous: 0, drafter: 1, publisher: 2, studio: 3 };
-function hasTier(a, b) { return (TIER_LEVEL[a] || 0) >= (TIER_LEVEL[b] || 0); }
+let _pbAdminToken = null;
+let _pbTokenExpiry = 0;
+
+async function getPbAdminToken() {
+  if (_pbAdminToken && Date.now() < _pbTokenExpiry) return _pbAdminToken;
+  if (!POCKETBASE_URL || !process.env.POCKETBASE_ADMIN_EMAIL || !process.env.POCKETBASE_ADMIN_PASSWORD) {
+    return null;
+  }
+  try {
+    const resp = await fetch(`${POCKETBASE_URL}/api/collections/_superusers/auth-with-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000),
+      body: JSON.stringify({
+        identity: process.env.POCKETBASE_ADMIN_EMAIL,
+        password: process.env.POCKETBASE_ADMIN_PASSWORD,
+      }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    _pbAdminToken = data.token;
+    _pbTokenExpiry = Date.now() + 115 * 60 * 1000;
+    return _pbAdminToken;
+  } catch (err) {
+    log.error({ err: err.message }, 'PocketBase admin auth failed');
+    return null;
+  }
+}
 
 /**
- * Re-verify user tier using the auth token saved at enqueue time.
+ * Re-verify user tier using userId + admin token (NOT user auth token).
+ * This avoids storing user auth tokens in Redis.
  */
-async function verifyUserTierFromToken(authToken) {
-  if (!isPocketBaseConfigured || !authToken) {
+async function verifyUserTierById(userId) {
+  if (!isPocketBaseConfigured || !userId) {
     return { userId: null, tier: 'anonymous', credits: 0 };
   }
   try {
-    const resp = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-refresh`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+    const token = await getPbAdminToken();
+    if (!token) return { userId, tier: 'drafter', credits: 0 };
+
+    const resp = await fetch(`${POCKETBASE_URL}/api/collections/users/records/${userId}`, {
+      headers: { Authorization: token, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000),
     });
     if (resp?.ok) {
-      const { record } = await resp.json();
+      const record = await resp.json();
       if (record) {
         let tier = record.tier || 'drafter';
         if (tier === 'drafter' && record.publisher_window_end) {
@@ -115,9 +112,9 @@ async function verifyUserTierFromToken(authToken) {
       }
     }
   } catch (err) {
-    console.error('[worker:auth] Re-verification failed:', err.message);
+    log.error({ err: err.message }, 'Tier re-verification failed');
   }
-  return { userId: null, tier: 'anonymous', credits: 0 };
+  return { userId, tier: 'drafter', credits: 0 };
 }
 
 // ================================================================
@@ -133,13 +130,13 @@ async function processCompileJob(job, templateRegistry) {
   const {
     manuscriptPath, template, title, pageSize, marginPreset,
     safeMode, compileMode, outputFormat, customFonts,
-    headingVariant, isDownload, authToken, extensions,
+    headingVariant, isDownload, userId: enqueueUserId, extensions,
   } = job.data;
 
   const tplKey = templateRegistry[String(template)] ? String(template) : 'symphony';
   const tpl = templateRegistry[tplKey];
 
-  // ── Read manuscript from temp file (NOT from Redis — D3 fix) ──
+  // ── Read manuscript from temp file (NOT from Redis) ──
   let manuscriptText;
   try {
     manuscriptText = await fsp.readFile(manuscriptPath, 'utf8');
@@ -147,8 +144,15 @@ async function processCompileJob(job, templateRegistry) {
     throw new Error(`Manuscript file not found: ${err.message}`);
   }
 
-  // ── Re-verify auth at compile time (A1) ──
-  const user = await verifyUserTierFromToken(authToken);
+  // ── Security: check for LaTeX injection attempts in manuscript ──
+  if (latexSanitizer.hasInjectionAttempt(manuscriptText)) {
+    log.warn({ jobId: job.id }, 'LaTeX injection attempt detected');
+    // Don't block — the -raw_tex flag in Pandoc should prevent execution.
+    // But log it for monitoring.
+  }
+
+  // ── Re-verify auth at compile time via admin token (no user token in Redis) ──
+  const user = await verifyUserTierById(enqueueUserId);
   const userTier = user.tier;
   const userId = user.userId;
   const wantPdfX = outputFormat === 'pdfx1a';
@@ -163,7 +167,7 @@ async function processCompileJob(job, templateRegistry) {
     if (!hasTier(userTier, 'studio'))
       return { success: false, error: 'tier_required', message: 'Custom fonts require Studio.' };
 
-  // ── Watermark decision — re-evaluated at compile time (A2) ──
+  // ── Watermark decision — re-evaluated at compile time ──
   let needsWatermark = false;
   if (isDownload && isPocketBaseConfigured) {
     if (hasTier(userTier, 'publisher')) needsWatermark = false;
@@ -174,9 +178,6 @@ async function processCompileJob(job, templateRegistry) {
   }
 
   // ── Normalize text for format-agnostic input ──
-  // This transforms plain text, pasted Word content, or raw prose into
-  // well-structured Markdown. Handles chapter detection, poetry line
-  // preservation, scene breaks, etc. — so users never need to know Markdown.
   manuscriptText = textNormalizer.normalize(manuscriptText, tplKey);
 
   // ── Strip remote images (prevents Pandoc from fetching external URLs) ──
@@ -193,8 +194,11 @@ async function processCompileJob(job, templateRegistry) {
   const effectiveMd = safeMode ? stripCitations(manuscriptText) : manuscriptText;
   await fsp.writeFile(mdPath, effectiveMd, 'utf8');
 
+  // ── Sanitize title for LaTeX ──
+  const safeTitle = latexSanitizer.sanitizeTitle(title);
+
   // ── EPUB path ──
-  if (wantEpub) return compileEpub(tmpBase, mdPath, title, safeMode);
+  if (wantEpub) return compileEpub(tmpBase, mdPath, safeTitle, safeMode);
 
   // ── PDF compilation ──
   const templateType = tpl.gridType || 'academic';
@@ -202,7 +206,7 @@ async function processCompileJob(job, templateRegistry) {
   const isFast = compileMode === 'fast';
   const warnings = styleWarnings(manuscriptText);
 
-  // Font resolution
+  // Font resolution — validate font names from registry, not arbitrary user input
   const fontRes = fontAvailability.resolveFont(tpl.mainfont);
   const mainFont = fontRes.resolved;
   if (fontRes.warning) warnings.push(fontRes.warning);
@@ -226,20 +230,24 @@ async function processCompileJob(job, templateRegistry) {
     }
   }
 
-  // Custom font override
+  // Custom font override — validate font file names
   const CUSTOM_FONTS_DIR = path.join(os.tmpdir(), 'pp-custom-fonts');
   if (customFonts && typeof customFonts === 'object') {
     for (const slot of ['main', 'sans', 'mono']) {
       const fontId = customFonts[slot];
       if (!fontId || typeof fontId !== 'string') continue;
+      // Validate fontId format (UUID only — prevents path traversal)
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fontId)) continue;
       const srcDir = path.join(CUSTOM_FONTS_DIR, fontId);
       if (!fs.existsSync(srcDir)) continue;
       const files = fs.readdirSync(srcDir).filter(f => /\.(ttf|otf)$/i.test(f));
       if (files.length === 0) continue;
-      fs.copyFileSync(path.join(srcDir, files[0]), path.join(tmpBase, files[0]));
+      // Validate filename is safe (no path separators, no special chars)
+      const safeFileName = files[0].replace(/[^a-zA-Z0-9._-]/g, '_');
+      fs.copyFileSync(path.join(srcDir, files[0]), path.join(tmpBase, safeFileName));
       const cmd = slot === 'main' ? 'setmainfont' : slot === 'sans' ? 'setsansfont' : 'setmonofont';
-      tplContent = tplContent.replace(new RegExp(`(\\\\${cmd})(\\[.*?\\])?\\{[^}]+\\}`), `$1[Path=./]{${files[0]}}`);
-      warnings.push(`Custom ${slot} font applied: ${files[0]}`);
+      tplContent = tplContent.replace(new RegExp(`(\\\\${cmd})(\\[.*?\\])?\\{[^}]+\\}`), `$1[Path=./]{${safeFileName}}`);
+      warnings.push(`Custom ${slot} font applied: ${safeFileName}`);
     }
   }
 
@@ -313,6 +321,28 @@ async function processCompileJob(job, templateRegistry) {
     const vp = headingVariants.getVariantPreamble(tplKey, headingVariant);
     if (vp) preamble.push(vp);
     if (needsWatermark) preamble.push(watermark.generateWatermarkPreamble());
+
+    // ── Template-specific preamble injections ──
+
+    // Lettrine drop caps for fiction/literary templates
+    if (textNormalizer.DROP_CAP_TEMPLATES.has(tplKey)) {
+      preamble.push([
+        '% ── Drop Cap (lettrine) ──',
+        '\\usepackage{lettrine}',
+        '\\renewcommand{\\LettrineFontHook}{\\bfseries}',
+        '\\setcounter{DefaultLines}{3}',
+      ].join('\n'));
+    }
+
+    // Underscore protection for technical templates
+    // (Also added directly in operator.latex and matrix.latex as belt-and-suspenders)
+    if (textNormalizer.UNDERSCORE_TEMPLATES.has(tplKey)) {
+      preamble.push([
+        '% ── Underscore protection ──',
+        '% Allows underscores in text mode without crashing (user_id, api_key)',
+        '\\ifdefined\\underscore\\else\\usepackage{underscore}\\fi',
+      ].join('\n'));
+    }
   } catch (err) {
     try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
     return { success: false, error: 'preamble_error', message: String(err) };
@@ -321,21 +351,51 @@ async function processCompileJob(job, templateRegistry) {
   await fsp.writeFile(path.join(tmpBase, 'header.tex'), preamble.join('\n\n'), 'utf8');
 
   // Pandoc spawn
-  // Enable +hard_line_breaks for verse template so poetry line structure
-  // is preserved — every newline becomes a \\ in LaTeX output.
   const hardBreaks = tplKey === 'verse' ? '+hard_line_breaks' : '';
-  const fromFmt = safeMode ? `--from=markdown${hardBreaks}-raw_tex-raw_attribute`
-    : PANDOC_HAS_CITEPROC ? `--from=markdown+citations${hardBreaks}-raw_tex-raw_attribute`
-    : `--from=markdown${hardBreaks}-raw_tex-raw_attribute`;
+
+  // ── Template-aware Pandoc format flags ──
+  // Disable tex_math_dollars for non-academic templates to prevent
+  // "$50 on the first job" from crashing LaTeX as a math expression.
+  const disableMath = !textNormalizer.MATH_TEMPLATES.has(tplKey)
+    ? '-tex_math_dollars' : '';
+
+  // Enable fenced_divs for cinema template (Fountain screenplay divs)
+  const fencedDivs = tplKey === 'cinema' ? '+fenced_divs' : '';
+
+  const fromFmt = safeMode
+    ? `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
+    : PANDOC_HAS_CITEPROC
+      ? `--from=markdown+citations${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
+      : `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`;
+
+  // ── Template-aware Lua filters ──
+  const luaFilters = [];
+  const filtersDir = path.join(__dirname, 'filters');
+
+  // Drop-cap filter for fiction/literary book-class templates
+  if (textNormalizer.DROP_CAP_TEMPLATES.has(tplKey)) {
+    luaFilters.push('--lua-filter', path.join(filtersDir, 'drop-cap.lua'));
+  }
+
+  // Table safety filter for editorial/multi-column templates
+  if (textNormalizer.TABLE_SAFETY_TEMPLATES.has(tplKey)) {
+    luaFilters.push('--lua-filter', path.join(filtersDir, 'table-safety.lua'));
+  }
+
+  // Fountain screenplay filter for cinema template
+  if (tplKey === 'cinema') {
+    luaFilters.push('--lua-filter', path.join(filtersDir, 'fountain.lua'));
+  }
 
   const args = [
     mdPath, fromFmt, '--pdf-engine=lualatex',
     `--resource-path=${tmpBase}`,
-    '-M', `title=${title}`,
+    '-M', `title=${safeTitle}`,
     `--template=${path.join(tmpBase, 'template.latex')}`,
     '-H', path.join(tmpBase, 'header.tex'),
     '-V', `mainfont=${mainFont}`,
     ...(isFast ? [] : ['-V', 'microtype=true', '-V', 'csquotes=true']),
+    ...luaFilters,
     '-o', pdfPath,
     ...(safeMode ? [] : citeprocArgs(BIB_PATH)),
   ];
@@ -380,7 +440,7 @@ async function processCompileJob(job, templateRegistry) {
   let finalFormat = 'PDF';
   if (wantPdfX) {
     const pdfxPath = path.join(tmpBase, 'output-pdfx1a.pdf');
-    const conv = await publishing.convertToPdfX1a(pdfPath, pdfxPath, title);
+    const conv = await publishing.convertToPdfX1a(pdfPath, pdfxPath, safeTitle);
     if (!conv.success) {
       try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
       return { success: false, error: 'pdfx_conversion_failed', message: conv.error };
@@ -391,8 +451,6 @@ async function processCompileJob(job, templateRegistry) {
 
   const compileLog = bookEngineering.analyzeCompileLog(result.stderr);
 
-  // Return metadata — PDF stays on disk at finalPdfPath.
-  // GET /api/compile/result/:id streams it and cleans up.
   return {
     success: true,
     pdfPath: finalPdfPath,
@@ -430,13 +488,13 @@ function buildErrorMessages(stderr, safeMode) {
   return msgs;
 }
 
-function compileEpub(tmpBase, mdPath, title, safeMode) {
+function compileEpub(tmpBase, mdPath, safeTitle, safeMode) {
   const epubPath = path.join(tmpBase, 'output.epub');
   const cssPath = path.join(__dirname, 'templates', 'epub-style.css');
   const args = [
     mdPath, '--to=epub3',
     `--resource-path=${tmpBase}`,
-    '-M', `title=${title}`, '--epub-title-page=true',
+    '-M', `title=${safeTitle}`, '--epub-title-page=true',
     ...(fs.existsSync(cssPath) ? ['--css', cssPath] : []),
     '-o', epubPath,
     ...(safeMode ? [] : citeprocArgs(BIB_PATH)),

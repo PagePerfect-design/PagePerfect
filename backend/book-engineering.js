@@ -288,7 +288,7 @@ function lintManuscript(md, templateType = 'academic') {
 // ================================================================
 
 /**
- * Parse XeLaTeX log output for engineering issues.
+ * Parse LuaLaTeX log output for engineering issues.
  *
  * @param {string} stderr — compilation stderr/log output
  * @returns {{ overfullBoxes, underfullBoxes, warnings, pageBreakIssues }}
