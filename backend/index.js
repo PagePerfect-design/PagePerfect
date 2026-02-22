@@ -291,15 +291,18 @@ app.use(cors({
 }));
 
 // Rate limiting — per real client IP (trust proxy must be set for X-Forwarded-For).
-// When Redis is available, use RedisStore so limits persist across restarts and
-// would work correctly if multiple backend instances share a single Redis.
-let rateLimitStore;
+// When Redis is available, use RedisStore so limits persist across restarts.
+// Each limiter MUST have its own RedisStore instance (express-rate-limit v7+ requirement).
+let RedisStoreClass;
 if (redis) {
   try {
-    const { RedisStore } = require('rate-limit-redis');
-    rateLimitStore = new RedisStore({ sendCommand: (...args) => redis.call(...args) });
+    RedisStoreClass = require('rate-limit-redis').RedisStore;
     console.log('[rate-limit] Using Redis store');
   } catch { /* rate-limit-redis not installed — fall back to in-memory */ }
+}
+function createRedisStore(prefix) {
+  if (!RedisStoreClass) return {};
+  return { store: new RedisStoreClass({ sendCommand: (...args) => redis.call(...args), prefix }) };
 }
 
 const compileLimiter = rateLimit({
@@ -307,7 +310,7 @@ const compileLimiter = rateLimit({
   max: 20,             // 20 compiles per minute per IP
   standardHeaders: true,
   legacyHeaders: false,
-  ...(rateLimitStore ? { store: rateLimitStore } : {}),
+  ...createRedisStore('rl:compile:'),
   message: {
     error: 'rate_limited',
     message: 'Too many compile requests. Please wait a moment and try again.',
@@ -319,7 +322,7 @@ const generalLimiter = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
-  ...(rateLimitStore ? { store: rateLimitStore } : {}),
+  ...createRedisStore('rl:general:'),
 });
 
 // Apply general limiter to all routes
