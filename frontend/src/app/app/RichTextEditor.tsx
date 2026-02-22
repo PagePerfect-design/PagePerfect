@@ -134,6 +134,8 @@ export default function RichTextEditor({
   onClose: () => void
 }) {
   const isUpdatingRef = useRef(false)
+  // Track what the editor last emitted so we can skip echo-backs
+  const lastEmittedRef = useRef(markdown)
 
   const editor = useEditor({
     extensions: [
@@ -156,20 +158,20 @@ export default function RichTextEditor({
       if (isUpdatingRef.current) return
       const html = ed.getHTML()
       const md = htmlToMarkdown(html)
+      lastEmittedRef.current = md
       onChange(md)
     },
   })
 
-  // Sync external markdown changes into editor
-  const prevMarkdownRef = useRef(markdown)
+  // Sync external markdown changes into editor (skip echo-backs from our own onUpdate)
   useEffect(() => {
     if (!editor) return
-    if (markdown === prevMarkdownRef.current) return
-    prevMarkdownRef.current = markdown
+    if (markdown === lastEmittedRef.current) return
 
     isUpdatingRef.current = true
     const html = markdownToHtml(markdown)
     editor.commands.setContent(html, { emitUpdate: false })
+    lastEmittedRef.current = markdown
     isUpdatingRef.current = false
   }, [markdown, editor])
 
