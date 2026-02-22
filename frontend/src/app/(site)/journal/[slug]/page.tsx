@@ -177,15 +177,23 @@ export default async function ArticlePage({ params }: Props) {
                 Every principle above is built into PagePerfect.
               </p>
               <p className="mt-2 max-w-md font-body text-sm text-[#555555]">
-                Baseline grids, golden-ratio type scales, and 12 templates — engineered
-                for the legibility and conversion metrics discussed in this essay.
+                Baseline grids, proportional type scales, and 15 professionally engineered
+                templates. Preview for free, export KDP-ready PDFs from $19.99.
               </p>
-              <Link
-                href="/app"
-                className="mt-5 inline-block border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222] hover:border-[#E52222]"
-              >
-                Open the Editor &rarr;
-              </Link>
+              <div className="mt-5 flex items-center gap-4">
+                <Link
+                  href="/app"
+                  className="inline-block border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222] hover:border-[#E52222]"
+                >
+                  Open the Editor &rarr;
+                </Link>
+                <Link
+                  href="/docs"
+                  className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors hover:text-[#111111]"
+                >
+                  Read the docs
+                </Link>
+              </div>
             </div>
           </div>
         </article>

@@ -207,6 +207,18 @@ async function processCompileJob(job, templateRegistry) {
   const isFast = compileMode === 'fast';
   const warnings = styleWarnings(manuscriptText);
 
+  // Lint manuscript for common issues (double spaces, bad dashes, heading hierarchy)
+  try {
+    const lint = bookEngineering.lintManuscript(manuscriptText, templateType);
+    for (const issue of lint.issues || []) {
+      if (issue.severity === 'warn' || issue.severity === 'info') {
+        warnings.push(issue.message);
+      }
+    }
+  } catch (err) {
+    log.warn({ err: err.message }, 'Manuscript lint failed');
+  }
+
   // Font resolution — validate font names from registry, not arbitrary user input
   const fontRes = fontAvailability.resolveFont(tpl.mainfont);
   const mainFont = fontRes.resolved;

@@ -7,6 +7,21 @@
  */
 
 const crypto = require('crypto');
+const { execSync } = require('child_process');
+
+// ── Detect runtime versions once at startup ──
+let _pandocVersion = 'unknown';
+let _texliveVersion = 'unknown';
+try {
+  const pv = execSync('pandoc --version', { encoding: 'utf8', timeout: 3000 });
+  const m = pv.match(/pandoc(?:\.exe)?\s+([\d.]+)/);
+  if (m) _pandocVersion = m[1];
+} catch { /* pandoc not installed */ }
+try {
+  const tv = execSync('lualatex --version', { encoding: 'utf8', timeout: 3000 });
+  const m = tv.match(/Version\s+([\d.]+)/i) || tv.match(/TeX Live (\d+)/i);
+  if (m) _texliveVersion = m[1];
+} catch { /* lualatex not installed */ }
 
 // ================================================================
 // Build Metadata
@@ -93,12 +108,14 @@ function generateBuildMetadata(opts) {
       title,
     },
 
-    // System info
+    // System info — runtime versions for reproducibility
     system: {
       engine: 'PagePerfect',
-      version: '3.0',
+      version: '3.1',
       pdfEngine: 'lualatex',
+      pdfEngineVersion: _texliveVersion,
       processor: 'pandoc',
+      processorVersion: _pandocVersion,
     },
 
     // User context (if authenticated)
@@ -161,7 +178,7 @@ function generateMetadataPreamble(buildMeta) {
   return [
     '% ── Provenance & Build Metadata ──',
     '\\hypersetup{',
-    `  pdfproducer={PagePerfect ${buildMeta.system.version} / LuaLaTeX},`,
+    `  pdfproducer={PagePerfect ${buildMeta.system.version} / LuaLaTeX ${safeStr(buildMeta.system.pdfEngineVersion)} / Pandoc ${safeStr(buildMeta.system.processorVersion)}},`,
     `  pdfcreator={PagePerfect Build ${safeStr(buildMeta.buildId)}},`,
     `  pdfsubject={Template: ${safeStr(buildMeta.config.template)} / Size: ${safeStr(buildMeta.config.pageSize)} / Margins: ${safeStr(buildMeta.config.marginPreset)}},`,
     `  pdfkeywords={PagePerfect, ${safeStr(buildMeta.config.template)}, ${safeStr(buildMeta.contentHash)}}`,

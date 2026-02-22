@@ -23,7 +23,7 @@ PagePerfect follows Müller-Brockmann's core principles:
 - All text aligns to baseline for consistent vertical rhythm
 
 ### 3. Typographic Scale
-Based on the golden ratio (1.618) for visual harmony:
+Proportional scale tuned for print readability (~1.28× step progression):
 - **H1**: 2.25× base size
 - **H2**: 1.75× base size  
 - **H3**: 1.375× base size

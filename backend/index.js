@@ -898,6 +898,56 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
+// Readiness probe — verifies all critical dependencies are functional.
+// Use this for deployment orchestration (Coolify, K8s readiness gates).
+app.get('/api/health/ready', async (_req, res) => {
+  const checks = {};
+  let ready = true;
+
+  // Redis
+  if (redis) {
+    try { await redis.ping(); checks.redis = 'ok'; }
+    catch { checks.redis = 'down'; ready = false; }
+  } else {
+    checks.redis = 'not_configured';
+  }
+
+  // PocketBase
+  if (isPocketBaseConfigured) {
+    try {
+      const pbUrl = (process.env.POCKETBASE_URL || '').replace(/\/+$/, '');
+      const resp = await fetch(`${pbUrl}/api/health`, { signal: AbortSignal.timeout(3000) });
+      checks.pocketbase = resp.ok ? 'ok' : 'down';
+      if (!resp.ok) ready = false;
+    } catch { checks.pocketbase = 'down'; ready = false; }
+  } else {
+    checks.pocketbase = 'not_configured';
+  }
+
+  // Pandoc
+  try {
+    execSync('pandoc --version', { timeout: 3000, stdio: 'pipe' });
+    checks.pandoc = 'ok';
+  } catch { checks.pandoc = 'missing'; ready = false; }
+
+  // LuaLaTeX
+  try {
+    execSync('lualatex --version', { timeout: 3000, stdio: 'pipe' });
+    checks.lualatex = 'ok';
+  } catch { checks.lualatex = 'missing'; ready = false; }
+
+  // Disk (/tmp writable)
+  try {
+    const testFile = path.join(os.tmpdir(), `pp-health-${Date.now()}`);
+    fs.writeFileSync(testFile, 'ok');
+    fs.unlinkSync(testFile);
+    checks.disk = 'ok';
+  } catch { checks.disk = 'read_only'; ready = false; }
+
+  const status = ready ? 200 : 503;
+  res.status(status).json({ ready, checks, timestamp: new Date().toISOString() });
+});
+
 app.get('/api/health/details', (_req, res) => {
   const templates = Object.keys(DESIGN_TEMPLATES);
   const pageSizes = ['letter','a4','sixByNine','fiveFiveByEightFive','a5','sevenByTen','royal','bFormat','massMarket','aFormat','demy','fiveTwentyFiveByEight','crownQuarto','b5','amazonFiveByEight','amazonSixByNine','amazonSevenByTen','amazonEightByTen','amazonEightFiveByEleven'];
