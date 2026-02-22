@@ -93,20 +93,38 @@ PagePerfect/
 │   └── tsconfig.json          # Strict mode, @/* path alias
 │
 ├── backend/                   # Express 5 API (JavaScript, CommonJS)
-│   ├── index.js               # Server, 30+ routes, Pandoc orchestration, Stripe webhooks
+│   ├── index.js               # Server, 30+ routes, BullMQ queue setup, Stripe webhooks
+│   ├── compile-worker.js      # BullMQ job processor — Pandoc spawn, sandboxing, watermark
+│   ├── compile-utils.js       # Stderr sanitization, path stripping, compile helpers
 │   ├── grid-system.js         # GridSystem class (margins, typography, LaTeX)
 │   ├── publishing.js          # Pre-flight validation, cover dimensions, PDF/X-1a
 │   ├── lulu.js                # Lulu xPress API client (print-on-demand)
 │   ├── platform-compliance.js # KDP, IngramSpark, Lulu, offset print specs
-│   ├── book-engineering.js    # Widows/orphans, hyphenation, float placement
+│   ├── book-engineering.js    # Widows/orphans, hyphenation, float placement, compile log analysis
 │   ├── manuscript-structure.js # Front/body/back matter standardization
 │   ├── references-system.js   # Citation validation, BibTeX parsing
 │   ├── figures-system.js      # Image pipeline, DPI validation, asset checks
-│   ├── typography-assurance.js # Baseline grid conformance, typographic scoring
+│   ├── typography-assurance.js # Baseline grid conformance, typographic scoring (0–100)
 │   ├── multilingual.js        # RTL, Arabic shaping, CJK, Devanagari support
-│   ├── print-qa.js            # Ink coverage, contrast, DPI, reverse type checks
+│   ├── print-qa.js            # Ink coverage, contrast, DPI, reverse type checks (0–100)
 │   ├── provenance.js          # Build metadata, versioning, reproducible builds
 │   ├── template-extensions.js # Governed extension tokens for template customization
+│   ├── latex-sanitizer.js     # LaTeX injection detection (14 patterns), input escaping
+│   ├── text-normalizer.js     # Remote image stripping, template-aware text normalization
+│   ├── watermark.js           # TikZ-based watermark overlay (Müller-Brockmann design)
+│   ├── heading-variants.js    # Classic/Modern/Bold heading variant preambles
+│   ├── font-availability.js   # Font registry and fallback resolution
+│   ├── logger.js              # Structured logging utility
+│   ├── pdfx-def.ps            # PostScript preamble for Ghostscript PDF/X-1a conversion
+│   ├── filters/               # Pandoc Lua filters
+│   │   ├── drop-cap.lua       # Drop-cap formatting for fiction/literary templates
+│   │   ├── fountain.lua       # Screenplay formatting (Fountain syntax)
+│   │   └── table-safety.lua   # Table rendering safety for multi-column templates
+│   ├── tests/                 # Jest test suite
+│   │   ├── grid-system.test.js    # GridSystem: all 19 page sizes × 7 margin presets
+│   │   ├── latex-sanitizer.test.js # Injection detection, escaping, font/color validation
+│   │   ├── compile-utils.test.js   # Compile utility functions
+│   │   └── logger.test.js          # Logger tests
 │   ├── templates/             # 15 LaTeX templates
 │   │   ├── chicago.latex      # Academic (12pt baseline)
 │   │   ├── symphony.latex     # Classic academic
@@ -129,6 +147,7 @@ PagePerfect/
 │   └── package.json
 │
 ├── CLAUDE.md                  # This file
+├── VIABILITY_ASSESSMENT.md    # Evidence-based viability counter-analysis
 ├── README.md
 ├── GRID_SYSTEM.md             # Grid system design documentation
 ├── GIT_WORKFLOW.md            # Branching & commit conventions
@@ -212,14 +231,27 @@ Vercel
 
 ```
 User edits Markdown in browser
-    → 1s debounce
+    → 3s debounce (text) / 1.5s debounce (settings)
     → POST /api/compile (proxied via Next.js rewrites → Coolify backend)
-    → Backend: sanitize inputs, write to temp dir
-    → GridSystem calculates geometry/typography
-    → Spawn Pandoc with LuaLaTeX + selected template
-    → (Optional) --citeproc for bibliography processing
-    → 45s timeout (COMPILE_TIMEOUT_MS)
-    → Stream PDF back | Return JSON error with diagnostics
+    → Backend: validate size limits, sanitize inputs, write manuscript to temp dir
+    → Enqueue to BullMQ (priority 1 for Publisher/Studio, 5 for Drafter)
+       └── Preview jobs get deterministic ID (overwrites earlier previews in queue)
+       └── If Redis down: sync fallback (max 2 concurrent)
+    → Compile Worker picks up job:
+       1. Re-verify user tier via PocketBase admin token (not trusting enqueue snapshot)
+       2. LaTeX injection detection (14 patterns via latex-sanitizer.js)
+       3. Strip remote images (SSRF prevention via text-normalizer.js)
+       4. Create isolated temp dir (pp-worker-*)
+       5. Resolve fonts from hardcoded registry, inject emoji fallback chain
+       6. Assemble preamble: grid geometry + engineering policies + extensions + watermark
+       7. Spawn Pandoc with LuaLaTeX + selected template
+          └── -raw_tex disabled (blocks raw LaTeX in user markdown)
+          └── --resource-path constrained to temp dir
+          └── (Optional) --citeproc for bibliography processing
+       8. 45s timeout (COMPILE_TIMEOUT_MS) → SIGKILL
+       9. (Optional) PDF/X-1a conversion via Ghostscript
+      10. Clean up temp dir
+    → Frontend polls /api/compile/status/{jobId}
     → Frontend creates object URL, renders in iframe
 ```
 
@@ -524,14 +556,20 @@ Mass Market (4.25×6.87"), A-format (111×178mm), B-format (129×198mm), 5.25×8
 ### Backend Patterns
 
 - **CommonJS** module system (`require`/`module.exports`)
-- **Temp files**: `fs.mkdtempSync` for isolated compilation, cleaned up after each request
+- **Job queue**: BullMQ + Redis (`index.js:132-176`). 3 concurrent workers (configurable via `COMPILE_CONCURRENCY`). Priority lanes: Publisher/Studio=1, Drafter=5. Preview jobs use deterministic IDs for deduplication. Sync fallback (max 2 concurrent) when Redis is unavailable.
+- **Compile worker**: `compile-worker.js` processes BullMQ jobs. Re-verifies user tier at execution time via PocketBase admin token. Assembles preamble from grid system, engineering policies, template extensions, heading variants, watermark, and multilingual support.
+- **Temp files**: `fsp.mkdtemp` for isolated compilation per job (`pp-worker-*` prefix). Cleaned after each job. Orphan sweeper runs at boot + hourly for crash recovery (`index.js:95-130`). In-memory job results have 10-minute TTL.
 - **PDF streaming**: `fs.createReadStream().pipe(res)` with Content-Disposition header
-- **Process spawning**: `child_process.spawn` for Pandoc with timeout (`SIGKILL` after 45s)
+- **Process spawning**: `child_process.spawn` for Pandoc with CWD restricted to temp dir, SIGKILL after 45s timeout
+- **Input sanitization**: `latex-sanitizer.js` detects 14 LaTeX injection patterns (`\input`, `\write18`, `\directlua`, `\ShellEscape`, etc.) and escapes special characters. `text-normalizer.js` strips remote image URLs to prevent SSRF. Titles sanitized to 200 chars with LaTeX escaping.
+- **Stderr sanitization**: `compile-utils.js` strips container paths (`/tmp/pp-*`, `/home/*`, `/app/templates/`) before returning errors to clients.
+- **Error translation**: Frontend maps 24+ TeX/Pandoc error patterns to plain English (`CompileShell.tsx:179-207`)
 - **Error parsing**: Regex extraction of missing citations/packages from stderr
 - **Safe mode**: Strips citation syntax for compilation without bibliography processing
-- **Rate limiting**: `express-rate-limit` on API endpoints
-- **Security**: `helmet` middleware for HTTP headers
-- **Logging**: `morgan` for HTTP request logging
+- **Rate limiting**: `express-rate-limit` — 20 compiles/min/IP, 120 general requests/min/IP. Redis-backed when available.
+- **Security**: `helmet` middleware for HTTP headers, CORS locked to known origins + Vercel preview domains
+- **Logging**: `morgan` for HTTP request logging, `logger.js` for structured backend logging
+- **Watermark**: TikZ-based overlay (`watermark.js`) applied at compile time for Drafter tier. Müller-Brockmann-inspired registration marks at 8% opacity.
 
 ### Grid System
 
@@ -541,6 +579,51 @@ The `GridSystem` class in `backend/grid-system.js` implements:
 - **Golden-ratio typographic scale** (multiplier 1.618): heading sizes derived from baseline
 - **Margin presets**: 7 presets (minimal→generous) as grid-unit multiples
 - **LaTeX generation**: `\geometry{}` commands and typography preamble
+
+### Security Architecture
+
+The compile pipeline treats user input as hostile. Defense is layered:
+
+**Input sanitization (before compilation):**
+- `latex-sanitizer.js` detects 14 LaTeX/Lua injection patterns: `\input`, `\include`, `\write18`, `\immediate\write`, `\openout`, `\read`, `\catcode`, `\csname`, `\newwrite`, `\directlua`, `\luaexec`, `\luadirect`, `\ShellEscape`, `\openin`
+- `text-normalizer.js` strips all remote image URLs (`http://`, `https://`) to prevent SSRF
+- Title sanitized to 200 chars with 14 LaTeX special character escapes
+- Font names validated against hardcoded registry (not user input) — regex whitelist `[A-Za-z0-9 \-.]+`
+- Custom font IDs validated as UUID only (prevents path traversal)
+- Colors validated as strict hex `#RRGGBB`
+
+**Pandoc configuration (compile-time defense):**
+- `-raw_tex` flag disabled — strips all raw LaTeX from user markdown (primary RCE prevention)
+- `-raw_attribute` flag disabled — blocks raw attribute fences
+- `--resource-path` constrained to temp directory only
+- `--pdf-engine=lualatex` — explicit engine selection
+
+**Process isolation:**
+- Docker container runs as non-root `ppuser` (`Dockerfile:77-81`)
+- Each compile job gets isolated temp dir (`pp-worker-*` in `/tmp`)
+- Pandoc spawned with CWD restricted to temp dir
+- 45-second SIGKILL timeout prevents resource exhaustion
+- Orphan temp dirs swept at boot + hourly
+
+**Network & API security:**
+- `helmet` middleware for HTTP security headers
+- CORS locked to known origins + Vercel preview domains
+- Rate limiting: 20 compiles/min/IP, 120 general/min/IP (Redis-backed)
+- Body size limits: 2 MB markdown, 10 MB .docx, 5 MB JSON
+- Stderr sanitization strips container paths before client response
+- Compile job results require secret token for anonymous users (prevents enumeration)
+
+**Auth verification:**
+- User tier re-verified at compile time via PocketBase admin token (not trusting enqueue snapshot)
+- Feature gates checked twice: at enqueue and at execution
+- Admin credentials never exposed to client
+
+**Known hardening gaps:**
+- No per-process resource limits (ulimit/cgroup) on Pandoc spawn
+- No seccomp profile on Docker container
+- No `--network none` flag on container (default Docker network namespace)
+- No read-only root filesystem
+- Injection detection logs warnings but does not block (relies on `-raw_tex` flag)
 
 ### Auth (PocketBase)
 
@@ -576,9 +659,13 @@ Defined in `frontend/src/app/(site)/pricing/page.tsx`. Stripe integration exists
 
 | Tier | Price | Key differentiators |
 |------|-------|-------------------|
-| **Drafter** | Free | All 12 templates, 6 default page sizes, real-time preview, watermarked output |
-| **Publisher** | $19.99/manuscript | No watermark, all 19 page sizes, full quality, citations, priority queue |
-| **Studio** | $199 one-time | Lifetime Publisher access, future EPUB/custom fonts/batch export, direct support |
+| **Drafter** | Free | All 15 templates, 6 default page sizes, real-time preview, watermarked output |
+| **Publisher** | $19.99/manuscript | No watermark, all 19 page sizes, citations, priority queue (14 days unlimited re-exports) |
+| **Studio** | $199 one-time | Lifetime Publisher access, EPUB export, custom font upload, batch export, direct support |
+
+**Watermark behavior:** Drafter-tier exports include a TikZ-based watermark overlay injected at compile time (`watermark.js`). The `x-pp-watermarked` response header signals watermark status to the frontend. Users see a post-download banner with upgrade CTA. Watermark is server-side and cannot be bypassed by the client.
+
+**Tier enforcement:** Feature gates checked at both enqueue time (`index.js`) and compile time (`compile-worker.js`). Tier re-verified via PocketBase admin token at job execution to prevent privilege escalation if tier changes while job is queued. Tier levels: `anonymous: 0, drafter: 1, publisher: 2, studio: 3`.
 
 ## Environment Variables
 
@@ -619,10 +706,30 @@ These are the env vars used in the frontend code. Configure them in the Vercel d
 
 ## Testing
 
-No automated test suite is configured. Testing is manual via the frontend UI:
+### Backend (Jest)
+
+```bash
+cd backend && npm test          # Run all tests (verbose)
+cd backend && npm run test:ci   # CI mode with coverage
+```
+
+Test files in `backend/tests/`:
+- **`latex-sanitizer.test.js`** (207 lines) — LaTeX injection detection (14 attack patterns including `\directlua`, `\write18`, `\ShellEscape`), character escaping, font name validation (rejects shell injection, path traversal), color validation, extension value validation
+- **`grid-system.test.js`** (144 lines) — GridSystem class: all 19 page sizes × 7 margin presets, margin capping at 40% for small pages, LaTeX `\geometry{}` output verification
+- **`compile-utils.test.js`** — Compile utility functions
+- **`logger.test.js`** — Logging utility
+
+### Frontend (Manual)
+
 - `/status` page runs connectivity diagnostics
 - `/docs` page includes `RequirementsCheck` component (health check + compile test)
 - `GET /api/health` and `GET /api/health/details` for backend status
+
+### Missing (Known Gaps)
+
+- No golden-file PDF regression tests (template changes could silently break layouts)
+- No end-to-end compile tests (manuscript → PDF → preflight validation)
+- No frontend component tests
 
 `.gitignore` excludes `test*.pdf` and `*-test.pdf` but preserves `sample*.pdf`.
 
@@ -655,4 +762,47 @@ No automated test suite is configured. Testing is manual via the frontend UI:
 | Stripe integration | `frontend/src/lib/stripe.ts`, `backend/index.js` (webhook + create-payment routes) |
 | Lulu print-on-demand | `backend/lulu.js` |
 | Publishing/pre-flight | `backend/publishing.js`, `backend/platform-compliance.js` |
+| Compile worker & sandboxing | `backend/compile-worker.js`, `backend/latex-sanitizer.js`, `backend/text-normalizer.js` |
+| Quality analysis systems | `backend/typography-assurance.js`, `backend/print-qa.js`, `backend/book-engineering.js` |
+| Watermark system | `backend/watermark.js` |
+| PDF/X-1a conversion | `backend/publishing.js` (Ghostscript pipeline), `backend/pdfx-def.ps` |
 | Status/health diagnostics | `frontend/src/app/(site)/status/StatusClient.tsx`, `frontend/src/app/(site)/docs/RequirementsCheck.tsx` |
+
+## Quality Analysis Systems
+
+Six backend modules provide manuscript and output quality analysis. All return scored results via API endpoints.
+
+| System | Module | Score | API Endpoint | Integration Status |
+|--------|--------|-------|--------------|-------------------|
+| **Preflight** | `publishing.js` | pass/fail + checks array | `POST /api/preflight` | Active — runs on every export via LaunchOverlay |
+| **Typography** | `typography-assurance.js` | 0–100 + grade (A–D) | `POST /api/analyze/typography` | Advisory — scores config but doesn't enforce |
+| **Print QA** | `print-qa.js` | 0–100 + grade (A–D) | `POST /api/analyze/print-qa` | Advisory — checks thresholds but doesn't block |
+| **Book Engineering** | `book-engineering.js` | issue array + severity | `POST /api/analyze/lint` | Partial — linting active, compile log analysis orphaned |
+| **Platform Compliance** | `platform-compliance.js` | checks + pipeline steps | `POST /api/analyze/platform` | Documentation — pipelines are read-only, not automated |
+| **Grid System** | `grid-system.js` | pt/mm precision | (integrated into compile) | Active — core to every compilation |
+
+**Key gap:** `book-engineering.js` defines `analyzeCompileLog()` (overfull/underfull hbox detection) and `typography-assurance.js` defines `generateTypographicReport()` — neither is called from the compile worker. These are orphaned code paths that should be wired in.
+
+## Known Gaps & Tech Debt
+
+### Critical (blocks credibility)
+
+- **Marketing/delivery honesty:** Landing page says "KDP-ready PDF" but free tier exports watermarked (unusable for KDP). User discovers watermark AFTER download, not before. "$2.99 single clean PDF" text exists in UI (`CompileShell.tsx:2077`) but no payment flow is implemented.
+- **Preflight doesn't block export:** Failing preflight checks don't prevent download (`CompileShell.tsx:1661-1662`). Users can export non-compliant PDFs.
+- **Compile log analysis orphaned:** `analyzeCompileLog()` in `book-engineering.js:296-352` and `generateTypographicReport()` in `typography-assurance.js:301-344` are defined but never called from the compile worker.
+
+### High (limits growth)
+
+- **No PDF regression test suite:** Unit tests exist for security and grid system, but no golden-file PDF comparisons. Template changes could silently break layouts.
+- **No build manifest:** Pandoc 3.6.2 is pinned but TeX Live is not version-locked. No manifest saved with exported PDFs. `provenance.js` exists but integration is incomplete.
+- **Container hardening:** No per-process resource limits, no seccomp profile, no `--network none`, no read-only root filesystem.
+- **In-memory job results:** `jobResults` Map is lost on backend restart. Users waiting for PDFs lose their jobs.
+
+### Medium (improvement opportunities)
+
+- **Quality systems advisory only:** Typography score, Print QA score, and platform compliance checks all run but only warn — no mechanism to block export below quality thresholds.
+- **No guided first-run wizard:** Genre auto-detection works but isn't used to pre-select templates. No "guaranteed success" onboarding path.
+- **Pricing page inaccuracies:** Claims free tier = "Fast mode" only, but users can select Full quality. Needs alignment with actual gating.
+- **"Safe Mode" naming:** Term is confusing for non-technical users. Consider "Standard Mode" vs. "Advanced Citation Mode."
+- **No image persistence:** User-uploaded images for manuscripts are ephemeral. No long-term asset storage strategy.
+- **Lulu webhook incomplete:** Webhook handler exists but status updates to PocketBase are not fully implemented.
