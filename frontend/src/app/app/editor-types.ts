@@ -38,6 +38,13 @@ export type PreflightResult = {
   }
 }
 
+export type CompileQuality = {
+  typographyScore: number | null
+  typographyGrade: string | null
+  overfullBoxes: number
+  underfullBoxes: number
+} | null
+
 export const PREFS_KEY = 'pp-prefs-v1'
 export type Prefs = {
   template: TemplateKey

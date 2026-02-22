@@ -178,6 +178,7 @@ export default function CompileShell() {
     errors,
     pdfUrl,
     lastDownloadWatermarked,
+    quality,
     compile,
   } = useCompileQueue({
     manuscript, template, headingVariant, title, pageSize, marginPreset,
@@ -472,6 +473,7 @@ export default function CompileShell() {
               status={status}
               errors={errors}
               isWatermarked={!hasTier(tier, 'publisher') && !!pdfUrl}
+              quality={quality}
               onRetry={() => compile(false)}
             />
 

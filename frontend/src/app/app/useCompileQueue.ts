@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import type {
   TemplateKey, HeadingVariant, PageSize, MarginPreset,
   CompileMode, CustomFont, Status, CompileError, Stage, Platform,
+  CompileQuality,
 } from './editor-types'
 import { adjustHeadingsForTemplate, buildFilename, abortableDelay } from './editor-utils'
 import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
@@ -37,6 +38,7 @@ export function useCompileQueue({
   const [errors, setErrors] = useState<CompileError[]>([])
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [lastDownloadWatermarked, setLastDownloadWatermarked] = useState(false)
+  const [quality, setQuality] = useState<CompileQuality>(null)
   const pdfBlobRef = useRef<Blob | null>(null)
 
   const debounceRef = useRef<number | null>(null)
@@ -235,6 +237,16 @@ export function useCompileQueue({
           }
 
           if (statusData.status === 'completed') {
+            // Capture quality metrics from status response
+            if (statusData.typographyReport || statusData.compileLog) {
+              setQuality({
+                typographyScore: statusData.typographyReport?.score ?? null,
+                typographyGrade: statusData.typographyReport?.grade ?? null,
+                overfullBoxes: statusData.compileLog?.overfull ?? 0,
+                underfullBoxes: statusData.compileLog?.underfull ?? 0,
+              })
+            }
+
             setStatus('compiling')
 
             // Phase 3: Fetch final PDF
@@ -313,6 +325,7 @@ export function useCompileQueue({
     pdfUrl,
     pdfBlobRef,
     lastDownloadWatermarked,
+    quality,
     compile,
   }
 }

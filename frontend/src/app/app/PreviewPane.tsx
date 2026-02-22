@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, FileText, RotateCcw } from 'lucide-react'
 
-import type { Status, CompileError } from './editor-types'
+import type { Status, CompileError, CompileQuality } from './editor-types'
 import { ease } from './editor-types'
 import { translateError } from './editor-utils'
 
@@ -39,6 +39,47 @@ function BookSkeleton() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   QUALITY BADGE — Typography score shown after successful compile
+   ═══════════════════════════════════════════════════════════════════ */
+
+function QualityBadge({ quality }: { quality: CompileQuality }) {
+  if (!quality || quality.typographyGrade === null) return null
+
+  const gradeColor = {
+    'A': 'text-emerald-600 border-emerald-500/20 bg-emerald-500/[0.06]',
+    'B': 'text-blue-600 border-blue-500/20 bg-blue-500/[0.06]',
+    'C': 'text-amber-600 border-amber-500/20 bg-amber-500/[0.06]',
+    'D': 'text-red-600 border-red-500/20 bg-red-500/[0.06]',
+  }[quality.typographyGrade] || 'text-[#111111]/40 border-[#111111]/10 bg-[#111111]/[0.03]'
+
+  const hasWarnings = quality.overfullBoxes > 0 || quality.underfullBoxes > 0
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, duration: 0.3 }}
+      className="absolute top-3 right-3 z-20 flex items-center gap-2"
+    >
+      <div className={`flex items-center gap-1.5 border px-2 py-1 ${gradeColor}`}>
+        <span className="font-mono text-[9px] uppercase tracking-wider opacity-60">Typography</span>
+        <span className="font-mono text-[11px] font-bold">{quality.typographyGrade}</span>
+      </div>
+      {hasWarnings && (
+        <div className="flex items-center gap-1 border border-amber-500/15 bg-amber-500/[0.04] px-2 py-1">
+          <AlertTriangle className="h-2.5 w-2.5 text-amber-500/60" />
+          <span className="font-mono text-[9px] text-amber-600/60">
+            {quality.overfullBoxes > 0 && `${quality.overfullBoxes} overfull`}
+            {quality.overfullBoxes > 0 && quality.underfullBoxes > 0 && ', '}
+            {quality.underfullBoxes > 0 && `${quality.underfullBoxes} underfull`}
+          </span>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    LEVITATING BOOK — The PDF preview sits center-screen
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -48,6 +89,7 @@ export default function PreviewPane({
   status,
   errors,
   isWatermarked,
+  quality,
   onRetry,
 }: {
   pdfUrl: string | null
@@ -55,6 +97,7 @@ export default function PreviewPane({
   status: Status
   errors: CompileError[]
   isWatermarked: boolean
+  quality?: CompileQuality
   onRetry?: () => void
 }) {
   return (
@@ -83,6 +126,8 @@ export default function PreviewPane({
                   src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
                   className="h-full w-full"
                 />
+                {/* Quality badge — top right of preview */}
+                {status === 'success' && quality && <QualityBadge quality={quality} />}
                 {isWatermarked && (
                   <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
                     <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">
