@@ -73,7 +73,44 @@ let compileQueueEvents = null;
 
 // In-memory map: jobId → result metadata (populated by worker completion callback).
 // This avoids hammering Redis with Job.fromId() on every poll.
+// Redis-backed persistence ensures results survive backend restarts.
 const jobResults = new Map();
+
+const RESULT_REDIS_TTL = 600; // 10 minutes in seconds
+
+/** Store a job result in both the in-memory Map and Redis (if available). */
+function storeJobResult(id, value) {
+  value._storedAt = Date.now();
+  jobResults.set(id, value);
+  if (redisHealthy && redis) {
+    // Store non-filesystem metadata in Redis for restart recovery
+    const redisValue = { ...value };
+    delete redisValue.pdfPath;
+    delete redisValue.tmpBase;
+    redisValue._redisOnly = true; // flag: needs recompile for PDF streaming
+    redis.setex(`pp:result:${id}`, RESULT_REDIS_TTL, JSON.stringify(redisValue)).catch(() => {});
+  }
+}
+
+/** Retrieve a job result — checks in-memory Map first, then Redis. */
+async function getJobResult(id) {
+  const local = jobResults.get(id);
+  if (local) return local;
+  if (!redisHealthy || !redis) return null;
+  try {
+    const raw = await redis.get(`pp:result:${id}`);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+/** Delete a job result from both the in-memory Map and Redis. */
+function deleteJobResult(id) {
+  jobResults.delete(id);
+  if (redisHealthy && redis) {
+    redis.del(`pp:result:${id}`).catch(() => {});
+  }
+}
 
 // Sync fallback semaphore — caps concurrent compiles when Redis is down.
 const MAX_SYNC_CONCURRENT = Number(process.env.MAX_SYNC_CONCURRENT || 2);
@@ -86,7 +123,7 @@ const resultCleanupInterval = setInterval(() => {
   for (const [id, res] of jobResults) {
     if (res._storedAt && now - res._storedAt > RESULT_TTL_MS) {
       if (res.tmpBase) { fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {}); }
-      jobResults.delete(id);
+      deleteJobResult(id);
     }
   }
 }, 60_000);
@@ -215,14 +252,12 @@ if (redis) {
     });
 
     compileWorker.on('completed', (job, result) => {
-      result._storedAt = Date.now();
-      jobResults.set(job.id, result);
+      storeJobResult(job.id, result);
       log.info({ module: 'queue', jobId: job.id, elapsed: result.elapsed || '?' }, 'Job completed');
     });
 
     compileWorker.on('failed', (job, err) => {
-      jobResults.set(job.id, {
-        _storedAt: Date.now(),
+      storeJobResult(job.id, {
         success: false,
         error: 'worker_error',
         message: err.message || 'Compilation failed unexpectedly.',
@@ -1746,6 +1781,9 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
       const resultSecret = !user.userId ? crypto.randomBytes(16).toString('hex') : null;
       if (resultSecret) {
         jobResults.set(`${queueKey}:secret`, resultSecret);
+        if (redisHealthy && redis) {
+          redis.setex(`pp:result:${queueKey}:secret`, RESULT_REDIS_TTL, resultSecret).catch(() => {});
+        }
       }
 
       log.info({ module: 'compile', jobId: queueKey, tier: userTier, download: isDownload }, 'Enqueued job');
@@ -1836,9 +1874,18 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
 app.get('/api/compile/status/:id', async (req, res) => {
   const { id } = req.params;
 
-  // Check in-memory result map first (populated by worker completion callback)
-  const cached = jobResults.get(id);
+  // Check in-memory result map first, then Redis (survives restarts)
+  const cached = await getJobResult(id);
   if (cached) {
+    if (cached._redisOnly && cached.success) {
+      // Result recovered from Redis after restart — PDF file is gone
+      return res.status(410).json({
+        jobId: id,
+        status: 'expired',
+        error: 'restart_expired',
+        message: 'Server restarted during compilation. Please recompile.',
+      });
+    }
     if (cached.success) {
       return res.json({
         jobId: id,
@@ -1847,6 +1894,8 @@ app.get('/api/compile/status/:id', async (req, res) => {
         outputFormat: cached.outputFormat,
         needsWatermark: cached.needsWatermark,
         warnings: cached.warnings,
+        compileLog: cached.compileLog,
+        typographyReport: cached.typographyReport || null,
         resultUrl: `/api/compile/result/${id}`,
       });
     } else {
@@ -1885,10 +1934,13 @@ app.get('/api/compile/status/:id', async (req, res) => {
 
 app.get('/api/compile/result/:id', async (req, res) => {
   const { id } = req.params;
-  const result = jobResults.get(id);
+  const result = await getJobResult(id);
 
   if (!result) {
     return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });
+  }
+  if (result._redisOnly) {
+    return res.status(410).json({ error: 'restart_expired', message: 'Server restarted. Please recompile.' });
   }
   if (!result.success) {
     return res.status(400).json(result);
@@ -1903,19 +1955,20 @@ app.get('/api/compile/result/:id', async (req, res) => {
   } else {
     // Anonymous job — require the result secret from the 202 response.
     // Prevents job ID enumeration attacks.
-    const storedSecret = jobResults.get(`${id}:secret`);
+    const storedSecret = jobResults.get(`${id}:secret`) ||
+      (redisHealthy && redis ? await redis.get(`pp:result:${id}:secret`).catch(() => null) : null);
     if (storedSecret) {
       const providedSecret = req.query.secret || req.headers['x-pp-result-secret'];
       if (providedSecret !== storedSecret) {
         return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
       }
-      jobResults.delete(`${id}:secret`); // One-time use
+      deleteJobResult(`${id}:secret`); // One-time use
     }
   }
 
   // Verify PDF still exists on disk
   if (!result.pdfPath || !fs.existsSync(result.pdfPath)) {
-    jobResults.delete(id);
+    deleteJobResult(id);
     return res.status(410).json({ error: 'expired', message: 'Result has expired. Please recompile.' });
   }
 
@@ -1940,11 +1993,11 @@ app.get('/api/compile/result/:id', async (req, res) => {
   const stream = fs.createReadStream(result.pdfPath);
   stream.on('close', () => {
     if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
-    jobResults.delete(id);
+    deleteJobResult(id);
   });
   stream.on('error', () => {
     if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' });
-    jobResults.delete(id);
+    deleteJobResult(id);
   });
   stream.pipe(res);
 });
@@ -2389,6 +2442,16 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
 // Root health check for Coolify container deployment validation
 app.get('/', (req, res) => res.status(200).send('PagePerfect Engine Active'));
 
+// ================================================================
+// Global Error Handler — catches unhandled route/middleware errors
+// ================================================================
+
+app.use((err, req, res, _next) => {
+  log.error({ module: 'http', err: err.message, stack: err.stack, method: req.method, url: req.originalUrl }, 'Unhandled route error');
+  if (res.headersSent) return;
+  res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred. Please try again.' });
+});
+
 const server = app.listen(PORT, () => {
   log.info({
     module: 'startup',
@@ -2458,3 +2521,19 @@ async function gracefulShutdown(signal) {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// ================================================================
+// Crash Handlers — log and exit on unrecoverable errors
+// ================================================================
+
+process.on('uncaughtException', (err) => {
+  log.fatal({ module: 'crash', err: err.message, stack: err.stack }, 'Uncaught exception — exiting');
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  const stack = reason instanceof Error ? reason.stack : undefined;
+  log.fatal({ module: 'crash', err: msg, stack }, 'Unhandled rejection — exiting');
+  process.exit(1);
+});

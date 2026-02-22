@@ -19,8 +19,8 @@ export function FinalCTA() {
         </h2>
 
         <p className="mt-6 max-w-md font-body text-sm leading-[1.7] text-[#111111]">
-          Paste your manuscript. Pick your trim size. Download a KDP-ready
-          PDF and upload it tonight. No account, no install, no learning curve.
+          Paste your manuscript. Pick your trim size. Preview for free, then
+          export a clean KDP-ready PDF from $19.99. No account, no install, no learning curve.
         </p>
 
         <div className="mt-12 flex flex-col items-start gap-5">
