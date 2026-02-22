@@ -719,7 +719,7 @@ function PortalStage({
             transition={{ delay: 0.8 }}
             className="mt-16 font-mono text-[10px] text-[#111111]/50"
           >
-            Your text is never stored. Sent for compilation only, then immediately deleted.
+            Your text is stored only for your active session. Deleted on sign-out or within 24 hours.
           </motion.p>
         </div>
       </div>

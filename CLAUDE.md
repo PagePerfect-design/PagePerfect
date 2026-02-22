@@ -641,6 +641,15 @@ The compile pipeline treats user input as hostile. Defense is layered:
 - **Tiers**: `'drafter'` (default) | `'publisher'` | `'studio'`
 - **NavAuth**: Shows tier badge ("Pro" for publisher, "Studio" for studio) + avatar dropdown
 
+### Manuscript Persistence (Session-Scoped)
+
+Manuscripts are stored with a **session-scoped lifecycle** — they exist for crash recovery, not long-term storage.
+
+- **Authenticated users**: `use-manuscript.ts` saves to PocketBase `manuscripts` collection (5s debounce). On sign-out, `purgeUserManuscripts()` deletes all server-side manuscripts for that user.
+- **All users**: `manuscript-store.ts` saves to browser IndexedDB (3s debounce, localStorage fallback). This is client-side only and survives sign-out.
+- **Backend safety net**: `index.js` runs a manuscript expiry sweeper every 6 hours that deletes manuscripts not updated in 24 hours. Catches sessions that ended without clean sign-out.
+- **Privacy policy**: `/privacy` (Clause 01) accurately describes session-scoped storage. Manuscripts are never treated as permanent account data.
+
 ### Payments (Stripe)
 
 - **Frontend**: `lib/stripe.ts` loads Stripe.js via `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` and exports `createPayment(tier, userId, email?)`
@@ -790,6 +799,7 @@ Six backend modules provide manuscript and output quality analysis. All return s
 - **Marketing/delivery honesty:** Landing page says "KDP-ready PDF" but free tier exports watermarked (unusable for KDP). User discovers watermark AFTER download, not before. "$2.99 single clean PDF" text exists in UI (`CompileShell.tsx:2077`) but no payment flow is implemented.
 - **Preflight doesn't block export:** Failing preflight checks don't prevent download (`CompileShell.tsx:1661-1662`). Users can export non-compliant PDFs.
 - **Compile log analysis orphaned:** `analyzeCompileLog()` in `book-engineering.js:296-352` and `generateTypographicReport()` in `typography-assurance.js:301-344` are defined but never called from the compile worker.
+- ~~**Privacy policy contradiction:**~~ **RESOLVED** — Manuscripts are now session-scoped (purged on sign-out + 24h backend sweeper). Privacy policy Clause 01 updated to accurately describe session storage.
 
 ### High (limits growth)
 

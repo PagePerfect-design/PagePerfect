@@ -129,6 +129,71 @@ sweepOrphanedTmpDirs();
 const diskSweepInterval = setInterval(sweepOrphanedTmpDirs, ORPHAN_MAX_AGE_MS);
 diskSweepInterval.unref();
 
+// ── Manuscript Expiry Sweeper ──────────────────────────────────────
+// Session-scoped storage contract: manuscripts stored in PocketBase are
+// deleted when the user signs out (client-side). This sweeper is the
+// server-side safety net — catches manuscripts from sessions that ended
+// without a clean sign-out (crash, closed tab, expired token).
+// Runs every 6 hours. Deletes manuscripts not updated in 24h.
+const MANUSCRIPT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+async function sweepExpiredManuscripts() {
+  // Deferred check — PocketBase config is parsed later at module level
+  const pbUrl = (process.env.POCKETBASE_URL || '').replace(/\/+$/, '');
+  if (!pbUrl || !process.env.POCKETBASE_ADMIN_EMAIL || !process.env.POCKETBASE_ADMIN_PASSWORD) return;
+
+  try {
+    // Get admin token (reuse helper once it's defined; inline here because
+    // this runs at boot before getPbAdminToken is declared)
+    let token = null;
+    try {
+      const resp = await fetch(`${pbUrl}/api/collections/_superusers/auth-with-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000),
+        body: JSON.stringify({
+          identity: process.env.POCKETBASE_ADMIN_EMAIL,
+          password: process.env.POCKETBASE_ADMIN_PASSWORD,
+        }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        token = data.token;
+      }
+    } catch { /* PocketBase not reachable — skip */ }
+    if (!token) return;
+
+    const cutoff = new Date(Date.now() - MANUSCRIPT_MAX_AGE_MS).toISOString().replace('T', ' ');
+    const listResp = await fetch(
+      `${pbUrl}/api/collections/manuscripts/records?filter=${encodeURIComponent(`updated < "${cutoff}"`)}&fields=id&perPage=200`,
+      { headers: { Authorization: token }, signal: AbortSignal.timeout(5000) }
+    );
+    if (!listResp.ok) return;
+
+    const { items } = await listResp.json();
+    let purged = 0;
+    for (const item of items || []) {
+      try {
+        const del = await fetch(`${pbUrl}/api/collections/manuscripts/records/${item.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: token },
+          signal: AbortSignal.timeout(5000),
+        });
+        if (del.ok) purged++;
+      } catch { /* best-effort */ }
+    }
+    if (purged > 0) console.log(`[manuscript-sweep] Purged ${purged} expired manuscript(s)`);
+  } catch (err) {
+    console.error('[manuscript-sweep] Error:', err.message);
+  }
+}
+
+// Sweep after 30s delay at boot (gives PocketBase time to start)
+setTimeout(sweepExpiredManuscripts, 30_000);
+// Sweep every 6 hours
+const manuscriptSweepInterval = setInterval(sweepExpiredManuscripts, 6 * 60 * 60 * 1000);
+manuscriptSweepInterval.unref();
+
 if (redis) {
   try {
     const { Queue, Worker, QueueEvents } = require('bullmq');

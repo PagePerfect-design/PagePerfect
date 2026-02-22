@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import type { RecordModel } from 'pocketbase'
 import { createClient, isPocketBaseConfigured } from './supabase'
 import type { Tier } from './database.types'
+import { purgeUserManuscripts } from './use-manuscript'
 
 type Profile = {
   id: string
@@ -137,6 +138,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     if (!isPocketBaseConfigured) return
+    // Purge server-side manuscripts before clearing auth (needs valid token)
+    const userId = user?.id
+    if (userId) {
+      await purgeUserManuscripts(userId)
+    }
     const pb = createClient()
     pb.authStore.clear()
     setUser(null)

@@ -12,6 +12,35 @@ const MANUSCRIPT_USER_KEY = 'pp-manuscript-user-v1'
 // Debounce interval for PocketBase saves (5s — less aggressive than localStorage)
 const PB_SAVE_DEBOUNCE_MS = 5000
 
+/**
+ * Purge all manuscripts for a given user from PocketBase.
+ *
+ * Called on sign-out to honour the session-scoped storage contract:
+ * manuscripts exist only for the duration of an active session. Once the
+ * user signs out, server-side copies are deleted. The local IndexedDB
+ * copy is intentionally kept so the user can resume after signing back in.
+ */
+export async function purgeUserManuscripts(userId: string): Promise<void> {
+  if (!userId || !isPocketBaseConfigured) return
+  try {
+    const pb = createClient()
+    const records = await pb.collection('manuscripts').getFullList({
+      filter: `user = "${userId}"`,
+      fields: 'id',
+    })
+    await Promise.allSettled(
+      records.map((r) => pb.collection('manuscripts').delete(r.id))
+    )
+  } catch {
+    // Best-effort — backend sweeper is the safety net
+  }
+  // Clear localStorage pointers (but NOT the IndexedDB manuscript content)
+  try {
+    localStorage.removeItem(MANUSCRIPT_ID_KEY)
+    localStorage.removeItem(MANUSCRIPT_USER_KEY)
+  } catch { /* ignore */ }
+}
+
 export type ManuscriptState = {
   id: string | null
   title: string
