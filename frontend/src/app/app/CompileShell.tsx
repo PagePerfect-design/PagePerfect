@@ -1579,7 +1579,6 @@ function LaunchOverlay({
   onDownload,
   lastDownloadWatermarked,
   userTier,
-  userCredits,
   publisherWindowEnd,
 }: {
   title: string
@@ -1597,7 +1596,6 @@ function LaunchOverlay({
   onDownload: (platform: Platform) => void
   lastDownloadWatermarked: boolean
   userTier: string
-  userCredits: number
   publisherWindowEnd: string | null
 }) {
   const PAPER_STOCK_LABELS: Record<PaperStock, string> = { white: 'white paper', cream: 'cream paper' }
@@ -1969,7 +1967,6 @@ function LaunchOverlay({
                   />
                   <span className="font-mono text-[10px] leading-relaxed text-[#111111]/50">
                     I accept this preflight report and authorize the export.
-                    {userCredits > 0 && !hasTier(userTier, 'publisher') && ' This will consume 1 PDF credit.'}
                   </span>
                 </label>
               </div>
@@ -1982,7 +1979,7 @@ function LaunchOverlay({
           {exportFormat === 'pdf' ? (
             (() => {
               // Paid users see the contract gate; free/watermarked users download directly
-              const isPaidDownload = hasTier(userTier, 'publisher') || (userCredits > 0 && userTier === 'drafter')
+              const isPaidDownload = hasTier(userTier, 'publisher')
               if (isPaidDownload && !showContract) {
                 return (
                   <button
@@ -2074,15 +2071,9 @@ function LaunchOverlay({
           <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-3 py-2 text-center">
             <p className="font-mono text-[10px] text-amber-700/70">
               Free tier — PDF includes watermark.{' '}
-              <a href="/pricing" className="underline hover:text-amber-800">Upgrade</a>{' '}
-              or buy a single clean PDF for $2.99.
+              <a href="/pricing" className="underline hover:text-amber-800">Upgrade</a> for clean exports.
             </p>
           </div>
-        )}
-        {userTier === 'drafter' && userCredits > 0 && (
-          <p className="mt-2 text-center font-mono text-[10px] text-emerald-600/60">
-            {userCredits} clean PDF credit{userCredits !== 1 ? 's' : ''} remaining
-          </p>
         )}
         {publisherWindowEnd && new Date(publisherWindowEnd) > new Date() && (
           <p className="mt-2 text-center font-mono text-[10px] text-emerald-600/60">
@@ -2361,7 +2352,7 @@ export default function CompileShell() {
   const [manuscriptList, setManuscriptList] = useState<ManuscriptListItem[]>([])
   const [manuscriptListLoading, setManuscriptListLoading] = useState(false)
 
-  const { session, user, tier, pdfCredits, publisherWindowEnd, refreshUser } = useAuth()
+  const { session, user, tier, publisherWindowEnd, refreshUser } = useAuth()
   const {
     manuscriptId,
     loadManuscript,
@@ -3075,7 +3066,6 @@ export default function CompileShell() {
             onDownload={handleDownload}
             lastDownloadWatermarked={lastDownloadWatermarked}
             userTier={tier}
-            userCredits={pdfCredits}
             publisherWindowEnd={publisherWindowEnd}
           />
         )}

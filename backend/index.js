@@ -574,7 +574,6 @@ async function verifyUserTier(req) {
         return {
           userId: record.id,
           tier: effectiveTier,
-          credits: Number(record.pdf_credits) || 0,
           publisherWindowEnd,
         };
       }
@@ -645,33 +644,6 @@ app.post('/api/stripe/webhook',
       }
     }
 
-    // Helper: increment pdf_credits for a user (Single tier purchase)
-    // Uses PocketBase's built-in `pdf_credits+` syntax for atomic increment,
-    // avoiding the read-then-write race condition.
-    async function incrementCredits(userId, customerId) {
-      if (!isPocketBaseConfigured) {
-        log.error({ module: 'stripe' }, 'PocketBase not configured — cannot increment credits');
-        return;
-      }
-      try {
-        const patchResp = await pbFetch(`/api/collections/users/records/${userId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            'pdf_credits+': 1,
-            stripe_customer_id: customerId,
-          }),
-        });
-        if (patchResp && patchResp.ok) {
-          const updated = await patchResp.json();
-          log.info({ module: 'stripe', userId, totalCredits: updated.pdf_credits }, 'User credited +1 PDF');
-        } else {
-          log.error({ module: 'stripe', status: patchResp?.status }, 'Failed to increment credits');
-        }
-      } catch (err) {
-        log.error({ module: 'stripe', err: err.message }, 'Failed to increment credits');
-      }
-    }
-
     // Helper: activate 14-day Publisher export window for a user
     // If the user already has an active window, extends from the current end date.
     async function activatePublisherWindow(userId, customerId) {
@@ -719,10 +691,7 @@ app.post('/api/stripe/webhook',
         const userId = pi.metadata?.user_id;
         log.info({ module: 'stripe', customer: pi.customer, tier, userId }, 'PaymentIntent succeeded');
 
-        if (userId && tier === 'single') {
-          // Single PDF — $2.99 one-time: increment pdf_credits by 1
-          await incrementCredits(userId, pi.customer);
-        } else if (userId && tier === 'publisher') {
+        if (userId && tier === 'publisher') {
           // Publisher — $19.99 per-manuscript: activate 14-day export window
           await activatePublisherWindow(userId, pi.customer);
         } else if (userId && tier) {
@@ -838,22 +807,7 @@ app.post('/api/stripe/create-payment', async (req, res) => {
       }
     }
 
-    if (tier === 'single') {
-      // Single PDF — $2.99 one-time PaymentIntent (one clean export credit)
-      const amount = 299; // $2.99 in cents
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency: 'usd',
-        customer: customerId,
-        metadata: { tier, user_id },
-        automatic_payment_methods: { enabled: true },
-      });
-
-      res.json({
-        clientSecret: paymentIntent.client_secret,
-        customerId,
-      });
-    } else if (tier === 'publisher') {
+    if (tier === 'publisher') {
       // Publisher — $19.99 one-time PaymentIntent per manuscript (14-day window)
       const amount = 1999; // $19.99 in cents
       const paymentIntent = await stripe.paymentIntents.create({
@@ -1859,21 +1813,6 @@ app.post('/api/compile', compileLimiter, async (req, res) => {
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     res.setHeader('Cache-Control', 'no-store');
 
-    // Credit deduction for sync path — atomic decrement to prevent race conditions
-    if (result.isDownload && result.userId && result.userCredits > 0
-      && !hasTier(result.userTier, 'publisher') && isPocketBaseConfigured) {
-      try {
-        const patchResp = await pbFetch(`/api/collections/users/records/${result.userId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ 'pdf_credits-': 1 }),
-        });
-        if (patchResp && patchResp.ok) {
-          const updated = await patchResp.json();
-          res.setHeader('X-PP-Credits-Remaining', String(updated.pdf_credits));
-        }
-      } catch (e) { log.error({ module: 'compile:sync', err: e.message }, 'Credit deduction failed'); }
-    }
-
     const stream = fs.createReadStream(result.pdfPath);
     stream.on('close', () => {
       fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
@@ -1978,27 +1917,6 @@ app.get('/api/compile/result/:id', async (req, res) => {
   if (!result.pdfPath || !fs.existsSync(result.pdfPath)) {
     jobResults.delete(id);
     return res.status(410).json({ error: 'expired', message: 'Result has expired. Please recompile.' });
-  }
-
-  // ── Credit deduction at delivery (A3) — only once, atomic ──
-  if (result.isDownload && result.userId && !result._creditDeducted
-    && result.userCredits > 0 && !hasTier(result.userTier, 'publisher')
-    && isPocketBaseConfigured) {
-    try {
-      const freshUser = await verifyUserTier(req);
-      if (freshUser.credits > 0) {
-        const patchResp = await pbFetch(`/api/collections/users/records/${result.userId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ 'pdf_credits-': 1 }),
-        });
-        result._creditDeducted = true;
-        if (patchResp && patchResp.ok) {
-          const updated = await patchResp.json();
-          res.setHeader('X-PP-Credits-Remaining', String(updated.pdf_credits));
-        }
-        log.info({ module: 'result', userId: result.userId }, 'Deducted 1 credit');
-      }
-    } catch (e) { log.error({ module: 'result', err: e.message }, 'Credit deduction failed'); }
   }
 
   // ── Stream PDF ──

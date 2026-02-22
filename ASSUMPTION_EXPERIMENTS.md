@@ -54,13 +54,13 @@ After .docx upload, Pandoc converts to Markdown and users land in a code editor.
 ## Assumption 3: "The watermark-then-upgrade model drives conversions"
 
 **Evidence in codebase:**
-- `CompileShell.tsx:2748` — Watermark detected after download via response header
-- `CompileShell.tsx:2073-2081` — Post-download banner with "$2.99" option
-- `CompileShell.tsx:2078` — "$2.99 single clean PDF" has NO payment flow behind it
+- `CompileShell.tsx` — Watermark detected after download via response header
+- `CompileShell.tsx` — Post-download banner points to /pricing upgrade
 - `watermark.js` — TikZ overlay, 8% opacity, server-side
+- ~~`$2.99 single clean PDF` option~~ **REMOVED** — dead code cleaned out
 
 **Why you're probably wrong:**
-Punitive freemium: user does all the work, output is degraded at the last step. Watermark is invisible during editing. User discovers it after download, sees a $2.99 option that doesn't work (no Stripe flow exists), lands on pricing page with $19.99/$199 options only. Feels tricked.
+Punitive freemium: user does all the work, output is degraded at the last step. Watermark is invisible during editing. User discovers it after download, lands on pricing page with $19.99/$199 options. Feels tricked.
 
 **7-day experiment:**
 
@@ -68,8 +68,7 @@ Punitive freemium: user does all the work, output is degraded at the last step. 
 |-----|--------|
 | 1 | Track funnel: download → see watermark banner → click Upgrade → reach /pricing → start payment. |
 | 2 | Variant B: show watermark warning above preview iframe from first compile. |
-| 3 | Implement $2.99 flow or remove the copy. No ghost options. |
-| 4–7 | A/B test. If upfront variant converts same or better, surprise model destroys trust for zero gain. |
+| 3–7 | A/B test. If upfront variant converts same or better, surprise model destroys trust for zero gain. |
 
 **Kill signal:** If watermark banner → pricing click-through < 5%, the punitive model is dead. Switch to value-add (free = good, paid = EPUB + custom fonts + batch).
 

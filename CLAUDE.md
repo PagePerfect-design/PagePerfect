@@ -796,7 +796,7 @@ Six backend modules provide manuscript and output quality analysis. All return s
 
 ### Critical (blocks credibility)
 
-- **Marketing/delivery honesty:** Landing page says "KDP-ready PDF" but free tier exports watermarked (unusable for KDP). User discovers watermark AFTER download, not before. "$2.99 single clean PDF" text exists in UI (`CompileShell.tsx:2077`) but no payment flow is implemented.
+- **Marketing/delivery honesty:** Landing page says "KDP-ready PDF" but free tier exports watermarked (unusable for KDP). User discovers watermark AFTER download, not before.
 - **Preflight doesn't block export:** Failing preflight checks don't prevent download (`CompileShell.tsx:1661-1662`). Users can export non-compliant PDFs.
 - **Compile log analysis orphaned:** `analyzeCompileLog()` in `book-engineering.js:296-352` and `generateTypographicReport()` in `typography-assurance.js:301-344` are defined but never called from the compile worker.
 - ~~**Privacy policy contradiction:**~~ **RESOLVED** — Manuscripts are now session-scoped (purged on sign-out + 24h backend sweeper). Privacy policy Clause 01 updated to accurately describe session storage.

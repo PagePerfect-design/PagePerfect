@@ -38,7 +38,7 @@ The board-level assessment graded PagePerfect a **D** based on assumptions about
 | 1 | "Publication-quality is undefined and unmeasured" | **PARTIALLY TRUE** | Preflight exists (`publishing.js:63-234`) with pass/fail checks for KDP/Ingram/Lulu. Typography scoring exists (`typography-assurance.js`) with 0-100 grades. Print QA exists (`print-qa.js`) with threshold checks. **Gap:** These are advisory, not enforced at export. No automated "first-upload success rate" metric. |
 | 2 | "Positioned to lose to free alternatives" | **TRUE** | Free tier exports watermarked PDFs. Marketing says "KDP-ready" but free output isn't uploadable. Reedsy exports clean PDF/X for free. **However:** PagePerfect has 15 production templates, live preview, and a preflight pipeline that Reedsy lacks. The wedge exists but isn't articulated. |
 | 3 | "Wrong engine (XeLaTeX)" | **FALSE** | PagePerfect uses **LuaLaTeX** (`compile-worker.js:391`: `--pdf-engine=lualatex`). The Dockerfile installs `texlive-luatex` (line 30). This is the assessment's own recommended engine for tagged PDF and accessibility. The entire criticism is based on a wrong assumption. |
-| 4 | "Pricing is incoherent" | **PARTIALLY TRUE** | Three tiers (Free/\$19.99/\$199) are well-defined in code. Per-manuscript pricing maps to usage. **Gap:** "\$2.99 single clean PDF" is mentioned in UI (`CompileShell.tsx:2077`) but has no payment flow. Compile quality gating contradicts pricing page claims. |
+| 4 | "Pricing is incoherent" | **PARTIALLY TRUE** | Three tiers (Free/\$19.99/\$199) are well-defined in code. Per-manuscript pricing maps to usage. **Gap:** Compile quality gating contradicts pricing page claims. |
 | 5 | "Templates are not a moat" | **TRUE** | Templates are good but not defensible. 15 `.latex` files with font embedding, microtype, heading variants. No versioning, no regression tests, no proprietary compilation knowledge that accumulates. |
 
 ### UX/UI Critic Claims
@@ -88,9 +88,8 @@ The board-level assessment graded PagePerfect a **D** based on assumptions about
 **1. Marketing/delivery honesty gap**
 - Landing page promises "KDP-ready PDF" but free tier exports watermarked (unusable for KDP)
 - User discovers watermark AFTER downloading, not before
-- "$2.99 single clean PDF" mentioned in UI but no payment flow exists
 - **Fix:** Update landing copy to "Free to preview, $19.99 to publish." Show watermark warning BEFORE download.
-- **Files:** `Hero.tsx`, `FinalCTA.tsx`, `CompileShell.tsx:2072-2086`
+- **Files:** `Hero.tsx`, `FinalCTA.tsx`, `CompileShell.tsx`
 
 **2. Preflight doesn't block export**
 - Preflight checks exist and work, but failing preflight doesn't prevent download
@@ -187,7 +186,7 @@ The board-level assessment graded PagePerfect a **D** based on assumptions about
 | P0 | Block export on hard preflight failures | `CompileShell.tsx:1661-1662` | 4h |
 | P0 | Wire `analyzeCompileLog()` into compile worker | `compile-worker.js`, `book-engineering.js` | 8h |
 | P1 | Fix pricing page accuracy (quality gating, template access) | `pricing/page.tsx` | 4h |
-| P1 | Remove "$2.99 clean PDF" UI text (no payment flow) | `CompileShell.tsx:2077` | 1h |
+| P1 | ~~Remove "$2.99 clean PDF" UI text~~ **DONE** | `CompileShell.tsx` | — |
 | P1 | Add build manifest to every export (engine versions, template hash) | `compile-worker.js`, `provenance.js` | 8h |
 
 ### Days 31-60: Harden and prove
@@ -261,7 +260,7 @@ A second assessment graded PagePerfect **C+** with different concerns. This sect
 | # | Claim | Verdict | Evidence |
 |---|-------|---------|----------|
 | 1 | "Moat-less middle" | **VALID** | The competitive wedge isn't articulated. However, the "compliance engine" fix is already partially built — preflight validates KDP/Ingram specs, grid system locks geometry to platform requirements. Needs to be the *product identity*, not a hidden feature. |
-| 2 | "$2.99 single export is a support nightmare" | **VALID** | The $2.99 flow is mentioned in UI text but has no payment implementation. Should be removed or replaced with a time-based pass. |
+| 2 | "$2.99 single export is a support nightmare" | ~~**VALID**~~ **RESOLVED** | The $2.99 flow has been removed from both frontend and backend code. |
 | 3 | "$199 lifetime is a liability" | **PARTIALLY VALID** | Render costs are CPU-bound, not GPU. BullMQ concurrency is capped at 3 workers. A Studio user doing 50 exports/month costs ~$2 in compute. The real risk is at scale (>1000 Studio users), not now. |
 | 4 | "Missing POD integration" | **PARTIALLY TRUE** | Lulu integration exists (`lulu.js`) with cost estimate, print job creation, and status tracking endpoints. Webhook handler exists but PocketBase status sync is incomplete. It's 80% built, not missing. |
 | 5 | "Müller-Brockmann niche too small" | **VALID** | Templates are named by design philosophy (Symphony, Avant-Garde, Chronicle), not by user intent. Genre-based naming would reduce friction. However, the editor DOES auto-detect genre and recommend templates (`CompileShell.tsx:283-346`). |
