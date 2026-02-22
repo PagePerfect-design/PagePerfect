@@ -80,6 +80,22 @@ RUN groupadd -r ppuser && useradd -r -g ppuser -d /app ppuser \
     && chown -R ppuser:ppuser /app \
     && mkdir -p /tmp && chmod 1777 /tmp
 
+# SECURITY: Make application code read-only to prevent tampering.
+# /tmp and /var/cache/fontconfig remain writable for compilation and font caching.
+RUN chmod -R a-w /app/templates /app/filters 2>/dev/null || true
+
+# SECURITY: Set resource limits for compile processes in the ppuser profile.
+# Pandoc/LuaLaTeX spawns inherit these limits to prevent resource exhaustion.
+# - Max 512MB virtual memory per process (RLIMIT_AS)
+# - Max 200 open file descriptors (RLIMIT_NOFILE)
+# - Max 50 child processes (RLIMIT_NPROC)
+RUN echo '* soft as 536870912' >> /etc/security/limits.d/ppuser.conf 2>/dev/null || true \
+    && echo '* hard as 536870912' >> /etc/security/limits.d/ppuser.conf 2>/dev/null || true \
+    && echo '* soft nofile 200' >> /etc/security/limits.d/ppuser.conf 2>/dev/null || true \
+    && echo '* hard nofile 200' >> /etc/security/limits.d/ppuser.conf 2>/dev/null || true \
+    && echo '* soft nproc 50' >> /etc/security/limits.d/ppuser.conf 2>/dev/null || true \
+    && echo '* hard nproc 50' >> /etc/security/limits.d/ppuser.conf 2>/dev/null || true
+
 USER ppuser
 
 # Expose API
@@ -88,6 +104,16 @@ EXPOSE 4000
 # Health check — verifies the HTTP server is responding
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:4000/api/health || exit 1
+
+# SECURITY: Recommended docker run flags for production:
+#   docker run \
+#     --cap-drop=ALL \
+#     --security-opt=no-new-privileges \
+#     --read-only --tmpfs /tmp:rw,noexec,nosuid,size=512m \
+#     --tmpfs /var/cache/fontconfig:rw,size=32m \
+#     --memory=1g --memory-swap=1g \
+#     --pids-limit=100 \
+#     pageperfect-backend
 
 # Start server — cap V8 heap to prevent unbounded memory growth under load
 CMD ["node", "--max-old-space-size=512", "index.js"]

@@ -52,6 +52,19 @@ const {
 
 const gridSystem = new GridSystem();
 const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000);
+const MAX_STDERR_BYTES = 256 * 1024; // 256KB — cap stderr accumulation from Pandoc
+
+// SECURITY: Minimal environment for spawned Pandoc/LuaLaTeX processes.
+// Strips all backend secrets (Stripe, PocketBase, Redis) that Pandoc doesn't need.
+const SAFE_SPAWN_ENV = {
+  PATH: process.env.PATH,
+  HOME: process.env.HOME || '/app',
+  TMPDIR: os.tmpdir(),
+  LANG: process.env.LANG || 'en_US.UTF-8',
+  TEXMFHOME: process.env.TEXMFHOME || '',
+  TEXMFVAR: process.env.TEXMFVAR || '',
+  SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
+};
 
 // ================================================================
 // PocketBase auth — re-verified at compile time via admin token
@@ -416,11 +429,12 @@ async function processCompileJob(job, templateRegistry) {
   const startTs = Date.now();
   const result = await new Promise((resolve) => {
     let proc;
-    try { proc = spawn('pandoc', args, { cwd: tmpBase }); }
+    try { proc = spawn('pandoc', args, { cwd: tmpBase, env: SAFE_SPAWN_ENV }); }
     catch (e) { resolve({ ok: false, error: 'spawn_failed', message: String(e) }); return; }
 
     let stderr = '';
-    proc.stderr.on('data', (d) => { stderr += d.toString(); });
+    let stderrBytes = 0;
+    proc.stderr.on('data', (d) => { if (stderrBytes < MAX_STDERR_BYTES) { stderr += d.toString(); stderrBytes += d.length; } });
     proc.on('error', (e) => resolve({ ok: false, error: 'spawn_failed', message: String(e) }));
 
     let timedOut = false;
@@ -475,6 +489,21 @@ async function processCompileJob(job, templateRegistry) {
     log.warn({ err: err.message }, 'Typography report generation failed');
   }
 
+  // Create export snapshot for provenance audit trail
+  let exportSnapshot = null;
+  if (buildMeta) {
+    try {
+      exportSnapshot = provenance.createExportSnapshot(buildMeta, {
+        success: true,
+        compileTimeMs: result.elapsed,
+        preflightPassed: null, // preflight runs client-side separately
+        lintIssueCount: compileLog.overfullBoxes.length + compileLog.underfullBoxes.length,
+      });
+    } catch (err) {
+      log.warn({ err: err.message }, 'Export snapshot creation failed');
+    }
+  }
+
   return {
     success: true,
     pdfPath: finalPdfPath,
@@ -492,6 +521,7 @@ async function processCompileJob(job, templateRegistry) {
     } : null,
     warnings,
     outputFormat: finalFormat,
+    exportSnapshot,
     userId, userTier,
     isDownload,
     template: tplKey,
@@ -530,10 +560,11 @@ function compileEpub(tmpBase, mdPath, safeTitle, safeMode) {
   ];
   return new Promise((resolve) => {
     let proc;
-    try { proc = spawn('pandoc', args, { cwd: tmpBase }); }
+    try { proc = spawn('pandoc', args, { cwd: tmpBase, env: SAFE_SPAWN_ENV }); }
     catch (e) { try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {} resolve({ success: false, error: 'spawn_failed', message: String(e) }); return; }
     let stderr = '';
-    proc.stderr.on('data', (d) => { stderr += d.toString(); });
+    let stderrBytes = 0;
+    proc.stderr.on('data', (d) => { if (stderrBytes < MAX_STDERR_BYTES) { stderr += d.toString(); stderrBytes += d.length; } });
     proc.on('error', () => { try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {} resolve({ success: false, error: 'spawn_failed' }); });
     let timedOut = false;
     const kill = setTimeout(() => { timedOut = true; try { proc.kill('SIGKILL'); } catch {} }, COMPILE_TIMEOUT_MS);

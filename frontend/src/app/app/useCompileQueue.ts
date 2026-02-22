@@ -238,12 +238,13 @@ export function useCompileQueue({
 
           if (statusData.status === 'completed') {
             // Capture quality metrics from status response
-            if (statusData.typographyReport || statusData.compileLog) {
+            if (statusData.typographyReport || statusData.compileLog || statusData.buildId) {
               setQuality({
                 typographyScore: statusData.typographyReport?.score ?? null,
                 typographyGrade: statusData.typographyReport?.grade ?? null,
                 overfullBoxes: statusData.compileLog?.overfull ?? 0,
                 underfullBoxes: statusData.compileLog?.underfull ?? 0,
+                buildId: statusData.buildId ?? null,
               })
             }
 

@@ -8,7 +8,7 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "docker:build": "docker build -t pageperfect-backend .",
-    "docker:run": "docker run --rm -p 4000:4000 -e PORT=4000 pageperfect-backend",
+    "docker:run": "docker run --rm -p 4000:4000 -e PORT=4000 --cap-drop=ALL --security-opt=no-new-privileges --read-only --tmpfs /tmp:rw,noexec,nosuid,size=512m --tmpfs /var/cache/fontconfig:rw,size=32m --memory=1g --pids-limit=100 pageperfect-backend",
     "test": "jest --verbose",
     "test:ci": "jest --ci --coverage --forceExit"
   },

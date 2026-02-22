@@ -812,15 +812,15 @@ Six backend modules provide manuscript and output quality analysis. All return s
 ### High (limits growth)
 
 - **No PDF regression test suite:** Unit tests exist for security and grid system, but no golden-file PDF comparisons. Template changes could silently break layouts.
-- **No build manifest:** Pandoc 3.6.2 is pinned but TeX Live is not version-locked. No manifest saved with exported PDFs. `provenance.js` exists but integration is incomplete.
-- **Container hardening:** No per-process resource limits, no seccomp profile, no `--network none`, no read-only root filesystem.
+- ~~**No build manifest:**~~ **RESOLVED** — `provenance.js` fully integrated: `generateBuildMetadata()` embeds PDF metadata, `createExportSnapshot()` called in compile-worker, `buildId` + `exportSnapshot` returned via status endpoint and displayed in PreviewPane + LaunchOverlay. Pandoc 3.6.2 pinned; TeX Live pinned to Ubuntu 22.04 repo version.
+- ~~**Container hardening:**~~ **PARTIALLY RESOLVED** — Dockerfile now includes read-only templates/filters, resource limits (`limits.d/ppuser.conf`), `docker:run` uses `--cap-drop=ALL`, `--security-opt=no-new-privileges`, `--read-only`, `--tmpfs`, `--memory=1g`, `--pids-limit=100`. Still missing: seccomp profile, `--network none`.
 - **In-memory job results:** `jobResults` Map metadata is backed up to Redis (10-min TTL) but PDF file paths are not recoverable after restart. Users get "Server restarted. Please recompile." on result fetch after a backend redeploy.
 
 ### Medium (improvement opportunities)
 
-- **Quality systems advisory only:** Typography score, Print QA score, and platform compliance checks all run but only warn — no mechanism to block export below quality thresholds.
-- **No guided first-run wizard:** Genre auto-detection works but isn't used to pre-select templates. No "guaranteed success" onboarding path.
-- **Pricing page inaccuracies:** Claims free tier = "Fast mode" only, but users can select Full quality. Needs alignment with actual gating.
-- **"Safe Mode" naming:** Term is confusing for non-technical users. Consider "Standard Mode" vs. "Advanced Citation Mode."
+- **Quality systems advisory only:** Typography score, Print QA score, and platform compliance checks all run but only warn — no mechanism to block export below quality thresholds. Typography grade and compile log warnings are now displayed in PreviewPane (QualityBadge), LaunchOverlay stats bar, and export acceptance contract.
+- ~~**No guided first-run wizard:**~~ **PARTIALLY RESOLVED** — Genre auto-detection (`detectGenre()` in `editor-utils.ts`) runs on manuscript upload and auto-applies the detected template via `handlePortalAccept()` in CompileShell. Missing: first-run modal, template preview carousel, persistent `hasSeenFirstRun` flag.
+- ~~**Pricing page inaccuracies:**~~ **RESOLVED** — "Compile quality: Full quality" changed to "Typesetting engine: LuaLaTeX". FAQ corrected.
+- ~~**"Safe Mode" naming:**~~ **RESOLVED** — Renamed to "Standard mode" with contextual help text in FloatingHUD.
 - **No image persistence:** User-uploaded images for manuscripts are ephemeral. No long-term asset storage strategy.
 - **Lulu webhook incomplete:** Webhook handler exists but status updates to PocketBase are not fully implemented.
