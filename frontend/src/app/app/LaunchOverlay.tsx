@@ -39,6 +39,7 @@ export default function LaunchOverlay({
   userTier,
   publisherWindowEnd,
   quality,
+  targetPlatform,
 }: {
   title: string
   template: TemplateKey
@@ -57,9 +58,10 @@ export default function LaunchOverlay({
   userTier: string
   publisherWindowEnd: string | null
   quality: CompileQuality
+  targetPlatform?: Platform | null
 }) {
   const PAPER_STOCK_LABELS: Record<PaperStock, string> = { white: 'white paper', cream: 'cream paper' }
-  const [platform, setPlatform] = useState<Platform>('kdp')
+  const [platform, setPlatform] = useState<Platform>(targetPlatform || 'kdp')
   const [paper, setPaper] = useState<PaperStock>('white')
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf')
   const [epubLoading, setEpubLoading] = useState(false)
@@ -547,15 +549,32 @@ export default function LaunchOverlay({
           </div>
         )}
 
-        {/* Pre-download watermark notice — visible before download for free tier */}
+        {/* Pre-download transparency gate — clearly explains what free tier gets */}
         {!hasTier(userTier, 'publisher') && exportFormat === 'pdf' && (
-          <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-3 py-2.5 text-center">
-            <p className="font-mono text-[10px] font-medium text-amber-700/80">
-              Free tier — exported PDF will include a watermark.
-            </p>
-            <p className="mt-1 font-mono text-[10px] text-amber-700/50">
-              <a href="/pricing" className="underline hover:text-amber-800">Upgrade to Publisher</a> for clean, print-ready exports.
-            </p>
+          <div className="mt-3 border border-amber-500/20 bg-amber-500/[0.04] px-4 py-3">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600/70" />
+              <div>
+                <p className="font-mono text-[11px] font-semibold text-amber-800/80">
+                  Free Preview — Watermark Included
+                </p>
+                <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-amber-700/60">
+                  This PDF includes a light watermark on every page. It&apos;s designed for
+                  proofing your layout, not for uploading to KDP or IngramSpark.
+                </p>
+                <div className="mt-2.5 flex items-center gap-4">
+                  <a
+                    href="/pricing"
+                    className="inline-flex h-7 items-center bg-amber-600 px-4 font-mono text-[10px] uppercase tracking-[0.08em] text-white transition-colors hover:bg-amber-700"
+                  >
+                    Remove watermark — $19.99
+                  </a>
+                  <span className="font-mono text-[9px] text-amber-700/40">
+                    One manuscript &middot; 14-day re-export window
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         {/* Post-download watermark confirmation */}

@@ -10,13 +10,13 @@ export function Hero() {
           <h1 className="font-display text-[clamp(3rem,8vw,7rem)] font-extrabold leading-[0.85] tracking-tighter text-[#111111]">
             Your book.
             <br />
-            Print-ready tonight.
+            KDP-ready tonight.
           </h1>
 
           <p className="mt-8 max-w-md font-body text-sm leading-[1.7] text-[#111111]/50 md:text-base md:leading-[1.7]">
-            Paste your manuscript. Pick a trim size.
-            Preview your book for free &mdash; export KDP-ready PDFs from $19.99.
-            No LaTeX knowledge, no InDesign, no fighting Word.
+            Paste your manuscript. Pick a trim size. Get a print-compliant PDF
+            that passes Amazon KDP and IngramSpark review on the first upload.
+            Preview free &mdash; export from $19.99.
           </p>
 
           <div className="mt-10 flex flex-col items-start gap-6">

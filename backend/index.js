@@ -42,7 +42,7 @@ let compileQueue = null;
 let compileWorker = null;
 let compileQueueEvents = null;
 
-// In-memory job results map
+// In-memory job results map (primary) + Redis backup (survives restarts)
 const jobResults = new Map();
 const RESULT_REDIS_TTL = 600; // 10 minutes
 
@@ -50,10 +50,10 @@ function storeJobResult(id, value) {
   value._storedAt = Date.now();
   jobResults.set(id, value);
   if (redisHealthy && redis) {
+    // Store full metadata to Redis (including pdfPath for recovery)
     const redisValue = { ...value };
-    delete redisValue.pdfPath;
-    delete redisValue.tmpBase;
-    redisValue._redisOnly = true;
+    // Keep pdfPath in Redis so we can check if the file still exists on recovery
+    delete redisValue.tmpBase; // tmpBase is local-only
     redis.setex(`pp:result:${id}`, RESULT_REDIS_TTL, JSON.stringify(redisValue)).catch(() => {});
   }
 }
@@ -65,7 +65,25 @@ async function getJobResult(id) {
   try {
     const raw = await redis.get(`pp:result:${id}`);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    // Check if the PDF file still exists on disk (may be cleaned after restart)
+    if (parsed.pdfPath && parsed.success) {
+      try {
+        await fsp.access(parsed.pdfPath);
+        // File exists — promote back to in-memory for faster subsequent access
+        parsed._recoveredFromRedis = true;
+        jobResults.set(id, parsed);
+        return parsed;
+      } catch {
+        // File was cleaned up (e.g., after restart) — return expired signal
+        parsed._redisOnly = true;
+        return parsed;
+      }
+    }
+    // Non-success results or results without pdfPath
+    if (!parsed.success) return parsed;
+    parsed._redisOnly = true;
+    return parsed;
   } catch { return null; }
 }
 
@@ -133,6 +151,60 @@ async function sweepOrphanedTmpDirs() {
 sweepOrphanedTmpDirs();
 const diskSweepInterval = setInterval(sweepOrphanedTmpDirs, ORPHAN_MAX_AGE_MS);
 diskSweepInterval.unref();
+
+// ── Disk Space Sentinel ──
+// Monitors /tmp usage and triggers emergency sweep if above threshold
+const DISK_SPACE_CHECK_INTERVAL_MS = 5 * 60 * 1000; // Check every 5 minutes
+const DISK_SPACE_EMERGENCY_THRESHOLD = 0.80; // 80% usage triggers emergency sweep
+
+async function checkDiskSpace() {
+  try {
+    const tmpDir = os.tmpdir();
+    const { exec } = require('child_process');
+    const dfOutput = await new Promise((resolve, reject) => {
+      exec(`df -P "${tmpDir}" | tail -1`, { timeout: 5000 }, (err, stdout) => {
+        if (err) return reject(err);
+        resolve(stdout.trim());
+      });
+    });
+    // Parse df output: Filesystem 1024-blocks Used Available Capacity Mounted-on
+    const parts = dfOutput.split(/\s+/);
+    if (parts.length >= 5) {
+      const usagePercent = parseInt(parts[4]) / 100;
+      if (usagePercent >= DISK_SPACE_EMERGENCY_THRESHOLD) {
+        console.warn(`[disk-sentinel] /tmp usage at ${(usagePercent * 100).toFixed(0)}% — triggering emergency sweep`);
+        // Emergency: sweep ALL temp dirs regardless of age
+        const entries = await fsp.readdir(tmpDir);
+        let swept = 0;
+        for (const entry of entries) {
+          if (!PP_TMP_PREFIXES.some(p => entry.startsWith(p))) continue;
+          const fullPath = path.join(tmpDir, entry);
+          try {
+            await fsp.rm(fullPath, { recursive: true, force: true });
+            swept++;
+          } catch { /* best-effort */ }
+        }
+        // Also clear expired in-memory results to free file handles
+        const now = Date.now();
+        for (const [id, res] of jobResults) {
+          if (res._storedAt && now - res._storedAt > 2 * 60 * 1000) { // 2 min in emergency
+            if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {});
+            deleteJobResult(id);
+          }
+        }
+        if (swept > 0) console.warn(`[disk-sentinel] Emergency swept ${swept} temp dir(s)`);
+      }
+    }
+  } catch (err) {
+    // Non-fatal — disk check is best-effort
+    log.debug({ err: err.message }, 'Disk space check failed (non-fatal)');
+  }
+}
+
+const diskSpaceSentinelInterval = setInterval(checkDiskSpace, DISK_SPACE_CHECK_INTERVAL_MS);
+diskSpaceSentinelInterval.unref();
+// Initial check after 30 seconds
+setTimeout(checkDiskSpace, 30_000);
 
 // ── Manuscript Expiry Sweeper ──
 const MANUSCRIPT_MAX_AGE_MS = 24 * 60 * 60 * 1000;

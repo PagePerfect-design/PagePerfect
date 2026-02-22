@@ -1,35 +1,35 @@
 const CAPABILITIES = [
   {
+    category: 'Compliance',
+    items: [
+      'Amazon KDP — spine width, gutter, trim validation',
+      'IngramSpark — PDF/X-1a, ICC profile, CMYK output',
+      'Lulu xPress — API integration, cost estimation',
+      '19 page sizes validated against platform requirements',
+    ],
+  },
+  {
+    category: 'Quality',
+    items: [
+      'Paragraph-level line break optimization',
+      'Widow/orphan control and hyphenation rules',
+      'Pre-flight validation blocks non-compliant exports',
+      'Embedded fonts — no substitution, no missing glyphs',
+    ],
+  },
+  {
     category: 'Output',
     items: [
       'PDF/X-1a compliant output for offset printing',
-      'Embedded fonts — no substitution, no missing glyphs',
       'Correct bleed, trim marks, and safe zones',
       'Ghostscript post-processing for IngramSpark/offset',
-    ],
-  },
-  {
-    category: 'Typography',
-    items: [
-      'Baseline grid conformance on every page',
-      'Golden-ratio heading scale (2.25× / 1.75× / 1.375×)',
-      'Paragraph-level line break optimization',
-      'Widow/orphan control and hyphenation rules',
-    ],
-  },
-  {
-    category: 'Platform',
-    items: [
-      'Amazon KDP — spine width, gutter, trim validation',
-      'IngramSpark — PDF/X-1a, ICC profile compliance',
-      'Lulu xPress — API integration, cost estimation',
-      '19 page sizes from Mass Market to Crown Quarto',
+      'Platform-specific export pipelines per distributor',
     ],
   },
   {
     category: 'Engine',
     items: [
-      'LuaLaTeX compilation with 45-second timeout',
+      'LuaLaTeX — the same engine used by academic publishers',
       'Pandoc Markdown conversion with citeproc',
       'BibTeX/CSL citation and bibliography processing',
       'DOCX-to-Markdown conversion via Pandoc',
@@ -38,12 +38,12 @@ const CAPABILITIES = [
 ]
 
 const SPECS = [
-  { label: 'Compiler', value: 'LuaLaTeX (TeX Live)' },
+  { label: 'Engine', value: 'LuaLaTeX (TeX Live)' },
   { label: 'Converter', value: 'Pandoc 3.x' },
   { label: 'Post-proc', value: 'Ghostscript 10.x' },
-  { label: 'Grid', value: 'Müller-Brockmann (7 presets)' },
-  { label: 'Baselines', value: '11pt (trade) / 12pt (academic)' },
-  { label: 'Scale', value: '2.25× / 1.75× / 1.375× / 1× / 0.875×' },
+  { label: 'Platforms', value: 'KDP / IngramSpark / Lulu / Offset' },
+  { label: 'Validation', value: 'Bleed, gutter, trim, spine, margins' },
+  { label: 'Formats', value: 'PDF, PDF/X-1a, EPUB 3' },
   { label: 'Max input', value: '2 MB Markdown / 10 MB DOCX' },
   { label: 'Timeout', value: '45,000 ms' },
 ]
@@ -56,14 +56,17 @@ export function Engineering() {
         {/* ── Header ── */}
         <div className="mb-12 max-w-3xl md:mb-16">
           <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
-            Engineering
+            Compliance infrastructure
           </p>
           <h2 className="font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
-            Industrial grade.
+            KDP-validated.
+            <br className="hidden sm:block" />
+            IngramSpark-ready.
           </h2>
           <p className="mt-5 max-w-lg font-body text-sm leading-[1.7] text-[#111111]/45">
             Not a wrapper around a PDF library. The same typesetting engine
-            used by academic publishers &mdash; automated so you don&apos;t need to learn it.
+            used by academic publishers &mdash; with platform-specific validation built
+            into every export.
           </p>
         </div>
 

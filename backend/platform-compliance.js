@@ -232,9 +232,10 @@ function validatePlatform(opts, gridSystem) {
     const isPdfA = spec.pdfFormat.includes('PDF/A');
     checks.push({
       name: 'PDF format',
-      status: isPdfX || isPdfA ? 'warn' : 'pass',
+      status: isPdfX ? 'fail' : isPdfA ? 'warn' : 'pass',
+      critical: isPdfX,
       detail: isPdfX
-        ? `${spec.name} requires ${spec.pdfFormat}. Use "Export PDF/X-1a" option.`
+        ? `${spec.name} requires ${spec.pdfFormat}. Select "Export as PDF/X-1a" — standard PDF will be rejected at upload.`
         : isPdfA
           ? `${spec.name} recommends ${spec.pdfFormat} for archival compliance.`
           : 'Standard PDF output OK.',
@@ -254,8 +255,9 @@ function validatePlatform(opts, gridSystem) {
   if (spec.bleed?.required) {
     checks.push({
       name: 'Bleed',
-      status: 'warn',
-      detail: `${spec.name} requires ${spec.bleed.standard}${spec.bleed.unit} bleed for full-bleed pages.`,
+      status: 'fail',
+      critical: true,
+      detail: `${spec.name} requires ${spec.bleed.standard}${spec.bleed.unit} bleed for full-bleed pages. Non-compliant files will be rejected.`,
     });
   } else {
     checks.push({
@@ -303,7 +305,8 @@ function validatePlatform(opts, gridSystem) {
     recommendations.push('Avoid fixed-width tables — they may not reflow in ebook readers.');
   }
 
-  const passed = checks.every(c => c.status !== 'fail');
+  const blockers = checks.filter(c => c.status === 'fail');
+  const passed = blockers.length === 0;
 
   return {
     platform: spec.name,
@@ -311,6 +314,7 @@ function validatePlatform(opts, gridSystem) {
     type: spec.type,
     passed,
     checks,
+    blockers,
     recommendations,
     spec,
   };
