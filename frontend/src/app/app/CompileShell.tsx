@@ -628,6 +628,7 @@ export default function CompileShell() {
             lastDownloadWatermarked={lastDownloadWatermarked}
             userTier={tier}
             publisherWindowEnd={publisherWindowEnd}
+            quality={quality}
           />
         )}
       </AnimatePresence>

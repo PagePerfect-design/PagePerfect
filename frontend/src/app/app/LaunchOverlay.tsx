@@ -17,6 +17,7 @@ import type {
   CustomFont,
   PreflightCheck,
   PreflightResult,
+  CompileQuality,
 } from './editor-types'
 import { TEMPLATE_INFO, PAGE_SIZES, ease, hasTier } from './editor-types'
 
@@ -37,6 +38,7 @@ export default function LaunchOverlay({
   lastDownloadWatermarked,
   userTier,
   publisherWindowEnd,
+  quality,
 }: {
   title: string
   template: TemplateKey
@@ -54,6 +56,7 @@ export default function LaunchOverlay({
   lastDownloadWatermarked: boolean
   userTier: string
   publisherWindowEnd: string | null
+  quality: CompileQuality
 }) {
   const PAPER_STOCK_LABELS: Record<PaperStock, string> = { white: 'white paper', cream: 'cream paper' }
   const [platform, setPlatform] = useState<Platform>('kdp')
@@ -365,7 +368,7 @@ export default function LaunchOverlay({
 
             {/* Real stats from backend */}
             {!checking && preflight && (
-              <div className="grid grid-cols-3 gap-px border-t border-[#111111]/[0.06] bg-[#111111]/[0.03]">
+              <div className={`grid gap-px border-t border-[#111111]/[0.06] bg-[#111111]/[0.03] ${quality?.typographyGrade ? 'grid-cols-4' : 'grid-cols-3'}`}>
                 <div className="bg-white p-2.5 text-center">
                   <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Pages</p>
                   <p className="font-display text-sm font-bold text-[#111111]">~{preflight.stats.estimatedPages}</p>
@@ -378,6 +381,19 @@ export default function LaunchOverlay({
                   <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Trim</p>
                   <p className="font-display text-sm font-bold text-[#111111]">{preflight.stats.trimWidth}&times;{preflight.stats.trimHeight}&quot;</p>
                 </div>
+                {quality?.typographyGrade && (
+                  <div className="bg-white p-2.5 text-center">
+                    <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Quality</p>
+                    <p className={`font-display text-sm font-bold ${
+                      quality.typographyGrade === 'A' ? 'text-emerald-600' :
+                      quality.typographyGrade === 'B' ? 'text-[#111111]' :
+                      quality.typographyGrade === 'C' ? 'text-amber-600' :
+                      'text-red-600'
+                    }`}>
+                      {quality.typographyGrade}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -414,6 +430,12 @@ export default function LaunchOverlay({
                   All {preflight.checks.filter(c => c.status === 'pass').length} checks passed.
                   Output: ~{preflight.stats.estimatedPages} pages, {preflight.stats.trimWidth}&times;{preflight.stats.trimHeight}&quot; trim,
                   {' '}{preflight.stats.spineInches}&quot; spine ({PAPER_STOCK_LABELS[paper]}).
+                  {quality?.typographyGrade && (
+                    <> Typography grade: <strong>{quality.typographyGrade}</strong>{quality.typographyScore !== null ? ` (${quality.typographyScore}/100)` : ''}.</>
+                  )}
+                  {quality && (quality.overfullBoxes > 0 || quality.underfullBoxes > 0) && (
+                    <> Layout warnings: {quality.overfullBoxes > 0 ? `${quality.overfullBoxes} overfull` : ''}{quality.overfullBoxes > 0 && quality.underfullBoxes > 0 ? ', ' : ''}{quality.underfullBoxes > 0 ? `${quality.underfullBoxes} underfull` : ''}.</>
+                  )}
                 </p>
                 <label className="mt-3 flex cursor-pointer items-start gap-2.5">
                   <input
