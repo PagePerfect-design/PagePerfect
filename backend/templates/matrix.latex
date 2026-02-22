@@ -16,6 +16,7 @@
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{array}
+\usepackage{underscore} % Allow underscores in text mode (KPI_name, metric_id)
 
 % ── TYPOGRAPHY — Fintech Precision ──────────────────────────
 % Fira Sans: tabular lining figures for financial data alignment
