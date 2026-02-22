@@ -56,26 +56,45 @@ class GridSystem {
 
   /**
    * Calculate grid-based margins
-   * Ensures margins are multiples of baseline grid
+   * Ensures margins are multiples of baseline grid.
+   * Validates that margins don't consume more than 40% of the page width,
+   * which would leave insufficient text area.
    */
   calculateMargins(pageSize, preset, template = 'academic') {
     const base = this.baseline[template] || this.baseline.academic; // Fallback to academic
     const mm = (n) => `${n}mm`;
     const in_ = (n) => `${n}in`;
-    
+
     // Grid-based margin calculations
     const marginMultipliers = {
       minimal: 2,    // 2 grid units
-      compact: 3,    // 3 grid units  
+      compact: 3,    // 3 grid units
       narrow: 4,     // 4 grid units
       normal: 5,     // 5 grid units
       wide: 6,       // 6 grid units
       academic: 7,   // 7 grid units
       generous: 8    // 8 grid units
     };
-    
+
     const multiplier = marginMultipliers[preset] || marginMultipliers.normal;
-    const gridMargin = (base * multiplier) / 72; // Convert pt to inches
+    let gridMargin = (base * multiplier) / 72; // Convert pt to inches
+
+    // Page width lookup (in inches) for margin validation
+    const pageWidths = {
+      a4: 8.27, letter: 8.5, sixByNine: 6, fiveFiveByEightFive: 5.5,
+      sevenByTen: 7, a5: 5.83, royal: 6.14, bFormat: 5.08, aFormat: 4.37,
+      demy: 5.43, crownQuarto: 7.44, b5: 6.93, massMarket: 4.25,
+      fiveTwentyFiveByEight: 5.25, amazonFiveByEight: 5,
+      amazonSixByNine: 6, amazonSevenByTen: 7, amazonEightByTen: 8,
+      amazonEightFiveByEleven: 8.5,
+    };
+    const pageWidth = pageWidths[pageSize] || pageWidths.letter;
+    // Cap margin so that left + right margins don't exceed 40% of page width.
+    // This ensures at least 60% of page width is usable text area.
+    const maxMargin = pageWidth * 0.20; // 20% per side = 40% total
+    if (gridMargin > maxMargin) {
+      gridMargin = maxMargin;
+    }
     
     switch (pageSize) {
       case 'a4':
