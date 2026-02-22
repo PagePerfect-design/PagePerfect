@@ -57,7 +57,7 @@ function markdownToHtml(md: string): string {
 
 function htmlToMarkdown(html: string): string {
   // HTML → Markdown for compile pipeline
-  let md = html
+  const md = html
     .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
     .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
     .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
