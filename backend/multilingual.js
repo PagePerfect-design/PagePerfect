@@ -83,7 +83,7 @@ function detectScripts(text) {
 
 /**
  * Font fallback chains for different scripts.
- * These are safe defaults for XeLaTeX with common system fonts.
+ * These are safe defaults for LuaLaTeX with common system fonts.
  */
 const FONT_FALLBACK = {
   arabic: {
@@ -183,7 +183,7 @@ function generateMultilingualPreamble(scriptAnalysis, opts = {}) {
     return commands.join('\n');
   }
 
-  // Polyglossia for multilingual support (XeLaTeX)
+  // Polyglossia for multilingual support (LuaLaTeX)
   commands.push('\\usepackage{polyglossia}');
 
   // Set main language based on primary script
@@ -244,7 +244,7 @@ function generateMultilingualPreamble(scriptAnalysis, opts = {}) {
   if (scriptAnalysis.hasDiacritics) {
     commands.push('');
     commands.push('% Enhanced diacritics rendering');
-    commands.push('% XeLaTeX handles combining diacritics natively via fontspec');
+    commands.push('% LuaLaTeX handles combining diacritics natively via fontspec');
   }
 
   return commands.join('\n');
@@ -314,7 +314,7 @@ function analyzeMultilingual(md) {
   if (scriptAnalysis.hasDiacritics) {
     recommendations.push({
       severity: 'info',
-      message: 'Complex diacritics detected. XeLaTeX handles these natively. Ensure your chosen font supports the required Unicode combining characters.',
+      message: 'Complex diacritics detected. LuaLaTeX handles these natively. Ensure your chosen font supports the required Unicode combining characters.',
     });
   }
 

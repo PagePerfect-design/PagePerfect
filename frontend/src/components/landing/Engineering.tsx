@@ -62,8 +62,8 @@ export function Engineering() {
             Industrial grade.
           </h2>
           <p className="mt-5 max-w-lg font-body text-sm leading-[1.7] text-[#111111]/45">
-            Not a wrapper around a PDF library. A full typesetting pipeline
-            built on the same tools used by academic publishers.
+            Not a wrapper around a PDF library. The same typesetting engine
+            used by academic publishers &mdash; automated so you don&apos;t need to learn it.
           </p>
         </div>
 

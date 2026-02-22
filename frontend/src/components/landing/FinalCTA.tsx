@@ -9,18 +9,18 @@ export function FinalCTA() {
         <div className="mb-16 h-[2px] w-16 bg-[#FF3333]" />
 
         <p className="mb-5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">
-          Try it now
+          Ship tonight
         </p>
 
         <h2 className="max-w-2xl font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
-          Try it now.
+          Your book is waiting.
           <br />
-          No signup required.
+          Stop fighting Word.
         </h2>
 
         <p className="mt-6 max-w-md font-body text-sm leading-[1.7] text-[#111111]">
-          Open the editor. Paste your text. See what professional
-          typesetting actually looks like.
+          Paste your manuscript. Pick your trim size. Download a KDP-ready
+          PDF and upload it tonight. No account, no install, no learning curve.
         </p>
 
         <div className="mt-12 flex flex-col items-start gap-5">
@@ -28,11 +28,11 @@ export function FinalCTA() {
             href="/app"
             className="inline-flex h-12 items-center bg-[#FF3333] px-12 font-mono text-[11px] uppercase tracking-[0.12em] text-white transition-all duration-75 hover:bg-[#E52222]"
           >
-            Open the Editor
+            Start Formatting
           </Link>
 
           <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]">
-            No account required &middot; Free forever
+            No account required &middot; Free to preview &middot; Works in any browser
           </p>
         </div>
       </div>

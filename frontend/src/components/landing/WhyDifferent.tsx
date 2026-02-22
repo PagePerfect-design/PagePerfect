@@ -1,15 +1,15 @@
 const STATEMENTS = [
   {
-    headline: 'Your pages have rhythm.',
-    body: 'Every line sits on a mathematical baseline grid \u2014 the same technique used by Penguin, Oxford University Press, and every book you\u2019ve admired on a shelf.',
+    headline: 'Passes KDP review. First try.',
+    body: 'Correct bleed, margins, gutter, and trim for 19 standard book sizes. No rejection emails, no manual fixes, no re-uploading.',
   },
   {
-    headline: 'Your paragraphs breathe.',
-    body: 'Our engine analyzes entire paragraphs to find optimal line breaks. Word goes line by line. We see the whole picture.',
+    headline: 'No more orphaned lines.',
+    body: 'Our engine analyzes entire paragraphs to find optimal line breaks and eliminates widows and orphans. Word goes line by line. We see the whole page.',
   },
   {
-    headline: 'Your book is print-ready.',
-    body: 'PDFs that pass KDP\u2019s automated review on the first try. Correct bleed, margins, and trim for 19 standard book sizes.',
+    headline: 'Looks like a real book.',
+    body: 'Baseline grids, professional heading scales, proper em-dashes, smart quotes, and drop caps \u2014 the same typographic standards used by Penguin and Oxford University Press.',
   },
 ]
 
@@ -21,12 +21,12 @@ export function WhyDifferent() {
         {/* ── Heading ── */}
         <div className="mb-16 max-w-3xl md:mb-20">
           <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">
-            Architecture
+            Why it works
           </p>
           <h2 className="font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
-            Not just formatted.
+            Word can&apos;t do this.
             <br />
-            Typeset.
+            We can.
           </h2>
         </div>
 
