@@ -92,6 +92,43 @@ const resultCleanupInterval = setInterval(() => {
 }, 60_000);
 resultCleanupInterval.unref();
 
+// ── Absolute Disk Sweeper ──────────────────────────────────────────
+// Catches orphaned temp directories from container restarts, crashes,
+// or any scenario where the in-memory jobResults map was lost but
+// physical files remain on disk. Runs at boot + every hour.
+const PP_TMP_PREFIXES = ['pp-enqueue-', 'pp-sync-', 'pp-batch-', 'pp-conv-', 'pp-worker-'];
+const ORPHAN_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour
+
+async function sweepOrphanedTmpDirs() {
+  try {
+    const tmpDir = os.tmpdir();
+    const entries = await fsp.readdir(tmpDir);
+    const now = Date.now();
+    let swept = 0;
+    for (const entry of entries) {
+      if (!PP_TMP_PREFIXES.some(p => entry.startsWith(p))) continue;
+      const fullPath = path.join(tmpDir, entry);
+      try {
+        const stats = await fsp.stat(fullPath);
+        if (now - stats.mtimeMs > ORPHAN_MAX_AGE_MS) {
+          await fsp.rm(fullPath, { recursive: true, force: true });
+          swept++;
+        }
+      } catch { /* entry may have been cleaned by another process */ }
+    }
+    if (swept > 0) console.log(`[disk-sweep] Removed ${swept} orphaned temp dir(s)`);
+  } catch (err) {
+    console.error('[disk-sweep] Error:', err.message);
+  }
+}
+
+// Sweep at boot (catches leftovers from previous container lifecycle)
+sweepOrphanedTmpDirs();
+
+// Sweep hourly
+const diskSweepInterval = setInterval(sweepOrphanedTmpDirs, ORPHAN_MAX_AGE_MS);
+diskSweepInterval.unref();
+
 if (redis) {
   try {
     const { Queue, Worker, QueueEvents } = require('bullmq');
@@ -1270,7 +1307,7 @@ app.post('/api/convert', convertLimiter, express.raw({ type: '*/*', limit: '10mb
   const docxPath = path.join(tmpBase, 'input.docx');
   await fsp.writeFile(docxPath, buf);
 
-  const pandoc = spawn('pandoc', [docxPath, '-t', 'markdown', '--wrap=none'], { cwd: tmpBase });
+  const pandoc = spawn('pandoc', [docxPath, '-t', 'markdown', '--wrap=none', `--resource-path=${tmpBase}`], { cwd: tmpBase });
 
   let stdout = '';
   let stderr = '';
@@ -2134,6 +2171,7 @@ app.post('/api/batch-compile', compileLimiter, async (req, res) => {
         mdPath,
         batchFromFormat,
         '--pdf-engine=lualatex',
+        `--resource-path=${tmpBase}`,
         '-M', `title=${title}`,
         `--template=${tplPath}`,
         '-H', headerPath,

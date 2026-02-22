@@ -180,6 +180,13 @@ async function processCompileJob(job, templateRegistry) {
   // ── Normalize text for format-agnostic input ──
   manuscriptText = textNormalizer.normalize(manuscriptText, tplKey);
 
+  // ── Strip remote images (prevents Pandoc from fetching external URLs) ──
+  const imgResult = textNormalizer.stripRemoteImages(manuscriptText);
+  manuscriptText = imgResult.text;
+  if (imgResult.stripped > 0) {
+    warnings.push(`${imgResult.stripped} remote image(s) removed — upload assets directly.`);
+  }
+
   // ── Compile in isolated temp dir ──
   const tmpBase = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-worker-'));
   const mdPath = path.join(tmpBase, 'input.md');
@@ -243,6 +250,49 @@ async function processCompileJob(job, templateRegistry) {
       warnings.push(`Custom ${slot} font applied: ${safeFileName}`);
     }
   }
+
+  // ── Emoji / symbol fallback font (LuaLaTeX only) ──
+  // Register a fallback chain so missing glyphs (emoji, symbols) don't crash
+  // the compile or silently disappear. Noto Color Emoji must be installed in
+  // the Docker image. The fallback is registered via luaotfload and applied
+  // to the main font via RawFeature. We inject this BEFORE \setmainfont by
+  // adding a \directlua block, then patch the \setmainfont call to reference it.
+  const emojiFallbackLua = [
+    '\\directlua{',
+    '  luaotfload.add_fallback("emojifallback", {',
+    '    "Noto Color Emoji:mode=harf;",',
+    '    "Noto Sans Symbols:mode=node;",',
+    '    "Noto Sans Symbols2:mode=node;",',
+    '    "DejaVu Sans:mode=node;",',
+    '  })',
+    '}',
+  ].join('\n');
+
+  // Inject the fallback registration BEFORE \setmainfont in the template
+  const fontspecIdx = tplContent.indexOf('\\usepackage{fontspec}');
+  if (fontspecIdx !== -1) {
+    // Insert after \usepackage{fontspec}
+    const insertPos = tplContent.indexOf('\n', fontspecIdx);
+    if (insertPos !== -1) {
+      tplContent = tplContent.slice(0, insertPos + 1)
+        + '\n' + emojiFallbackLua + '\n'
+        + tplContent.slice(insertPos + 1);
+    }
+  }
+
+  // Patch \setmainfont to include the fallback RawFeature.
+  // Handles both forms: \setmainfont{Font} and \setmainfont[Options]{Font}
+  tplContent = tplContent.replace(
+    /\\setmainfont(\[([^\]]*)\])?\{([^}]+)\}/,
+    (match, optGroup, opts, fontName) => {
+      if (opts && opts.includes('fallback=')) return match; // already has fallback
+      const fallbackFeature = 'fallback=emojifallback';
+      if (opts) {
+        return `\\setmainfont[${opts},RawFeature={${fallbackFeature}}]{${fontName}}`;
+      }
+      return `\\setmainfont[RawFeature={${fallbackFeature}}]{${fontName}}`;
+    }
+  );
 
   await fsp.writeFile(path.join(tmpBase, 'template.latex'), tplContent, 'utf8');
 
@@ -339,6 +389,7 @@ async function processCompileJob(job, templateRegistry) {
 
   const args = [
     mdPath, fromFmt, '--pdf-engine=lualatex',
+    `--resource-path=${tmpBase}`,
     '-M', `title=${safeTitle}`,
     `--template=${path.join(tmpBase, 'template.latex')}`,
     '-H', path.join(tmpBase, 'header.tex'),
@@ -441,7 +492,9 @@ function compileEpub(tmpBase, mdPath, safeTitle, safeMode) {
   const epubPath = path.join(tmpBase, 'output.epub');
   const cssPath = path.join(__dirname, 'templates', 'epub-style.css');
   const args = [
-    mdPath, '--to=epub3', '-M', `title=${safeTitle}`, '--epub-title-page=true',
+    mdPath, '--to=epub3',
+    `--resource-path=${tmpBase}`,
+    '-M', `title=${safeTitle}`, '--epub-title-page=true',
     ...(fs.existsSync(cssPath) ? ['--css', cssPath] : []),
     '-o', epubPath,
     ...(safeMode ? [] : citeprocArgs(BIB_PATH)),
