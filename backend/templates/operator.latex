@@ -18,6 +18,7 @@
 \usepackage{longtable}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{underscore} % Allow underscores in text mode (user_id, api_key)
 
 % ── TYPOGRAPHY — Machine Precision ──────────────────────────
 % Fira Sans: the font of mankind and machines
