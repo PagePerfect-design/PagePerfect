@@ -69,8 +69,21 @@ RUN npm install --omit=dev
 # Copy the rest (server code, templates, references)
 COPY . .
 
+# SECURITY: Create non-root user for running the application.
+# If an attacker gains code execution (e.g. via LaTeX injection),
+# they will NOT have root privileges inside the container.
+RUN groupadd -r ppuser && useradd -r -g ppuser -d /app ppuser \
+    && chown -R ppuser:ppuser /app \
+    && mkdir -p /tmp && chmod 1777 /tmp
+
+USER ppuser
+
 # Expose API
 EXPOSE 4000
+
+# Health check — verifies the HTTP server is responding
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:4000/api/health || exit 1
 
 # Start server
 CMD ["node", "index.js"]
