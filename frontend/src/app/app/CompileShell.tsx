@@ -28,6 +28,7 @@ import { SAMPLE_MD } from './sample'
 import PublishingSystems from './PublishingSystems'
 import { useAuth } from '@/lib/auth-context'
 import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
+import { useManuscript } from '@/lib/use-manuscript'
 
 /* ═══════════════════════════════════════════════════════════════════
    TYPES & CONSTANTS
@@ -2080,7 +2081,8 @@ export default function CompileShell() {
   const [fontUploading, setFontUploading] = useState(false)
   const [lastDownloadWatermarked, setLastDownloadWatermarked] = useState(false)
 
-  const { session, tier, pdfCredits, publisherWindowEnd, refreshUser } = useAuth()
+  const { session, user, tier, pdfCredits, publisherWindowEnd, refreshUser } = useAuth()
+  const { saveManuscript, saving: manuscriptSaving } = useManuscript(user?.id ?? null)
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -2129,7 +2131,7 @@ export default function CompileShell() {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)) } catch { /* ignore */ }
   }, [template, headingVariant, pageSize, marginPreset, safeMode, title, stage])
 
-  // Auto-save manuscript to localStorage (3s debounce)
+  // Auto-save manuscript to localStorage (3s debounce) + PocketBase for logged-in users
   const manuscriptSaveRef = useRef<number | null>(null)
   useEffect(() => {
     if (!manuscript) return
@@ -2139,9 +2141,14 @@ export default function CompileShell() {
         localStorage.setItem(MANUSCRIPT_KEY, manuscript)
         localStorage.setItem(TITLE_KEY, title)
       } catch { /* quota exceeded — ignore */ }
+      // Sync to PocketBase for logged-in users (saveManuscript has its own 5s debounce)
+      saveManuscript({
+        id: null, title, content: manuscript,
+        template, pageSize, marginPreset, safeMode,
+      })
     }, 3000)
     return () => { if (manuscriptSaveRef.current) window.clearTimeout(manuscriptSaveRef.current) }
-  }, [manuscript, title])
+  }, [manuscript, title, template, pageSize, marginPreset, safeMode, saveManuscript])
 
   // Show compiling state immediately when ANY design parameter changes
   // so the user sees visual feedback that a new compile is coming.

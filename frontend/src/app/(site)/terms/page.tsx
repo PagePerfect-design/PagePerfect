@@ -130,10 +130,10 @@ export default function TermsPage() {
             legal={
               <>
                 <strong>03. Pricing &amp; Payment Terms.</strong> The service operates on a
-                three-tier model: Drafter (no charge), Publisher (recurring monthly subscription
+                three-tier model: Drafter (no charge), Publisher (one-time payment per manuscript
                 at the published rate), and Studio (one-time lifetime payment at the published
-                rate). Subscription fees are billed via Stripe. Publisher subscriptions renew
-                automatically unless cancelled before the renewal date. Studio access is perpetual
+                rate). Publisher payments are processed via Stripe and grant a 14-day export window
+                for one print-ready manuscript. Studio access is perpetual
                 and non-recurring. eazyaccess ltd may adjust pricing with no fewer than 60 calendar
                 days&rsquo; written notice to affected users. Price changes do not apply
                 retroactively to active Studio license holders.
@@ -146,18 +146,18 @@ export default function TermsPage() {
             promise={
               <>
                 Cancel any time. No cancellation fees. No retention tricks.<br /><br />
-                Cancel your Publisher subscription and it runs until the end of your billing
-                period. Studio is lifetime — there is nothing to cancel.
+                Publisher is per-manuscript — no recurring charges, nothing to cancel.
+                Studio is lifetime — there is nothing to cancel.
               </>
             }
             legal={
               <>
-                <strong>04. Cancellation &amp; Refunds.</strong> Publisher subscribers may cancel
-                at any time via their Stripe billing portal. Cancellation takes effect at the end
-                of the current billing cycle; no prorated refunds are issued for partial periods.
+                <strong>04. Cancellation &amp; Refunds.</strong> Publisher tier operates on a
+                per-manuscript payment model; each payment grants a 14-day export window for one
+                print-ready manuscript. No recurring billing applies.
                 Studio license holders retain lifetime access and are not subject to cancellation.
-                Refund requests for Studio purchases must be submitted within 14 calendar days of
-                purchase to privacy@pageperfect.studio. After 14 days, Studio purchases are
+                Refund requests for Publisher or Studio purchases must be submitted within 14 calendar
+                days of purchase to privacy@pageperfect.studio. After 14 days, purchases are
                 non-refundable.
               </>
             }

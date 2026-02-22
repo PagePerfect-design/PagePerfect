@@ -577,7 +577,7 @@ Defined in `frontend/src/app/(site)/pricing/page.tsx`. Stripe integration exists
 | Tier | Price | Key differentiators |
 |------|-------|-------------------|
 | **Drafter** | Free | All 12 templates, 6 default page sizes, real-time preview, watermarked output |
-| **Publisher** | $9.99/mo | No watermark, all 19 page sizes, full quality, citations, priority queue |
+| **Publisher** | $19.99/manuscript | No watermark, all 19 page sizes, full quality, citations, priority queue |
 | **Studio** | $199 one-time | Lifetime Publisher access, future EPUB/custom fonts/batch export, direct support |
 
 ## Environment Variables

@@ -21,6 +21,7 @@ const fsp = require('fs').promises;
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
+const log = require('./logger').child({ module: 'worker' });
 
 // ── Backend modules ──
 const GridSystem = require('./grid-system');
@@ -79,7 +80,7 @@ async function getPbAdminToken() {
     _pbTokenExpiry = Date.now() + 115 * 60 * 1000;
     return _pbAdminToken;
   } catch (err) {
-    console.error('[worker:admin-auth] Failed:', err.message);
+    log.error({ err: err.message }, 'PocketBase admin auth failed');
     return null;
   }
 }
@@ -111,7 +112,7 @@ async function verifyUserTierById(userId) {
       }
     }
   } catch (err) {
-    console.error('[worker:auth] Re-verification failed:', err.message);
+    log.error({ err: err.message }, 'Tier re-verification failed');
   }
   return { userId, tier: 'drafter', credits: 0 };
 }
@@ -145,7 +146,7 @@ async function processCompileJob(job, templateRegistry) {
 
   // ── Security: check for LaTeX injection attempts in manuscript ──
   if (latexSanitizer.hasInjectionAttempt(manuscriptText)) {
-    console.warn(`[worker:security] Injection attempt detected in job ${job.id}`);
+    log.warn({ jobId: job.id }, 'LaTeX injection attempt detected');
     // Don't block — the -raw_tex flag in Pandoc should prevent execution.
     // But log it for monitoring.
   }
