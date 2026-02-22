@@ -196,13 +196,14 @@ describe('preflight', () => {
     expect(fontCheck.status).toBe('pass');
   });
 
-  it('warns about PDF/X-1a for IngramSpark', () => {
+  it('blocks PDF format for IngramSpark (requires PDF/X-1a)', () => {
     const result = preflight({
       wordCount: 50000,
       platform: 'ingram',
     }, mockGridSystem);
     const pdfCheck = result.checks.find(c => c.name === 'PDF format');
-    expect(pdfCheck.status).toBe('warn');
+    expect(pdfCheck.status).toBe('fail');
+    expect(pdfCheck.critical).toBe(true);
   });
 
   it('includes spine width in stats', () => {

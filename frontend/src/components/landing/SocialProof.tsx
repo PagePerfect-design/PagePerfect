@@ -2,8 +2,8 @@ const METADATA = [
   { label: 'Version', value: '2.0' },
   { label: 'Output', value: 'PDF/X-1a' },
   { label: 'Engine', value: 'LuaLaTeX' },
+  { label: 'Platforms', value: 'KDP · IngramSpark · Lulu' },
   { label: 'Templates', value: '15' },
-  { label: 'Page Sizes', value: '19' },
   { label: 'Status', value: 'Online' },
 ]
 

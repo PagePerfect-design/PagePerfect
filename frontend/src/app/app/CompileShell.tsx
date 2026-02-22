@@ -5,6 +5,9 @@ import Link from 'next/link'
 import CompositorMark from '@/components/CompositorMark'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Keyboard, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import dynamic from 'next/dynamic'
+
+const RichTextEditor = dynamic(() => import('./RichTextEditor'), { ssr: false })
 
 import { SAMPLES } from './sample'
 import PublishingSystems from './PublishingSystems'
@@ -106,6 +109,8 @@ function EditorOverlay({
   onChange: (m: string) => void
   onClose: () => void
 }) {
+  const [editorMode, setEditorMode] = useState<'markdown' | 'richtext'>('richtext')
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -114,19 +119,37 @@ function EditorOverlay({
       className="fixed inset-0 z-30 flex"
     >
       <div className="flex w-1/2 flex-col border-r border-[#111111]/[0.08] bg-white">
-        <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-5 py-2.5">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/30">Manuscript</span>
-          <button onClick={onClose} className="font-mono text-[11px] text-[#111111]/30 hover:text-[#111111]/50">
-            Close
-          </button>
-        </div>
-        <textarea
-          value={manuscript}
-          onChange={(e) => onChange(e.target.value)}
-          className="flex-1 resize-none bg-transparent p-6 font-mono text-sm leading-[1.8] text-[#111111]/70 caret-[#FF3333] focus:outline-none"
-          placeholder="# Chapter One&#10;&#10;Write here..."
-          autoFocus
-        />
+        {editorMode === 'markdown' ? (
+          <>
+            <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-5 py-2.5">
+              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/30">Markdown</span>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setEditorMode('richtext')}
+                  className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/30 hover:text-[#111111]/50"
+                >
+                  Switch to Rich Text
+                </button>
+                <button onClick={onClose} className="font-mono text-[11px] text-[#111111]/30 hover:text-[#111111]/50">
+                  Close
+                </button>
+              </div>
+            </div>
+            <textarea
+              value={manuscript}
+              onChange={(e) => onChange(e.target.value)}
+              className="flex-1 resize-none bg-transparent p-6 font-mono text-sm leading-[1.8] text-[#111111]/70 caret-[#FF3333] focus:outline-none"
+              placeholder="# Chapter One&#10;&#10;Write here..."
+              autoFocus
+            />
+          </>
+        ) : (
+          <RichTextEditor
+            markdown={manuscript}
+            onChange={onChange}
+            onClose={() => setEditorMode('markdown')}
+          />
+        )}
       </div>
       <div className="w-1/2" onClick={onClose} />
     </motion.div>
@@ -158,6 +181,7 @@ export default function CompileShell() {
   const [showManuscripts, setShowManuscripts] = useState(false)
   const [manuscriptList, setManuscriptList] = useState<ManuscriptListItem[]>([])
   const [manuscriptListLoading, setManuscriptListLoading] = useState(false)
+  const [targetPlatform, setTargetPlatform] = useState<Platform | null>(null)
 
   const { user, tier, publisherWindowEnd, refreshUser } = useAuth()
   const {
@@ -436,6 +460,7 @@ export default function CompileShell() {
               isLoggedIn={!!user}
               hasResumable={!!manuscript.trim()}
               onResume={() => setStage('design')}
+              onPlatformSelect={setTargetPlatform}
             />
             {/* Manuscript browser (portal stage) */}
             <AnimatePresence>
@@ -629,6 +654,7 @@ export default function CompileShell() {
             userTier={tier}
             publisherWindowEnd={publisherWindowEnd}
             quality={quality}
+            targetPlatform={targetPlatform}
           />
         )}
       </AnimatePresence>

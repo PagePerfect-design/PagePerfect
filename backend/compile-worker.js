@@ -33,6 +33,7 @@ const headingVariants = require('./heading-variants');
 const watermark = require('./watermark');
 const fontAvailability = require('./font-availability');
 const publishing = require('./publishing');
+const errorTranslator = require('./error-translator');
 const typographyAssurance = require('./typography-assurance');
 const textNormalizer = require('./text-normalizer');
 const latexSanitizer = require('./latex-sanitizer');
@@ -478,6 +479,9 @@ async function processCompileJob(job, templateRegistry) {
 
   const compileLog = bookEngineering.analyzeCompileLog(result.stderr);
 
+  // Translate raw stderr into structured, human-readable errors
+  const translatedErrors = errorTranslator.translateStderr(result.stderr);
+
   // Generate typography quality report (pre-analysis + compile log)
   let typographyReport = null;
   try {
@@ -514,6 +518,7 @@ async function processCompileJob(job, templateRegistry) {
     needsWatermark,
     fontFallback: fontRes.isFallback ? `${fontRes.original} -> ${fontRes.resolved}` : null,
     compileLog: { overfull: compileLog.overfullBoxes.length, underfull: compileLog.underfullBoxes.length },
+    translatedErrors: translatedErrors.summary.total > 0 ? translatedErrors : null,
     typographyReport: typographyReport ? {
       score: typographyReport.score,
       grade: typographyReport.grade,

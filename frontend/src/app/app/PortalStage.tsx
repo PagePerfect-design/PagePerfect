@@ -4,9 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { FileText, Check, ChevronRight } from 'lucide-react'
 
 import { SAMPLES } from './sample'
-import type { TemplateKey, Analysis } from './editor-types'
+import type { TemplateKey, Analysis, Platform } from './editor-types'
 import { ease } from './editor-types'
 import { cleanFromWord, analyzeManuscript, wordCategory } from './editor-utils'
+
+const PLATFORM_OPTIONS: { key: Platform | 'generic'; label: string; detail: string }[] = [
+  { key: 'kdp', label: 'Amazon KDP', detail: 'Spine, gutter, and trim validated for KDP' },
+  { key: 'ingram', label: 'IngramSpark', detail: 'PDF/X-1a, CMYK, bleed compliance' },
+  { key: 'generic', label: 'Other / Not sure', detail: 'Standard PDF — you can change later' },
+]
 
 export default function PortalStage({
   onAccept,
@@ -15,6 +21,7 @@ export default function PortalStage({
   isLoggedIn,
   hasResumable,
   onResume,
+  onPlatformSelect,
 }: {
   onAccept: (text: string, title: string, detectedTemplate?: TemplateKey) => void
   onLoadSample: (sampleKey: string) => void
@@ -22,6 +29,7 @@ export default function PortalStage({
   isLoggedIn?: boolean
   hasResumable?: boolean
   onResume?: () => void
+  onPlatformSelect?: (platform: Platform | null) => void
 }) {
   const [dragActive, setDragActive] = useState(false)
   const [phase, setPhase] = useState<'idle' | 'analyzing' | 'ready'>('idle')
@@ -31,6 +39,7 @@ export default function PortalStage({
   const [convertError, setConvertError] = useState<string | null>(null)
   const [pasteMode, setPasteMode] = useState(false)
   const [pasteText, setPasteText] = useState('')
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | 'generic' | null>(null)
   const pasteAreaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -195,12 +204,33 @@ export default function PortalStage({
             )}
           </AnimatePresence>
 
+          {/* First-visit CTA — "See a finished book" */}
+          {!pasteMode && !hasResumable && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="mt-10"
+            >
+              <button
+                onClick={() => onLoadSample('fiction')}
+                className="group inline-flex h-11 items-center gap-3 bg-[#FF3333] px-8 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-all hover:bg-[#E52222]"
+              >
+                See a finished book
+                <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </button>
+              <p className="mt-3 font-mono text-[10px] text-[#111111]/30">
+                Loads a sample novel — KDP-ready in seconds
+              </p>
+            </motion.div>
+          )}
+
           {!pasteMode && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.6 }}
-              className="mt-12 flex items-center justify-center gap-6"
+              className="mt-8 flex items-center justify-center gap-6"
             >
               <button
                 onClick={() => { setPasteMode(true); setPasteText('') }}
@@ -369,9 +399,39 @@ export default function PortalStage({
             />
           </div>
 
+          {/* Platform selection — "Where will you publish?" */}
+          <div className="border-t border-[#111111]/[0.06] px-6 py-4">
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">
+              Where will you publish?
+            </p>
+            <div className="flex gap-2">
+              {PLATFORM_OPTIONS.map((p) => (
+                <button
+                  key={p.key}
+                  onClick={() => {
+                    setSelectedPlatform(p.key)
+                    onPlatformSelect?.(p.key === 'generic' ? null : p.key as Platform)
+                  }}
+                  className={`flex-1 border px-3 py-2.5 text-left transition-all ${
+                    selectedPlatform === p.key
+                      ? 'border-[#FF3333] bg-[#FF3333]/[0.04]'
+                      : 'border-[#111111]/10 hover:border-[#111111]/20'
+                  }`}
+                >
+                  <span className={`block font-mono text-[11px] font-semibold ${
+                    selectedPlatform === p.key ? 'text-[#FF3333]' : 'text-[#111111]/70'
+                  }`}>
+                    {p.label}
+                  </span>
+                  <span className="block font-mono text-[9px] text-[#111111]/40 mt-0.5">{p.detail}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex items-center justify-between border-t border-[#111111]/[0.06] px-6 py-4">
             <button
-              onClick={() => { setText(''); setAnalysis(null); setPhase('idle') }}
+              onClick={() => { setText(''); setAnalysis(null); setPhase('idle'); setSelectedPlatform(null) }}
               className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
             >
               Start over

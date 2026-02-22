@@ -1,15 +1,15 @@
 const STATEMENTS = [
   {
-    headline: 'Passes KDP review. First try.',
-    body: 'Correct bleed, margins, gutter, and trim for 19 standard book sizes. No rejection emails, no manual fixes, no re-uploading.',
+    headline: 'Upload to KDP. Zero rejections.',
+    body: 'Correct bleed, gutter, trim, and spine for every Amazon KDP and IngramSpark format. Your PDF passes automated review on the first upload \u2014 no rejection emails, no manual fixes, no re-uploading.',
   },
   {
-    headline: 'No more orphaned lines.',
-    body: 'Our engine analyzes entire paragraphs to find optimal line breaks and eliminates widows and orphans. Word goes line by line. We see the whole page.',
+    headline: 'Every page looks professionally typeset.',
+    body: 'Our engine sees the whole page at once \u2014 eliminating widows, orphans, and bad breaks that Word misses. The same paragraph-level optimization used by Penguin, Oxford University Press, and academic publishers.',
   },
   {
-    headline: 'Looks like a real book.',
-    body: 'Baseline grids, professional heading scales, proper em-dashes, smart quotes, and drop caps \u2014 the same typographic standards used by Penguin and Oxford University Press.',
+    headline: 'Print-compliant from the first compile.',
+    body: 'Embedded fonts, correct color profiles, PDF/X-1a output for offset printing, and platform-specific validation for KDP, IngramSpark, and Lulu. Your book meets spec before you download it.',
   },
 ]
 
@@ -21,7 +21,7 @@ export function WhyDifferent() {
         {/* ── Heading ── */}
         <div className="mb-16 max-w-3xl md:mb-20">
           <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">
-            Why it works
+            Guaranteed acceptance
           </p>
           <h2 className="font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
             Word can&apos;t do this.

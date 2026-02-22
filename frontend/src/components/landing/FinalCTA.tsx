@@ -9,18 +9,18 @@ export function FinalCTA() {
         <div className="mb-16 h-[2px] w-16 bg-[#FF3333]" />
 
         <p className="mb-5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">
-          Ship tonight
+          Zero rejections
         </p>
 
         <h2 className="max-w-2xl font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
-          Your book is waiting.
+          Upload to KDP tonight.
           <br />
-          Stop fighting Word.
+          Pass review on the first try.
         </h2>
 
         <p className="mt-6 max-w-md font-body text-sm leading-[1.7] text-[#111111]">
           Paste your manuscript. Pick your trim size. Preview for free, then
-          export a clean KDP-ready PDF from $19.99. No account, no install, no learning curve.
+          export a print-compliant PDF from $19.99. No account, no install, no learning curve.
         </p>
 
         <div className="mt-12 flex flex-col items-start gap-5">
