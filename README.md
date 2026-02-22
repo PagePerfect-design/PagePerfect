@@ -39,7 +39,7 @@ Our implementation follows Müller-Brockmann's principles of:
 
 - **Frontend**: Next.js with TypeScript and Tailwind CSS
 - **Backend**: Node.js with Express and Pandoc
-- **PDF Generation**: XeLaTeX with systematic grid templates
+- **PDF Generation**: LuaLaTeX with systematic grid templates
 - **Deployment**: Vercel (frontend) + Railway (backend)
 
 ---

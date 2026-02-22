@@ -19,7 +19,7 @@ const { execSync } = require('child_process');
 // ================================================================
 
 /**
- * Each entry maps a font name (as XeLaTeX sees it) to:
+ * Each entry maps a font name (as LuaLaTeX sees it) to:
  *   - source: which TeX Live / system package provides it
  *   - usedBy: which templates reference it
  *   - fallbacks: ordered list of substitutes (best match first)
@@ -223,7 +223,7 @@ let _cacheTimestamp = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Probe all fonts available to fontconfig/XeLaTeX.
+ * Probe all fonts available to fontconfig/LuaLaTeX.
  * Calls `fc-list` and parses the family names.
  * Results are cached for CACHE_TTL_MS.
  *
@@ -335,12 +335,12 @@ function resolveFont(fontName) {
     }
   }
 
-  // Last resort — return the original and let XeLaTeX try (it may find it via kpsewhich)
+  // Last resort — return the original and let LuaLaTeX try (it may find it via kpsewhich)
   return {
     resolved: fontName,
     original: fontName,
     isFallback: false,
-    warning: `Font "${fontName}" not found by fontconfig. XeLaTeX may still locate it via TeX paths.`,
+    warning: `Font "${fontName}" not found by fontconfig. LuaLaTeX may still locate it via TeX paths.`,
   };
 }
 

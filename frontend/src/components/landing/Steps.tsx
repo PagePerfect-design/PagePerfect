@@ -1,21 +1,21 @@
 const STEPS = [
   {
     num: '01',
-    title: 'Paste your manuscript',
-    body: 'Drop in Markdown or paste from Word. YAML frontmatter sets title, author, and metadata. Smart quotes, em-dashes, and encoding artifacts are cleaned automatically.',
-    detail: 'Real-time preview updates as you type. No export steps, no file converters.',
+    title: 'Paste or upload your manuscript',
+    body: 'Paste from Word, drop in a .docx, or write in Markdown. Smart quotes, em-dashes, double spaces, and encoding artifacts are cleaned automatically.',
+    detail: 'Real-time preview updates as you type. No conversion steps, no file reformatting.',
   },
   {
     num: '02',
-    title: 'Pick your design system',
-    body: 'Fifteen typographic systems \u00d7 three heading variants = forty-five professional styles. Each uses M\u00fcller-Brockmann grid principles with calculated baselines and heading scales.',
-    detail: 'Not themes \u2014 mathematical systems. Classic, Modern, or Bold headings on every template.',
+    title: 'Pick your trim size and template',
+    body: 'Choose from 19 standard book sizes including all KDP formats. Pick a template that matches your genre \u2014 fiction, nonfiction, academic, cookbook, poetry.',
+    detail: 'Preview updates instantly. Change template or size any time before export.',
   },
   {
     num: '03',
-    title: 'Export print-ready PDF',
-    body: 'Professional output with embedded fonts, correct bleed, and proper trim. Upload directly to Amazon KDP, IngramSpark, Lulu, or any print-on-demand service.',
-    detail: 'Compiles via LuaLaTeX. Download, upload to your distributor — done.',
+    title: 'Download and upload to KDP',
+    body: 'Get a print-ready PDF with embedded fonts, correct bleed, margins, and trim. Upload directly to Amazon KDP, IngramSpark, or Lulu \u2014 passes automated review on the first try.',
+    detail: 'Download, upload to your distributor, approve the proof \u2014 done.',
   },
 ]
 
@@ -35,7 +35,7 @@ export function HowItWorks() {
             That&apos;s it.
           </h2>
           <p className="mt-5 font-body text-sm leading-[1.7] text-[#111111]">
-            From raw manuscript to print-ready PDF.
+            From messy Word document to KDP-ready PDF.
           </p>
         </div>
 
