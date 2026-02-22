@@ -8,7 +8,9 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "docker:build": "docker build -t pageperfect-backend .",
-    "docker:run": "docker run --rm -p 4000:4000 -e PORT=4000 pageperfect-backend"
+    "docker:run": "docker run --rm -p 4000:4000 -e PORT=4000 pageperfect-backend",
+    "test": "jest --verbose",
+    "test:ci": "jest --ci --coverage --forceExit"
   },
   "dependencies": {
     "archiver": "^7.0.1",
@@ -20,11 +22,13 @@
     "ioredis": "^5.9.3",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "pino": "^10.3.1",
     "rate-limit-redis": "^4.3.1",
     "resend": "^6.9.2",
     "stripe": "^20.3.1"
   },
   "devDependencies": {
+    "jest": "^30.2.0",
     "nodemon": "^3.1.10"
   }
 }
