@@ -109,7 +109,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 #   docker run \
 #     --cap-drop=ALL \
 #     --security-opt=no-new-privileges \
-#     --read-only --tmpfs /tmp:rw,noexec,nosuid,size=512m \
+#     --read-only --tmpfs /tmp:rw,noexec,nosuid,size=1024m \
 #     --tmpfs /var/cache/fontconfig:rw,size=32m \
 #     --memory=1g --memory-swap=1g \
 #     --pids-limit=100 \
