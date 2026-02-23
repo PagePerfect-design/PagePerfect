@@ -4,7 +4,7 @@ import { AlertTriangle, FileText, RotateCcw } from 'lucide-react'
 
 import type { Status, CompileError, CompileQuality } from './editor-types'
 import { ease } from './editor-types'
-import { translateError } from './editor-utils'
+import { translateError, suggestFix } from './editor-utils'
 
 /* ═══════════════════════════════════════════════════════════════════
    SKELETON LOADER — SVG wireframe shown during typesetting
@@ -107,6 +107,17 @@ function ErrorPanel({ errors, onRetry }: { errors: CompileError[]; onRetry?: () 
         {errors.filter(e => !e.message.startsWith('__detail__')).map((e, i) => (
           <p key={i} className="mb-1.5 font-mono text-[11px] leading-relaxed text-[#111111]/80">{translateError(e.message)}</p>
         ))}
+        {!isExpired && (() => {
+          const fix = errors.find(e => !e.message.startsWith('__detail__') && suggestFix(e.message))
+          if (!fix) return null
+          return (
+            <div className="mt-3 flex items-start gap-2 border-l-2 border-blue-500/30 bg-blue-500/[0.04] px-3 py-2">
+              <span className="font-mono text-[10px] leading-relaxed text-blue-700/70">
+                Try: {suggestFix(fix.message)}
+              </span>
+            </div>
+          )
+        })()}
         {errors.some(e => e.message.startsWith('__detail__')) && (
           <details className="mt-4">
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
@@ -184,6 +195,26 @@ export default function PreviewPane({
                 />
                 {/* Quality badge — top right of preview */}
                 {status === 'success' && quality && <QualityBadge quality={quality} />}
+                {/* Quality warning banner — shown for C/D grades below the PDF */}
+                {status === 'success' && quality?.typographyGrade && (quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.3 }}
+                    className={`absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-2 ${
+                      quality.typographyGrade === 'D'
+                        ? 'bg-red-500/90'
+                        : 'bg-amber-500/90'
+                    } ${isWatermarked ? 'bottom-[34px]' : ''}`}
+                  >
+                    <AlertTriangle className="h-3 w-3 shrink-0 text-white/80" />
+                    <span className="font-mono text-[10px] font-medium text-white">
+                      {quality.typographyGrade === 'D'
+                        ? 'Low quality — adjust margins or template'
+                        : 'Review typography before export'}
+                    </span>
+                  </motion.div>
+                )}
                 {isWatermarked && (
                   <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
                     <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">
