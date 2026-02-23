@@ -20,6 +20,7 @@ export const SECTIONS: NavSection[] = [
   { id: 'quality-gate', label: 'Quality Gate' },
   { id: 'url-params', label: 'URL Parameters' },
   { group: 'Layout', id: 'page-sizes', label: 'Configure Your Layout' },
+  { id: 'grid-system', label: 'Why Grid Systems' },
   { id: 'all-sizes', label: 'All Page Sizes' },
   { id: 'margins', label: 'Margin Presets' },
   { group: 'Reference', id: 'templates', label: 'Typographic Systems' },
