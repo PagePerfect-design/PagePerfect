@@ -106,12 +106,16 @@ export default function TopBar({
 
         {/* Right: actions */}
         <div className="flex items-center gap-3">
-          {errors.length > 0 && (
-            <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-red-500/70">
-              <AlertTriangle className="h-3 w-3" />
-              {translateError(errors[0].message).slice(0, 50)}
-            </span>
-          )}
+          {errors.length > 0 && (() => {
+            const msg = translateError(errors[0].message)
+            const isSoft = /expired|recompile|refresh|try again/i.test(msg) && !/failed|error|missing/i.test(msg)
+            return (
+              <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] ${isSoft ? 'text-amber-500/70' : 'text-red-500/70'}`}>
+                <AlertTriangle className="h-3 w-3" />
+                {msg.slice(0, 50)}
+              </span>
+            )
+          })()}
 
           <button
             onClick={onCompile}

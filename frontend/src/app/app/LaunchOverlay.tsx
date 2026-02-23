@@ -455,6 +455,37 @@ export default function LaunchOverlay({
           </div>
         )}
 
+        {/* Quality warning — shown when typography grade is C or D */}
+        {!checking && quality?.typographyGrade && (quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && (
+          <div className={`mt-3 border px-4 py-3 ${
+            quality.typographyGrade === 'D'
+              ? 'border-red-500/20 bg-red-500/[0.04]'
+              : 'border-amber-500/20 bg-amber-500/[0.04]'
+          }`}>
+            <div className="flex items-start gap-3">
+              <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${
+                quality.typographyGrade === 'D' ? 'text-red-500/70' : 'text-amber-600/70'
+              }`} />
+              <div>
+                <p className={`font-mono text-[11px] font-semibold ${
+                  quality.typographyGrade === 'D' ? 'text-red-800/80' : 'text-amber-800/80'
+                }`}>
+                  {quality.typographyGrade === 'D' ? 'Low Typography Quality' : 'Typography Needs Attention'}
+                </p>
+                <p className={`mt-1 font-mono text-[10px] leading-relaxed ${
+                  quality.typographyGrade === 'D' ? 'text-red-700/60' : 'text-amber-700/60'
+                }`}>
+                  {quality.typographyGrade === 'D'
+                    ? 'This layout has significant typography issues that may produce a poor reading experience. Consider adjusting margins, page size, or template before exporting.'
+                    : 'Some typography metrics are below ideal. The PDF is usable, but adjusting margins or template may improve readability.'
+                  }
+                  {quality.overfullBoxes > 0 && ` ${quality.overfullBoxes} overfull line${quality.overfullBoxes > 1 ? 's' : ''} detected.`}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Download buttons */}
         <div className="mt-3 space-y-2">
           {exportFormat === 'pdf' ? (
