@@ -75,12 +75,14 @@ export function translateError(raw: string): string {
     [/queue_full/i, () => 'The compile server is at capacity. Please wait a moment and try again.'],
     [/tier_required/i, () => 'This feature requires a paid plan. Upgrade to Publisher or Studio to access it.'],
 
-    // ── Result/session errors ──
-    [/Result not found or expired/i, () => 'Your compiled PDF expired. Click "Retry" to recompile.'],
-    [/Result has expired/i, () => 'Your compiled PDF expired. Click "Retry" to recompile.'],
-    [/Server restarted.*recompile/i, () => 'The server restarted and your PDF was lost. Click "Retry" to recompile.'],
-    [/Job not found or expired/i, () => 'The compile job expired. Click "Retry" to recompile.'],
-    [/restart_expired/i, () => 'The server restarted since your last compile. Click "Retry" to recompile.'],
+    // ── Result/session errors (soft — auto-retry handles most of these) ──
+    [/Preview expired/i, () => 'Your preview expired. Hit Recompile to refresh it.'],
+    [/Result not found or expired/i, () => 'Your preview expired. Hit Recompile to refresh it.'],
+    [/Result has expired/i, () => 'Your preview expired. Hit Recompile to refresh it.'],
+    [/Server restarted.*recompile/i, () => 'The server restarted. Hit Recompile to refresh your preview.'],
+    [/Job not found or expired/i, () => 'Your preview expired. Hit Recompile to refresh it.'],
+    [/restart_expired/i, () => 'The server restarted. Hit Recompile to refresh your preview.'],
+    [/Compile job expired/i, () => 'Your preview expired. Hit Recompile to refresh it.'],
 
     // ── Network errors ──
     [/Network disconnected/i, () => 'Lost connection to the compile server. Check your internet and retry.'],
