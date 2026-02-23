@@ -287,8 +287,8 @@ export default function LaunchOverlay({
               </div>
               <p className="mt-2 font-mono text-[10px] leading-relaxed text-[#111111]/30">
                 {platform === 'kdp'
-                  ? 'Standard PDF optimized for Amazon print.'
-                  : 'PDF/X-1a with CMYK color profile.'}
+                  ? 'Standard PDF with KDP spine and gutter calculations. Upload directly to your KDP dashboard.'
+                  : 'PDF/X-1a with CMYK color profile and bleed marks. Required by IngramSpark, also works for offset printing.'}
               </p>
             </div>
 

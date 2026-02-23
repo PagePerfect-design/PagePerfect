@@ -17,10 +17,11 @@ function Nav() {
           <div className="hidden items-center gap-6 md:flex">
             <Link href="/pricing" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Pricing</Link>
             <Link href="/journal" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Journal</Link>
+            <Link href="/docs" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Docs</Link>
             <NavAuth />
             <Link
               href="/app"
-              className="border border-[#111111] bg-[#111111] px-5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-transparent hover:text-[#111111]"
+              className="bg-[#FF3333] px-5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222]"
             >
               Open Editor
             </Link>

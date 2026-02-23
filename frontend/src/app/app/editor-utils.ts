@@ -97,6 +97,29 @@ export function translateError(raw: string): string {
   return s
 }
 
+/** Suggest an actionable fix for a compile error. Returns null if no specific suggestion. */
+export function suggestFix(raw: string): string | null {
+  const s = raw.trim()
+  const suggestions: [RegExp, string][] = [
+    [/Missing \$ inserted|special character/i, 'Remove _ or ^ characters, or wrap math in $...$'],
+    [/Undefined citation|citation.*not found/i, 'Toggle on Standard mode in Options to skip bibliography'],
+    [/I couldn.t open.*\.bib|Empty bibliography/i, 'Toggle on Standard mode in Options to skip bibliography'],
+    [/Overfull \\hbox|overflows? the margin/i, 'Try wider margins or a larger page size'],
+    [/font.*not (found|available)|cannot.*font|luaotfload/i, 'Try a different template'],
+    [/timed?\s*out|timeout/i, 'Try Fast compile mode, or split into smaller sections'],
+    [/TeX capacity exceeded|out of memory/i, 'Reduce image count or split into smaller sections'],
+    [/Too many unprocessed floats|Float.*lost/i, 'Add more text between images and tables'],
+    [/Runaway argument|Unmatched/i, 'Check for missing closing braces } or brackets ]'],
+    [/Invalid UTF|invalid.*byte/i, 'Paste your text through a plain text editor to clean encoding'],
+    [/Package .* Error|Missing \\begin/i, 'Try a different template'],
+    [/queue_full|server.*capacity/i, 'Wait a moment and try again'],
+  ]
+  for (const [re, suggestion] of suggestions) {
+    if (re.test(s)) return suggestion
+  }
+  return null
+}
+
 export function slug(s: string) {
   return s.toLowerCase().replace(/['']/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)
 }

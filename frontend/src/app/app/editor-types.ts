@@ -150,13 +150,13 @@ export function hasTier(userTier: string, requiredTier: string): boolean {
 }
 
 export const MARGIN_INFO: Record<MarginPreset, { label: string; desc: string }> = {
-  minimal:  { label: 'Minimal',  desc: 'Tight' },
-  compact:  { label: 'Compact',  desc: 'Snug' },
-  narrow:   { label: 'Narrow',   desc: 'Slim' },
-  normal:   { label: 'Normal',   desc: 'Standard' },
-  wide:     { label: 'Wide',     desc: 'Open' },
-  academic: { label: 'Academic', desc: 'Scholarly' },
-  generous: { label: 'Generous', desc: 'Airy' },
+  minimal:  { label: 'Minimal',  desc: '2 units — max text area' },
+  compact:  { label: 'Compact',  desc: '3 units — dense layout' },
+  narrow:   { label: 'Narrow',   desc: '4 units — trade fiction' },
+  normal:   { label: 'Normal',   desc: '5 units — balanced' },
+  wide:     { label: 'Wide',     desc: '6 units — readable' },
+  academic: { label: 'Academic', desc: '7 units — scholarly' },
+  generous: { label: 'Generous', desc: '8 units — wide margins' },
 }
 
 export const ease = [0.25, 0.4, 0.25, 1] as const

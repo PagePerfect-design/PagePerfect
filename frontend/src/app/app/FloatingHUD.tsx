@@ -331,10 +331,12 @@ export default function FloatingHUD({
                         ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                         : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
                     }`}
+                    title={info.desc}
                   >
-                    <span className={`text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
+                    <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                       {info.label}
                     </span>
+                    <span className="block font-mono text-[8px] text-[#111111]/25">{info.desc}</span>
                   </button>
                 )
               })}

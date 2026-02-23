@@ -4,7 +4,7 @@ import { AlertTriangle, FileText, RotateCcw } from 'lucide-react'
 
 import type { Status, CompileError, CompileQuality } from './editor-types'
 import { ease } from './editor-types'
-import { translateError } from './editor-utils'
+import { translateError, suggestFix } from './editor-utils'
 
 /* ═══════════════════════════════════════════════════════════════════
    SKELETON LOADER — SVG wireframe shown during typesetting
@@ -107,6 +107,17 @@ function ErrorPanel({ errors, onRetry }: { errors: CompileError[]; onRetry?: () 
         {errors.filter(e => !e.message.startsWith('__detail__')).map((e, i) => (
           <p key={i} className="mb-1.5 font-mono text-[11px] leading-relaxed text-[#111111]/80">{translateError(e.message)}</p>
         ))}
+        {!isExpired && (() => {
+          const fix = errors.find(e => !e.message.startsWith('__detail__') && suggestFix(e.message))
+          if (!fix) return null
+          return (
+            <div className="mt-3 flex items-start gap-2 border-l-2 border-blue-500/30 bg-blue-500/[0.04] px-3 py-2">
+              <span className="font-mono text-[10px] leading-relaxed text-blue-700/70">
+                Try: {suggestFix(fix.message)}
+              </span>
+            </div>
+          )
+        })()}
         {errors.some(e => e.message.startsWith('__detail__')) && (
           <details className="mt-4">
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
