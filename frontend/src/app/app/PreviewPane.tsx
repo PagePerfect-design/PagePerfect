@@ -184,6 +184,26 @@ export default function PreviewPane({
                 />
                 {/* Quality badge — top right of preview */}
                 {status === 'success' && quality && <QualityBadge quality={quality} />}
+                {/* Quality warning banner — shown for C/D grades below the PDF */}
+                {status === 'success' && quality?.typographyGrade && (quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.3 }}
+                    className={`absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-2 ${
+                      quality.typographyGrade === 'D'
+                        ? 'bg-red-500/90'
+                        : 'bg-amber-500/90'
+                    } ${isWatermarked ? 'bottom-[34px]' : ''}`}
+                  >
+                    <AlertTriangle className="h-3 w-3 shrink-0 text-white/80" />
+                    <span className="font-mono text-[10px] font-medium text-white">
+                      {quality.typographyGrade === 'D'
+                        ? 'Low quality — adjust margins or template'
+                        : 'Review typography before export'}
+                    </span>
+                  </motion.div>
+                )}
                 {isWatermarked && (
                   <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
                     <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">

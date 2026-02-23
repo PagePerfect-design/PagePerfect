@@ -72,6 +72,7 @@ export default function LaunchOverlay({
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [contractAccepted, setContractAccepted] = useState(false)
   const [showContract, setShowContract] = useState(false)
+  const [qualityAcknowledged, setQualityAcknowledged] = useState(false)
 
   // Run real pre-flight when settings change
   useEffect(() => {
@@ -81,6 +82,7 @@ export default function LaunchOverlay({
     setPreflight(null)
     setContractAccepted(false)
     setShowContract(false)
+    setQualityAcknowledged(false)
 
     async function runPreflight() {
       try {
@@ -119,7 +121,8 @@ export default function LaunchOverlay({
   }, [pageSize, marginPreset, template, wordCount, platform, paper])
 
   const hasFailure = preflight?.checks.some(c => c.status === 'fail')
-  const canDownload = !checking && !hasFailure && !fetchError && pdfUrl
+  const isGradeD = quality?.typographyGrade === 'D'
+  const canDownload = !checking && !hasFailure && !fetchError && pdfUrl && (!isGradeD || qualityAcknowledged)
 
   async function handleEpubDownload() {
     setEpubLoading(true)
@@ -466,7 +469,7 @@ export default function LaunchOverlay({
               <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${
                 quality.typographyGrade === 'D' ? 'text-red-500/70' : 'text-amber-600/70'
               }`} />
-              <div>
+              <div className="flex-1">
                 <p className={`font-mono text-[11px] font-semibold ${
                   quality.typographyGrade === 'D' ? 'text-red-800/80' : 'text-amber-800/80'
                 }`}>
@@ -481,6 +484,19 @@ export default function LaunchOverlay({
                   }
                   {quality.overfullBoxes > 0 && ` ${quality.overfullBoxes} overfull line${quality.overfullBoxes > 1 ? 's' : ''} detected.`}
                 </p>
+                {quality.typographyGrade === 'D' && (
+                  <label className="mt-2.5 flex cursor-pointer items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={qualityAcknowledged}
+                      onChange={(e) => setQualityAcknowledged(e.target.checked)}
+                      className="mt-0.5 h-3.5 w-3.5 rounded accent-red-600"
+                    />
+                    <span className="font-mono text-[10px] leading-relaxed text-red-700/50">
+                      I understand the typography quality is below recommended thresholds.
+                    </span>
+                  </label>
+                )}
               </div>
             </div>
           </div>

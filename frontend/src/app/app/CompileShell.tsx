@@ -548,6 +548,7 @@ export default function CompileShell() {
                 onSafeModeChange={setSafeMode}
                 onFontUpload={handleFontUpload}
                 onFontRemove={handleFontRemove}
+                quality={quality}
               />
             </div>
 
