@@ -910,7 +910,7 @@ export const ARTICLES_PART1: Article[] = [
         heading: 'The Measurable Definition of Quality',
         paragraphs: [
           'Quality in a modern publishing context must be defined by more than a vague aesthetic sense. It is a set of measurable technical standards that directly impact readability and trust. Robert Bringhurst, in The Elements of Typographic Style, famously stated that \u201ctypography is the craft of endowing human language with a durable visual form.\u201d That durable form is achieved not through decoration but through a production pipeline that treats every paragraph as an engineering challenge.',
-          'True quality is found in the invisible work: the mathematical precision of hyphenation and justification rules, the avoidance of widows and orphans that disrupt the reading rhythm, and the calculation of inner margins to account for physical binding. These are not merely decorative choices. Colin Wheildon\u2019s decade-long research at the Royal Melbourne Institute of Technology demonstrated that moving from poorly set body text to well-set text can shift \u201cgood comprehension\u201d rates from 12% to 67%. In a crowded market, high-grade typesetting is an editorial act that signals professional legitimacy to a skeptical audience.',
+          'True quality is found in the invisible work: the mathematical precision of hyphenation and justification rules, the avoidance of widows and orphans that disrupt the reading rhythm, and the calculation of inner margins to account for physical binding. As explored in this journal\u2019s The Geometry of Authority, mathematical page proportions \u2014 from the 13th-century Villard canon to the Van de Graaf construction \u2014 build credibility before a single word is read. These are not merely decorative choices. Colin Wheildon\u2019s decade-long research at the Royal Melbourne Institute of Technology demonstrated that moving from poorly set body text to well-set text can shift \u201cgood comprehension\u201d rates from 12% to 67%. In a crowded market, high-grade typesetting is an editorial act that signals professional legitimacy to a skeptical audience.',
         ],
       },
       {
@@ -947,14 +947,14 @@ export const ARTICLES_PART1: Article[] = [
   },
   {
     slug: 'systems-over-demos',
-    title: 'Systems Over Demos: Building a Reliable Publishing Pipeline',
+    title: 'Systems Over Demos: Operational Integrity in the Publishing Pipeline',
     description:
       'Why the operational integrity of a publishing platform matters more than any single rendered page \u2014 and how containerised infrastructure turns a fragile demo into a trustworthy system.',
     category: 'Design Systems',
     date: '2026-02-23',
     readTime: '6 min',
     hook:
-      'Software development today is less about writing code and more about managing a supply chain. A publishing platform is not just a piece of software; it is a complex, interconnected chain of dependencies, containers, and deployment scripts. The operational reality is clear: a demo can render a single page of text, but a system must render ten thousand books reliably, securely, and reproducibly. The transition from print-heavy operations to digital-led strategies has imposed a new set of rigid constraints. While the old model was defined by physical presses and fixed deadlines, the modern system is defined by the vulnerabilities inherent in open-source libraries and the volatility of automated build pipelines. For the creator who entrusts their most valuable intellectual property to a platform, the difference between a demo and a system is the difference between a party trick and a publishing house.',
+      'Software development today is less about writing code and more about managing a supply chain. A publishing platform is not just a piece of software; it is a complex, interconnected chain of dependencies, containers, and deployment scripts. The operational reality is clear: a demo can render a single page of text, but a system must render ten thousand books reliably, securely, and reproducibly. Just as this journal\u2019s The 40-Character Column treats typographic variables as engineering parameters \u2014 measurable, testable, and subject to empirical validation \u2014 so too must the infrastructure that produces those pages be held to the same standard of precision. The transition from print-heavy operations to digital-led strategies has imposed a new set of rigid constraints. While the old model was defined by physical presses and fixed deadlines, the modern system is defined by the vulnerabilities inherent in open-source libraries and the volatility of automated build pipelines. For the creator who entrusts their most valuable intellectual property to a platform, the difference between a demo and a system is the difference between a party trick and a publishing house.',
     sections: [
       {
         heading: 'The Fragility of the Supply Chain',
@@ -998,14 +998,14 @@ export const ARTICLES_PART1: Article[] = [
   },
   {
     slug: 'new-institutionalism',
-    title: 'The New Institutionalism: Why Authority Publishing Demands a New Infrastructure',
+    title: 'The New Institutionalism: Strategic Identity in the Creator Economy',
     description:
       'How the structural shift in the creator economy is producing a new class of authority publisher who needs institutional-grade production capacity without the legacy costs of a traditional press.',
     category: 'Conversion',
     date: '2026-02-23',
     readTime: '6 min',
     hook:
-      'The creator economy is undergoing a massive structural shift. What began as a fragmented landscape of independent writers and bloggers has evolved into a global market worth over $250 billion annually. As this market matures, a new class of creator is emerging: the expert or authority creator who values trust and longevity over viral reach. These creators are essentially rebuilding media economics without the legacy costs of a traditional publisher, but they still require the institutional strengths of that old model \u2014 namely, high production capacity and editorial standards. The independent author who can produce a print-ready monograph with the visual discipline of a university press holds a decisive competitive advantage in a marketplace saturated with low-effort, AI-generated content.',
+      'The creator economy is undergoing a massive structural shift. What began as a fragmented landscape of independent writers and bloggers has evolved into a global market worth over $250 billion annually. As this market matures, a new class of creator is emerging: the expert or authority creator who values trust and longevity over viral reach. As this journal\u2019s The ROI of Legibility demonstrates, measurable improvements in typographic quality translate directly to reader retention and comprehension \u2014 the same economic logic that once justified the overhead of a traditional press. These creators are essentially rebuilding media economics without the legacy costs of a traditional publisher, but they still require the institutional strengths of that old model \u2014 namely, high production capacity and editorial standards. The independent author who can produce a print-ready monograph with the visual discipline of a university press holds a decisive competitive advantage in a marketplace saturated with low-effort, AI-generated content.',
     sections: [
       {
         heading: 'The Evolution of the Workflow',
