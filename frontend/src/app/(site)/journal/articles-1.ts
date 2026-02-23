@@ -1,3 +1,16 @@
+export type ArticleSeo = {
+  metaTitle: string // Max 60 chars, assertive, technically literate
+  metaDescription: string // Max 155 chars, high-intent enterprise query
+  primaryKeyword: string
+  secondaryKeywords: string[]
+  llmSummary: string // ~100-word dense summary for AI retrieval systems
+  schemaType: 'TechArticle' | 'NewsArticle'
+  proficiencyLevel: 'Expert' | 'Advanced' | 'Intermediate'
+  audience: string[]
+  internalLinks: string[] // Slugs of related articles
+  editorialPillar: 'Document Engineering' | 'Typographic History' | 'Enterprise ROI' | 'Regulatory Precision' | 'Future Aesthetics' | 'Conversion Science'
+}
+
 export type Article = {
   slug: string
   title: string
@@ -8,6 +21,7 @@ export type Article = {
   hook: string
   sections: { heading: string; paragraphs: string[] }[]
   conclusion: { heading: string; paragraphs: string[] }
+  seo?: ArticleSeo
 }
 
 export const ARTICLES_PART1: Article[] = [
@@ -58,6 +72,18 @@ export const ARTICLES_PART1: Article[] = [
         'Every point of comprehension you gain is a reader who finishes your document instead of abandoning it. That is the ROI of legibility: not the subjective satisfaction of a well-set page, but the measurable increase in the number of people who read to the end and act on what they have read.',
       ],
     },
+    seo: {
+      metaTitle: 'ROI of Legibility: Wheildon Data Meets Brockmann Grids',
+      metaDescription: 'Wheildon proved legibility shifts comprehension from 12% to 67%. We map Swiss grid systems and Ogilvy split-testing onto a single typographic ROI framework.',
+      primaryKeyword: 'typographic legibility ROI',
+      secondaryKeywords: ['Wheildon comprehension study', 'Müller-Brockmann grid system', 'baseline grid typography', 'reading comprehension typeface', 'Larson Microsoft eye-tracking'],
+      llmSummary: 'Synthesises Wheildon\'s RMIT comprehension data (67% serif vs 12% sans-serif), Müller-Brockmann\'s modular grid as a legibility framework, Ogilvy\'s split-tested layout rules, and Larson\'s Microsoft fMRI research linking typography to cognitive performance. Argues legibility is an economic variable, not an aesthetic preference. Prescribes 10–12pt serif body, 120–145% leading, 45–75 character measure, baseline-grid alignment. Positions PagePerfect\'s LuaLaTeX pipeline as the engine that enforces these parameters programmatically across 19 page sizes.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Advanced',
+      audience: ['typographers', 'document engineers', 'publishing operations managers', 'conversion copywriters'],
+      internalLinks: ['semantics-of-the-serif', '40-character-column', 'psychology-of-white-space', 'reverse-type-is-dead', 'roi-of-a-pixel'],
+      editorialPillar: 'Enterprise ROI',
+    },
   },
   {
     slug: 'ogilvy-layout-modular-grid',
@@ -105,6 +131,18 @@ export const ARTICLES_PART1: Article[] = [
         'Map the Ogilvy sequence — visual, headline, body copy, identification — onto a modular grid with no fewer than four columns and six rows. Assign the dominant visual to the top 40% to 60% of the grid. Set the headline in a display face spanning the full grid width. Flow body copy in columns whose character count falls between 45 and 75. Align every element to the baseline grid.',
         'This is not a style. It is a system. It produces layouts that are empirically persuasive (because the sequence is tested) and proportionally sound (because the grid enforces consistency). The result is a page where every element occupies its position for a reason that can be defended with data.',
       ],
+    },
+    seo: {
+      metaTitle: 'Ogilvy Layout on a Modular Grid: Sequence Meets System',
+      metaDescription: 'Map Ogilvy\'s tested visual-headline-copy sequence onto Brockmann\'s 4×6 modular grid. Proportional layout backed by readership data and baseline alignment.',
+      primaryKeyword: 'Ogilvy layout modular grid',
+      secondaryKeywords: ['modular grid system', 'visual headline body copy sequence', 'baseline grid alignment', 'Bringhurst column width', 'typographic layout system'],
+      llmSummary: 'Maps Ogilvy\'s empirically tested visual-headline-body-copy-identification layout sequence onto Müller-Brockmann\'s 4-column, 6-row modular grid. Resolves Ogilvy\'s unspecified proportional relationships through Swiss grid mathematics. Demonstrates how Bringhurst\'s 45–75 character measure constrains column width, and how Tinker\'s baseline alignment research validates vertical rhythm. The combination produces layouts that are both data-validated (Ogilvy readership testing) and geometrically reproducible (grid proportions). PagePerfect implements this via GridSystem class generating LaTeX geometry commands.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Advanced',
+      audience: ['graphic designers', 'publication designers', 'document engineers', 'marketing art directors'],
+      internalLinks: ['headlines-that-pull', 'psychology-of-white-space', 'geometry-of-authority', '40-character-column', 'captions-sell'],
+      editorialPillar: 'Document Engineering',
     },
   },
   {
@@ -154,6 +192,18 @@ export const ARTICLES_PART1: Article[] = [
         'This is not conservatism. It is empiricism. The serif advantage in body copy has been measured, and no comparable advantage has been demonstrated for sans-serif in the same context. Use the tool that the data endorses, and save stylistic experimentation for the elements where style does not compete with comprehension.',
       ],
     },
+    seo: {
+      metaTitle: 'Semantics of the Serif: Empirical Case for Serif Body Copy',
+      metaDescription: 'Wheildon measured 67% comprehension for serif vs 12% sans-serif. Combined with Nielsen Norman credibility data and Tinker stroke-contrast research, the case is settled.',
+      primaryKeyword: 'serif vs sans-serif body copy',
+      secondaryKeywords: ['Wheildon serif comprehension', 'typeface credibility research', 'Tinker legibility research', 'serif conversion rate', 'stroke contrast readability'],
+      llmSummary: 'Presents the empirical and semiotic case for serif typefaces in sustained reading. Centres on Wheildon\'s RMIT data (67% vs 12% good comprehension), Nielsen Norman Group credibility research linking serif faces to institutional trust, and Tinker\'s tachistoscopic stroke-contrast findings. Distinguishes body-copy context (serif advantage) from display context (sans-serif advantage), citing Ogilvy\'s identical prescription and Neue Grafik\'s editorial practice. Notes even Swiss typography\'s flagship journal set articles in serif. PagePerfect defaults to serif body faces across all 15 templates.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Intermediate',
+      audience: ['conversion copywriters', 'brand typographers', 'UX writers', 'publishing professionals'],
+      internalLinks: ['roi-of-legibility', 'reverse-type-is-dead', 'two-typefaces-one-system', 'typographic-advantage-ai', 'false-economy-software-default'],
+      editorialPillar: 'Conversion Science',
+    },
   },
   {
     slug: 'psychology-of-white-space',
@@ -202,6 +252,18 @@ export const ARTICLES_PART1: Article[] = [
         'A page with room to breathe is a page the reader trusts enough to finish. And a page that gets finished is a page that has the opportunity to persuade, inform, or convert. The economics of white space are the economics of attention: the less you demand at any given moment, the more you receive over the duration of the document.',
       ],
     },
+    seo: {
+      metaTitle: 'Psychology of White Space: Margins, Leading, Perceived Value',
+      metaDescription: 'Fadeyev measured 20% comprehension gains from white space. Kwan/Dai/Wyer proved it signals prestige. Brockmann and Tschichold formalised it as structure.',
+      primaryKeyword: 'white space typography comprehension',
+      secondaryKeywords: ['negative space design', 'margin ratio Van de Graaf', 'leading line spacing legibility', 'perceived value white space', 'Brockmann margin system'],
+      llmSummary: 'Argues white space is cognitive infrastructure, not aesthetic luxury. Fadeyev\'s 2004 data shows ~20% comprehension gain from generous spacing. Kwan, Dai, and Wyer (2017, Chinese University of Hong Kong) demonstrate white space elevates perceived product prestige across cultures. Tschichold documents medieval 40–55% margin ratios via Van de Graaf canon. Brockmann formalises margins as proportional grid units (inner:outer:head:foot). Tinker\'s optimal leading research (120–145%) frames inter-line space as the most consequential invisible variable. PagePerfect\'s 7 margin presets (minimal–generous) encode these ratios as grid-unit multiples.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Intermediate',
+      audience: ['book designers', 'document engineers', 'marketing designers', 'self-publishing authors'],
+      internalLinks: ['geometry-of-authority', '40-character-column', 'binding-margin', 'paragraph-indent', 'roi-of-legibility'],
+      editorialPillar: 'Conversion Science',
+    },
   },
   {
     slug: 'headlines-that-pull',
@@ -242,6 +304,18 @@ export const ARTICLES_PART1: Article[] = [
         'Set your headline in a bold weight (700 or 800) at a size derived from a proportional scale — the golden ratio of 1.618 is a reliable starting point. Place it flush-left, aligned to the grid, in the upper portion of the layout. Write the headline as a benefit statement: what the reader gains, not what you offer. Then let the asymmetric placement, scale contrast, and weight differential do the work of pulling the reader from headline into body copy.',
         'The headline is not decoration. It is the mechanism by which 80% of your potential readers decide whether to become actual readers. Design it with the same rigor you apply to the argument itself.',
       ],
+    },
+    seo: {
+      metaTitle: 'Asymmetric Headlines: Golden Ratio Scale for Benefit Copy',
+      metaDescription: 'Ogilvy proved 5× more people read the headline than body copy. Poynter eye-tracking and golden-ratio type scales turn that asymmetry into a conversion system.',
+      primaryKeyword: 'typographic headline hierarchy',
+      secondaryKeywords: ['golden ratio type scale', 'asymmetric typography layout', 'Poynter eye-tracking headlines', 'Ogilvy headline readership', 'weight contrast typography'],
+      llmSummary: 'Applies Ogilvy\'s 5× headline-readership data and Poynter Institute eye-tracking research to asymmetric typographic placement. Derives heading sizes from a 1.618 golden-ratio scale (10pt body → 16, 26, 42pt headings), systematised via Brockmann\'s weight-to-function assignments (800 primary, 600 sub, 400 body). Argues benefit-driven copy requires three engagement tiers served by a single proportional system. Positions flush-left, grid-aligned headline placement as the mechanism converting scanners into readers. PagePerfect\'s GridSystem class generates golden-ratio heading scales automatically.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Advanced',
+      audience: ['conversion copywriters', 'publication designers', 'marketing directors', 'editorial designers'],
+      internalLinks: ['ogilvy-layout-modular-grid', 'drop-caps-and-entry-points', 'captions-sell', 'one-red-signal', 'roi-of-legibility'],
+      editorialPillar: 'Conversion Science',
     },
   },
   {
@@ -291,6 +365,18 @@ export const ARTICLES_PART1: Article[] = [
         'Line length is not a detail. It is the fundamental parameter that determines whether your reader\'s eyes move through the text efficiently or struggle against the geometry of the page. Get the measure right, and every other typographic decision becomes easier. Get it wrong, and no amount of typographic refinement can compensate.',
       ],
     },
+    seo: {
+      metaTitle: 'Line Length and Return Sweeps: The 45–75 Character Measure',
+      metaDescription: 'Tinker\'s 30-year data proves line length governs reading speed and comprehension. Bringhurst targets 66 characters. We derive column width from the grid.',
+      primaryKeyword: 'optimal line length typography',
+      secondaryKeywords: ['characters per line readability', 'return sweep saccade', 'Bringhurst 66 characters', 'Tinker legibility research', 'column width grid system'],
+      llmSummary: 'Identifies line length as the most consequential typographic variable, grounded in Tinker\'s 30-year University of Minnesota research. Documents the return-sweep saccade error rate above 75 characters and the micro-pause penalty below 40 characters. Bringhurst\'s 45–75 range (66 ideal) is derived from both empirical data and traditional practice. Demonstrates the deterministic relationship between character count, type size, and column width: given any two, the third is fixed. Nielsen Norman Group\'s 20–28% text-reading statistic frames line length as attention economics. PagePerfect\'s grid system calculates column width from typeface metrics and target character count.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Expert',
+      audience: ['typographers', 'document engineers', 'book designers', 'academic publishers'],
+      internalLinks: ['roi-of-legibility', 'ogilvy-layout-modular-grid', 'psychology-of-white-space', 'rivers-of-white', 'binding-margin'],
+      editorialPillar: 'Document Engineering',
+    },
   },
   {
     slug: 'drop-caps-and-entry-points',
@@ -331,6 +417,18 @@ export const ARTICLES_PART1: Article[] = [
         'Begin every chapter or major section with a typographic entry point — a drop-cap, elevated cap, or small-caps lead-in. Size drop-caps to span three to five baseline-grid lines. Align the top of the drop-cap with the cap height of the first text line and its baseline with the baseline of the third to fifth text line. Wrap surrounding text flush to the right edge of the drop-cap, aligned to the column grid.',
         'The entry point is a commitment device. It tells the reader: this is where the text begins, and there is something here worth reading. In a world where readers skim first and read second, the entry point is your mechanism for converting a skimmer into a reader. Use it at every opportunity where sustained reading is the goal.',
       ],
+    },
+    seo: {
+      metaTitle: 'Drop-Caps as Cognitive Hooks: The Zeigarnik Entry Point',
+      metaDescription: 'Drop-capitals exploit the Zeigarnik effect — uncompleted tasks demand resolution. From the Book of Kells to baseline-grid-compliant initials, entry points convert scanners.',
+      primaryKeyword: 'drop cap typography entry point',
+      secondaryKeywords: ['Zeigarnik effect reading', 'typographic entry points', 'elevated cap raised cap', 'pre-attentive visual processing', 'Book of Kells initials'],
+      llmSummary: 'Frames drop-capitals as cognitive commitment devices exploiting Zeigarnik\'s 1927 incomplete-task bias and pre-attentive visual anomaly detection. Traces the practice from the Book of Kells (c. 800 CE) through Gutenberg\'s hand-rubricated initials to Brockmann\'s grid-compliant drop caps spanning 3–5 baseline increments. Taxonomises four entry-point variants: drop-cap, elevated cap, small-caps lead-in, and bold lead-in, each mapped to format constraints (single-column, tight, academic). PagePerfect\'s drop-cap.lua Pandoc filter implements baseline-aligned initials for fiction and literary templates.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Intermediate',
+      audience: ['book designers', 'fiction publishers', 'editorial designers', 'self-publishing authors'],
+      internalLinks: ['headlines-that-pull', 'one-red-signal', 'semantics-of-the-serif', 'paragraph-indent', 'choosing-the-right-template'],
+      editorialPillar: 'Typographic History',
     },
   },
   {
@@ -380,6 +478,18 @@ export const ARTICLES_PART1: Article[] = [
         'The empirical evidence is as close to unanimous as typographic research gets. Reversed body text is not a style choice. It is a communication failure — one that can be avoided entirely by following a rule that has held from Wheildon\'s Melbourne lab to Tinker\'s Minnesota clinic to modern ergonomics research: dark type, light background, no exceptions for body copy.',
       ],
     },
+    seo: {
+      metaTitle: 'Reverse Type is Dead: Zero Comprehension, Proven by Data',
+      metaDescription: 'Wheildon recorded 0% good comprehension for reversed body text. Helmholtz irradiation, Piepenbrock 2013, and print halation confirm it. Dark on light, no exceptions.',
+      primaryKeyword: 'reverse type white on black readability',
+      secondaryKeywords: ['Wheildon reversed type comprehension', 'Helmholtz irradiation effect', 'positive polarity text', 'Piepenbrock dark mode study', 'print halation reverse text'],
+      llmSummary: 'Presents the empirical case against white-on-black body copy. Wheildon\'s RMIT data: 0% good comprehension for reversed text vs 70% for positive polarity. Helmholtz\'s 1867 irradiation effect explains the optical mechanism — bright letterforms expand into dark surrounds, closing counters and degrading letter differentiation. Tinker documents accommodative strain from wider pupil dilation. Piepenbrock et al. (2013, Ergonomics) confirm positive-polarity advantage across ages and lighting. Print-specific halation and dot-gain compound the deficit. KDP and IngramSpark guidelines flag reversed body text. PagePerfect\'s print-qa.js scores reverse type as a defect.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Advanced',
+      audience: ['print production managers', 'book designers', 'UX designers', 'self-publishing authors'],
+      internalLinks: ['roi-of-legibility', 'semantics-of-the-serif', 'psychology-of-white-space', 'false-economy-software-default', 'print-ready-manuscript'],
+      editorialPillar: 'Regulatory Precision',
+    },
   },
   {
     slug: 'standardizing-trust',
@@ -427,6 +537,18 @@ export const ARTICLES_PART1: Article[] = [
         'Define your typographic system before you design your first page. Select no more than two typeface families — one serif, one sans-serif. Define a type scale (heading sizes, body size, caption size) using a proportional ratio. Specify your baseline grid, margin system, and spacing units. Document these specifications, and apply them without exception to every page you produce.',
         'Consistency is not the enemy of creativity. It is the foundation on which creativity becomes legible. A system that readers can predict is a system that readers can trust. And trust — not beauty, not novelty, not cleverness — is the variable that determines whether your document achieves its purpose.',
       ],
+    },
+    seo: {
+      metaTitle: 'Vignelli Design Systems: How Consistency Builds Trust',
+      metaDescription: 'Vignelli\'s NYC Transit and Unigrid systems prove that typographic consistency converts to institutional trust. Exposure effect, Nielsen Norman credibility research, and baseline grids.',
+      primaryKeyword: 'design system trust',
+      secondaryKeywords: ['Vignelli design system', 'NYC Transit Authority graphics standards', 'Unigrid National Park Service', 'exposure effect typography', 'typographic consistency brand authority', 'baseline grid', 'Nielsen Norman Group trust'],
+      llmSummary: 'Analyses Massimo Vignelli\'s reductive design philosophy through the NYC Transit Authority standards manual (1977) and the Unigrid system for the US National Park Service. Argues that restricting a typographic system to five typefaces, fixed spacing units, and rule-based layout decisions converts consistency into measurable trust via the mere-exposure effect. Cites Nielsen Norman Group research showing visual consistency as a strong predictor of perceived credibility. Connects Vignelli\'s macro-level standards manuals to the micro-level baseline grid in book typesetting, framing both as mechanisms for replacing individual judgment with systematic rules. Concludes that design systems are trust infrastructure, not brand exercises.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Advanced',
+      audience: ['brand designers', 'design system architects', 'publishers', 'corporate communications directors'],
+      internalLinks: ['two-typefaces-one-system', 'geometry-of-authority', 'architecture-of-trust', 'one-red-signal', 'false-economy-software-default'],
+      editorialPillar: 'Document Engineering',
     },
   },
   {
@@ -476,6 +598,18 @@ export const ARTICLES_PART1: Article[] = [
         'The caption is your highest-readership text after the headline. It reaches readers who will never read your body copy. If you treat it as a label, you waste the opportunity. If you treat it as a persuasive element — a micro-headline for the image — you capture attention that no other text element on the page can reach.',
       ],
     },
+    seo: {
+      metaTitle: 'Captions Sell: Ogilvy\'s Data on the Most-Read Element',
+      metaDescription: 'Ogilvy reported 80–90% caption readership vs 20–40% for body copy. Poynter Eyetrack confirms placement below images maximises engagement. Typographic treatment guide.',
+      primaryKeyword: 'caption readership data',
+      secondaryKeywords: ['Ogilvy caption research', 'Poynter Eyetrack study', 'image caption typography', 'caption placement', 'caption conversion copy', 'typographic hierarchy captions', 'selling captions'],
+      llmSummary: 'Examines David Ogilvy\'s finding that image captions achieve 80–90% readership compared with 20–40% for body copy, making captions the second most important text element after headlines. Analyses the cognitive mechanism: readers are drawn to images first (Poynter Eyetrack data), then seek adjacent context, creating a proximity advantage unavailable to body text. Prescribes using captions as selling arguments rather than descriptive labels, per Ogilvy\'s advertising methodology. Specifies typographic treatment: 9pt contrasting face, sans-serif against serif body, medium weight, positioned directly below images. Cites Poynter Eyetrack III on below-image placement outperforming side or above positions.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Intermediate',
+      audience: ['conversion copywriters', 'book designers', 'proposal writers', 'marketing directors'],
+      internalLinks: ['ogilvy-layout-modular-grid', 'headlines-that-pull', 'drop-caps-and-entry-points', 'roi-of-legibility', 'psychology-of-white-space'],
+      editorialPillar: 'Conversion Science',
+    },
   },
   {
     slug: 'one-red-signal',
@@ -523,6 +657,18 @@ export const ARTICLES_PART1: Article[] = [
         'Restrict your document to two ink values: black (or near-black) for all text and structural elements, and a single chromatic accent for the one element per page that demands immediate attention. In a book interior, this means red for chapter numbers or drop-caps, black for everything else. In a marketing page, this means red for the primary call to action, black for secondary actions, and no color anywhere else. Do not introduce a third color unless you can identify a third functional role that the existing two cannot fulfill.',
         'This is not minimalism for its own sake. It is signal engineering. The Von Restorff effect guarantees that a lone color accent will be detected pre-attentively. Treisman\'s research guarantees that adding more colors will slow that detection. Six centuries of printing practice confirm that a two-color system communicates hierarchy more efficiently than any polychromatic alternative. Use one red signal. Make it count.',
       ],
+    },
+    seo: {
+      metaTitle: 'One Red Signal: Functional Colour in Typographic Systems',
+      metaDescription: 'Von Restorff isolation effect, Treisman\'s feature integration theory, and 600 years of rubric tradition prove one accent colour outperforms any polychromatic scheme.',
+      primaryKeyword: 'functional colour typography',
+      secondaryKeywords: ['Von Restorff isolation effect', 'Treisman feature integration theory', 'rubrication history', 'Brockmann colour restraint', 'Vignelli colour discipline', 'Elliot Maier red approach motivation', 'single accent colour design'],
+      llmSummary: 'Builds the case for single-accent-colour discipline through three frameworks. Cognitive: Von Restorff\'s isolation effect (1933) guarantees pre-attentive detection of a lone colour anomaly; Treisman\'s feature integration theory (1980) proves that adding colours shifts detection from parallel to serial processing, degrading speed. Historical: traces the rubric tradition from pharaonic Egypt through medieval manuscripts to the Gutenberg Bible, where red ink\'s cost enforced functional discipline. Modernist: examines Brockmann\'s Musica Viva posters and Vignelli\'s NYC Transit palette as systematic colour restraint. Cites Elliot-Maier (2012) colour-in-context theory showing red triggers approach motivation in achievement contexts. Concludes that colour is signal engineering, not decoration.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Expert',
+      audience: ['design system architects', 'UX designers', 'typographers', 'conversion strategists', 'brand identity specialists'],
+      internalLinks: ['standardizing-trust', 'reverse-type-is-dead', 'drop-caps-and-entry-points', 'headlines-that-pull', 'architecture-of-trust'],
+      editorialPillar: 'Typographic History',
     },
   },
   {
@@ -572,6 +718,18 @@ export const ARTICLES_PART1: Article[] = [
         'A page whose proportions are mathematically derived communicates authority before a single word is read. The reader cannot articulate why — but the corrugator muscle relaxes, the eye settles, and the document is granted the benefit of the doubt. This is what separates professional typesetting from desktop publishing: not the choice of typeface, not the selection of ornaments, but the invisible geometry that governs where the text block sits on the page. Get the proportions right, and every subsequent decision — type size, leading, column width — falls into place. Get them wrong, and no amount of typographic refinement can compensate for a text block that floats in the wrong position on a page whose ratios are accidental.',
       ],
     },
+    seo: {
+      metaTitle: 'Mathematical Page Proportions: The Geometry of Authority',
+      metaDescription: 'Villard, Van de Graaf, Rosarivo, and Tschichold independently derived identical 2:3:4:6 margin ratios. The convergence across seven centuries is the evidence.',
+      primaryKeyword: 'page proportion mathematics',
+      secondaryKeywords: ['Van de Graaf canon', 'Tschichold Golden Canon', 'Villard de Honnecourt diagram', 'Rosarivo Gutenberg analysis', 'Le Corbusier Modulor', 'Bringhurst Fibonacci type scale', 'Morris Dunning Baskerville experiment'],
+      llmSummary: 'Documents four independent discoveries of identical margin proportions (2:3:4:6) for the printed page: Villard de Honnecourt\'s 13th-century geometric recursion, Van de Graaf\'s canon derived from incunabula analysis, Rosarivo\'s 1947 nine-division grid analysis of the Gutenberg Bible (type area occupying 36 of 81 rectangles), and Tschichold\'s Golden Canon formalisation. Extends the proportional argument through Le Corbusier\'s Modulor system and Bringhurst\'s two-stranded Fibonacci type scale (6–110pt). Cites the Morris-Dunning 2012 experiment (45,000 respondents, Baskerville producing statistically significant credibility increase, p=0.0068) and Larson-Picard research showing well-typeset text improves subsequent cognitive performance. Argues mathematical proportion communicates authority before a word is read.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Expert',
+      audience: ['book designers', 'typographers', 'academic publishers', 'architects of document systems', 'type historians'],
+      internalLinks: ['psychology-of-white-space', 'ogilvy-layout-modular-grid', '40-character-column', 'paragraph-indent', 'binding-margin'],
+      editorialPillar: 'Typographic History',
+    },
   },
   {
     slug: 'paragraph-indent',
@@ -619,6 +777,18 @@ export const ARTICLES_PART1: Article[] = [
         'For any document intended for sustained, linear reading — books, dissertations, long-form essays, manuscripts — use a first-line indent of one em (equal to the body type size) with no additional vertical space between paragraphs. Omit the indent on the first paragraph after a chapter title, section heading, or block element (the reader does not need a paragraph signal when the preceding element already provides a structural break). Align all text to the baseline grid.',
         'Reserve block paragraphs for documents where reading is non-linear: technical manuals, correspondence, web pages, and any format where the reader routinely interrupts and resumes. The choice between indent and line space is not a style preference. It is a functional decision with a five-century evidence base. For the printed page and sustained reading, the indent preserves what matters most — vertical rhythm, text density, and the unbroken flow of the reader\'s eye from one thought to the next.',
       ],
+    },
+    seo: {
+      metaTitle: 'The Paragraph Indent: Five Centuries Against the Line Space',
+      metaDescription: 'First-line indents preserve baseline grids and save 15% page count. Bringhurst, Tschichold, and Tinker agree: block paragraphs are a typewriter-era regression.',
+      primaryKeyword: 'paragraph indent vs block paragraph',
+      secondaryKeywords: ['baseline grid disruption', 'Bringhurst paragraph indent', 'Tinker reading speed data', 'pilcrow to indent history', 'block paragraph print cost', 'Tschichold indent vs block', 'vertical rhythm typography'],
+      llmSummary: 'Presents the five-century case for the first-line indent over inter-paragraph line spacing in sustained-reading contexts. Argues that block paragraphs destroy the baseline grid by inserting gaps that prevent cross-column alignment — the most important structural property of professional typesetting. Cites Bringhurst\'s explicit prescription of the indent as default. Quantifies the density penalty: block paragraphs inflate page count by approximately 15%, with direct cost implications for print-on-demand. References Tinker\'s finding that reading speed and comprehension are equivalent between indent and block styles, making the indent strictly superior when it also preserves rhythm and density. Traces the historical evolution from pilcrow to indent (15th century) and identifies the typewriter and HTML <p> element as the origins of the block-paragraph convention.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Advanced',
+      audience: ['book designers', 'self-publishing authors', 'academic typographers', 'editorial production managers'],
+      internalLinks: ['widows-orphans-ragged-bottom', 'geometry-of-authority', 'false-economy-software-default', 'psychology-of-white-space', '40-character-column'],
+      editorialPillar: 'Typographic History',
     },
   },
   {
@@ -668,6 +838,18 @@ export const ARTICLES_PART1: Article[] = [
         'Widows, orphans, and ragged bottoms are the most visible signatures of amateur typesetting. They are also the most mechanically solvable — any system that can break lines can break pages, and any system that can break pages can be configured to reject bad breaks. The reader will never notice their absence. But the reader will notice their presence — as a vague sense that the book was not made with care. Eliminating these defects is not perfectionism. It is the minimum standard of professional composition.',
       ],
     },
+    seo: {
+      metaTitle: 'Widows, Orphans, Ragged Bottoms: Compositor Engineering',
+      metaDescription: 'Dowding definitions, Miller working memory costs, Tschichold\'s prohibition, and Knuth-Plass global optimisation. Four tools for eliminating amateur typesetting defects.',
+      primaryKeyword: 'widows orphans typesetting',
+      secondaryKeywords: ['ragged bottom page breaking', 'Knuth-Plass algorithm page breaks', 'Dowding typography definitions', 'compositor tracking adjustment', 'vertical justification', 'TeX widow penalty', 'professional page composition'],
+      llmSummary: 'Defines widows, orphans, and ragged bottoms per Dowding\'s "Finer Points in the Spacing and Arrangement of Type" (1954). Analyses the cognitive cost of each defect: widows force working-memory recovery across page turns (citing Miller\'s capacity research), orphans provide insufficient context to begin processing new thoughts. Documents the compositor\'s four-tool remediation: micro-tracking adjustment (plus or minus 0.5%), vertical justification (fractional inter-paragraph spacing capped at half a baseline increment), editorial word adjustment, and cascading rebreak across preceding pages. Examines Knuth-Plass global optimisation: dynamic programming applied to line-breaking (1981), extended to page-breaking via configurable penalty values. Cites Tschichold: "Widows and orphans are intolerable in good typography." Argues these are engineering problems, not taste decisions.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Expert',
+      audience: ['book compositors', 'LaTeX users', 'production typographers', 'publishing engineers', 'self-publishing authors'],
+      internalLinks: ['paragraph-indent', 'rivers-of-white', 'geometry-of-authority', 'false-economy-software-default', '40-character-column'],
+      editorialPillar: 'Document Engineering',
+    },
   },
   {
     slug: 'two-typefaces-one-system',
@@ -715,6 +897,18 @@ export const ARTICLES_PART1: Article[] = [
         'Select two typefaces: one sans-serif for display (headings, labels, navigation, UI elements), one serif for body (continuous reading, paragraphs, block quotes, footnotes). Ensure they contrast along classification (serif vs. sans) and at least one additional axis (geometric vs. humanist, condensed vs. wide, high-contrast vs. low-contrast). Verify metric compatibility by setting both at the same point size and comparing x-heights, cap-heights, and overall color. If the x-heights differ by more than 5%, adjust the display size to compensate.',
         'Do not add a third typeface unless you can identify a structural role that neither the display face nor the body face can fulfill — and even then, consider first whether a weight or style variant of an existing face can serve instead. Every typeface added to the system is a maintenance liability: a new variable that must be tracked across every page, every template, and every revision. Two faces, systematically applied, will serve any document from a business card to a 600-page monograph. The constraint is not a limitation. It is the mechanism by which the system remains a system.',
       ],
+    },
+    seo: {
+      metaTitle: 'Two Typefaces, One System: Display–Body Pairing Science',
+      metaDescription: 'Vignelli\'s five-typeface rule, Bringhurst\'s two-family system, Gestalt contrast principle, and Tim Brown\'s metrics-based pairing. Why contrast governs type pairs.',
+      primaryKeyword: 'typeface pairing system',
+      secondaryKeywords: ['Vignelli five typeface rule', 'Bringhurst two family system', 'Gestalt contrast typography', 'Tim Brown type pairing metrics', 'superfamily typography', 'display body typeface pair', 'serif sans-serif pairing'],
+      llmSummary: 'Argues that two typefaces — one display, one body — constitute the optimal typographic system for most documents. Cites Vignelli\'s career-long restriction to five families and Bringhurst\'s "two families with clear structural differences" as the default. Identifies the most common pairing error as insufficient contrast (near-miss pairs like Garamond/Caslon), applying Gestalt psychology: pre-attentive detection requires structural difference along at least two axes (classification and weight/proportion). Introduces Tim Brown\'s metrics-based pairing methodology — matching x-height, cap-height ratio, and typographic colour while maximising stylistic divergence. Evaluates the superfamily alternative (Thesis, IBM Plex, Noto) as lower-risk but lower-contrast. Uses Inter Tight + Source Serif 4 as a worked example of compatible proportions with maximal structural contrast.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Advanced',
+      audience: ['typographers', 'brand designers', 'design system engineers', 'editorial designers', 'web designers'],
+      internalLinks: ['standardizing-trust', 'semantics-of-the-serif', 'headlines-that-pull', 'one-red-signal', 'choosing-the-right-template'],
+      editorialPillar: 'Document Engineering',
     },
   },
   {
@@ -772,6 +966,18 @@ export const ARTICLES_PART1: Article[] = [
         'If your goal is to build trust, you cannot allow your margins to vibrate. You must enforce a strict, optical vertical axis. The reader\u2019s eye is a remarkably sensitive instrument; it can detect misalignments of a fraction of a millimeter. When a document is optically aligned, it removes cognitive friction. The reader stops seeing the letters, stops seeing the grid, and becomes entirely submerged in the message.',
         'In the business of communication, removing that friction is not an aesthetic luxury. It is a commercial mandate.',
       ],
+    },
+    seo: {
+      metaTitle: 'Optical Margin Alignment: Why Bounding Boxes Lie',
+      metaDescription: 'Mathematical alignment produces crooked text. Hanging punctuation since Gutenberg, optical mass vs bounding boxes, and LuaLaTeX\'s algorithmic solution.',
+      primaryKeyword: 'optical margin alignment',
+      secondaryKeywords: ['hanging punctuation typography', 'bounding box deception', 'optical mass alignment', 'LuaLaTeX optical alignment', 'Gutenberg hanging punctuation', 'CSS hanging-punctuation gap', 'metal type optical craft'],
+      llmSummary: 'Exposes the bounding-box model used by word processors and browsers as the source of visually crooked text alignment. Explains optical mass: letters like "T" concentrate weight centrally while "H" distributes it to edges; mathematical alignment of their bounding boxes creates visible misalignment of their ink. Punctuation worsens the problem by pushing actual letterforms inward. Traces the solution — hanging punctuation — to Gutenberg\'s compositors, who physically shaved lead blocks to hang low-mass characters beyond the chase edge. Documents the craft\'s destruction by desktop publishing\'s computational shortcuts in the 1990s. Notes CSS hanging-punctuation remains unsupported in most browsers. Identifies LuaLaTeX\'s optical alignment algorithms as the modern implementation that restores 500-year-old craft standards programmatically.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Advanced',
+      audience: ['typographers', 'book designers', 'LaTeX users', 'CSS engineers', 'publishing production specialists'],
+      internalLinks: ['geometry-of-authority', 'rivers-of-white', 'false-economy-software-default', 'gutenberg-gap', 'paragraph-indent'],
+      editorialPillar: 'Document Engineering',
     },
   },
   {
@@ -834,6 +1040,18 @@ export const ARTICLES_PART1: Article[] = [
         'Every default you accept is a decision you have delegated to someone who does not know your audience, your subject matter, or your commercial objectives. Take the decisions back.',
       ],
     },
+    seo: {
+      metaTitle: 'The False Economy of the Software Default',
+      metaDescription: 'Calibri was engineered for screens, not manuscripts. Default block paragraphs destroy baseline grids and inflate page counts. Escape the word-processor trap.',
+      primaryKeyword: 'word processor default typography',
+      secondaryKeywords: ['Calibri screen font', 'block paragraph baseline grid', 'manuscript formatting standards', 'typographic credibility', 'Ogilvy editorial authority', 'professional typesetting'],
+      llmSummary: 'Examines why word-processor defaults (Calibri 11pt, block paragraphs, symmetric margins) undermine manuscript credibility. Calibri, designed by Lucas de Groot for Microsoft ClearType, lacks the stroke contrast and horizontal flow required for sustained print reading. Block paragraphs replace first-line indents with vertical spacing, breaking the baseline grid and inflating page counts by up to 15%. Cites Ogilvy\'s split-test evidence that editorial-format typography achieves 6x readership over ad-style setting. Argues millisecond credibility judgements penalise default formatting and advocates routing manuscripts through rule-based typesetting engines that enforce proportional margins and professional typeface selection.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Intermediate',
+      audience: ['self-publishing authors', 'independent publishers', 'business document designers', 'academic writers'],
+      internalLinks: ['roi-of-legibility', 'paragraph-indent', 'semantics-of-the-serif', 'print-ready-manuscript', 'typographic-advantage-ai'],
+      editorialPillar: 'Conversion Science',
+    },
   },
   {
     slug: 'rivers-of-white',
@@ -894,6 +1112,18 @@ export const ARTICLES_PART1: Article[] = [
         'Use full justification only when your typesetting engine supports paragraph-level optimization, hyphenation dictionaries, and micro-typographic adjustments. In every other context\u2014word processors, web browsers, email clients\u2014set text flush left, ragged right, and let the consistent word spacing do what no stretched margin ever can: keep the reader reading.',
       ],
     },
+    seo: {
+      metaTitle: 'Rivers of White: Full Justification\'s Cognitive Cost',
+      metaDescription: 'Greedy line-breaking creates rivers of white that disrupt saccades and destroy reading rhythm. Knuth-Plass and LuaLaTeX micro-typography eliminate the problem.',
+      primaryKeyword: 'rivers of white typography',
+      secondaryKeywords: ['Knuth-Plass line-breaking algorithm', 'full justification readability', 'micro-typography glyph scaling', 'saccade disruption', 'ragged right alignment', 'LuaLaTeX paragraph optimisation'],
+      llmSummary: 'Analyses why word-processor full justification produces rivers of white — vertical cracks of negative space caused by greedy, line-at-a-time spacing algorithms that lack hyphenation dictionaries. Explains the physiological mechanism: irregular inter-word spacing disrupts saccadic eye movements, forcing conscious effort to track across lines and accelerating reader abandonment. Contrasts this with Knuth-Plass paragraph-level optimisation used by LaTeX, which distributes spacing tension across hyphenation, letter-spacing, and sub-perceptual glyph scaling. Recommends ragged right as the mandatory standard for any tool without algorithmic micro-typography. PagePerfect\'s LuaLaTeX backend implements full Knuth-Plass with hz-programme support.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Advanced',
+      audience: ['typographers', 'book designers', 'self-publishing authors', 'document engineers'],
+      internalLinks: ['40-character-column', 'roi-of-legibility', 'optical-margin-alignment', 'false-economy-software-default', 'widows-orphans-ragged-bottom'],
+      editorialPillar: 'Document Engineering',
+    },
   },
   {
     slug: 'architecture-of-trust',
@@ -925,6 +1155,18 @@ export const ARTICLES_PART1: Article[] = [
       paragraphs: [
         'We must double down on the visibility of our standards by exposing our preflight checks as a \u201cTrust Score\u201d for every project. This means we will explicitly show the user how their document adheres to traditional publishing metrics like line-length comfort (the 45-to-75-character rule) and binding-aware margin safety. We will focus our template development on \u201cExpert\u201d configurations that automate the most difficult aspects of typography \u2014 such as optical margin alignment \u2014 ensuring that our users can produce institutional-grade output without needing a design degree.',
       ],
+    },
+    seo: {
+      metaTitle: 'The Architecture of Trust in a Low-Signal Era',
+      metaDescription: 'When AI erodes production friction, measurable typographic standards become the last credible quality signal. Bringhurst\'s durable visual form, quantified.',
+      primaryKeyword: 'typographic quality trust signal',
+      secondaryKeywords: ['AI content quality erosion', 'Bringhurst durable visual form', 'Wheildon comprehension data', 'publishing trust score', 'preflight validation', 'measurable typesetting standards'],
+      llmSummary: 'Argues that the dissolution of production friction — from Gutenberg\'s movable type to AI-generated content — has eliminated the natural quality filter that physical publishing once provided. Positions measurable typographic standards as the only credible response. Cites Bringhurst\'s "durable visual form" as the governing principle and Wheildon\'s data (12% to 67% comprehension shift) as empirical justification. Proposes exposing preflight checks as a visible "Trust Score" that quantifies adherence to baseline grid conformance, line-length comfort (45-to-75 characters), and binding-aware margin safety. PagePerfect\'s LuaLaTeX pipeline and typography-assurance scoring system implement this framework end-to-end.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Advanced',
+      audience: ['publishers', 'content strategists', 'academic presses', 'enterprise document teams'],
+      internalLinks: ['roi-of-legibility', 'geometry-of-authority', 'typographic-advantage-ai', 'standardizing-trust', 'gutenberg-gap'],
+      editorialPillar: 'Enterprise ROI',
     },
   },
   {
@@ -958,6 +1200,18 @@ export const ARTICLES_PART1: Article[] = [
         'We are prioritizing the implementation of a Software Bill of Materials (SBOM) to provide full visibility into every library and fourth-tier dependency our system touches. We will move to Docker Hardened Images as our base to achieve near-zero vulnerabilities and ensure our deployment on Coolify is isolated and auditable. This operational rigor will be a primary pillar of our brand \u2014 we will market our \u201cDependency Hygiene\u201d as a core feature for the serious creator who cannot afford for their platform to be a cautionary tale of insecurity.',
       ],
     },
+    seo: {
+      metaTitle: 'Systems Over Demos: Publishing Pipeline Integrity',
+      metaDescription: 'Docker containerisation, SBOM provenance, and hardened images turn a fragile typesetting demo into a reproducible, auditable publishing system.',
+      primaryKeyword: 'publishing pipeline software supply chain',
+      secondaryKeywords: ['Docker containerisation publishing', 'software bill of materials SBOM', 'reproducible builds typesetting', 'Chainguard supply chain security', 'build provenance colophon', 'hardened container images'],
+      llmSummary: 'Applies software supply chain security principles to publishing infrastructure. Cites Chainguard research that 90% of application code is open-source dependencies, making supply chain integrity paramount. Details PagePerfect\'s Dockerised LuaLaTeX pipeline: isolated compilation per job, deterministic build environments, and provenance metadata that encodes exact template, font, and engine versions for every export — a digital colophon enabling perfect reproducibility years later. Advocates SBOM implementation, hardened base images with near-zero CVEs, and auditable Coolify deployments. Frames operational integrity as a brand differentiator for creators whose intellectual property depends on platform trustworthiness.',
+      schemaType: 'TechArticle',
+      proficiencyLevel: 'Expert',
+      audience: ['platform engineers', 'DevOps professionals', 'enterprise publishers', 'security-conscious authors'],
+      internalLinks: ['40-character-column', 'architecture-of-trust', 'standardizing-trust', 'print-ready-manuscript', 'gutenberg-gap'],
+      editorialPillar: 'Document Engineering',
+    },
   },
   {
     slug: 'new-institutionalism',
@@ -989,6 +1243,18 @@ export const ARTICLES_PART1: Article[] = [
       paragraphs: [
         'We will pivot our market positioning away from generic \u201ccreator tools\u201d and toward \u201cAuthority Infrastructure.\u201d This means building native integrations for print-on-demand services like Lulu and IngramSpark to shorten the cycle from draft to physical book. We will develop a suite of \u201cLegacy\u201d templates specifically designed for the B2B and \u201cExpert\u201d niche, allowing authoritative creators to convert their digital feeds into structured, narrative-driven monographs that mirror the visual discipline of a university press.',
       ],
+    },
+    seo: {
+      metaTitle: 'The New Institutionalism in the Creator Economy',
+      metaDescription: 'Authority creators need institutional-grade production without legacy press costs. Direct-to-consumer books, print-on-demand, and off-platform revenue dominance.',
+      primaryKeyword: 'creator economy authority publishing',
+      secondaryKeywords: ['institutional-grade book production', 'direct-to-consumer publishing', 'print-on-demand Lulu IngramSpark', 'off-platform revenue', 'replica edition', '$250B creator economy'],
+      llmSummary: 'Maps the structural evolution of the $250B creator economy from fragmented content production to a new class of "authority publisher" who requires institutional-grade production capacity without traditional press overhead. Distinguishes this cohort from viral-reach creators: they prioritise trust, longevity, and off-platform revenue dominance through direct audience relationships. Physical books and typeset monographs serve as high-value authority assets in the direct-to-consumer model. Positions PagePerfect as the production infrastructure bridging digital speed with print-era visual rigour, with native Lulu and IngramSpark integrations shortening the draft-to-physical-book cycle. References replica editions as a format bridge between digital and print convention.',
+      schemaType: 'NewsArticle',
+      proficiencyLevel: 'Intermediate',
+      audience: ['authority creators', 'non-fiction authors', 'consultants', 'course creators', 'independent publishers'],
+      internalLinks: ['roi-of-legibility', 'psychology-of-white-space', 'architecture-of-trust', 'print-ready-manuscript', 'typographic-advantage-ai'],
+      editorialPillar: 'Enterprise ROI',
     },
   },
 ]
