@@ -702,6 +702,17 @@ body[data-editor] > * > footer { display: none !important; }
   margin-top: 0.75rem;
 }
 
+/* Journal category filter — active states */
+.journal-category-active {
+  border-left: 2px solid #111111;
+  padding-left: 0.5rem;
+}
+.journal-chip-active {
+  border-color: #111111;
+  color: #111111;
+  background: rgba(17, 17, 17, 0.04);
+}
+
 /* Journal sidebar */
 .journal-sidebar {
   position: sticky;
