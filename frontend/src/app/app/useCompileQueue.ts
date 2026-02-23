@@ -44,6 +44,7 @@ export function useCompileQueue({
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const compileGenRef = useRef(0)
+  const retryCountRef = useRef(0)
 
   // Clean blob URLs on unmount/swap
   useEffect(() => {
@@ -109,12 +110,12 @@ export function useCompileQueue({
     abortRef.current = controller
 
     const gen = ++compileGenRef.current
+    // Reset retry counter on fresh user-initiated compiles (gen changes)
+    retryCountRef.current = 0
 
     setLoading(true)
     setStatus('compiling')
     setErrors([])
-
-    let retried = false
 
     try {
       const effectiveMd = adjustHeadingsForTemplate(manuscript, template)
@@ -184,8 +185,9 @@ export function useCompileQueue({
       const delays = [500, 1000, 2000, 3000, 5000]
       let pollIndex = 0
       let networkErrors = 0
+      const maxPolls = 60 // ~3 minutes max polling time
 
-      while (true) {
+      while (pollIndex < maxPolls) {
         if (gen !== compileGenRef.current) return
 
         const delay = delays[Math.min(pollIndex, delays.length - 1)]
@@ -199,11 +201,11 @@ export function useCompileQueue({
           if (gen !== compileGenRef.current) return
 
           if (!statusResp.ok) {
-            // 404 = job expired from server memory — auto-recompile once
-            if (statusResp.status === 404 && !retried) {
-              retried = true
-              setStatus('compiling')
-              setTimeout(() => { void compile(downloadAfter, exportPlatform) }, 300)
+            if (statusResp.status === 404) {
+              // Job expired from server memory — show error instead of infinite retry
+              pdfBlobRef.current = null
+              setErrors([{ message: 'Compile job expired. Please try again.' }])
+              setStatus('error')
               return
             }
             networkErrors++
@@ -258,14 +260,6 @@ export function useCompileQueue({
             if (gen !== compileGenRef.current) return
 
             if (!pdfResp.ok) {
-              // Auto-retry on expired/restarted results (410) — recompile once
-              if ((pdfResp.status === 410 || pdfResp.status === 404) && !retried) {
-                retried = true
-                setStatus('compiling')
-                // Re-submit the compile instead of showing "expired" to the user
-                setTimeout(() => { void compile(downloadAfter, exportPlatform) }, 300)
-                return
-              }
               let payload: { message?: string; detail?: string } | null = null
               try { payload = await pdfResp.json() } catch { /* noop */ }
               pdfBlobRef.current = null
@@ -294,6 +288,11 @@ export function useCompileQueue({
           }
         }
       }
+
+      // Polling exhausted — compile took too long
+      pdfBlobRef.current = null
+      setErrors([{ message: 'Compilation timed out. Please try again.' }])
+      setStatus('error')
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === 'AbortError') return
       if (e instanceof Error && e.name !== 'AbortError') {
@@ -306,6 +305,10 @@ export function useCompileQueue({
     }
   }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, customFont, handlePdfBlob])
 
+  // Keep a ref to the latest compile so the debounce timer always calls the current version
+  const compileRef = useRef(compile)
+  compileRef.current = compile
+
   // ── Debounced auto-compile in design stage ──
   const prevManuscriptRef = useRef(manuscript)
   useEffect(() => {
@@ -314,7 +317,7 @@ export function useCompileQueue({
     const isTextChange = prevManuscriptRef.current !== manuscript
     prevManuscriptRef.current = manuscript
     const delay = isTextChange ? 3000 : 1500
-    debounceRef.current = window.setTimeout(() => { void compile(false) }, delay)
+    debounceRef.current = window.setTimeout(() => { void compileRef.current(false) }, delay)
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, stage])
