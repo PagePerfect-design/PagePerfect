@@ -17,6 +17,7 @@ const store = createStore('pageperfect-db', 'manuscripts')
 
 const MS_KEY = 'pp-manuscript-v1'
 const TITLE_KEY = 'pp-title-v1'
+const ASSETS_KEY = 'pp-assets-v1'
 
 // ── Migration: move data from localStorage to IndexedDB on first use ──
 
@@ -85,8 +86,37 @@ export async function saveManuscript(manuscript: string, title: string): Promise
 
 export async function clearManuscript(): Promise<void> {
   try {
-    await Promise.all([del(MS_KEY, store), del(TITLE_KEY, store)])
+    await Promise.all([del(MS_KEY, store), del(TITLE_KEY, store), del(ASSETS_KEY, store)])
   } catch {
     // ignore
+  }
+}
+
+// ── Asset persistence ──
+// Stores asset metadata (IDs, filenames) so they survive page refreshes.
+// The actual files live on the backend in /tmp/pp-assets/{UUID}/ with 24h TTL.
+
+export type StoredAsset = {
+  assetId: string
+  filename: string
+  originalName: string
+  size: number
+  mimeType: string
+}
+
+export async function loadAssets(): Promise<StoredAsset[]> {
+  try {
+    const assets = await get<StoredAsset[]>(ASSETS_KEY, store)
+    return assets ?? []
+  } catch {
+    return []
+  }
+}
+
+export async function saveAssets(assets: StoredAsset[]): Promise<void> {
+  try {
+    await set(ASSETS_KEY, assets, store)
+  } catch {
+    // IndexedDB unavailable — assets will be lost on refresh
   }
 }

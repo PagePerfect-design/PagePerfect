@@ -16,6 +16,14 @@ export type PaperStock = 'white' | 'cream'
 export type ExportFormat = 'pdf' | 'epub'
 export type CustomFont = { fontId: string; fontName: string; originalName: string } | null
 
+export type Asset = {
+  assetId: string
+  filename: string
+  originalName: string
+  size: number
+  mimeType: string
+}
+
 export type PreflightCheck = {
   name: string
   status: 'pass' | 'fail' | 'warn' | 'info'

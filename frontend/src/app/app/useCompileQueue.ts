@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import type {
   TemplateKey, HeadingVariant, PageSize, MarginPreset,
   CompileMode, CustomFont, Status, CompileError, Stage, Platform,
-  CompileQuality,
+  CompileQuality, Asset,
 } from './editor-types'
 import { adjustHeadingsForTemplate, buildFilename, abortableDelay } from './editor-utils'
 import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
@@ -25,13 +25,14 @@ export interface CompileQueueOptions {
   safeMode: boolean
   compileMode: CompileMode
   customFont: CustomFont
+  assets: Asset[]
   stage: Stage
   refreshUser: () => void
 }
 
 export function useCompileQueue({
   manuscript, template, headingVariant, title, pageSize, marginPreset,
-  safeMode, compileMode, customFont, stage, refreshUser,
+  safeMode, compileMode, customFont, assets, stage, refreshUser,
 }: CompileQueueOptions) {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
@@ -132,6 +133,7 @@ export function useCompileQueue({
       if (downloadAfter) body.download = true
       if (exportPlatform === 'ingram') body.outputFormat = 'pdfx1a'
       if (customFont) body.customFonts = { main: customFont.fontId }
+      if (assets.length > 0) body.assets = assets.map(a => a.assetId)
 
       const fetchHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
       if (isPocketBaseConfigured) {
@@ -322,7 +324,7 @@ export function useCompileQueue({
     } finally {
       setLoading(false)
     }
-  }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, customFont, handlePdfBlob])
+  }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, customFont, assets, handlePdfBlob])
 
   // Keep a ref to the latest compile so the debounce timer always calls the current version
   const compileRef = useRef(compile)
