@@ -904,146 +904,90 @@ export const ARTICLES_PART1: Article[] = [
     date: '2026-02-23',
     readTime: '6 min',
     hook:
-      'The history of publishing is, at its core, a history of signal. From the moment Johannes Gutenberg adapted the wine press for movable type in fifteenth-century Mainz, the physical book became a vessel of authority because the production process was itself an act of extreme friction. To print a page was to commit resources \u2014 metal, ink, paper, and months of skilled labour \u2014 to an idea. This friction acted as a natural filter; if a text was typeset, it was, by definition, considered worthy of preservation. In the present day, that filter has dissolved. We live in a world of high-velocity, low-signal content, where generative AI can produce thousands of pages in seconds and digital tools allow anyone to dump text into a generic template. When production cost nears zero, the traditional markers of quality \u2014 balanced margins, thoughtful kerning, a consistent baseline grid \u2014 often vanish. For the skeptical reader, a poorly formatted document is no longer just an eyesore; it is a warning sign. It suggests a lack of care that likely extends to the ideas themselves.',
+      'The history of publishing is, at its core, a history of signal. From the moment Johannes Gutenberg adapted the wine press for movable type in 15th-century Mainz, the physical book became a vessel of authority because the production process was itself an act of extreme friction. To print a page was to commit metal, ink, paper, and months of skilled labour to an idea. This friction acted as a natural filter; if a text was typeset, it was, by definition, considered worthy of preservation. In the present day, that filter has dissolved. We live in a world of high-velocity, low-signal content, where generative AI can produce thousands of pages in seconds and digital tools allow anyone to dump text into generic templates. When production cost nears zero, the traditional markers of quality \u2014 balanced margins, thoughtful kerning, and a consistent baseline grid \u2014 often vanish. For the skeptical reader, a poorly formatted document is no longer just an eyesore; it is a warning sign of intellectual neglect. It suggests a lack of care that likely extends to the ideas themselves.',
     sections: [
       {
         heading: 'The Measurable Definition of Quality',
         paragraphs: [
-          'Quality in a modern publishing context must be defined by more than a vague aesthetic sense. It is a set of measurable technical standards that directly impact readability and trust. Robert Bringhurst, in The Elements of Typographic Style, famously stated that \u201ctypography is the craft of endowing human language with a durable visual form.\u201d That durable form is achieved not through decoration but through a production pipeline that treats every paragraph as an engineering challenge.',
-          'True quality is found in the invisible work: the mathematical precision of hyphenation and justification rules, the avoidance of widows and orphans that disrupt the reading rhythm, and the calculation of inner margins to account for physical binding. These are not merely decorative choices. Colin Wheildon\u2019s decade-long research at the Royal Melbourne Institute of Technology demonstrated that moving from poorly set body text to well-set text can shift \u201cgood comprehension\u201d rates from 12% to 67%. In a crowded market, high-grade typesetting is an editorial act that signals professional legitimacy to a skeptical audience.',
+          'Quality in a modern publishing platform must be defined by more than a vague aesthetic sense; it is a set of measurable technical standards that directly impact readability and trust. Robert Bringhurst, in The Elements of Typographic Style, famously stated that \u201ctypography is the craft of endowing human language with a durable visual form.\u201d For PagePerfect, that durable form is achieved through a production pipeline that treats every paragraph as an engineering challenge, much like the systematic approach described in our essay The Geometry of Authority.',
+          'True quality is found in the \u201cinvisible\u201d work: the mathematical precision of hyphenation and justification (H and J) rules, the avoidance of \u201cwidows\u201d and \u201corphans\u201d that disrupt the reading rhythm, and the calculation of inner margins to account for physical binding. These are not merely decorative choices. Research indicates that moving from a poorly set body text to a well-set one can shift \u201cgood comprehension\u201d rates from 12% to 67%. In a crowded market, high-grade typesetting is an \u201ceditorial act\u201d that signals professional legitimacy to a skeptical audience.',
         ],
       },
       {
-        heading: 'The Invisible Work',
+        heading: 'The PagePerfect Perspective',
         paragraphs: [
-          'Consider what separates a professionally typeset book from a manuscript exported through a consumer word processor. The differences are numerous and almost entirely invisible to the untrained eye \u2014 which is precisely the point. A professional compositor calculates the gutter margin based on the binding method: perfect binding demands a wider inner margin than saddle-stitching because the pages curve into the spine. A word processor applies the same margin regardless.',
-          'A professional system enforces a baseline grid \u2014 a series of evenly spaced horizontal lines to which every line of text adheres. When baselines align across facing pages, the reader perceives a visual coherence that registers as authority, even if they cannot articulate why. A consumer tool lets each text frame drift independently, producing the subtle visual noise that marks amateur output.',
-          'Hyphenation is another domain of invisible craft. The Knuth-Plass algorithm, which powers TeX-descended engines, evaluates the entire paragraph as a mathematical network to determine optimal line breaks. Consumer word processors break lines one at a time, top to bottom, producing the uneven word-spacing and rivers of white that degrade sustained reading.',
-        ],
-      },
-      {
-        heading: 'The Programmatic Compositor',
-        paragraphs: [
-          'The solution to the quality crisis is not to hire more human compositors \u2014 the economics of modern publishing do not support it. The solution is to encode the compositor\u2019s knowledge into the production pipeline itself. This is the approach that Donald Knuth pioneered with TeX in the late 1970s: a system where typographic rules are expressed as algorithms, not as manual adjustments.',
-          'A programmatic typesetting engine like LuaLaTeX \u2014 a modern descendant of Knuth\u2019s original system \u2014 remains the industry standard for complex book layout because it treats the page as a set of constraints to be solved. Margin ratios, type scales, leading, and hyphenation patterns are defined once and applied consistently across every page of a document. The result is the same rigorous output that was once reserved for the master compositor, delivered at the speed that modern publishing demands.',
-          'While many modern word processors fail to provide the typographic flexibility required for serious publishing, a programmatic backend ensures that every document follows the same rules \u2014 rules validated by centuries of printing practice and decades of empirical reading research.',
-        ],
-      },
-      {
-        heading: 'Exposing the Standard',
-        paragraphs: [
-          'If quality is measurable, it should be visible. The logical extension of encoding typographic standards into a pipeline is to expose those standards as a set of diagnostics \u2014 a trust score for every project. This means explicitly reporting how a document adheres to traditional publishing metrics: line-length comfort (the 45-to-75-character rule established by Bringhurst), binding-aware margin safety, baseline grid conformance, and hyphenation quality.',
-          'Such transparency serves two purposes. For the author, it demystifies the compositor\u2019s craft and provides actionable feedback. For the reader, it provides an objective basis for the authority they already perceive in a well-set page. In an era where the friction of production can no longer serve as a quality filter, the visibility of the standard itself must take its place.',
+          'We reject the notion that modern speed necessitates a decline in standards. PagePerfect utilizes LuaLaTeX \u2014 a descendant of Donald Knuth\u2019s TeX \u2014 precisely because it remains the industry standard for complicated book layout and advanced mathematics. While many modern word processors fail to provide the typographic flexibility required for serious publishing, our use of a programmatic backend ensures that every document follows the same rigorous rules once reserved for the master compositor.',
         ],
       },
     ],
     conclusion: {
-      heading: 'The Actionable Rule',
+      heading: 'What This Means for PagePerfect',
       paragraphs: [
-        'Define your quality standard in terms that can be measured, not felt. For any document intended for print or professional distribution, verify the following before export: line lengths fall within 45 to 75 characters, inner margins account for binding method and page count, baselines align across facing pages, and hyphenation is governed by a paragraph-level algorithm rather than a line-by-line breaker. If your tool cannot report these metrics, your tool is not a publishing system \u2014 it is a word processor with a PDF button.',
-        'The Gutenberg filter \u2014 the friction that once guaranteed a minimum standard of care \u2014 is gone. The only replacement is an explicit, auditable commitment to the measurable parameters that define professional typesetting. In a low-signal era, the architecture of trust is not built from marketing claims. It is built from baseline grids, margin ratios, and hyphenation algorithms.',
+        'We must double down on the visibility of our standards by exposing our preflight checks as a \u201cTrust Score\u201d for every project. This means we will explicitly show the user how their document adheres to traditional publishing metrics like line-length comfort (the 45-to-75-character rule) and binding-aware margin safety. We will focus our template development on \u201cExpert\u201d configurations that automate the most difficult aspects of typography \u2014 such as optical margin alignment \u2014 ensuring that our users can produce institutional-grade output without needing a design degree.',
       ],
     },
   },
   {
     slug: 'systems-over-demos',
-    title: 'Systems Over Demos: Building a Reliable Publishing Pipeline',
+    title: 'Systems Over Demos: Operational Integrity in the Publishing Pipeline',
     description:
       'Why the operational integrity of a publishing platform matters more than any single rendered page \u2014 and how containerised infrastructure turns a fragile demo into a trustworthy system.',
     category: 'Design Systems',
     date: '2026-02-23',
     readTime: '6 min',
     hook:
-      'Software development today is less about writing code and more about managing a supply chain. A publishing platform is not just a piece of software; it is a complex, interconnected chain of dependencies, containers, and deployment scripts. The operational reality is clear: a demo can render a single page of text, but a system must render ten thousand books reliably, securely, and reproducibly. The transition from print-heavy operations to digital-led strategies has imposed a new set of rigid constraints. While the old model was defined by physical presses and fixed deadlines, the modern system is defined by the vulnerabilities inherent in open-source libraries and the volatility of automated build pipelines. For the creator who entrusts their most valuable intellectual property to a platform, the difference between a demo and a system is the difference between a party trick and a publishing house.',
+      'Software development today is less about writing original code and more about managing a sophisticated supply chain. In the modern era, a publishing platform is not just a tool; it is a complex, interconnected chain of dependencies, containers, and deployment scripts. For the team building PagePerfect, the operational reality is clear: a \u201cdemo\u201d can render a single page of text, but a \u201csystem\u201d must render ten thousand books reliably, securely, and reproducibly. This essay adopts the precise, technically literate tone of this journal\u2019s The 40-Character Column, which treats typographic variables as engineering parameters. The danger of brittle deployment is particularly acute for a platform like PagePerfect, where creators rely on the system for their most valuable intellectual property. If the system fails, a book launch is delayed; if security is breached, an unpublished manuscript is leaked. Security in the software supply chain is no longer an afterthought \u2014 it is mission-critical.',
     sections: [
       {
         heading: 'The Fragility of the Supply Chain',
         paragraphs: [
-          'The danger of brittle deployment is particularly acute for a platform that handles creators\u2019 most valuable intellectual property. If the system fails, a book launch is delayed; if security is breached, an unpublished manuscript is leaked. Security in the software supply chain is no longer an afterthought \u2014 it is mission-critical.',
-          'A single overlooked vulnerability in a third-party dependency is an open invitation for compromise. Research into modern software architecture reveals that as much as 90% of the code in a new application is composed of existing open-source components, making the security of that supply chain paramount. Maintaining a secure posture means moving beyond basic vulnerability scanning to a proactive strategy that starts at software selection and runs through decommissioning. The node_modules folder of a typical JavaScript project is not a collection of utilities \u2014 it is an attack surface.',
+          'A single overlooked vulnerability in a third-party dependency is an open invitation for compromise. As Chainguard\u2019s research into software supply chain security documents, as much as 90% of the code in a new application is composed of existing open-source components, making the security of that supply chain paramount. \u201cWithout continuous improvement \u2026 you\u2019re not standing still \u2014 you\u2019re walking backward into oncoming traffic.\u201d',
+          'To counter this, PagePerfect utilizes a Dockerised infrastructure. This is not just a trend; it is a strategy for reproducibility. As Docker\u2019s own guidance on securing the software supply chain emphasises, containerisation embeds security directly into the developer workflow, allowing for the use of \u201chardened\u201d images that significantly cut the attack surface. By isolating our typesetting engine \u2014 LuaLaTeX \u2014 inside ultra-minimal containers, we ensure that the build environment is identical every time, whether it is running on a developer\u2019s laptop or a production droplet.',
         ],
       },
       {
-        heading: 'Reproducibility Through Containerisation',
+        heading: 'Provenance and Verification',
         paragraphs: [
-          'Docker is not a trend; it is a strategy for reproducibility. By isolating every component of the typesetting pipeline \u2014 the LaTeX engine, the Pandoc converter, the font registry, the Lua filters \u2014 inside a minimal container, the build environment becomes identical every time. Whether the pipeline runs on a developer\u2019s laptop, a CI runner, or a production droplet, the output is byte-for-byte consistent.',
-          'Docker also embeds security directly into the developer workflow. Hardened base images cut the attack surface significantly by removing unnecessary packages, shells, and utilities. A container that runs only LuaLaTeX and Pandoc does not need curl, wget, or a package manager. Each component removed is a vector eliminated. The principle is the same one that governs professional typesetting: everything that does not serve the function of the page is removed from the page.',
-          'For a publishing platform, this translates into a concrete guarantee: the PDF you generated yesterday will be identical to the PDF you generate tomorrow, because the environment that produced it has not changed. Version-pinned dependencies, locked base images, and deterministic build scripts are the containerised equivalent of a press calibration sheet.',
-        ],
-      },
-      {
-        heading: 'The Software Bill of Materials',
-        paragraphs: [
-          'A Software Bill of Materials \u2014 an SBOM \u2014 is a complete, machine-readable inventory of every library, tool, and transitive dependency that a system touches. In regulated industries, SBOMs are already mandatory. In publishing, they are conspicuously absent, despite the fact that a publishing platform handles content whose premature disclosure can cause significant commercial harm.',
-          'An SBOM provides full visibility into the fourth-tier dependencies that no developer audits manually. When a vulnerability is disclosed in a library three levels deep in the dependency tree, an SBOM allows the team to determine exposure in minutes rather than days. It transforms incident response from a panicked grep through lock files into a structured, auditable process.',
-          'For the serious creator evaluating platforms, the existence of an SBOM is a signal of operational maturity. It demonstrates that the team understands the difference between \u201cit works\u201d and \u201cwe know exactly what it is running.\u201d',
-        ],
-      },
-      {
-        heading: 'Continuous Improvement as Policy',
-        paragraphs: [
-          'As engineering standards evolve, a publishing platform that does not continuously harden its infrastructure is not standing still \u2014 it is walking backward into oncoming traffic. The landscape of CVEs, deprecated APIs, and breaking changes in upstream dependencies demands a posture of active maintenance, not passive consumption.',
-          'This means treating every production push as a series of promises to the customer. The promise that the build environment has been audited. The promise that the container image has been scanned. The promise that the dependency tree has been reviewed against known vulnerability databases. These promises are kept not through intention but through automation: scheduled scans, pinned versions, and reproducible builds that can be regenerated from source at any point.',
-          'Operational rigor is not a feature that appears on a marketing page. It is the absence of the failure that never makes it to a bug report. For the creator whose livelihood depends on their manuscript reaching print on schedule, that absence is the most valuable feature a platform can offer.',
+          'Operational integrity also requires \u201cProvenance\u201d \u2014 a verifiable trail of how a document was created. Just as medieval scribes used colophons to identify the scribe and the place of production, PagePerfect generates build metadata that encodes the exact versions of the templates, fonts, and engines used for every export. This ensures that a PDF generated today can be perfectly reproduced ten years from now, a requirement for academic and legal records that standard \u201clive\u201d editors cannot meet.',
         ],
       },
     ],
     conclusion: {
-      heading: 'The Actionable Rule',
+      heading: 'What This Means for PagePerfect',
       paragraphs: [
-        'Before entrusting your manuscript to any digital publishing platform, ask three questions. First: can the platform reproduce an identical PDF from the same input six months from now? If the answer involves \u201cit should\u201d rather than \u201cit will, because the build environment is containerised and version-pinned,\u201d walk away. Second: does the platform maintain a Software Bill of Materials? If the team cannot enumerate their dependencies, they cannot secure them. Third: how does the platform handle a compromised upstream dependency? If the answer is \u201cwe update when we notice,\u201d the platform is a demo, not a system.',
-        'A rendered page is a proof of concept. A rendered page that is identical every time, secured against supply-chain compromise, and auditable from base image to final byte \u2014 that is a publishing pipeline. The distinction matters because your manuscript is not a test file. It is your intellectual property, your professional reputation, and possibly your livelihood. Entrust it only to a system that treats it accordingly.',
+        'We are prioritizing the implementation of a Software Bill of Materials (SBOM) to provide full visibility into every library and fourth-tier dependency our system touches. We will move to Docker Hardened Images as our base to achieve near-zero vulnerabilities and ensure our deployment on Coolify is isolated and auditable. This operational rigor will be a primary pillar of our brand \u2014 we will market our \u201cDependency Hygiene\u201d as a core feature for the serious creator who cannot afford for their platform to be a cautionary tale of insecurity.',
       ],
     },
   },
   {
     slug: 'new-institutionalism',
-    title: 'The New Institutionalism: Why Authority Publishing Demands a New Infrastructure',
+    title: 'The New Institutionalism: Strategic Identity in the Creator Economy',
     description:
       'How the structural shift in the creator economy is producing a new class of authority publisher who needs institutional-grade production capacity without the legacy costs of a traditional press.',
     category: 'Conversion',
     date: '2026-02-23',
     readTime: '6 min',
     hook:
-      'The creator economy is undergoing a massive structural shift. What began as a fragmented landscape of independent writers and bloggers has evolved into a global market worth over $250 billion annually. As this market matures, a new class of creator is emerging: the expert or authority creator who values trust and longevity over viral reach. These creators are essentially rebuilding media economics without the legacy costs of a traditional publisher, but they still require the institutional strengths of that old model \u2014 namely, high production capacity and editorial standards. The independent author who can produce a print-ready monograph with the visual discipline of a university press holds a decisive competitive advantage in a marketplace saturated with low-effort, AI-generated content.',
+      'The creator economy is undergoing a massive structural shift. What began as a fragmented landscape of independent writers and bloggers has evolved into a global market worth over $250 billion annually. As this market matures, a new class of creator is emerging: the \u201cexpert\u201d or \u201cauthority\u201d creator who values trust and longevity over viral reach. These creators are essentially rebuilding media economics without the legacy costs of a traditional publisher, but they still require the institutional strengths of that old model \u2014 namely, high production capacity and rigorous editorial standards. Following the narrative style of this journal\u2019s The ROI of Legibility, which connects design to economic outcomes, this article positions PagePerfect as the \u201cproduction capacity\u201d once reserved only for large presses.',
     sections: [
       {
         heading: 'The Evolution of the Workflow',
         paragraphs: [
-          'Historically, the print model dictated publishing for centuries. Large publishers maintained quality through careful selection and a labour-intensive process of typesetting and store distribution. The digital revolution shifted this paradigm, democratising content creation and allowing authors to find global audiences without printing thousands of copies upfront.',
-          'However, this democratisation came with a cost. Most creator tools focus on the web \u2014 on newsletters, blogs, and ebooks that prioritise speed over visual discipline. The standard ebook is a reflowable HTML document with no fixed page geometry, no baseline grid, and no binding-aware margins. It is, by typographic standards, a manuscript rather than a book.',
-          'As printing costs have stabilised and direct-to-consumer distribution has matured, the replica edition \u2014 a physical or digital version that maintains the fixed page layouts of traditional print \u2014 has become a bridge between the speed of digital creation and the authority of the print era. The infrastructure for this bridge is the missing layer in the current creator tool landscape.',
+          'Historically, the print model maintained quality through careful selection and a labour-intensive process of typesetting and store distribution. The digital revolution democratized creation but often at the cost of visual discipline. Most \u201ccreator tools\u201d focus on the web \u2014 on newsletters and ebooks that prioritize speed over the durable form required for serious monographs. As printing and distribution costs rise, the \u201creplica edition\u201d \u2014 a digital version that maintains familiar print layouts \u2014 has become a bridge between tradition and innovation.',
+          'PagePerfect is the infrastructure for this bridge. We combine the speed of a digital-led strategy with the visual rigor of the print era. For the professional creator, the goal is \u201coff-platform revenue dominance\u201d \u2014 moving away from volatile platform payouts and toward direct audience relationships. A physical book or a beautifully typeset monograph is a high-value asset in this direct-to-consumer model. It is a tangible piece of \u201cauthority\u201d in a faceless, AI-generated landscape.',
         ],
       },
       {
-        heading: 'The Authority Niche',
+        heading: 'Differentiation as a Moat',
         paragraphs: [
-          'The new authority creator is not a hobbyist. They are a consultant, an academic, a journalist, or a subject-matter expert whose published work is a direct extension of their professional reputation. For this creator, a poorly typeset book is not merely embarrassing \u2014 it is commercially destructive. A monograph with inconsistent margins, amateur hyphenation, and no baseline grid tells the reader that the author could not be bothered to invest in the presentation of their own ideas.',
-          'Conversely, a book that demonstrates the visual discipline of a Penguin Classic or a university press title signals that the author operates at an institutional level, even if they are a sole practitioner. The typographic quality of the physical object becomes a proxy for the intellectual quality of its contents \u2014 a heuristic that readers apply instinctively and that no amount of marketing copy can override.',
-          'This is the niche that the new publishing infrastructure must serve: the creator who needs the production capacity of a traditional press without the gatekeeping, the overhead, or the eighteen-month lead time.',
-        ],
-      },
-      {
-        heading: 'Off-Platform Revenue Dominance',
-        paragraphs: [
-          'For the professional creator, the strategic goal is off-platform revenue dominance \u2014 moving away from the volatile payouts of social media algorithms and toward direct audience relationships. A physical book or a beautifully typeset monograph is a high-value asset in this direct-to-consumer model. It is a tangible piece of authority in a landscape increasingly dominated by faceless, machine-generated text.',
-          'The economics are compelling. A creator who sells a $30 monograph directly to their audience retains the full margin, minus printing and fulfilment. The same creator publishing through a traditional house retains 10\u201315% of the cover price. The mathematics favour independence \u2014 but only if the independent creator can match the production quality of the traditional publisher. Without that quality, the direct-to-consumer model collapses into self-publishing\u2019s historical stigma: cheap covers, amateur typesetting, and the assumption that the book was not good enough for a \u201creal\u201d publisher.',
-        ],
-      },
-      {
-        heading: 'The Integrated Pipeline',
-        paragraphs: [
-          'The publishing platforms that will prosper in this environment are those that integrate the entire production process \u2014 from manuscript formatting to print-on-demand fulfilment \u2014 into a single, standards-compliant pipeline. The creator should not need to export a PDF from one tool, upload it to a print service in another, calculate spine width in a spreadsheet, and verify bleed margins in a third application. Each handoff between tools is an opportunity for error and a tax on the creator\u2019s time.',
-          'An integrated pipeline means that the same system which typesets the manuscript also calculates the cover dimensions from the page count, validates the output against the target printer\u2019s specifications (KDP, IngramSpark, Lulu, or offset), and generates the correct PDF variant \u2014 whether that is a screen-optimised PDF for digital distribution or a PDF/X-1a for commercial offset printing.',
-          'This is not a convenience feature. It is the minimum viable infrastructure for a creator who intends to compete on quality with traditional publishers while retaining the economic advantages of independence.',
+          'The new digital publishing platforms that prosper will be those that integrate the entire process \u2014 from formatting to sales tracking \u2014 into a single, high-fidelity solution. PagePerfect is not just a design tool; it is a strategic asset for those who want to \u201cprosper in the coming years\u201d by combining authenticity with institutional-grade production. We fill the gap left by \u201cgood enough\u201d tools that ignore the psychological weight of a well-proportioned page, as explored in this journal\u2019s The Psychology of White Space.',
         ],
       },
     ],
     conclusion: {
-      heading: 'The Actionable Rule',
+      heading: 'What This Means for PagePerfect',
       paragraphs: [
-        'If you are building a professional publishing practice \u2014 whether as a consultant, an academic, or an independent author \u2014 evaluate your production infrastructure against three criteria. First: does your toolchain produce output that is visually indistinguishable from a traditionally published book? Compare your PDF against a title from a university press at the same trim size. If the margins, leading, and hyphenation do not match, your tool is holding you back. Second: does your pipeline integrate formatting, preflight validation, and print-on-demand submission? Every manual step between manuscript and printed book is a source of delay and error. Third: does your workflow produce a fixed-page, print-ready PDF with binding-aware margins and platform-specific compliance? If your output is a reflowable ebook with no page geometry, you are not publishing \u2014 you are blogging in long form.',
-        'The new institutionalism is not a return to the gatekeeping of traditional publishing. It is the recognition that the authority once conferred by a publisher\u2019s imprint must now be earned through production quality. The creator who masters this infrastructure does not need a publisher\u2019s name on the spine. The quality of the object speaks for itself.',
+        'We will pivot our market positioning away from generic \u201ccreator tools\u201d and toward \u201cAuthority Infrastructure.\u201d This means building native integrations for print-on-demand services like Lulu and IngramSpark to shorten the cycle from draft to physical book. We will develop a suite of \u201cLegacy\u201d templates specifically designed for the B2B and \u201cExpert\u201d niche, allowing authoritative creators to convert their digital feeds into structured, narrative-driven monographs that mirror the visual discipline of a university press.',
       ],
     },
   },
