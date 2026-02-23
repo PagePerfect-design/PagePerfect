@@ -199,6 +199,35 @@ sweepOrphanedTmpDirs();
 const diskSweepInterval = setInterval(sweepOrphanedTmpDirs, ORPHAN_MAX_AGE_MS);
 diskSweepInterval.unref();
 
+// ── Asset Directory Sweeper (24h TTL) ──
+// Uploaded images stored in /tmp/pp-assets/{UUID}/ — longer-lived than compile temp dirs.
+const ASSET_DIR = path.join(os.tmpdir(), 'pp-assets');
+const ASSET_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+async function sweepExpiredAssets() {
+  try {
+    if (!fs.existsSync(ASSET_DIR)) return;
+    const entries = await fsp.readdir(ASSET_DIR);
+    const now = Date.now();
+    let swept = 0;
+    for (const entry of entries) {
+      const fullPath = path.join(ASSET_DIR, entry);
+      try {
+        const stats = await fsp.stat(fullPath);
+        if (now - stats.mtimeMs > ASSET_MAX_AGE_MS) {
+          await fsp.rm(fullPath, { recursive: true, force: true });
+          swept++;
+        }
+      } catch { /* already cleaned */ }
+    }
+    if (swept > 0) log.info({ module: 'asset-sweep', swept }, 'Cleaned expired image assets');
+  } catch { /* best-effort */ }
+}
+
+setTimeout(sweepExpiredAssets, 60_000); // first sweep 1 min after boot
+const assetSweepInterval = setInterval(sweepExpiredAssets, 60 * 60 * 1000); // hourly
+assetSweepInterval.unref();
+
 // ── Disk Space Sentinel ──
 // Monitors /tmp usage and triggers emergency sweep if above threshold
 const DISK_SPACE_CHECK_INTERVAL_MS = 5 * 60 * 1000; // Check every 5 minutes
@@ -240,6 +269,23 @@ async function checkDiskSpace() {
             deleteJobResult(id);
           }
         }
+        // Also sweep expired assets in emergency
+        try {
+          const assetDir = path.join(tmpDir, 'pp-assets');
+          if (fs.existsSync(assetDir)) {
+            const assetEntries = await fsp.readdir(assetDir);
+            for (const entry of assetEntries) {
+              const fullPath = path.join(assetDir, entry);
+              try {
+                const stats = await fsp.stat(fullPath);
+                if (now - stats.mtimeMs > 60 * 60 * 1000) { // 1 hour in emergency (not 24h)
+                  await fsp.rm(fullPath, { recursive: true, force: true });
+                  swept++;
+                }
+              } catch { /* best-effort */ }
+            }
+          }
+        } catch { /* best-effort */ }
         if (swept > 0) console.warn(`[disk-sentinel] Emergency swept ${swept} temp dir(s)`);
       }
     }
@@ -544,7 +590,7 @@ app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? (origin, callback) => callback(null, isAllowedOrigin(origin))
     : true,
-  methods: ['GET', 'POST', 'OPTIONS'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['X-PP-Watermarked', 'X-PP-Credits-Remaining', 'X-PP-Filename', 'X-PP-Format'],
   credentials: true,
