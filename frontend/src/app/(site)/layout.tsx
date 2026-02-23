@@ -69,6 +69,7 @@ function Footer() {
               <Link href="/cookies" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Tracking &amp; Telemetry</Link>
               <Link href="/philosophy" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Philosophy</Link>
               <Link href="/status" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Status</Link>
+              <Link href="/sitemap" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Sitemap</Link>
             </div>
           </div>
 
