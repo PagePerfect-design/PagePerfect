@@ -286,7 +286,7 @@ export default function DocsPage() {
               ══════════════════════════════════════════════════════════ */}
           <section id="editor" className="scroll-mt-16 mb-10">
             <SectionLabel number="02">Editor</SectionLabel>
-            <h2 className="docs-section-title">Editor Guide</h2>
+            <h2 className="docs-section-title">Controlling the Editor</h2>
             <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               The editor is a three-stage pipeline: Portal (ingest), Design (typeset), and Launch (export).
               All settings auto-save to local storage.
@@ -346,15 +346,15 @@ export default function DocsPage() {
             </div>
           </section>
 
-          {/* Safe Mode */}
-          <section id="safe-mode" className="scroll-mt-16 mb-10">
-            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Safe Mode</h3>
+          {/* Standard Mode */}
+          <section id="standard-mode" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Standard Mode</h3>
             <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-3">
               When enabled, all Pandoc citation syntax (<code>[@Key]</code>) is stripped and replaced with placeholder text.
               Compilation proceeds without needing a valid <code>references.bib</code>.
             </p>
             <Admonition type="tip" label="When to Use">
-              Enable safe mode while writing or when your bibliography has missing keys. Disable it for final
+              Enable Standard mode while writing or when your bibliography has missing keys. Disable it for final
               output to render proper citations and bibliography.
             </Admonition>
           </section>
@@ -429,6 +429,50 @@ export default function DocsPage() {
             </table>
           </section>
 
+          {/* Quality Gate */}
+          <section id="quality-gate" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Typography Quality Gate</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              Every compile generates a typography score (0&ndash;100) and letter grade. The grade appears in the dock,
+              PDF preview, and export overlay — ensuring you never ship a low-quality PDF without knowing.
+            </p>
+            <table className="docs-table" style={{ maxWidth: '36rem' }}>
+              <thead>
+                <tr>
+                  <th>Grade</th>
+                  <th>Score</th>
+                  <th>Behavior</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="font-mono font-bold text-emerald-600">A</td>
+                  <td className="accent">80&ndash;100</td>
+                  <td>Excellent. Export proceeds normally.</td>
+                </tr>
+                <tr>
+                  <td className="font-mono font-bold text-blue-600">B</td>
+                  <td className="accent">60&ndash;79</td>
+                  <td>Good. Export proceeds normally.</td>
+                </tr>
+                <tr>
+                  <td className="font-mono font-bold text-amber-600">C</td>
+                  <td className="accent">40&ndash;59</td>
+                  <td>Review recommended. Amber warning in preview and export overlay.</td>
+                </tr>
+                <tr>
+                  <td className="font-mono font-bold text-red-600">D</td>
+                  <td className="accent">0&ndash;39</td>
+                  <td>Significant issues. Red warning + acknowledgment checkbox required before download.</td>
+                </tr>
+              </tbody>
+            </table>
+            <Admonition type="tip" label="How to Improve Your Grade">
+              Try wider margins, a larger page size, or a different template. Overfull lines (text exceeding the margin)
+              are the most common cause of low grades. The dock shows your current grade and overfull count after each compile.
+            </Admonition>
+          </section>
+
           {/* URL Parameters */}
           <section id="url-params" className="scroll-mt-16 mb-20">
             <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">URL Parameters</h3>
@@ -446,7 +490,7 @@ export default function DocsPage() {
               ══════════════════════════════════════════════════════════ */}
           <section id="page-sizes" className="scroll-mt-16 mb-10">
             <SectionLabel number="03">Layout</SectionLabel>
-            <h2 className="docs-section-title">Page Sizes &amp; Margins</h2>
+            <h2 className="docs-section-title">Configure Your Layout</h2>
           </section>
 
           {/* All Page Sizes */}
@@ -622,11 +666,11 @@ export default function DocsPage() {
           ))}
 
           {/* ══════════════════════════════════════════════════════════
-              03 — AMAZON KDP GUIDE
+              05 — AMAZON KDP GUIDE
               ══════════════════════════════════════════════════════════ */}
           <section id="kdp" className="scroll-mt-16 mb-10 mt-20">
             <SectionLabel number="05">Publishing</SectionLabel>
-            <h2 className="docs-section-title">Amazon KDP Guide</h2>
+            <h2 className="docs-section-title">Publish to Amazon KDP</h2>
             <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               PagePerfect supports all five Amazon KDP trim sizes with dynamic gutter calculation and spine width estimation.
               Select any KDP page size in the editor to generate compliant interior PDFs.
@@ -706,11 +750,11 @@ export default function DocsPage() {
           </section>
 
           {/* ══════════════════════════════════════════════════════════
-              04 — PUBLISHING AUTOMATION
+              06 — PUBLISHING AUTOMATION
               ══════════════════════════════════════════════════════════ */}
           <section id="automation" className="scroll-mt-16 mb-10">
             <SectionLabel number="06">Automation</SectionLabel>
-            <h2 className="docs-section-title">Publishing Automation</h2>
+            <h2 className="docs-section-title">Automate Your Pipeline</h2>
             <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               PagePerfect automates the entire path from Markdown to printed book. Pre-flight validation
               catches rejection-causing errors before submission, while platform-specific exports ensure compliance.
@@ -818,11 +862,11 @@ export default function DocsPage() {
           </section>
 
           {/* ══════════════════════════════════════════════════════════
-              05 — TROUBLESHOOTING
+              07 — TROUBLESHOOTING
               ══════════════════════════════════════════════════════════ */}
           <section id="troubleshooting" className="scroll-mt-16 mb-20">
             <SectionLabel number="07">Support</SectionLabel>
-            <h2 className="docs-section-title">Troubleshooting</h2>
+            <h2 className="docs-section-title">Diagnosing Issues</h2>
 
             {/* Limits */}
             <div className="mb-8">
