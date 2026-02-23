@@ -104,14 +104,14 @@ export function useCompileQueue({
   }, [title, template, pageSize, refreshUser])
 
   // ── The compile function ──
-  const compile = useCallback(async (downloadAfter: boolean, exportPlatform?: Platform) => {
+  const compile = useCallback(async (downloadAfter: boolean, exportPlatform?: Platform, _isAutoRetry?: boolean) => {
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
 
     const gen = ++compileGenRef.current
-    // Reset retry counter on fresh user-initiated compiles (gen changes)
-    retryCountRef.current = 0
+    // Reset retry counter on fresh user-initiated compiles (not auto-retries)
+    if (!_isAutoRetry) retryCountRef.current = 0
 
     setLoading(true)
     setStatus('compiling')
@@ -201,10 +201,17 @@ export function useCompileQueue({
           if (gen !== compileGenRef.current) return
 
           if (!statusResp.ok) {
-            if (statusResp.status === 404) {
-              // Job expired from server memory — show error instead of infinite retry
+            if (statusResp.status === 404 || statusResp.status === 410) {
+              // Job expired from server memory — auto-recompile silently
+              if (retryCountRef.current < 1) {
+                retryCountRef.current++
+                setStatus('compiling')
+                setTimeout(() => { void compileRef.current(false, undefined, true) }, 300)
+                return
+              }
+              // Already retried once — show a quiet message
               pdfBlobRef.current = null
-              setErrors([{ message: 'Compile job expired. Please try again.' }])
+              setErrors([{ message: 'Preview expired. Click Retry to recompile.' }])
               setStatus('error')
               return
             }
@@ -260,12 +267,24 @@ export function useCompileQueue({
             if (gen !== compileGenRef.current) return
 
             if (!pdfResp.ok) {
+              // Expired/missing result — auto-recompile silently (once)
+              if ((pdfResp.status === 404 || pdfResp.status === 410) && retryCountRef.current < 1) {
+                retryCountRef.current++
+                setStatus('compiling')
+                setTimeout(() => { void compileRef.current(downloadAfter, undefined, true) }, 300)
+                return
+              }
               let payload: { message?: string; detail?: string } | null = null
               try { payload = await pdfResp.json() } catch { /* noop */ }
               pdfBlobRef.current = null
               const msgs: CompileError[] = []
-              if (payload?.message) msgs.push({ message: payload.message })
-              if (!msgs.length) msgs.push({ message: 'Failed to retrieve compiled PDF.' })
+              if (pdfResp.status === 404 || pdfResp.status === 410) {
+                msgs.push({ message: 'Preview expired. Click Retry to recompile.' })
+              } else {
+                if (payload?.message) msgs.push({ message: payload.message })
+                if (!msgs.length) msgs.push({ message: 'Failed to retrieve compiled PDF.' })
+              }
+              if (payload?.detail) msgs.push({ message: `__detail__${payload.detail}` })
               setErrors(msgs)
               setStatus('error')
               return

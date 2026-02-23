@@ -811,15 +811,15 @@ Six backend modules provide manuscript and output quality analysis. All return s
 
 ### High (limits growth)
 
-- **No PDF regression test suite:** Unit tests exist for security and grid system, but no golden-file PDF comparisons. Template changes could silently break layouts.
+- ~~**No PDF regression test suite:**~~ **RESOLVED** — `template-regression.test.js` covers all 15 templates with academic and fiction samples, page size variations, heading variants (classic/modern/bold), specialist content (screenplay, cookbook, poetry, multi-column), grid system integration, and template file integrity checks. 54 tests total; compilation tests require pandoc/lualatex (skipped locally, run in CI Docker).
 - ~~**No build manifest:**~~ **RESOLVED** — `provenance.js` fully integrated: `generateBuildMetadata()` embeds PDF metadata, `createExportSnapshot()` called in compile-worker, `buildId` + `exportSnapshot` returned via status endpoint and displayed in PreviewPane + LaunchOverlay. Pandoc 3.6.2 pinned; TeX Live pinned to Ubuntu 22.04 repo version.
 - ~~**Container hardening:**~~ **PARTIALLY RESOLVED** — Dockerfile now includes read-only templates/filters, resource limits (`limits.d/ppuser.conf`), `docker:run` uses `--cap-drop=ALL`, `--security-opt=no-new-privileges`, `--read-only`, `--tmpfs`, `--memory=1g`, `--pids-limit=100`. Still missing: seccomp profile, `--network none`.
-- **In-memory job results:** `jobResults` Map metadata is backed up to Redis (10-min TTL) but PDF file paths are not recoverable after restart. Users get "Server restarted. Please recompile." on result fetch after a backend redeploy.
+- ~~**In-memory job results:**~~ **RESOLVED** — Compiled PDFs are copied from ephemeral compile temp dirs to `/tmp/ppresults/` after compilation. Redis TTL extended to 30 minutes. Results survive temp dir cleanup, orphan sweeping, and restarts (if the file persists). Multiple downloads of the same PDF are now supported (no longer deleted on first stream close).
 
 ### Medium (improvement opportunities)
 
 - **Quality systems advisory only:** Typography score, Print QA score, and platform compliance checks all run but only warn — no mechanism to block export below quality thresholds. Typography grade and compile log warnings are now displayed in PreviewPane (QualityBadge), LaunchOverlay stats bar, and export acceptance contract.
-- ~~**No guided first-run wizard:**~~ **PARTIALLY RESOLVED** — Genre auto-detection (`detectGenre()` in `editor-utils.ts`) runs on manuscript upload and auto-applies the detected template via `handlePortalAccept()` in CompileShell. Missing: first-run modal, template preview carousel, persistent `hasSeenFirstRun` flag.
+- ~~**No guided first-run wizard:**~~ **RESOLVED** — Genre auto-detection runs on manuscript upload. PortalStage now shows a visual template picker after analysis: templates from the detected genre appear first with "Rec" badge, type specimen previews (serif vs sans), and a detail bar showing the active template's description and font. "+ Show all 15 templates" expands to browse other genres. Users make an informed template choice before entering the design stage.
 - ~~**Pricing page inaccuracies:**~~ **RESOLVED** — "Compile quality: Full quality" changed to "Typesetting engine: LuaLaTeX". FAQ corrected.
 - ~~**"Safe Mode" naming:**~~ **RESOLVED** — Renamed to "Standard mode" with contextual help text in FloatingHUD.
 - **No image persistence:** User-uploaded images for manuscripts are ephemeral. No long-term asset storage strategy.

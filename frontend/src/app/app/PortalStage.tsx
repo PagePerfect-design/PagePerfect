@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { FileText, Check, ChevronRight } from 'lucide-react'
 
 import { SAMPLES } from './sample'
-import type { TemplateKey, Analysis, Platform } from './editor-types'
-import { ease } from './editor-types'
+import type { TemplateKey, Genre, Analysis, Platform } from './editor-types'
+import { ease, TEMPLATE_INFO, GENRE_ORDER, GENRE_LABELS } from './editor-types'
 import { cleanFromWord, analyzeManuscript, wordCategory } from './editor-utils'
 
 const PLATFORM_OPTIONS: { key: Platform | 'generic'; label: string; detail: string }[] = [
@@ -40,6 +40,8 @@ export default function PortalStage({
   const [pasteMode, setPasteMode] = useState(false)
   const [pasteText, setPasteText] = useState('')
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | 'generic' | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateKey | null>(null)
+  const [showAllTemplates, setShowAllTemplates] = useState(false)
   const pasteAreaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -338,15 +340,29 @@ export default function PortalStage({
     )
   }
 
+  const detectedTemplate = analysis?.detected?.template ?? null
+  const activeTemplate = selectedTemplate ?? detectedTemplate ?? 'paperback'
+  const detectedGenre = analysis?.detected?.genre ?? 'fiction'
+
+  // Build template list: detected genre first (with recommended), then others
+  const genreTemplates = (g: Genre) =>
+    (Object.entries(TEMPLATE_INFO) as [TemplateKey, typeof TEMPLATE_INFO[TemplateKey]][])
+      .filter(([, info]) => info.genre === g)
+      .map(([key]) => key)
+
+  const primaryTemplates = genreTemplates(detectedGenre)
+  const otherGenres = GENRE_ORDER.filter(g => g !== detectedGenre)
+
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center px-6">
+    <div className="fixed inset-0 z-20 flex items-center justify-center px-6 overflow-y-auto py-8">
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease }}
-        className="w-full max-w-lg"
+        className="w-full max-w-2xl my-auto"
       >
         <div className="border border-[#111111]/10 bg-white shadow-lg">
+          {/* Header — manuscript stats */}
           <div className="border-b border-[#111111]/[0.06] px-6 py-5">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF3333]/10">
@@ -375,18 +391,7 @@ export default function PortalStage({
             </div>
           )}
 
-          {analysis?.detected && (
-            <div className="flex items-start gap-3 border-t border-[#111111]/[0.06] px-6 py-4 bg-[#FF3333]/[0.03]">
-              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#FF3333]" />
-              <div>
-                <p className="text-[12px] font-medium text-[#111111]/70">{analysis.detected.message}</p>
-                <p className="mt-0.5 font-mono text-[10px] text-[#111111]/40">
-                  {analysis.detected.confidence === 'high' ? 'High confidence' : 'You can change this in the Style menu.'}
-                </p>
-              </div>
-            </div>
-          )}
-
+          {/* Title */}
           <div className="border-t border-[#111111]/[0.06] px-6 py-5">
             <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">Working title</label>
             <input
@@ -399,7 +404,117 @@ export default function PortalStage({
             />
           </div>
 
-          {/* Platform selection — "Where will you publish?" */}
+          {/* Template picker */}
+          <div className="border-t border-[#111111]/[0.06] px-6 py-5">
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">
+              Choose a design
+              {detectedTemplate && (
+                <span className="ml-2 text-[#FF3333]/60">— recommended based on your manuscript</span>
+              )}
+            </p>
+
+            {/* Primary genre templates */}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {primaryTemplates.map((key) => {
+                const info = TEMPLATE_INFO[key]
+                const isRecommended = key === detectedTemplate
+                const isActive = key === activeTemplate
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedTemplate(key)}
+                    className={`relative border p-3 text-left transition-all ${
+                      isActive
+                        ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
+                        : 'border-[#111111]/10 hover:border-[#111111]/20'
+                    }`}
+                  >
+                    {isRecommended && (
+                      <span className="absolute -top-2 right-2 bg-[#FF3333] px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.1em] text-white">
+                        Rec
+                      </span>
+                    )}
+                    {/* Type specimen preview */}
+                    <div className="mb-2 h-16 overflow-hidden border-b border-[#111111]/[0.04] pb-2">
+                      <p className={`text-[14px] font-semibold leading-tight text-[#111111]/80 ${
+                        info.font.includes('Garamond') || info.font.includes('Baskerville') || info.font.includes('Bembo') || info.font.includes('Latin Modern')
+                          ? 'font-body' : 'font-display'
+                      }`}>
+                        Chapter One
+                      </p>
+                      <p className={`mt-1 text-[9px] leading-relaxed text-[#111111]/40 ${
+                        info.font.includes('Garamond') || info.font.includes('Baskerville') || info.font.includes('Bembo') || info.font.includes('Latin Modern')
+                          ? 'font-body' : 'font-display'
+                      }`}>
+                        The morning light crept through the window, casting long shadows across the desk where the manuscript lay waiting.
+                      </p>
+                    </div>
+                    <span className="block font-mono text-[11px] font-semibold text-[#111111]/80">{info.name}</span>
+                    <span className="block font-mono text-[9px] text-[#111111]/40 mt-0.5">{info.subtitle}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Show more templates */}
+            {!showAllTemplates ? (
+              <button
+                onClick={() => setShowAllTemplates(true)}
+                className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
+              >
+                + Show all 15 templates
+              </button>
+            ) : (
+              <div className="mt-4">
+                {otherGenres.map((genre) => {
+                  const templates = genreTemplates(genre)
+                  if (!templates.length) return null
+                  return (
+                    <div key={genre} className="mt-3 first:mt-0">
+                      <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+                        {GENRE_LABELS[genre]}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {templates.map((key) => {
+                          const info = TEMPLATE_INFO[key]
+                          const isActive = key === activeTemplate
+                          return (
+                            <button
+                              key={key}
+                              onClick={() => setSelectedTemplate(key)}
+                              className={`border p-3 text-left transition-all ${
+                                isActive
+                                  ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
+                                  : 'border-[#111111]/10 hover:border-[#111111]/20'
+                              }`}
+                            >
+                              <span className="block font-mono text-[11px] font-semibold text-[#111111]/80">{info.name}</span>
+                              <span className="block font-mono text-[9px] text-[#111111]/40 mt-0.5">{info.subtitle}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Active template detail bar */}
+          <div className="flex items-start gap-3 border-t border-[#111111]/[0.06] px-6 py-3 bg-[#111111]/[0.02]">
+            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#FF3333]" />
+            <div>
+              <p className="text-[12px] font-medium text-[#111111]/70">
+                {TEMPLATE_INFO[activeTemplate].name} — {TEMPLATE_INFO[activeTemplate].vibe}
+              </p>
+              <p className="mt-0.5 font-mono text-[10px] text-[#111111]/40">
+                Font: {TEMPLATE_INFO[activeTemplate].font} · You can change this anytime in the Style menu.
+              </p>
+            </div>
+          </div>
+
+          {/* Platform selection */}
           <div className="border-t border-[#111111]/[0.06] px-6 py-4">
             <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">
               Where will you publish?
@@ -431,13 +546,13 @@ export default function PortalStage({
 
           <div className="flex items-center justify-between border-t border-[#111111]/[0.06] px-6 py-4">
             <button
-              onClick={() => { setText(''); setAnalysis(null); setPhase('idle'); setSelectedPlatform(null) }}
+              onClick={() => { setText(''); setAnalysis(null); setPhase('idle'); setSelectedPlatform(null); setSelectedTemplate(null); setShowAllTemplates(false) }}
               className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
             >
               Start over
             </button>
             <button
-              onClick={() => onAccept(text, title, analysis?.detected?.template)}
+              onClick={() => onAccept(text, title, activeTemplate)}
               className="group inline-flex h-11 items-center gap-3 bg-[#FF3333] px-7 font-display text-[14px] font-semibold text-white transition-all duration-200 hover:bg-[#E52222]"
             >
               Start designing

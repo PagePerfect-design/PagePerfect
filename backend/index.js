@@ -44,7 +44,29 @@ let compileQueueEvents = null;
 
 // In-memory job results map (primary) + Redis backup (survives restarts)
 const jobResults = new Map();
-const RESULT_REDIS_TTL = 600; // 10 minutes
+const RESULT_REDIS_TTL = 1800; // 30 minutes (up from 10 — results now persist)
+
+// ── Persistent results directory ──
+// Compiled PDFs are copied here after compilation so they survive temp dir cleanup.
+// Uses 'ppresults' prefix (not 'pp-') to avoid being swept by the orphan sweeper.
+const RESULTS_DIR = path.join(os.tmpdir(), 'ppresults');
+if (!fs.existsSync(RESULTS_DIR)) fs.mkdirSync(RESULTS_DIR, { recursive: true });
+
+/**
+ * Persist a compiled PDF from the ephemeral temp dir to the results dir.
+ * Returns the new path, or null on failure.
+ */
+async function persistPdf(jobId, srcPdfPath) {
+  try {
+    const ext = path.extname(srcPdfPath) || '.pdf';
+    const destPath = path.join(RESULTS_DIR, `${jobId}${ext}`);
+    await fsp.copyFile(srcPdfPath, destPath);
+    return destPath;
+  } catch (err) {
+    log.error({ module: 'persist', jobId, err: err.message }, 'Failed to persist PDF');
+    return null;
+  }
+}
 
 function storeJobResult(id, value) {
   value._storedAt = Date.now();
@@ -66,7 +88,7 @@ async function getJobResult(id) {
     const raw = await redis.get(`pp:result:${id}`);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // Check if the PDF file still exists on disk (may be cleaned after restart)
+    // Check if the PDF file still exists on disk
     if (parsed.pdfPath && parsed.success) {
       try {
         await fsp.access(parsed.pdfPath);
@@ -75,15 +97,14 @@ async function getJobResult(id) {
         jobResults.set(id, parsed);
         return parsed;
       } catch {
-        // File was cleaned up (e.g., after restart) — return expired signal
-        parsed._redisOnly = true;
-        return parsed;
+        // File was cleaned up — result is unservable, clean up Redis
+        redis.del(`pp:result:${id}`).catch(() => {});
+        return null;
       }
     }
-    // Non-success results or results without pdfPath
+    // Non-success results (errors) — return metadata only
     if (!parsed.success) return parsed;
-    parsed._redisOnly = true;
-    return parsed;
+    return null;
   } catch { return null; }
 }
 
@@ -108,18 +129,44 @@ async function getJobSecret(jobId) {
 const MAX_SYNC_CONCURRENT = Number(process.env.MAX_SYNC_CONCURRENT || 2);
 let activeSyncCompiles = 0;
 
-// Result cleanup: TTL 10 minutes
-const RESULT_TTL_MS = 10 * 60 * 1000;
+// Result cleanup: TTL 30 minutes (persisted PDFs survive longer)
+const RESULT_TTL_MS = 30 * 60 * 1000;
 const resultCleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [id, res] of jobResults) {
     if (res._storedAt && now - res._storedAt > RESULT_TTL_MS) {
       if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {});
+      // Clean persisted PDF from results dir
+      if (res.pdfPath && res.pdfPath.startsWith(RESULTS_DIR)) {
+        fsp.unlink(res.pdfPath).catch(() => {});
+      }
       deleteJobResult(id);
     }
   }
 }, 60_000);
 resultCleanupInterval.unref();
+
+// Results dir sweeper: catch orphaned PDFs (e.g. from unclean shutdowns)
+const RESULTS_MAX_AGE_MS = 45 * 60 * 1000; // 45 minutes
+const resultsCleanupInterval = setInterval(async () => {
+  try {
+    const entries = await fsp.readdir(RESULTS_DIR);
+    const now = Date.now();
+    let swept = 0;
+    for (const entry of entries) {
+      const fullPath = path.join(RESULTS_DIR, entry);
+      try {
+        const stats = await fsp.stat(fullPath);
+        if (now - stats.mtimeMs > RESULTS_MAX_AGE_MS) {
+          await fsp.unlink(fullPath);
+          swept++;
+        }
+      } catch { /* already cleaned */ }
+    }
+    if (swept > 0) log.info({ module: 'disk-sweep', swept }, 'Cleaned orphaned result PDFs');
+  } catch { /* best-effort */ }
+}, 5 * 60 * 1000);
+resultsCleanupInterval.unref();
 
 // ── Disk Sweeper ──
 const PP_TMP_PREFIXES = ['pp-enqueue-', 'pp-sync-', 'pp-batch-', 'pp-conv-', 'pp-worker-'];
@@ -189,6 +236,7 @@ async function checkDiskSpace() {
         for (const [id, res] of jobResults) {
           if (res._storedAt && now - res._storedAt > 2 * 60 * 1000) { // 2 min in emergency
             if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {});
+            if (res.pdfPath && res.pdfPath.startsWith(RESULTS_DIR)) fsp.unlink(res.pdfPath).catch(() => {});
             deleteJobResult(id);
           }
         }
@@ -277,7 +325,17 @@ if (redis) {
       removeOnFail: { count: 500 },
     });
 
-    compileWorker.on('completed', (job, result) => {
+    compileWorker.on('completed', async (job, result) => {
+      // Persist PDF to results dir so it survives temp dir cleanup and restarts
+      if (result.success && result.pdfPath) {
+        const persistedPath = await persistPdf(job.id, result.pdfPath);
+        if (persistedPath) {
+          // Clean up the compile temp dir immediately — PDF is safe in results dir
+          if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
+          result.pdfPath = persistedPath;
+          delete result.tmpBase;
+        }
+      }
       storeJobResult(job.id, result);
       log.info({ module: 'queue', jobId: job.id, elapsed: result.elapsed || '?' }, 'Job completed');
     });
