@@ -14,12 +14,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = ARTICLES.find((a) => a.slug === slug)
   if (!article) return {}
 
+  const seo = article.seo
+  const title = seo?.metaTitle
+    ? `${seo.metaTitle} — PagePerfect Journal`
+    : `${article.title} — PagePerfect Journal`
+  const description = seo?.metaDescription || article.description
+
   return {
-    title: `${article.title} — PagePerfect Journal`,
-    description: article.description,
+    title,
+    description,
+    keywords: seo
+      ? [seo.primaryKeyword, ...seo.secondaryKeywords]
+      : undefined,
     openGraph: {
-      title: article.title,
-      description: article.description,
+      title: seo?.metaTitle || article.title,
+      description,
       type: 'article',
       publishedTime: article.date,
       authors: ['PagePerfect Editorial'],
@@ -28,12 +37,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+function estimateWordCount(article: (typeof ARTICLES)[number]): number {
+  const allText = [
+    article.hook,
+    ...article.sections.flatMap((s) => s.paragraphs),
+    ...article.conclusion.paragraphs,
+  ].join(' ')
+  return Math.round(allText.split(/\s+/).length)
+}
+
 function JsonLd({ article }: { article: (typeof ARTICLES)[number] }) {
-  const jsonLd = {
+  const seo = article.seo
+  const wordCount = estimateWordCount(article)
+
+  const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': seo?.schemaType || 'TechArticle',
     headline: article.title,
-    description: article.description,
+    description: seo?.metaDescription || article.description,
     datePublished: article.date,
     author: {
       '@type': 'Organization',
@@ -44,10 +65,23 @@ function JsonLd({ article }: { article: (typeof ARTICLES)[number] }) {
       '@type': 'Organization',
       name: 'PagePerfect',
       url: 'https://pageperfect.studio',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://pageperfect.studio/favicon.ico',
+      },
     },
     articleSection: article.category,
-    wordCount: 800,
-    inLanguage: 'en',
+    wordCount,
+    inLanguage: 'en-GB',
+    ...(seo && {
+      keywords: [seo.primaryKeyword, ...seo.secondaryKeywords].join(', '),
+      proficiencyLevel: seo.proficiencyLevel,
+      audience: seo.audience.map((a) => ({
+        '@type': 'Audience',
+        audienceType: a,
+      })),
+      about: seo.editorialPillar,
+    }),
   }
 
   return (
