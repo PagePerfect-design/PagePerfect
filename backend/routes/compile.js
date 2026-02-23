@@ -252,7 +252,6 @@ module.exports = function compileRoutes(ctx) {
     const { id } = req.params;
     const cached = await ctx.getJobResult(id);
     if (cached) {
-      if (cached._redisOnly && cached.success) return res.status(410).json({ jobId: id, status: 'expired', error: 'restart_expired', message: 'Server restarted during compilation. Please recompile.' });
       if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, resultUrl: `/api/compile/result/${id}` });
       return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, warnings: cached.warnings, detail: cached.detail });
     }
@@ -271,7 +270,6 @@ module.exports = function compileRoutes(ctx) {
     const result = await ctx.getJobResult(id);
 
     if (!result) return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });
-    if (result._redisOnly) return res.status(410).json({ error: 'restart_expired', message: 'Server restarted. Please recompile.' });
     if (!result.success) return res.status(400).json(result);
 
     // Auth check
@@ -305,8 +303,7 @@ module.exports = function compileRoutes(ctx) {
     res.setHeader('Cache-Control', 'no-store');
 
     const stream = fs.createReadStream(result.pdfPath);
-    stream.on('close', () => { if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {}); ctx.deleteJobResult(id); });
-    stream.on('error', () => { if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' }); ctx.deleteJobResult(id); });
+    stream.on('error', () => { if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' }); });
     stream.pipe(res);
   });
 
