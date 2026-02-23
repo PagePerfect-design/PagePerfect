@@ -273,4 +273,107 @@ export const ARTICLES_PART2: Article[] = [
       ],
     },
   },
+  {
+    slug: 'llm-retrievability',
+    title: 'Architecting High-Fidelity Layouts for LLM Retrievability',
+    description:
+      'A document today must satisfy the human eye\'s requirement for typographic harmony while simultaneously serving as a high-integrity data source for machine intelligence. The semantic document is the bridge across this divide.',
+    category: 'Design Systems',
+    date: '2026-02-23',
+    readTime: '7 min',
+    hook:
+      'For the better part of three decades, the professional publishing industry has chased a singular ghost: pixel perfection. From the early days of PostScript to the ubiquity of the Portable Document Format, the goal was visual stasis — ensuring that a document viewed in London looked identical to one printed in Tokyo. However, as Retrieval-Augmented Generation and Large Language Models reshape how information is consumed, the definition of "perfection" has fundamentally fractured. A document today must perform a dual role. It must satisfy the human eye\'s requirement for typographic harmony, while simultaneously serving as a high-integrity data source for machine intelligence. The "Semantic Document" is the bridge across this divide — and building it requires rethinking what a layout is for.',
+    sections: [
+      {
+        heading: 'The Failure of Visual-Centric PDF Engineering',
+        paragraphs: [
+          'Traditional fixed-layout workflows — including those once popularised by legacy digital publishing formats — prioritised the absolute Cartesian positioning of glyphs. To a human reader, a three-column layout is a sophisticated organisational tool. To a naive AI scraper, that same layout often manifests as a jumbled stream of consciousness, where sentences from column one bleed into column two, interspersed with fragmented image captions. The visual fidelity that earned the PDF its reputation as the universal document format is precisely the property that makes it opaque to machine interpretation.',
+          'Much of the current marketing around "AI-ready data" deserves scepticism. Most enterprise PDFs are, in reality, dark data. They are visually stunning but structurally opaque. When a Large Language Model attempts to parse a financial table that lacks underlying table-header semantics, the resulting inference is not merely poor — it is hallucinated. The model fills structural gaps with plausible but fabricated content, because the document gave it no structural scaffolding to work with. This is not an AI failure. It is a document-engineering failure.',
+        ],
+      },
+      {
+        heading: 'Engineering the Under-Layout',
+        paragraphs: [
+          'Beneath the visual render of any well-constructed document lies what might be called the "Under-Layout" — the hidden logical structure that maps every visual element to a semantic ancestor. Tagged PDF/UA (Universal Accessibility), defined by ISO 14289, was originally developed to make documents accessible to screen readers. Its secondary benefit — and arguably its more consequential one — is that it provides precisely the structural scaffolding that RAG systems and LLMs require to parse documents accurately.',
+          'The engineering is specific. Every heading from H1 through H6 must function not merely as a font-size change but as a structural waypoint for chunking algorithms. When a RAG system segments a document for retrieval, it relies on these heading hierarchies to determine where one conceptual unit ends and another begins. A document without semantic headings forces the algorithm into heuristic guessing — splitting on paragraph breaks or arbitrary token counts — which degrades retrieval precision. Metadata embedding compounds this advantage. Utilising structured metadata within the XMP (Extensible Metadata Platform) packet of a PDF allows an LLM to understand the document\'s context — author, publication date, subject classification, intended audience — before it processes a single word of the body copy. This pre-processing context is the difference between a system that retrieves relevant passages and one that retrieves plausible-sounding irrelevancies.',
+          'The practical consequence is that a document built with semantic structure is not merely more accessible to humans with disabilities — it is more accessible to every automated system that will ever encounter it. Search engines index it more accurately. RAG pipelines chunk it more intelligently. LLMs interpret it with fewer hallucinations. The accessibility work and the AI-readiness work are the same work.',
+        ],
+      },
+      {
+        heading: 'The Historical Precedent: The Index and the Map',
+        paragraphs: [
+          'This challenge is not unprecedented. Before the index, books were linear scrolls of thought. A reader seeking a specific passage had no recourse but to read from the beginning — or to have memorised the text well enough to locate the relevant section by physical position. The invention of the page number in the late fifteenth century, and the subsequent development of the alphabetical index, transformed the book from a sequential narrative into a random-access database. The reader could now enter the text at any point, guided by a structural layer that sat outside the content itself.',
+          'We are living through the second Great Indexing. Just as the scholars of the Renaissance needed page numbers to navigate the explosion of the printing press, modern enterprises need semantic tagging to navigate the explosion of unstructured digital data. The parallel is precise: the index did not change the text of the book, and semantic tagging does not change the visual appearance of the document. Both operate on a structural layer that is invisible to the casual reader but essential to anyone attempting to retrieve specific information from a large corpus.',
+          'Robert Bringhurst, in "The Elements of Typographic Style," described the page as "a visible and tangible proportion, silently sounding the thoroughbass of the book." The semantic layer is the inaudible thoroughbass — the structural harmony that the reader never perceives but that determines whether the document functions as a retrievable unit of knowledge or as a locked vault of beautifully arranged pixels.',
+        ],
+      },
+      {
+        heading: 'The Structural Debt of Enterprise Publishing',
+        paragraphs: [
+          'Firms using generic browser-based "Print to PDF" drivers are accumulating what might be termed content debt — a growing archive of documents that are visually adequate but structurally impoverished. Each untagged PDF, each table without header semantics, each heading that is merely a bold paragraph rather than a genuine H2, represents a document that will resist automated processing for the remainder of its existence. The debt compounds: as the archive grows, the cost of retrospective tagging increases, and the proportion of the corpus accessible to AI systems decreases.',
+          'Tools that prioritise visual output over structural integrity — consumer design platforms, basic headless browser exports, legacy word-processor conversions — produce documents that satisfy the immediate need (the report looks correct) while failing the long-term requirement (the report must be searchable, indexable, and parseable by systems that do not yet exist). As explored in "Systems Over Demos," the distinction between a demonstration and a system is precisely this: a demonstration produces a satisfactory result once, while a system produces a reliable result at scale and over time.',
+          'The architectural response is to treat semantic structure as a first-class design requirement — not as a post-production accessibility remediation, but as a foundational layer upon which the visual design is constructed. Design for the human eye, but architect for the machine. The documents that will retain their value in a world of AI-mediated information retrieval are those whose structure is as rigorous as their typography.',
+        ],
+      },
+    ],
+    conclusion: {
+      heading: 'The Actionable Rule',
+      paragraphs: [
+        'Ensure every document you produce carries a complete semantic structure beneath its visual surface. Tag every heading as a genuine heading element in the document\'s logical tree — not merely as styled text. Tag every table with header cells that identify the data in each column. Embed structured metadata (author, date, subject, language) in the document\'s XMP packet. Validate the result against PDF/UA (ISO 14289) compliance tools. The visual quality of the document is necessary but no longer sufficient.',
+        'The second Great Indexing is underway. Documents that carry their own structural scaffolding will be retrieved, cited, and valued by the AI systems that increasingly mediate access to information. Documents that rely solely on visual fidelity will join the dark-data archive — beautiful, inaccessible, and gradually forgotten. The choice between these outcomes is made not at the point of AI deployment, but at the point of document production. Build the structure now, or pay the remediation cost later.',
+      ],
+    },
+  },
+  {
+    slug: 'gutenberg-gap',
+    title: 'The Gutenberg Gap: Why Modern Web Engines Still Struggle with the Printed Page',
+    description:
+      'The technical and philosophical chasm between the reflowable, ephemeral nature of the web and the fixed, authoritative nature of paged media — and why closing it requires engineering, not templates.',
+    category: 'Conversion',
+    date: '2026-02-23',
+    readTime: '7 min',
+    hook:
+      'There is a persistent myth in modern software engineering: that if a layout looks correct in a high-performance browser like Chromium, it is "ready" for the world of professional publishing. This assumption is what might be called the Gutenberg Gap — the technical and philosophical chasm between the reflowable, ephemeral nature of the web and the fixed, authoritative nature of paged media. The web is an infinite canvas. Print is a series of constrained boxes. This fundamental difference creates a set of engineering challenges that standard web rendering engines are structurally incapable of solving, not because they are poorly built, but because they were designed for a different medium entirely.',
+    sections: [
+      {
+        heading: 'The Three Failure Points of Browser-Based PDF Generation',
+        paragraphs: [
+          'The first and most visible failure is the handling of widows and orphans. A browser has no native concept of "keeping" a heading with its following paragraph when a page break intervenes. The CSS properties widows and orphans exist in the specification, but browser implementation remains inconsistent and limited to controlling the minimum number of lines before or after a break — it cannot perform the global page-break optimisation that professional typesetting demands. The result is orphaned headings stranded at the bottom of pages, a defect that "Widows, Orphans, and the Cost of the Ragged Bottom" identifies as one of the most visible signatures of amateur composition. In a browser-generated PDF, these defects are not exceptions. They are the default behaviour.',
+          'The second failure is cross-referencing. In a 500-page technical manual, a sentence might read "See Figure 4.2 on page 394." On the web, this is a hyperlink — a trivial implementation. In a paginated document, that page number must be calculated dynamically during the layout pass, after all content has been reflowed and all page breaks have been determined. Standard CSS cannot do this. It requires a paged-media engine capable of what the CSS Generated Content for Paged Media specification calls "target counters" — a feature that no major browser has implemented. Without it, every cross-reference in a browser-generated PDF is either manually maintained (brittle and error-prone) or absent entirely.',
+          'The third failure is bleed and slug. Professional printing requires content to extend beyond the trim line — typically by 3 millimetres or 0.125 inches — to account for mechanical shifts during the cutting process. As "The Print-Ready Manuscript" details, this bleed zone is a manufacturing requirement, not an aesthetic preference. Browsers have no concept of print physics. They render to the edge of the viewport and stop. A PDF generated by a browser is a screen capture formatted as pages, not a print-production artefact engineered for the mechanical realities of offset lithography or digital press.',
+        ],
+      },
+      {
+        heading: 'The Automation Fallacy',
+        paragraphs: [
+          'Many organisations migrate to automated PDF generation and accept a measurable decline in typographic quality as an inevitable cost of efficiency — a "tech tax" levied by the tools they have chosen. This acceptance is a category error. Automation should increase precision, not dilute it. A hand compositor in a hot-metal shop could set hanging indents, optical margin alignment, and mathematically justified columns. If an automated system cannot match that standard, it is not a typesetting tool — it is a compromise dressed in engineering vocabulary.',
+          'The specific deficiencies are quantifiable. Browser-based PDF engines typically use greedy line-breaking algorithms that evaluate each line in isolation, producing inconsistent word spacing and the "rivers of white" that "Rivers of White: The Cognitive Cost of Full Justification" documents in detail. They lack the Knuth-Plass paragraph-level optimisation that professional engines employ — the algorithm that evaluates all possible line breaks simultaneously and selects the combination that minimises total badness across the entire paragraph. They cannot perform micro-typographic adjustments: the fractional glyph scaling and tracking modifications that eliminate visible spacing variation without altering the text\'s apparent density. These are not luxury features. They are the baseline capabilities that separate typesetting from word processing.',
+          'The economic argument for accepting lower quality is also weaker than it appears. In regulated industries — financial services, pharmaceuticals, legal publishing — an incorrectly placed page break in a table of data is not merely an aesthetic flaw. It can lead to misinterpretation of financial figures, dosage instructions, or contractual terms. The cost of a single misread data point in a regulatory filing can exceed the entire annual budget of a document-production department. Precision is not a luxury in these contexts. It is a risk-mitigation requirement.',
+        ],
+      },
+      {
+        heading: 'The Paged-Media Solution',
+        paragraphs: [
+          'Closing the Gutenberg Gap requires moving beyond the browser and into the domain of dedicated paged-media engines — systems designed from their foundations for the physics of the printed page. The CSS Paged Media specification (CSS Generated Content for Paged Media Module, W3C Working Draft) defines the capabilities such engines must provide: @page rules that specify distinct margins for verso (left) and recto (right) pages, named page contexts for front matter and body matter, running headers and footers generated from document content, footnote marshalling that automatically relocates citations to the bottom of the correct page, and target counters for dynamic cross-referencing.',
+          'The LaTeX ecosystem, on which the LuaLaTeX engine is built, has provided these capabilities since Donald Knuth\'s original TeX was released in 1978. Knuth\'s line-breaking and page-breaking algorithms remain, nearly five decades later, the benchmark against which all other composition systems are measured. The Knuth-Plass algorithm evaluates the entire paragraph as a single optimisation problem. The page-breaking algorithm balances widow/orphan penalties, float placement, and vertical justification across multi-page sequences. These are not heuristics. They are mathematical optimisations that produce demonstrably superior results to any greedy algorithm.',
+          'Robert Bringhurst, in "The Elements of Typographic Style," argued that typography exists to "honour the text." When text is forced into a browser-default container — rendered by an engine that understands neither page geometry nor the physical properties of ink on paper — the content is not honoured. It is merely displayed. The distinction between display and typesetting is the Gutenberg Gap, and it is as wide today as it was when Gutenberg\'s 42-line Bible demonstrated what a purpose-built system could achieve when every variable — type size, leading, column width, margin ratio — was calculated rather than defaulted.',
+        ],
+      },
+      {
+        heading: 'Verso, Recto, and the Asymmetric Tradition',
+        paragraphs: [
+          'One of the most telling failures of browser-based PDF generation is the treatment of left and right pages as identical. In the tradition documented by Tschichold in "The Form of the Book" and formalised by the Van de Graaf canon — a tradition explored in depth in "The Geometry of Authority" — the inner margin of a bound book is narrower than the outer margin, because the inner edge disappears into the binding. The ratio is not arbitrary: the canonical proportion is 2:3:4:6 (inner, top, outer, bottom), a system that produces a text block whose proportions mirror the page itself.',
+          'A browser generating a PDF applies identical margins to every page. It has no concept of "inner" and "outer" because it has no concept of a physical binding. The result is a document where text on left-hand pages crowds the spine while text on right-hand pages floats toward the outer edge — or, more commonly, where symmetric margins waste inner space that the reader will never see (consumed by the binding) while providing insufficient outer space for comfortable thumb placement. This is not a subtle deficiency. It is visible on every spread of every browser-generated book, and it is the single most reliable indicator that a document was produced by a system that does not understand its output medium.',
+          'The asymmetric margin tradition exists because books are physical objects with physical constraints. "The Binding Margin" explores the specific geometry: perfect binding consumes 6 to 10 millimetres of the inner margin depending on page count, case binding requires additional clearance for the hinge, and saddle-stitch binding introduces progressive creep that must be compensated in the imposition. A typesetting engine that cannot model these constraints is not producing books. It is producing decorated paper.',
+        ],
+      },
+    ],
+    conclusion: {
+      heading: 'The Actionable Rule',
+      paragraphs: [
+        'Do not use a browser\'s "Print to PDF" function for any document that will be professionally printed, formally published, or archived as an authoritative record. The browser is an excellent rendering engine for its native medium — the reflowable, interactive, screen-based web. It is not a typesetting engine. It cannot optimise page breaks globally, calculate dynamic cross-references, model binding geometry, or perform the micro-typographic adjustments that eliminate rivers and produce even colour across a justified text block.',
+        'To close the Gutenberg Gap, route your content through a paged-media engine that was designed for the constraints of the printed page. Verify that it handles verso/recto margin asymmetry, footnote marshalling, widow/orphan prohibition, and bleed generation. Validate the output against the manufacturing specifications of your target print process. The difference between a browser-generated PDF and an engineered one is the difference between a screen capture and a typeset document — and your reader, whether consciously or not, will perceive the distinction on every page.',
+      ],
+    },
+  },
 ]
