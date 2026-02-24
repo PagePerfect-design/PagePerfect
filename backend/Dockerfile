@@ -57,13 +57,54 @@ RUN apt-get update && apt-get install -y \
     fontconfig \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Make TeX Live fonts visible to fontconfig (fc-list) ──
-# TeX Live installs OpenType/TrueType fonts under /usr/share/texlive/texmf-dist/fonts/
-# but fontconfig doesn't scan those directories by default. Without this, fc-list
-# won't find ETbb, Alegreya Sans, Fira Sans, Source Sans Pro, Libertinus, etc.
-# even though they're installed by texlive-fonts-extra.
+# ── Download template fonts not reliably available as OTF in TeX Live 2021 ──
+# TeX Live 2021 (Ubuntu 22.04) ships some fonts only as Type1 (.pfb), which
+# fontconfig cannot index and LuaLaTeX's fontspec cannot reliably load.
+# We download OTF/TTF versions directly from Google Fonts and CTAN to ensure
+# every template font is available to both fontconfig and LuaLaTeX.
+RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /usr/local/share/fonts/pageperfect \
+    && cd /tmp \
+    # ── Google Fonts downloads ──
+    # Alegreya Sans (paperback template)
+    && curl -fsSL -o alegreya-sans.zip "https://fonts.google.com/download?family=Alegreya+Sans" \
+    && unzip -qo alegreya-sans.zip -d /usr/local/share/fonts/pageperfect/alegreya-sans/ \
+    # Fira Sans (exhibit, matrix, heirloom, operator templates)
+    && curl -fsSL -o fira-sans.zip "https://fonts.google.com/download?family=Fira+Sans" \
+    && unzip -qo fira-sans.zip -d /usr/local/share/fonts/pageperfect/fira-sans/ \
+    # Fira Mono (chronicle, exhibit, heirloom, operator, matrix templates)
+    && curl -fsSL -o fira-mono.zip "https://fonts.google.com/download?family=Fira+Mono" \
+    && unzip -qo fira-mono.zip -d /usr/local/share/fonts/pageperfect/fira-mono/ \
+    # Source Sans 3 (avantgarde template)
+    && curl -fsSL -o source-sans-3.zip "https://fonts.google.com/download?family=Source+Sans+3" \
+    && unzip -qo source-sans-3.zip -d /usr/local/share/fonts/pageperfect/source-sans-3/ \
+    # Libre Baskerville (memoir template — Google Font, not in TeX Live)
+    && curl -fsSL -o libre-baskerville.zip "https://fonts.google.com/download?family=Libre+Baskerville" \
+    && unzip -qo libre-baskerville.zip -d /usr/local/share/fonts/pageperfect/libre-baskerville/ \
+    # Scheherazade New (multilingual Arabic fallback)
+    && curl -fsSL -o scheherazade-new.zip "https://fonts.google.com/download?family=Scheherazade+New" \
+    && unzip -qo scheherazade-new.zip -d /usr/local/share/fonts/pageperfect/scheherazade-new/ \
+    # ── CTAN / GitHub downloads (not on Google Fonts) ──
+    # ETbb (chicago template — Bembo revival, TeX-specific)
+    && curl -fsSL -o etbb.zip "https://mirrors.ctan.org/fonts/etbb.zip" \
+    && unzip -qo etbb.zip "etbb/opentype/*" -d /tmp/etbb-extract/ \
+    && cp /tmp/etbb-extract/etbb/opentype/*.otf /usr/local/share/fonts/pageperfect/ 2>/dev/null || true \
+    && rm -rf /tmp/etbb-extract \
+    # Libertinus Sans (symphony sans — OpenType math-aware family)
+    && curl -fsSL -o libertinus.zip "https://github.com/alerque/libertinus/releases/download/v7.040/Libertinus-7.040.zip" \
+    && unzip -qo libertinus.zip "Libertinus-7.040/static/OTF/LibertinusSans-*" -d /tmp/libertinus-extract/ \
+    && cp /tmp/libertinus-extract/Libertinus-7.040/static/OTF/LibertinusSans-*.otf /usr/local/share/fonts/pageperfect/ 2>/dev/null || true \
+    && rm -rf /tmp/libertinus-extract \
+    # Cleanup
+    && rm -f /tmp/*.zip \
+    && rm -rf /tmp/etbb-extract /tmp/libertinus-extract
+
+# ── Make all fonts visible to fontconfig and LuaLaTeX ──
+# 1. Copy TeX Live fontconfig conf files (adds TeX font dirs)
+# 2. Add explicit dirs for TeX Live OTF/TTF and our downloaded fonts
+# 3. Rebuild fontconfig cache + luaotfload database
 RUN cp /usr/share/texlive/texmf-dist/fontconfig/conf.avail/*.conf /etc/fonts/conf.d/ 2>/dev/null || true \
-    && printf '<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">\n<fontconfig>\n  <dir>/usr/share/texlive/texmf-dist/fonts/opentype</dir>\n  <dir>/usr/share/texlive/texmf-dist/fonts/truetype</dir>\n  <dir>/usr/share/texmf/fonts/opentype</dir>\n  <dir>/usr/share/texmf/fonts/truetype</dir>\n</fontconfig>\n' > /etc/fonts/conf.d/99-texlive-fonts.conf \
+    && printf '<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">\n<fontconfig>\n  <dir>/usr/share/texlive/texmf-dist/fonts/opentype</dir>\n  <dir>/usr/share/texlive/texmf-dist/fonts/truetype</dir>\n  <dir>/usr/share/texmf/fonts/opentype</dir>\n  <dir>/usr/share/texmf/fonts/truetype</dir>\n  <dir>/usr/local/share/fonts/pageperfect</dir>\n</fontconfig>\n' > /etc/fonts/conf.d/99-texlive-fonts.conf \
     && fc-cache -fv \
     && luaotfload-tool --update 2>/dev/null || true
 
