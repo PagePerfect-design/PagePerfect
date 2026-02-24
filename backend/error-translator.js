@@ -334,6 +334,77 @@ const ERROR_PATTERNS = [
       fix: 'Check your file references.',
     }),
   },
+
+  // ── Disk space / I/O errors ──
+  {
+    pattern: /No space left on device/i,
+    severity: 'error',
+    category: 'server',
+    translate: () => ({
+      message: 'The server ran out of disk space during compilation',
+      fix: 'This is a temporary server issue. Please try again in a few minutes.',
+    }),
+  },
+  {
+    pattern: /I can't write on file/i,
+    severity: 'error',
+    category: 'server',
+    translate: () => ({
+      message: 'The server could not write output files (disk may be full)',
+      fix: 'This is a temporary server issue. Please try again in a few minutes.',
+    }),
+  },
+
+  // ── Lua runtime errors (LuaTeX-specific) ──
+  {
+    pattern: /LuaTeX error.*?:\s*(.{1,150})/i,
+    severity: 'error',
+    category: 'syntax',
+    translate: (m) => ({
+      message: `LuaTeX engine error: ${m[1].trim().replace(/\.+$/, '')}`,
+      fix: 'Try a different template. If the problem persists, simplify your manuscript.',
+    }),
+  },
+  {
+    pattern: /attempt to call a nil value/i,
+    severity: 'error',
+    category: 'server',
+    translate: () => ({
+      message: 'A required Lua function is not available in this TeX installation',
+      fix: 'Try a different template.',
+    }),
+  },
+
+  // ── Pandoc conversion errors ──
+  {
+    pattern: /Error reading (?:bibliography|CSL)/i,
+    severity: 'error',
+    category: 'citation',
+    translate: () => ({
+      message: 'Could not read the bibliography or citation style file',
+      fix: 'Check your citation format. Switch to Standard Mode to skip bibliography processing.',
+    }),
+  },
+  {
+    pattern: /Could not convert (?:image|figure)/i,
+    severity: 'error',
+    category: 'image',
+    translate: () => ({
+      message: 'An image could not be converted for PDF output',
+      fix: 'Try re-exporting the image as PNG or JPG.',
+    }),
+  },
+
+  // ── Permission errors ──
+  {
+    pattern: /Permission denied/i,
+    severity: 'error',
+    category: 'server',
+    translate: () => ({
+      message: 'Server permission error during compilation',
+      fix: 'This is a server configuration issue. Please try again later.',
+    }),
+  },
 ];
 
 // ================================================================

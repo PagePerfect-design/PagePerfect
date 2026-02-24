@@ -316,14 +316,30 @@ async function processCompileJob(job, templateRegistry) {
   // the Docker image. The fallback is registered via luaotfload and applied
   // to the main font via RawFeature. We inject this BEFORE \setmainfont by
   // adding a \directlua block, then patch the \setmainfont call to reference it.
+  //
+  // DEFENSIVE: luaotfload.add_fallback() was added in luaotfload 3.17 (2021).
+  // Older TeX Live installs won't have it. We wrap in pcall + type check so
+  // the compile continues without emoji support rather than crashing.
   const emojiFallbackLua = [
     '\\directlua{',
-    '  luaotfload.add_fallback("emojifallback", {',
-    '    "Noto Color Emoji:mode=harf;",',
-    '    "Noto Sans Symbols:mode=node;",',
-    '    "Noto Sans Symbols2:mode=node;",',
-    '    "DejaVu Sans:mode=node;",',
-    '  })',
+    '  pp_emoji_fallback_ok = false',
+    '  if luaotfload and type(luaotfload.add_fallback) == "function" then',
+    '    local ok, err = pcall(function()',
+    '      luaotfload.add_fallback("emojifallback", {',
+    '        "Noto Color Emoji:mode=harf;",',
+    '        "Noto Sans Symbols:mode=node;",',
+    '        "Noto Sans Symbols2:mode=node;",',
+    '        "DejaVu Sans:mode=node;",',
+    '      })',
+    '    end)',
+    '    if ok then',
+    '      pp_emoji_fallback_ok = true',
+    '    else',
+    '      texio.write_nl("log", "[pageperfect] emoji fallback registration failed: " .. tostring(err))',
+    '    end',
+    '  else',
+    '    texio.write_nl("log", "[pageperfect] luaotfload.add_fallback not available — emoji fallback disabled")',
+    '  end',
     '}',
   ].join('\n');
 
@@ -339,17 +355,24 @@ async function processCompileJob(job, templateRegistry) {
     }
   }
 
-  // Patch \setmainfont to include the fallback RawFeature.
-  // Handles both forms: \setmainfont{Font} and \setmainfont[Options]{Font}
+  // Patch \setmainfont to CONDITIONALLY include the fallback RawFeature.
+  // Uses \directlua{tex.sprint()} which is fully expandable in LuaTeX —
+  // the expansion happens before fontspec processes the option list.
+  //
+  // Handles BOTH fontspec syntaxes:
+  //   Old: \setmainfont[Options]{Font}
+  //   New: \setmainfont{Font}[Options]   (fontspec ≥ 2.5)
   tplContent = tplContent.replace(
-    /\\setmainfont(\[([^\]]*)\])?\{([^}]+)\}/,
-    (match, optGroup, opts, fontName) => {
-      if (opts && opts.includes('fallback=')) return match; // already has fallback
-      const fallbackFeature = 'fallback=emojifallback';
-      if (opts) {
-        return `\\setmainfont[${opts},RawFeature={${fallbackFeature}}]{${fontName}}`;
-      }
-      return `\\setmainfont[RawFeature={${fallbackFeature}}]{${fontName}}`;
+    /\\setmainfont(?:\[([^\]]*)\])?\{([^}]+)\}(?:\[([^\]]*)\])?/,
+    (match, preOpts, fontName, postOpts) => {
+      const existingOpts = preOpts || postOpts || '';
+      if (existingOpts.includes('fallback=')) return match; // already has fallback
+      const conditionalFallback = '\\directlua{if pp_emoji_fallback_ok then tex.sprint(",RawFeature={fallback=emojifallback}") end}';
+      // Normalize to [options]{font} syntax with conditional emoji fallback
+      const opts = existingOpts
+        ? `${existingOpts}${conditionalFallback}`
+        : `Ligatures=TeX${conditionalFallback}`;
+      return `\\setmainfont[${opts}]{${fontName}}`;
     }
   );
 
@@ -408,6 +431,28 @@ async function processCompileJob(job, templateRegistry) {
   }
 
   await fsp.writeFile(path.join(tmpBase, 'header.tex'), preamble.join('\n\n'), 'utf8');
+
+  // ── Pre-flight: disk space check ──
+  // LuaLaTeX needs /tmp for .aux, .log, .toc, font cache, and PDF output.
+  // If the filesystem is nearly full, the compile will fail with cryptic errors
+  // ("I can't write on file", segfaults, truncated PDFs). Fail fast with a clear message.
+  try {
+    const tmpStats = await fsp.statfs(tmpBase);
+    const freeBytes = tmpStats.bavail * tmpStats.bsize;
+    const freeMB = Math.round(freeBytes / (1024 * 1024));
+    if (freeBytes < 50 * 1024 * 1024) {
+      log.warn({ jobId: job.id, freeMB }, 'Insufficient disk space for compilation');
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+      return {
+        success: false, error: 'disk_full',
+        message: `Insufficient disk space (${freeMB} MB free). The server needs at least 50 MB to compile a PDF. Please try again later.`,
+        warnings,
+      };
+    }
+  } catch (err) {
+    // statfs not available (Node < 18.15) or other error — proceed anyway
+    log.debug({ err: err.message }, 'Disk space check skipped');
+  }
 
   // Pandoc spawn
   const hardBreaks = tplKey === 'verse' ? '+hard_line_breaks' : '';
