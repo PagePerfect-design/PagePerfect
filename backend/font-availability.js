@@ -15,6 +15,24 @@
 const { execSync } = require('child_process');
 
 // ================================================================
+// Font Name Aliases
+// ================================================================
+// Maps font names used in the template registry to known alternative
+// names that may appear in different TeX Live versions or system installs.
+// TeX Live 2021 (Ubuntu 22.04) ships older font names in some cases.
+
+const FONT_ALIASES = {
+  'Source Sans 3': ['Source Sans Pro', 'SourceSansPro', 'SourceSans3'],
+  'Source Sans Pro': ['Source Sans 3', 'SourceSansPro', 'SourceSans3'],
+  'Scheherazade New': ['Scheherazade', 'Scheherazade Delight'],
+  'Scheherazade': ['Scheherazade New'],
+  'EB Garamond': ['EBGaramond', 'EB Garamond 12'],
+  'Libertinus Sans': ['Libertinus Sans Display', 'LibertinusSans'],
+  'Libre Baskerville': ['LibreBaskerville'],
+  'Noto Naskh Arabic': ['Noto Naskh Arabic UI'],
+};
+
+// ================================================================
 // Font Registry — every font used across all templates & systems
 // ================================================================
 
@@ -46,6 +64,13 @@ const FONT_REGISTRY = {
     source: 'texlive-fonts-recommended (lmodern)',
     usedBy: ['minimal'],
     fallbacks: ['DejaVu Serif'],
+    category: 'serif',
+    critical: true,
+  },
+  'Libre Baskerville': {
+    source: 'texlive-fonts-extra (librebaskerville) / Google Fonts',
+    usedBy: ['memoir'],
+    fallbacks: ['EB Garamond', 'ETbb', 'Latin Modern Roman', 'DejaVu Serif'],
     category: 'serif',
     critical: true,
   },
@@ -224,7 +249,8 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Probe all fonts available to fontconfig/LuaLaTeX.
- * Calls `fc-list` and parses the family names.
+ * Primary: `fc-list` for fontconfig-visible fonts.
+ * Secondary: `luaotfload-tool` database for TeX-path-only fonts.
  * Results are cached for CACHE_TTL_MS.
  *
  * @param {boolean} [forceRefresh=false]
@@ -237,9 +263,11 @@ function probeInstalledFonts(forceRefresh = false) {
   }
 
   const families = new Set();
+
+  // ── Primary: fontconfig (fc-list) ──
   try {
-    // fc-list :family outputs one family per line, sometimes with comma-separated aliases
-    const raw = execSync('fc-list --format="%{family[0]}\\n"', {
+    // Use both family[0] and fullname to catch variant naming
+    const raw = execSync('fc-list --format="%{family[0]}\\n%{fullname}\\n"', {
       encoding: 'utf8',
       timeout: 10_000,
     });
@@ -255,7 +283,31 @@ function probeInstalledFonts(forceRefresh = false) {
     }
   } catch (err) {
     console.warn('[font-availability] fc-list failed — font probing unavailable:', err.message);
-    // Return empty set; callers should handle gracefully
+  }
+
+  // ── Secondary: luaotfload font names database ──
+  // luaotfload-tool --list=* dumps ALL fonts known to LuaLaTeX,
+  // including TeX-path fonts that fontconfig may not see.
+  try {
+    const raw = execSync('luaotfload-tool --list="*" --fields=familyname 2>/dev/null', {
+      encoding: 'utf8',
+      timeout: 15_000,
+    });
+    for (const line of raw.split('\n')) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('luaotfload')) {
+        // Output format varies; extract the family name portion
+        // Lines look like: "familyname    fontfile" or just the family name
+        const parts = trimmed.split(/\t+/);
+        const name = (parts[0] || '').trim();
+        if (name && name.length < 100) families.add(name);
+      }
+    }
+  } catch (err) {
+    // luaotfload-tool may not be available outside Docker — that's fine
+    if (families.size === 0) {
+      console.warn('[font-availability] luaotfload-tool also failed:', err.message);
+    }
   }
 
   _cachedFontSet = families;
@@ -264,7 +316,7 @@ function probeInstalledFonts(forceRefresh = false) {
 }
 
 /**
- * Check if a specific font is available.
+ * Check if a specific font (or any of its known aliases) is available.
  *
  * @param {string} fontName
  * @returns {boolean}
@@ -272,7 +324,35 @@ function probeInstalledFonts(forceRefresh = false) {
 function isFontAvailable(fontName) {
   const installed = probeInstalledFonts();
   if (installed.size === 0) return true; // Can't probe — assume available
-  return installed.has(fontName);
+  if (installed.has(fontName)) return true;
+  // Check known aliases
+  const aliases = FONT_ALIASES[fontName];
+  if (aliases) {
+    for (const alias of aliases) {
+      if (installed.has(alias)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Find the actual installed name for a font, checking aliases.
+ * Returns the fontName itself if directly available, an alias if found,
+ * or null if neither the font nor any alias is installed.
+ *
+ * @param {string} fontName
+ * @param {Set<string>} installed
+ * @returns {string|null}
+ */
+function findInstalledName(fontName, installed) {
+  if (installed.has(fontName)) return fontName;
+  const aliases = FONT_ALIASES[fontName];
+  if (aliases) {
+    for (const alias of aliases) {
+      if (installed.has(alias)) return alias;
+    }
+  }
+  return null;
 }
 
 // ================================================================
@@ -295,21 +375,34 @@ function resolveFont(fontName) {
     return { resolved: fontName, original: fontName, isFallback: false, warning: null };
   }
 
-  // Requested font is available
+  // Requested font is directly available
   if (installed.has(fontName)) {
     return { resolved: fontName, original: fontName, isFallback: false, warning: null };
   }
 
-  // Walk fallback chain
+  // Check aliases — font might be installed under a different name
+  // (e.g. "Source Sans 3" installed as "Source Sans Pro" in TeX Live 2021)
+  const aliasMatch = findInstalledName(fontName, installed);
+  if (aliasMatch) {
+    return {
+      resolved: aliasMatch,
+      original: fontName,
+      isFallback: true,
+      warning: `Font "${fontName}" found as "${aliasMatch}".`,
+    };
+  }
+
+  // Walk fallback chain (also checking aliases for each fallback)
   const entry = FONT_REGISTRY[fontName];
   if (entry && entry.fallbacks) {
     for (const fb of entry.fallbacks) {
-      if (installed.has(fb)) {
+      const fbMatch = findInstalledName(fb, installed);
+      if (fbMatch) {
         return {
-          resolved: fb,
+          resolved: fbMatch,
           original: fontName,
           isFallback: true,
-          warning: `Font "${fontName}" not found. Using fallback "${fb}".`,
+          warning: `Font "${fontName}" not found. Using fallback "${fbMatch}".`,
         };
       }
     }
@@ -325,12 +418,13 @@ function resolveFont(fontName) {
   };
 
   for (const fb of (emergencyFallbacks[category] || [])) {
-    if (installed.has(fb)) {
+    const fbMatch = findInstalledName(fb, installed);
+    if (fbMatch) {
       return {
-        resolved: fb,
+        resolved: fbMatch,
         original: fontName,
         isFallback: true,
-        warning: `Font "${fontName}" not found. Using emergency fallback "${fb}".`,
+        warning: `Font "${fontName}" not found. Using emergency fallback "${fbMatch}".`,
       };
     }
   }
@@ -384,15 +478,18 @@ function auditFonts() {
   let missing = 0;
 
   for (const [name, entry] of Object.entries(FONT_REGISTRY)) {
-    const isAvail = probeWorking ? installed.has(name) : null; // null = unknown
+    // Check both direct name and aliases
+    const installedAs = probeWorking ? findInstalledName(name, installed) : null;
+    const isAvail = probeWorking ? (installedAs !== null) : null; // null = unknown
     if (isAvail) available++;
     if (isAvail === false) missing++;
 
     let bestFallback = null;
     if (!isAvail && probeWorking && entry.fallbacks) {
       for (const fb of entry.fallbacks) {
-        if (installed.has(fb)) {
-          bestFallback = fb;
+        const fbMatch = findInstalledName(fb, installed);
+        if (fbMatch) {
+          bestFallback = fbMatch;
           break;
         }
       }
@@ -401,6 +498,7 @@ function auditFonts() {
     fonts.push({
       name,
       available: isAvail,
+      installedAs: (isAvail && installedAs !== name) ? installedAs : undefined,
       category: entry.category,
       critical: entry.critical,
       source: entry.source,
@@ -442,7 +540,7 @@ function quickCheck() {
   const criticalMissing = [];
 
   for (const [name, entry] of Object.entries(FONT_REGISTRY)) {
-    if (installed.has(name)) {
+    if (findInstalledName(name, installed)) {
       available++;
     } else {
       missing++;
@@ -466,8 +564,10 @@ function quickCheck() {
 
 module.exports = {
   FONT_REGISTRY,
+  FONT_ALIASES,
   probeInstalledFonts,
   isFontAvailable,
+  findInstalledName,
   resolveFont,
   resolveTemplateFont,
   auditFonts,
