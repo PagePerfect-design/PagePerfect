@@ -13,7 +13,7 @@ import {
 
 import type {
   TemplateKey, HeadingVariant, PageSize, MarginPreset,
-  CompileMode, HudTab, CustomFont, Status, Genre,
+  CompileMode, HudTab, CustomFont, Status, Genre, CompileQuality,
 } from './editor-types'
 import {
   TEMPLATE_INFO, TEMPLATE_KEYS, HEADING_VARIANT_INFO,
@@ -76,6 +76,7 @@ export default function FloatingHUD({
   onSafeModeChange,
   onFontUpload,
   onFontRemove,
+  quality,
 }: {
   template: TemplateKey
   headingVariant: HeadingVariant
@@ -97,6 +98,7 @@ export default function FloatingHUD({
   onSafeModeChange: (s: boolean) => void
   onFontUpload: (file: File) => void
   onFontRemove: () => void
+  quality?: CompileQuality
 }) {
   const [genreFilter, setGenreFilter] = useState<Genre>('all')
   const [hoveredTemplate, setHoveredTemplate] = useState<TemplateKey | null>(null)
@@ -329,10 +331,12 @@ export default function FloatingHUD({
                         ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                         : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
                     }`}
+                    title={info.desc}
                   >
-                    <span className={`text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
+                    <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                       {info.label}
                     </span>
+                    <span className="block font-mono text-[8px] text-[#111111]/25">{info.desc}</span>
                   </button>
                 )
               })}
@@ -466,6 +470,24 @@ export default function FloatingHUD({
             {status === 'queued' ? 'Queued' : status === 'compiling' ? 'Setting' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
           </span>
         </div>
+
+        {/* Quality grade — visible after successful compile */}
+        {status === 'success' && quality?.typographyGrade && (
+          <>
+            <div className="mx-1 h-4 w-px bg-[#111111]/[0.08]" />
+            <div className={`flex items-center gap-1 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] ${
+              quality.typographyGrade === 'A' ? 'text-emerald-600/70' :
+              quality.typographyGrade === 'B' ? 'text-blue-600/70' :
+              quality.typographyGrade === 'C' ? 'text-amber-600/70' :
+              'text-red-500/70'
+            }`}>
+              <span className="font-bold">{quality.typographyGrade}</span>
+              {(quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && quality.overfullBoxes > 0 && (
+                <span className="opacity-60">{quality.overfullBoxes} ovf</span>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

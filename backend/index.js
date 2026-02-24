@@ -42,18 +42,40 @@ let compileQueue = null;
 let compileWorker = null;
 let compileQueueEvents = null;
 
-// In-memory job results map
+// In-memory job results map (primary) + Redis backup (survives restarts)
 const jobResults = new Map();
-const RESULT_REDIS_TTL = 600; // 10 minutes
+const RESULT_REDIS_TTL = 1800; // 30 minutes (up from 10 — results now persist)
+
+// ── Persistent results directory ──
+// Compiled PDFs are copied here after compilation so they survive temp dir cleanup.
+// Uses 'ppresults' prefix (not 'pp-') to avoid being swept by the orphan sweeper.
+const RESULTS_DIR = path.join(os.tmpdir(), 'ppresults');
+if (!fs.existsSync(RESULTS_DIR)) fs.mkdirSync(RESULTS_DIR, { recursive: true });
+
+/**
+ * Persist a compiled PDF from the ephemeral temp dir to the results dir.
+ * Returns the new path, or null on failure.
+ */
+async function persistPdf(jobId, srcPdfPath) {
+  try {
+    const ext = path.extname(srcPdfPath) || '.pdf';
+    const destPath = path.join(RESULTS_DIR, `${jobId}${ext}`);
+    await fsp.copyFile(srcPdfPath, destPath);
+    return destPath;
+  } catch (err) {
+    log.error({ module: 'persist', jobId, err: err.message }, 'Failed to persist PDF');
+    return null;
+  }
+}
 
 function storeJobResult(id, value) {
   value._storedAt = Date.now();
   jobResults.set(id, value);
   if (redisHealthy && redis) {
+    // Store full metadata to Redis (including pdfPath for recovery)
     const redisValue = { ...value };
-    delete redisValue.pdfPath;
-    delete redisValue.tmpBase;
-    redisValue._redisOnly = true;
+    // Keep pdfPath in Redis so we can check if the file still exists on recovery
+    delete redisValue.tmpBase; // tmpBase is local-only
     redis.setex(`pp:result:${id}`, RESULT_REDIS_TTL, JSON.stringify(redisValue)).catch(() => {});
   }
 }
@@ -65,7 +87,24 @@ async function getJobResult(id) {
   try {
     const raw = await redis.get(`pp:result:${id}`);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    // Check if the PDF file still exists on disk
+    if (parsed.pdfPath && parsed.success) {
+      try {
+        await fsp.access(parsed.pdfPath);
+        // File exists — promote back to in-memory for faster subsequent access
+        parsed._recoveredFromRedis = true;
+        jobResults.set(id, parsed);
+        return parsed;
+      } catch {
+        // File was cleaned up — result is unservable, clean up Redis
+        redis.del(`pp:result:${id}`).catch(() => {});
+        return null;
+      }
+    }
+    // Non-success results (errors) — return metadata only
+    if (!parsed.success) return parsed;
+    return null;
   } catch { return null; }
 }
 
@@ -90,18 +129,44 @@ async function getJobSecret(jobId) {
 const MAX_SYNC_CONCURRENT = Number(process.env.MAX_SYNC_CONCURRENT || 2);
 let activeSyncCompiles = 0;
 
-// Result cleanup: TTL 10 minutes
-const RESULT_TTL_MS = 10 * 60 * 1000;
+// Result cleanup: TTL 30 minutes (persisted PDFs survive longer)
+const RESULT_TTL_MS = 30 * 60 * 1000;
 const resultCleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [id, res] of jobResults) {
     if (res._storedAt && now - res._storedAt > RESULT_TTL_MS) {
       if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {});
+      // Clean persisted PDF from results dir
+      if (res.pdfPath && res.pdfPath.startsWith(RESULTS_DIR)) {
+        fsp.unlink(res.pdfPath).catch(() => {});
+      }
       deleteJobResult(id);
     }
   }
 }, 60_000);
 resultCleanupInterval.unref();
+
+// Results dir sweeper: catch orphaned PDFs (e.g. from unclean shutdowns)
+const RESULTS_MAX_AGE_MS = 45 * 60 * 1000; // 45 minutes
+const resultsCleanupInterval = setInterval(async () => {
+  try {
+    const entries = await fsp.readdir(RESULTS_DIR);
+    const now = Date.now();
+    let swept = 0;
+    for (const entry of entries) {
+      const fullPath = path.join(RESULTS_DIR, entry);
+      try {
+        const stats = await fsp.stat(fullPath);
+        if (now - stats.mtimeMs > RESULTS_MAX_AGE_MS) {
+          await fsp.unlink(fullPath);
+          swept++;
+        }
+      } catch { /* already cleaned */ }
+    }
+    if (swept > 0) log.info({ module: 'disk-sweep', swept }, 'Cleaned orphaned result PDFs');
+  } catch { /* best-effort */ }
+}, 5 * 60 * 1000);
+resultsCleanupInterval.unref();
 
 // ── Disk Sweeper ──
 const PP_TMP_PREFIXES = ['pp-enqueue-', 'pp-sync-', 'pp-batch-', 'pp-conv-', 'pp-worker-'];
@@ -133,6 +198,107 @@ async function sweepOrphanedTmpDirs() {
 sweepOrphanedTmpDirs();
 const diskSweepInterval = setInterval(sweepOrphanedTmpDirs, ORPHAN_MAX_AGE_MS);
 diskSweepInterval.unref();
+
+// ── Asset Directory Sweeper (24h TTL) ──
+// Uploaded images stored in /tmp/pp-assets/{UUID}/ — longer-lived than compile temp dirs.
+const ASSET_DIR = path.join(os.tmpdir(), 'pp-assets');
+const ASSET_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+async function sweepExpiredAssets() {
+  try {
+    if (!fs.existsSync(ASSET_DIR)) return;
+    const entries = await fsp.readdir(ASSET_DIR);
+    const now = Date.now();
+    let swept = 0;
+    for (const entry of entries) {
+      const fullPath = path.join(ASSET_DIR, entry);
+      try {
+        const stats = await fsp.stat(fullPath);
+        if (now - stats.mtimeMs > ASSET_MAX_AGE_MS) {
+          await fsp.rm(fullPath, { recursive: true, force: true });
+          swept++;
+        }
+      } catch { /* already cleaned */ }
+    }
+    if (swept > 0) log.info({ module: 'asset-sweep', swept }, 'Cleaned expired image assets');
+  } catch { /* best-effort */ }
+}
+
+setTimeout(sweepExpiredAssets, 60_000); // first sweep 1 min after boot
+const assetSweepInterval = setInterval(sweepExpiredAssets, 60 * 60 * 1000); // hourly
+assetSweepInterval.unref();
+
+// ── Disk Space Sentinel ──
+// Monitors /tmp usage and triggers emergency sweep if above threshold
+const DISK_SPACE_CHECK_INTERVAL_MS = 5 * 60 * 1000; // Check every 5 minutes
+const DISK_SPACE_EMERGENCY_THRESHOLD = 0.80; // 80% usage triggers emergency sweep
+
+async function checkDiskSpace() {
+  try {
+    const tmpDir = os.tmpdir();
+    const { exec } = require('child_process');
+    const dfOutput = await new Promise((resolve, reject) => {
+      exec(`df -P "${tmpDir}" | tail -1`, { timeout: 5000 }, (err, stdout) => {
+        if (err) return reject(err);
+        resolve(stdout.trim());
+      });
+    });
+    // Parse df output: Filesystem 1024-blocks Used Available Capacity Mounted-on
+    const parts = dfOutput.split(/\s+/);
+    if (parts.length >= 5) {
+      const usagePercent = parseInt(parts[4]) / 100;
+      if (usagePercent >= DISK_SPACE_EMERGENCY_THRESHOLD) {
+        console.warn(`[disk-sentinel] /tmp usage at ${(usagePercent * 100).toFixed(0)}% — triggering emergency sweep`);
+        // Emergency: sweep ALL temp dirs regardless of age
+        const entries = await fsp.readdir(tmpDir);
+        let swept = 0;
+        for (const entry of entries) {
+          if (!PP_TMP_PREFIXES.some(p => entry.startsWith(p))) continue;
+          const fullPath = path.join(tmpDir, entry);
+          try {
+            await fsp.rm(fullPath, { recursive: true, force: true });
+            swept++;
+          } catch { /* best-effort */ }
+        }
+        // Also clear expired in-memory results to free file handles
+        const now = Date.now();
+        for (const [id, res] of jobResults) {
+          if (res._storedAt && now - res._storedAt > 2 * 60 * 1000) { // 2 min in emergency
+            if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {});
+            if (res.pdfPath && res.pdfPath.startsWith(RESULTS_DIR)) fsp.unlink(res.pdfPath).catch(() => {});
+            deleteJobResult(id);
+          }
+        }
+        // Also sweep expired assets in emergency
+        try {
+          const assetDir = path.join(tmpDir, 'pp-assets');
+          if (fs.existsSync(assetDir)) {
+            const assetEntries = await fsp.readdir(assetDir);
+            for (const entry of assetEntries) {
+              const fullPath = path.join(assetDir, entry);
+              try {
+                const stats = await fsp.stat(fullPath);
+                if (now - stats.mtimeMs > 60 * 60 * 1000) { // 1 hour in emergency (not 24h)
+                  await fsp.rm(fullPath, { recursive: true, force: true });
+                  swept++;
+                }
+              } catch { /* best-effort */ }
+            }
+          }
+        } catch { /* best-effort */ }
+        if (swept > 0) console.warn(`[disk-sentinel] Emergency swept ${swept} temp dir(s)`);
+      }
+    }
+  } catch (err) {
+    // Non-fatal — disk check is best-effort
+    log.debug({ err: err.message }, 'Disk space check failed (non-fatal)');
+  }
+}
+
+const diskSpaceSentinelInterval = setInterval(checkDiskSpace, DISK_SPACE_CHECK_INTERVAL_MS);
+diskSpaceSentinelInterval.unref();
+// Initial check after 30 seconds
+setTimeout(checkDiskSpace, 30_000);
 
 // ── Manuscript Expiry Sweeper ──
 const MANUSCRIPT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -205,7 +371,17 @@ if (redis) {
       removeOnFail: { count: 500 },
     });
 
-    compileWorker.on('completed', (job, result) => {
+    compileWorker.on('completed', async (job, result) => {
+      // Persist PDF to results dir so it survives temp dir cleanup and restarts
+      if (result.success && result.pdfPath) {
+        const persistedPath = await persistPdf(job.id, result.pdfPath);
+        if (persistedPath) {
+          // Clean up the compile temp dir immediately — PDF is safe in results dir
+          if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
+          result.pdfPath = persistedPath;
+          delete result.tmpBase;
+        }
+      }
       storeJobResult(job.id, result);
       log.info({ module: 'queue', jobId: job.id, elapsed: result.elapsed || '?' }, 'Job completed');
     });
@@ -414,7 +590,7 @@ app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? (origin, callback) => callback(null, isAllowedOrigin(origin))
     : true,
-  methods: ['GET', 'POST', 'OPTIONS'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['X-PP-Watermarked', 'X-PP-Credits-Remaining', 'X-PP-Filename', 'X-PP-Format'],
   credentials: true,

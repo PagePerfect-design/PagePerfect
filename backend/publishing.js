@@ -142,9 +142,10 @@ function preflight(opts, gridSystem) {
     checks.push({
       name: 'Inside margin (gutter)',
       status: gutterOk ? 'pass' : 'fail',
+      critical: true,
       detail: gutterOk
         ? `${marginInches.toFixed(3)}" ≥ ${minGutter}" minimum`
-        : `${marginInches.toFixed(3)}" — needs ${minGutter}" minimum for ${estimatedPages} pages`,
+        : `${marginInches.toFixed(3)}" — ${platform === 'kdp' ? 'KDP' : 'IngramSpark'} requires ${minGutter}" minimum for ${estimatedPages} pages. Increase margin preset or your upload will be rejected.`,
     });
   } else {
     checks.push({
@@ -160,20 +161,32 @@ function preflight(opts, gridSystem) {
   checks.push({
     name: 'Outside margins',
     status: outsideOk ? 'pass' : 'fail',
+    critical: !!(platform === 'kdp' || platform === 'ingram'),
     detail: outsideOk
       ? `${marginInches.toFixed(3)}" ≥ ${minOutside}" minimum`
-      : `${marginInches.toFixed(3)}" — needs ${minOutside}" minimum`,
+      : `${marginInches.toFixed(3)}" — needs ${minOutside}" minimum. This will cause a platform rejection.`,
   });
 
+  // ── Check 3b: Bleed requirement ──
+  if (platform === 'ingram') {
+    checks.push({
+      name: 'Bleed',
+      status: 'info',
+      critical: false,
+      detail: 'IngramSpark requires 0.125" bleed for full-bleed pages. Text-only interiors are compliant without bleed.',
+    });
+  }
+
   // ── Check 4: Trim size validation ──
-  const isKdpSize = pageSize.startsWith('amazon') || ['fiveFiveByEightFive', 'sixByNine', 'sevenByTen'].includes(pageSize);
+  const isKdpSize = pageSize.startsWith('amazon') || ['fiveFiveByEightFive', 'sixByNine', 'sevenByTen', 'letter', 'a4', 'a5'].includes(pageSize);
   if (platform === 'kdp') {
     checks.push({
       name: 'Trim size',
-      status: isKdpSize ? 'pass' : 'warn',
+      status: isKdpSize ? 'pass' : 'fail',
+      critical: true,
       detail: isKdpSize
         ? `${trimDims.label} — KDP-supported trim size`
-        : `${trimDims.label} — not a standard KDP trim size`,
+        : `${trimDims.label} — not a KDP-supported trim size. KDP will reject this upload.`,
     });
   } else {
     checks.push({
@@ -195,8 +208,9 @@ function preflight(opts, gridSystem) {
   if (platform === 'ingram') {
     checks.push({
       name: 'PDF format',
-      status: 'warn',
-      detail: 'IngramSpark requires PDF/X-1a — use "Export PDF/X-1a" option',
+      status: 'fail',
+      critical: true,
+      detail: 'IngramSpark requires PDF/X-1a. Select "Export as PDF/X-1a" — standard PDF will be rejected.',
     });
   } else {
     checks.push({
@@ -214,12 +228,16 @@ function preflight(opts, gridSystem) {
     detail: `${spine.toFixed(4)}" (${(spine * 25.4).toFixed(2)} mm) — ${PAPER_STOCK[paperStock]?.label || 'white'} paper`,
   });
 
-  const passed = checks.every(c => c.status === 'pass' || c.status === 'info' || c.status === 'warn');
+  const blockers = checks.filter(c => c.status === 'fail');
+  const warnings = checks.filter(c => c.status === 'warn');
+  const passed = blockers.length === 0;
 
   return {
     passed,
     platform,
     checks,
+    blockers,
+    warnings,
     stats: {
       estimatedPages,
       wordCount,

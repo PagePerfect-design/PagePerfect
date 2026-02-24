@@ -4,7 +4,7 @@ import { AlertTriangle, FileText, RotateCcw } from 'lucide-react'
 
 import type { Status, CompileError, CompileQuality } from './editor-types'
 import { ease } from './editor-types'
-import { translateError } from './editor-utils'
+import { translateError, suggestFix } from './editor-utils'
 
 /* ═══════════════════════════════════════════════════════════════════
    SKELETON LOADER — SVG wireframe shown during typesetting
@@ -85,6 +85,68 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   ERROR PANEL — Differentiates expired previews from compile failures
+   ═══════════════════════════════════════════════════════════════════ */
+
+function ErrorPanel({ errors, onRetry }: { errors: CompileError[]; onRetry?: () => void }) {
+  const isExpired = errors.some(e =>
+    /expired|not found|recompile|try again/i.test(e.message) && !/failed|error|missing/i.test(e.message)
+  )
+
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3] p-8">
+      <div className="max-w-[420px]">
+        <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-full border ${isExpired ? 'border-amber-500/20 bg-amber-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
+          {isExpired
+            ? <RotateCcw className="h-4 w-4 text-amber-500/60" />
+            : <AlertTriangle className="h-4 w-4 text-red-500/60" />}
+        </div>
+        <p className={`mb-3 font-mono text-[11px] font-medium uppercase tracking-wider ${isExpired ? 'text-amber-600/70' : 'text-red-600/70'}`}>
+          {isExpired ? 'Preview Expired' : 'Typesetting Error'}
+        </p>
+        {errors.filter(e => !e.message.startsWith('__detail__')).map((e, i) => (
+          <p key={i} className="mb-1.5 font-mono text-[11px] leading-relaxed text-[#111111]/80">{translateError(e.message)}</p>
+        ))}
+        {!isExpired && (() => {
+          const fix = errors.find(e => !e.message.startsWith('__detail__') && suggestFix(e.message))
+          if (!fix) return null
+          return (
+            <div className="mt-3 flex items-start gap-2 border-l-2 border-blue-500/30 bg-blue-500/[0.04] px-3 py-2">
+              <span className="font-mono text-[10px] leading-relaxed text-blue-700/70">
+                Try: {suggestFix(fix.message)}
+              </span>
+            </div>
+          )
+        })()}
+        {errors.some(e => e.message.startsWith('__detail__')) && (
+          <details className="mt-4">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+              Engine log
+            </summary>
+            <pre className="mt-2 max-h-[200px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+              {errors.filter(e => e.message.startsWith('__detail__')).map(e => e.message.replace('__detail__', '')).join('\n')}
+            </pre>
+          </details>
+        )}
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className={`mt-4 inline-flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors ${
+              isExpired
+                ? 'border-[#FF3333] bg-[#FF3333] text-white hover:bg-[#E52222]'
+                : 'border-[#111111]/20 bg-white text-[#111111]/70 hover:border-[#111111]/40 hover:text-[#111111]'
+            }`}
+          >
+            <RotateCcw className="h-3 w-3" />
+            {isExpired ? 'Recompile' : 'Retry'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    LEVITATING BOOK — The PDF preview sits center-screen
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -133,6 +195,26 @@ export default function PreviewPane({
                 />
                 {/* Quality badge — top right of preview */}
                 {status === 'success' && quality && <QualityBadge quality={quality} />}
+                {/* Quality warning banner — shown for C/D grades below the PDF */}
+                {status === 'success' && quality?.typographyGrade && (quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.3 }}
+                    className={`absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-2 ${
+                      quality.typographyGrade === 'D'
+                        ? 'bg-red-500/90'
+                        : 'bg-amber-500/90'
+                    } ${isWatermarked ? 'bottom-[34px]' : ''}`}
+                  >
+                    <AlertTriangle className="h-3 w-3 shrink-0 text-white/80" />
+                    <span className="font-mono text-[10px] font-medium text-white">
+                      {quality.typographyGrade === 'D'
+                        ? 'Low quality — adjust margins or template'
+                        : 'Review typography before export'}
+                    </span>
+                  </motion.div>
+                )}
                 {isWatermarked && (
                   <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
                     <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">
@@ -147,36 +229,7 @@ export default function PreviewPane({
             ) : loading ? (
               <BookSkeleton />
             ) : status === 'error' && errors.length > 0 ? (
-              <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3] p-8">
-                <div className="max-w-[420px]">
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/5">
-                    <AlertTriangle className="h-4 w-4 text-red-500/60" />
-                  </div>
-                  <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-wider text-red-600/70">Typesetting Error</p>
-                  {errors.filter(e => !e.message.startsWith('__detail__')).map((e, i) => (
-                    <p key={i} className="mb-1.5 font-mono text-[11px] leading-relaxed text-[#111111]/80">{translateError(e.message)}</p>
-                  ))}
-                  {errors.some(e => e.message.startsWith('__detail__')) && (
-                    <details className="mt-4">
-                      <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
-                        Engine log
-                      </summary>
-                      <pre className="mt-2 max-h-[200px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
-                        {errors.filter(e => e.message.startsWith('__detail__')).map(e => e.message.replace('__detail__', '')).join('\n')}
-                      </pre>
-                    </details>
-                  )}
-                  {onRetry && (
-                    <button
-                      onClick={onRetry}
-                      className="mt-4 inline-flex items-center gap-1.5 border border-[#111111]/20 bg-white px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-[#111111]/70 transition-colors hover:border-[#111111]/40 hover:text-[#111111]"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      Retry
-                    </button>
-                  )}
-                </div>
-              </div>
+              <ErrorPanel errors={errors} onRetry={onRetry} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3]">
                 <div className="text-center">

@@ -33,6 +33,7 @@ const headingVariants = require('./heading-variants');
 const watermark = require('./watermark');
 const fontAvailability = require('./font-availability');
 const publishing = require('./publishing');
+const errorTranslator = require('./error-translator');
 const typographyAssurance = require('./typography-assurance');
 const textNormalizer = require('./text-normalizer');
 const latexSanitizer = require('./latex-sanitizer');
@@ -145,6 +146,7 @@ async function processCompileJob(job, templateRegistry) {
     manuscriptPath, template, title, pageSize, marginPreset,
     safeMode, compileMode, outputFormat, customFonts,
     headingVariant, isDownload, userId: enqueueUserId, extensions,
+    assets,
   } = job.data;
 
   const tplKey = templateRegistry[String(template)] ? String(template) : 'symphony';
@@ -191,6 +193,9 @@ async function processCompileJob(job, templateRegistry) {
     needsWatermark = true;
   }
 
+  // ── Warnings accumulator (declared early — used by multiple stages below) ──
+  const warnings = styleWarnings(manuscriptText);
+
   // ── Normalize text for format-agnostic input ──
   manuscriptText = textNormalizer.normalize(manuscriptText, tplKey);
 
@@ -208,6 +213,37 @@ async function processCompileJob(job, templateRegistry) {
   const effectiveMd = safeMode ? stripCitations(manuscriptText) : manuscriptText;
   await fsp.writeFile(mdPath, effectiveMd, 'utf8');
 
+  // ── Copy uploaded image assets into compile temp dir ──
+  // Assets are stored in /tmp/pp-assets/{UUID}/{filename} and referenced in
+  // Markdown as ![caption](filename). Pandoc's --resource-path covers tmpBase,
+  // so copying the files there makes them findable.
+  if (Array.isArray(assets) && assets.length > 0) {
+    const CUSTOM_ASSETS_DIR = path.join(os.tmpdir(), 'pp-assets');
+    let assetsCopied = 0;
+    for (const assetId of assets) {
+      // Validate UUID format (prevents path traversal)
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assetId)) continue;
+      const srcDir = path.join(CUSTOM_ASSETS_DIR, assetId);
+      if (!fs.existsSync(srcDir)) {
+        warnings.push(`Image asset ${assetId.slice(0, 8)}… not found (may have expired).`);
+        continue;
+      }
+      try {
+        const files = fs.readdirSync(srcDir).filter(f => /\.(png|jpe?g|pdf|svg|eps|tiff?)$/i.test(f));
+        for (const file of files) {
+          const safeFileName = file.replace(/[^a-zA-Z0-9._-]/g, '_');
+          fs.copyFileSync(path.join(srcDir, file), path.join(tmpBase, safeFileName));
+          assetsCopied++;
+        }
+      } catch (err) {
+        log.warn({ assetId, err: err.message }, 'Failed to copy asset into compile dir');
+      }
+    }
+    if (assetsCopied > 0) {
+      log.info({ jobId: job.id, assetsCopied }, 'Copied image assets into compile dir');
+    }
+  }
+
   // ── Sanitize title for LaTeX ──
   const safeTitle = latexSanitizer.sanitizeTitle(title);
 
@@ -218,7 +254,6 @@ async function processCompileJob(job, templateRegistry) {
   const templateType = tpl.gridType || 'academic';
   const geo = gridSystem.calculateMargins(pageSize, marginPreset, templateType);
   const isFast = compileMode === 'fast';
-  const warnings = styleWarnings(manuscriptText);
 
   // Lint manuscript for common issues (double spaces, bad dashes, heading hierarchy)
   try {
@@ -478,6 +513,9 @@ async function processCompileJob(job, templateRegistry) {
 
   const compileLog = bookEngineering.analyzeCompileLog(result.stderr);
 
+  // Translate raw stderr into structured, human-readable errors
+  const translatedErrors = errorTranslator.translateStderr(result.stderr);
+
   // Generate typography quality report (pre-analysis + compile log)
   let typographyReport = null;
   try {
@@ -514,6 +552,7 @@ async function processCompileJob(job, templateRegistry) {
     needsWatermark,
     fontFallback: fontRes.isFallback ? `${fontRes.original} -> ${fontRes.resolved}` : null,
     compileLog: { overfull: compileLog.overfullBoxes.length, underfull: compileLog.underfullBoxes.length },
+    translatedErrors: translatedErrors.summary.total > 0 ? translatedErrors : null,
     typographyReport: typographyReport ? {
       score: typographyReport.score,
       grade: typographyReport.grade,

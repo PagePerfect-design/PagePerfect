@@ -8,29 +8,83 @@ import type { TemplateKey, PageSize, DetectedGenre, Analysis } from './editor-ty
 export function translateError(raw: string): string {
   const s = raw.trim()
   const patterns: [RegExp, (m: RegExpMatchArray) => string][] = [
+    // ── Special characters & math ──
     [/Missing \$ inserted/i, () => 'Your text contains a special character (like _ or ^) that needs escaping. Wrap math symbols in $...$ or remove them.'],
+    [/Double superscript|Double subscript/i, () => 'Consecutive ^ or _ characters found. Use {braces} to group them, or remove the duplicates.'],
+    [/Extra alignment tab/i, () => 'A table row has too many columns. Check that each row has the same number of & separators.'],
+
+    // ── Command/structure errors ──
     [/Undefined control sequence.*\\(\w+)/i, (m) => `Unknown command "\\${m[1]}" in your manuscript. Remove it or check the spelling.`],
     [/Undefined control sequence/i, () => 'Your manuscript contains an unrecognized command. Check for stray backslashes.'],
     [/Missing \\begin\{document\}/i, () => 'Template configuration error. Try a different template or contact support.'],
     [/Runaway argument/i, () => 'Unmatched bracket or brace in your text. Check for missing } or ].'],
     [/Emergency stop/i, () => 'The typesetter encountered a critical error and stopped. Simplify your manuscript and try again.'],
+    [/Too many unprocessed floats/i, () => 'Too many images or tables in a row without enough text between them. Add more text between figures, or break the section into smaller parts.'],
+    [/Float\(s\) lost/i, () => 'An image or table could not be placed on the page. Try reducing the number of consecutive figures.'],
+
+    // ── Page layout warnings (non-fatal but important for KDP) ──
+    [/Overfull \\hbox.*?(\d+\.?\d*)pt/i, (m) => `Text on line overflows the margin by ${m[1]}pt. This may cause content to be cut off in print. Try rewording the paragraph or using a wider margin preset.`],
+    [/Underfull \\hbox.*?badness (\d+)/i, (m) => {
+      const badness = parseInt(m[1])
+      return badness > 8000
+        ? 'A line has excessive spacing between words. Try rewording the sentence for a more natural fit.'
+        : 'Minor spacing adjustment on a line. This is usually fine for print.'
+    }],
+    [/Overfull \\vbox/i, () => 'A page has more content than it can hold. The engine will push extra content to the next page.'],
+    [/Underfull \\vbox/i, () => 'A page has less content than ideal, leaving extra white space at the bottom. This is cosmetic only.'],
+
+    // ── Font errors ──
     [/I can't find file.*`([^']+)'/i, (m) => `Referenced file "${m[1]}" was not found. Check your file references.`],
     [/Package fontspec Error.*"([^"]+)"/i, (m) => `The font "${m[1]}" is not available on the server. Try a different template.`],
     [/luaotfload.*cannot/i, () => 'A font could not be loaded. Try a different template.'],
     [/Font.*not found/i, () => 'A required font is not installed. Try a different template.'],
-    [/Undefined citation.*`([^']+)'/i, (m) => `Citation "${m[1]}" not found in your bibliography. Check the key or enable Safe Mode.`],
-    [/I couldn.t open.*\.bib/i, () => 'Bibliography file not found. Enable Safe Mode to skip citations.'],
+    [/Missing character.*U\+([0-9A-F]+)/i, (m) => `A character (U+${m[1]}) is not available in the current font. This may appear as a blank space in the PDF.`],
+
+    // ── Citation/bibliography errors ──
+    [/Undefined citation.*`([^']+)'/i, (m) => `Citation "${m[1]}" not found in your bibliography. Check the key or switch to Standard Mode.`],
+    [/I couldn.t open.*\.bib/i, () => 'Bibliography file not found. Switch to Standard Mode to skip citations.'],
+    [/Empty bibliography/i, () => 'Your bibliography section is empty. Add references or switch to Standard Mode.'],
+
+    // ── Image/figure errors ──
+    [/Cannot determine size of graphic.*?([^\s]+)/i, (m) => `Image "${m[1].split('/').pop()}" has no size information. Try re-exporting the image as PNG or JPG.`],
+    [/Unknown graphics extension/i, () => 'An image uses an unsupported format. Convert it to PNG, JPG, or PDF.'],
+
+    // ── Memory/capacity errors ──
+    [/TeX capacity exceeded.*pool size/i, () => 'Your manuscript is too complex for a single compile. Try splitting into smaller sections.'],
+    [/TeX capacity exceeded.*main memory/i, () => 'The typesetter ran out of memory. Your manuscript may have too many images or complex tables.'],
+    [/TeX capacity exceeded/i, () => 'The typesetter exceeded its capacity. Try simplifying complex sections or reducing image count.'],
+
+    // ── Encoding errors ──
+    [/Invalid UTF-?8/i, () => 'Your manuscript contains invalid characters. Copy-paste from a plain text editor to clean encoding.'],
+    [/inputenc Error.*Invalid.*byte/i, () => 'A non-standard character was found. Try removing special symbols or copy-pasting from Notepad/TextEdit.'],
+
+    // ── Package errors ──
     [/Package .* Error/i, () => 'A LaTeX package reported an error. Try a different template.'],
     [/! LaTeX Error:\s*(.*)/i, (m) => m[1]],
+
+    // ── PDF/X conversion errors ──
+    [/pdfx.*conversion.*fail/i, () => 'PDF/X-1a conversion failed. The document may contain unsupported transparency or color profiles. Try standard PDF export instead.'],
+    [/Ghostscript.*error/i, () => 'Post-processing failed. Try exporting as standard PDF instead of PDF/X-1a.'],
+
+    // ── Server/engine errors ──
     [/(?:xelatex|lualatex).*not found/i, () => 'Server configuration error. The typesetting engine is not available.'],
     [/pandoc.*not found/i, () => 'Server configuration error. The document converter is not available.'],
     [/Error\s+\d+\s+\(driver return code\)/i, () => 'The PDF engine encountered a driver error. Try a different template or simplify your manuscript.'],
     [/timed?\s*out/i, () => 'Compilation timed out. Your manuscript may be too large — try splitting it into smaller sections.'],
     [/Compile failed \(status (\d+)\)/i, (m) => `The server returned an error (code ${m[1]}). Please try again.`],
-    [/Result not found or expired/i, () => 'Your compiled PDF expired. Click "Retry" to recompile.'],
-    [/Result has expired/i, () => 'Your compiled PDF expired. Click "Retry" to recompile.'],
-    [/Server restarted.*recompile/i, () => 'The server restarted and your PDF was lost. Click "Retry" to recompile.'],
-    [/Job not found or expired/i, () => 'The compile job expired. Click "Retry" to recompile.'],
+    [/queue_full/i, () => 'The compile server is at capacity. Please wait a moment and try again.'],
+    [/tier_required/i, () => 'This feature requires a paid plan. Upgrade to Publisher or Studio to access it.'],
+
+    // ── Result/session errors (soft — auto-retry handles most of these) ──
+    [/Preview expired/i, () => 'Your preview expired. Hit Recompile to refresh it.'],
+    [/Result not found or expired/i, () => 'Your preview expired. Hit Recompile to refresh it.'],
+    [/Result has expired/i, () => 'Your preview expired. Hit Recompile to refresh it.'],
+    [/Server restarted.*recompile/i, () => 'The server restarted. Hit Recompile to refresh your preview.'],
+    [/Job not found or expired/i, () => 'Your preview expired. Hit Recompile to refresh it.'],
+    [/restart_expired/i, () => 'The server restarted. Hit Recompile to refresh your preview.'],
+    [/Compile job expired/i, () => 'Your preview expired. Hit Recompile to refresh it.'],
+
+    // ── Network errors ──
     [/Network disconnected/i, () => 'Lost connection to the compile server. Check your internet and retry.'],
     [/Network or server error/i, () => 'Could not reach the compile server. Check your connection or try again.'],
     [/Failed to retrieve compiled PDF/i, () => 'The PDF could not be retrieved. Click "Retry" to recompile.'],
@@ -41,6 +95,29 @@ export function translateError(raw: string): string {
     if (match) return fn(match)
   }
   return s
+}
+
+/** Suggest an actionable fix for a compile error. Returns null if no specific suggestion. */
+export function suggestFix(raw: string): string | null {
+  const s = raw.trim()
+  const suggestions: [RegExp, string][] = [
+    [/Missing \$ inserted|special character/i, 'Remove _ or ^ characters, or wrap math in $...$'],
+    [/Undefined citation|citation.*not found/i, 'Toggle on Standard mode in Options to skip bibliography'],
+    [/I couldn.t open.*\.bib|Empty bibliography/i, 'Toggle on Standard mode in Options to skip bibliography'],
+    [/Overfull \\hbox|overflows? the margin/i, 'Try wider margins or a larger page size'],
+    [/font.*not (found|available)|cannot.*font|luaotfload/i, 'Try a different template'],
+    [/timed?\s*out|timeout/i, 'Try Fast compile mode, or split into smaller sections'],
+    [/TeX capacity exceeded|out of memory/i, 'Reduce image count or split into smaller sections'],
+    [/Too many unprocessed floats|Float.*lost/i, 'Add more text between images and tables'],
+    [/Runaway argument|Unmatched/i, 'Check for missing closing braces } or brackets ]'],
+    [/Invalid UTF|invalid.*byte/i, 'Paste your text through a plain text editor to clean encoding'],
+    [/Package .* Error|Missing \\begin/i, 'Try a different template'],
+    [/queue_full|server.*capacity/i, 'Wait a moment and try again'],
+  ]
+  for (const [re, suggestion] of suggestions) {
+    if (re.test(s)) return suggestion
+  }
+  return null
 }
 
 export function slug(s: string) {

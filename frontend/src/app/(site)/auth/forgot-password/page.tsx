@@ -29,34 +29,39 @@ function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-6">
+      <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center px-6">
         <div className="w-full max-w-sm text-center">
           <div className="mb-6">
-            <div className="mx-auto w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border border-[#111111]/20">
+              <svg className="h-6 w-6 text-[#111111]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
               </svg>
             </div>
-            <h1 className="font-display text-2xl font-bold text-text-primary mb-2">Check your email</h1>
-            <p className="text-sm text-text-secondary">
-              We sent a password reset link to <strong className="text-text-primary">{email}</strong>.
+            <h1
+              className="font-display font-bold tracking-tight text-[#111111]"
+              style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}
+            >
+              Check your email
+            </h1>
+            <p className="mt-2 font-body text-sm text-[#555555]">
+              We sent a password reset link to <strong className="text-[#111111]">{email}</strong>.
               Click the link in the email to reset your password.
             </p>
           </div>
 
-          <p className="text-xs text-text-ghost mb-4">
+          <p className="mb-4 font-body text-[12px] text-[#555555]">
             Didn&apos;t receive the email? Check your spam folder or try again.
           </p>
 
           <button
             onClick={() => { setSent(false); setEmail('') }}
-            className="text-sm text-accent hover:text-accent-hover transition-colors"
+            className="font-mono text-[11px] text-[#FF3333] transition-colors duration-75 hover:text-[#E52222]"
           >
             Try a different email
           </button>
 
-          <p className="mt-6 text-xs text-text-ghost">
-            <Link href="/auth/login" className="underline hover:text-text-tertiary transition-colors">
+          <p className="mt-6 font-body text-[12px] text-[#555555]">
+            <Link href="/auth/login" className="underline transition-colors duration-75 hover:text-[#FF3333]">
               Back to sign in
             </Link>
           </p>
@@ -66,32 +71,37 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-6">
+    <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="font-display text-2xl font-bold text-text-primary mb-2">
+        <div className="mb-8 text-center">
+          <h1
+            className="font-display font-bold tracking-tight text-[#111111]"
+            style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}
+          >
             Reset your password
           </h1>
-          <p className="text-sm text-text-secondary">
+          <p className="mt-2 font-body text-sm text-[#555555]">
             Enter your email address and we&apos;ll send you a link to reset your password.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="rounded-lg border border-danger/20 bg-danger/5 p-3 text-sm text-danger">
+            <div className="border border-[#dc2626]/20 bg-[#dc2626]/5 p-3 font-body text-sm text-[#dc2626]">
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="email" className="block text-xs font-medium text-text-tertiary mb-1.5">Email</label>
+            <label htmlFor="email" className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]">
+              Email
+            </label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input-dark w-full text-sm"
+              className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-75 placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
               placeholder="you@example.com"
               required
               autoComplete="email"
@@ -102,15 +112,15 @@ function ForgotPasswordForm() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-pill btn-primary w-full py-3 text-sm"
+            className="min-h-[44px] w-full border border-[#FF3333] bg-[#FF3333] py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-colors duration-75 hover:bg-[#E52222] disabled:opacity-50"
           >
-            {loading ? 'Sending...' : 'Send reset link'}
+            {loading ? 'Sending\u2026' : 'Send reset link'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-text-tertiary">
+        <p className="mt-6 text-center font-body text-sm text-[#555555]">
           Remember your password?{' '}
-          <Link href="/auth/login" className="text-accent hover:text-accent-hover transition-colors">
+          <Link href="/auth/login" className="font-semibold text-[#FF3333] transition-colors duration-75 hover:text-[#E52222]">
             Sign in
           </Link>
         </p>
@@ -122,8 +132,8 @@ function ForgotPasswordForm() {
 export default function ForgotPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+      <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center">
+        <div className="h-6 w-6 animate-spin border-2 border-[#FF3333] border-t-transparent" />
       </div>
     }>
       <ForgotPasswordForm />

@@ -286,7 +286,7 @@ export default function DocsPage() {
               ══════════════════════════════════════════════════════════ */}
           <section id="editor" className="scroll-mt-16 mb-10">
             <SectionLabel number="02">Editor</SectionLabel>
-            <h2 className="docs-section-title">Editor Guide</h2>
+            <h2 className="docs-section-title">Controlling the Editor</h2>
             <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               The editor is a three-stage pipeline: Portal (ingest), Design (typeset), and Launch (export).
               All settings auto-save to local storage.
@@ -346,15 +346,15 @@ export default function DocsPage() {
             </div>
           </section>
 
-          {/* Safe Mode */}
-          <section id="safe-mode" className="scroll-mt-16 mb-10">
-            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Safe Mode</h3>
+          {/* Standard Mode */}
+          <section id="standard-mode" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Standard Mode</h3>
             <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-3">
               When enabled, all Pandoc citation syntax (<code>[@Key]</code>) is stripped and replaced with placeholder text.
               Compilation proceeds without needing a valid <code>references.bib</code>.
             </p>
             <Admonition type="tip" label="When to Use">
-              Enable safe mode while writing or when your bibliography has missing keys. Disable it for final
+              Enable Standard mode while writing or when your bibliography has missing keys. Disable it for final
               output to render proper citations and bibliography.
             </Admonition>
           </section>
@@ -429,6 +429,50 @@ export default function DocsPage() {
             </table>
           </section>
 
+          {/* Quality Gate */}
+          <section id="quality-gate" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Typography Quality Gate</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              Every compile generates a typography score (0&ndash;100) and letter grade. The grade appears in the dock,
+              PDF preview, and export overlay — ensuring you never ship a low-quality PDF without knowing.
+            </p>
+            <table className="docs-table" style={{ maxWidth: '36rem' }}>
+              <thead>
+                <tr>
+                  <th>Grade</th>
+                  <th>Score</th>
+                  <th>Behavior</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="font-mono font-bold text-emerald-600">A</td>
+                  <td className="accent">80&ndash;100</td>
+                  <td>Excellent. Export proceeds normally.</td>
+                </tr>
+                <tr>
+                  <td className="font-mono font-bold text-blue-600">B</td>
+                  <td className="accent">60&ndash;79</td>
+                  <td>Good. Export proceeds normally.</td>
+                </tr>
+                <tr>
+                  <td className="font-mono font-bold text-amber-600">C</td>
+                  <td className="accent">40&ndash;59</td>
+                  <td>Review recommended. Amber warning in preview and export overlay.</td>
+                </tr>
+                <tr>
+                  <td className="font-mono font-bold text-red-600">D</td>
+                  <td className="accent">0&ndash;39</td>
+                  <td>Significant issues. Red warning + acknowledgment checkbox required before download.</td>
+                </tr>
+              </tbody>
+            </table>
+            <Admonition type="tip" label="How to Improve Your Grade">
+              Try wider margins, a larger page size, or a different template. Overfull lines (text exceeding the margin)
+              are the most common cause of low grades. The dock shows your current grade and overfull count after each compile.
+            </Admonition>
+          </section>
+
           {/* URL Parameters */}
           <section id="url-params" className="scroll-mt-16 mb-20">
             <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">URL Parameters</h3>
@@ -446,7 +490,80 @@ export default function DocsPage() {
               ══════════════════════════════════════════════════════════ */}
           <section id="page-sizes" className="scroll-mt-16 mb-10">
             <SectionLabel number="03">Layout</SectionLabel>
-            <h2 className="docs-section-title">Page Sizes &amp; Margins</h2>
+            <h2 className="docs-section-title">Configure Your Layout</h2>
+            <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
+              Every layout decision in PagePerfect is governed by a baseline grid — the invisible scaffold that
+              aligns typography, spacing, and margins into visual harmony. Understanding how the grid works
+              helps you make better design choices.
+            </p>
+          </section>
+
+          {/* Why Grid Systems */}
+          <section id="grid-system" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Why Grid Systems</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              PagePerfect implements Josef Müller-Brockmann&apos;s grid system principles from
+              <em> Grid Systems in Graphic Design</em> (1981). Every page element — margins, headings,
+              paragraph spacing, footnotes — snaps to a baseline grid measured in points. This creates the
+              vertical rhythm that distinguishes professional typesetting from word processing.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2 mb-6">
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">Baseline Grid</p>
+                <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
+                  Academic templates use a <strong>12pt baseline</strong>. Trade, editorial, and creative templates use
+                  an <strong>11pt baseline</strong>. All spacing — above headings, between paragraphs, around
+                  block quotes — is a multiple of this unit.
+                </p>
+              </div>
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">Typographic Scale</p>
+                <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
+                  Heading sizes follow a proportional scale: H1 at 2.25&times;, H2 at 1.75&times;, H3 at 1.375&times; the
+                  baseline — producing a ~1.28&times; step progression that the eye perceives as natural hierarchy.
+                </p>
+              </div>
+            </div>
+            <div className="docs-template-card mb-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-2">Grid-Based Margins</p>
+              <p className="font-body text-sm text-[#3a3a3a] leading-relaxed mb-3">
+                Margin presets are expressed as <strong>grid unit multipliers</strong> — not arbitrary inch values.
+                When you select &ldquo;Normal&rdquo; (5 units), the engine calculates: <code>5 &times; baseline &divide; 72</code> to
+                derive the margin in inches. This means margins scale proportionally with the template&apos;s baseline,
+                maintaining the grid&apos;s visual consistency.
+              </p>
+              <table className="docs-table" style={{ maxWidth: '28rem' }}>
+                <thead>
+                  <tr>
+                    <th>Template Category</th>
+                    <th>Baseline</th>
+                    <th>&ldquo;Normal&rdquo; Margin</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="font-medium text-[#1a1a1a]">Academic (Chicago, Symphony, Thesis)</td>
+                    <td className="accent">12pt</td>
+                    <td className="accent">0.83&Prime;</td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium text-[#1a1a1a]">Trade (Paperback, Memoir, Exhibit)</td>
+                    <td className="accent">11pt</td>
+                    <td className="accent">0.76&Prime;</td>
+                  </tr>
+                  <tr>
+                    <td className="font-medium text-[#1a1a1a]">Basic (Minimal)</td>
+                    <td className="accent">12pt</td>
+                    <td className="accent">0.83&Prime;</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <Admonition type="info" label="Safety Cap">
+              Margins are capped at 20% of page width per side (40% total) to prevent unusable text areas
+              on small pages like Mass Market (4.25&Prime; wide). The engine enforces this automatically —
+              you can safely choose &ldquo;Generous&rdquo; on any page size without overflow.
+            </Admonition>
           </section>
 
           {/* All Page Sizes */}
@@ -622,15 +739,37 @@ export default function DocsPage() {
           ))}
 
           {/* ══════════════════════════════════════════════════════════
-              03 — AMAZON KDP GUIDE
+              05 — AMAZON KDP GUIDE
               ══════════════════════════════════════════════════════════ */}
           <section id="kdp" className="scroll-mt-16 mb-10 mt-20">
             <SectionLabel number="05">Publishing</SectionLabel>
-            <h2 className="docs-section-title">Amazon KDP Guide</h2>
+            <h2 className="docs-section-title">Publish to Amazon KDP</h2>
             <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               PagePerfect supports all five Amazon KDP trim sizes with dynamic gutter calculation and spine width estimation.
               Select any KDP page size in the editor to generate compliant interior PDFs.
             </p>
+
+            <div className="docs-template-card mb-8">
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-3">KDP Publishing Workflow</p>
+              <ol className="space-y-2.5 font-body text-sm text-[#3a3a3a] leading-relaxed list-decimal pl-5">
+                <li><strong>Choose a KDP trim size</strong> in the editor&apos;s page size selector (5&times;8&Prime; through 8.5&times;11&Prime;).</li>
+                <li><strong>Select a template</strong> — Paperback and Chicago are optimized for KDP fiction and nonfiction respectively.</li>
+                <li><strong>Set margins to &ldquo;Normal&rdquo; or wider.</strong> KDP requires minimum inside margins (gutter) based on page count. The engine adds gutter automatically.</li>
+                <li><strong>Compile in Full Quality mode</strong> to enable microtype and csquotes for production output.</li>
+                <li><strong>Check your typography grade.</strong> Aim for A or B before export. Grade C/D usually indicates overfull lines — try wider margins or rewording long paragraphs.</li>
+                <li><strong>Open the Press overlay</strong> (P key) and select &ldquo;Amazon KDP&rdquo; as the target platform.</li>
+                <li><strong>Run pre-flight.</strong> The validator checks margins, page count (24&ndash;828), trim size, and font embedding against KDP requirements.</li>
+                <li><strong>Download the interior PDF</strong> — KDP accepts standard PDFs (no PDF/X conversion needed).</li>
+                <li><strong>Note your spine width</strong> from the Press overlay to create your cover template. White paper = pages &times; 0.002252&Prime;, cream = pages &times; 0.0025&Prime;.</li>
+                <li><strong>Upload to KDP.</strong> Interior PDF + cover PDF. KDP&apos;s previewer will run its own validation.</li>
+              </ol>
+            </div>
+
+            <Admonition type="warn" label="KDP Requirements">
+              Amazon requires 24&ndash;828 pages, PDF fonts fully embedded, no transparency, no crop marks, and
+              minimum gutter margins. PagePerfect handles font embedding and gutter automatically. The pre-flight
+              validator catches everything else before you upload.
+            </Admonition>
           </section>
 
           {/* Trim Sizes — Swiss table */}
@@ -706,11 +845,11 @@ export default function DocsPage() {
           </section>
 
           {/* ══════════════════════════════════════════════════════════
-              04 — PUBLISHING AUTOMATION
+              06 — PUBLISHING AUTOMATION
               ══════════════════════════════════════════════════════════ */}
           <section id="automation" className="scroll-mt-16 mb-10">
             <SectionLabel number="06">Automation</SectionLabel>
-            <h2 className="docs-section-title">Publishing Automation</h2>
+            <h2 className="docs-section-title">Automate Your Pipeline</h2>
             <p className="font-body text-base leading-7 text-[#3a3a3a] mb-8 max-w-xl">
               PagePerfect automates the entire path from Markdown to printed book. Pre-flight validation
               catches rejection-causing errors before submission, while platform-specific exports ensure compliance.
@@ -818,11 +957,11 @@ export default function DocsPage() {
           </section>
 
           {/* ══════════════════════════════════════════════════════════
-              05 — TROUBLESHOOTING
+              07 — TROUBLESHOOTING
               ══════════════════════════════════════════════════════════ */}
           <section id="troubleshooting" className="scroll-mt-16 mb-20">
             <SectionLabel number="07">Support</SectionLabel>
-            <h2 className="docs-section-title">Troubleshooting</h2>
+            <h2 className="docs-section-title">Diagnosing Issues</h2>
 
             {/* Limits */}
             <div className="mb-8">
@@ -847,7 +986,14 @@ export default function DocsPage() {
             {/* Error Reference */}
             <div className="mb-8">
               <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Error Reference</h3>
-              <table className="docs-table">
+              <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+                The editor translates raw LaTeX and Pandoc errors into plain English and suggests fixes.
+                Below is the complete reference grouped by category.
+              </p>
+
+              {/* Special Characters & Math */}
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555] mt-6 mb-3">Special Characters &amp; Math</p>
+              <table className="docs-table mb-6">
                 <thead>
                   <tr>
                     <th>Error</th>
@@ -856,37 +1002,155 @@ export default function DocsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td className="accent">rate_limited</td>
-                    <td>Too many compile requests</td>
-                    <td>Wait 60 seconds, then retry</td>
-                  </tr>
-                  <tr>
-                    <td className="accent">payload_too_large</td>
-                    <td>Markdown exceeds 2 MB</td>
-                    <td>Split manuscript or remove embedded data</td>
-                  </tr>
-                  <tr>
-                    <td className="accent">compile_timeout</td>
-                    <td>LuaLaTeX exceeded 45s</td>
-                    <td>Simplify content, reduce images, or use Preview mode</td>
-                  </tr>
-                  <tr>
-                    <td className="accent">compile_failed</td>
-                    <td>Pandoc/LaTeX error</td>
-                    <td>Check error console for missing packages or syntax errors</td>
-                  </tr>
+                  {[
+                    ['Missing $ inserted', 'Unescaped _ or ^ in text', 'Remove _ or ^ characters, or wrap math in $...$'],
+                    ['Double superscript/subscript', 'Consecutive ^ or _ characters', 'Use {braces} to group them'],
+                    ['Extra alignment tab', 'Table row has too many columns', 'Match column count in each row'],
+                  ].map(([err, cause, fix]) => (
+                    <tr key={err}>
+                      <td className="accent">{err}</td>
+                      <td>{cause}</td>
+                      <td>{fix}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
-            </div>
 
-            {/* Undefined citation */}
-            <div className="mb-6">
-              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-2">Undefined citation</h3>
-              <Admonition type="warn" label="Common Error">
-                If the error console shows <code>Undefined citations</code>, confirm the keys exist in{' '}
-                <code>references.bib</code> on the server and that your in-text cites use Pandoc syntax{' '}
-                <code>[@Key]</code> exactly.
+              {/* Structure & Command Errors */}
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555] mt-6 mb-3">Structure &amp; Command Errors</p>
+              <table className="docs-table mb-6">
+                <thead>
+                  <tr>
+                    <th>Error</th>
+                    <th>Cause</th>
+                    <th>Fix</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Undefined control sequence', 'Stray backslash or unknown command', 'Remove backslashes from prose text'],
+                    ['Runaway argument', 'Unmatched bracket or brace', 'Check for missing } or ]'],
+                    ['Emergency stop', 'Critical LaTeX failure', 'Simplify your manuscript and retry'],
+                    ['Too many unprocessed floats', 'Too many images without text between them', 'Add more text between figures'],
+                  ].map(([err, cause, fix]) => (
+                    <tr key={err}>
+                      <td className="accent">{err}</td>
+                      <td>{cause}</td>
+                      <td>{fix}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Page Layout Warnings */}
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555] mt-6 mb-3">Page Layout Warnings</p>
+              <table className="docs-table mb-6">
+                <thead>
+                  <tr>
+                    <th>Warning</th>
+                    <th>What It Means</th>
+                    <th>Fix</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Overfull \\hbox', 'Text overflows the margin — may be cut off in print', 'Try wider margins or a larger page size'],
+                    ['Underfull \\hbox', 'Excessive word spacing on a line', 'Reword the sentence for a more natural fit'],
+                    ['Overfull \\vbox', 'Page has more content than it can hold', 'Engine pushes overflow to next page (cosmetic)'],
+                    ['Underfull \\vbox', 'Page has extra white space at bottom', 'Cosmetic only — safe to ignore'],
+                  ].map(([err, cause, fix]) => (
+                    <tr key={err}>
+                      <td className="accent">{err}</td>
+                      <td>{cause}</td>
+                      <td>{fix}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Font Errors */}
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555] mt-6 mb-3">Font Errors</p>
+              <table className="docs-table mb-6">
+                <thead>
+                  <tr>
+                    <th>Error</th>
+                    <th>Cause</th>
+                    <th>Fix</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Font not found / not available', 'Required font not on the server', 'Try a different template'],
+                    ['luaotfload cannot load', 'Font file failed to load', 'Try a different template'],
+                    ['Missing character U+XXXX', 'Character not in current font', 'May appear as blank — try a Unicode-rich template'],
+                  ].map(([err, cause, fix]) => (
+                    <tr key={err}>
+                      <td className="accent">{err}</td>
+                      <td>{cause}</td>
+                      <td>{fix}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Citation & Bibliography */}
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555] mt-6 mb-3">Citations &amp; Bibliography</p>
+              <table className="docs-table mb-6">
+                <thead>
+                  <tr>
+                    <th>Error</th>
+                    <th>Cause</th>
+                    <th>Fix</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Undefined citation "@Key"', 'Key not in bibliography', 'Check the key or toggle on Standard mode'],
+                    ['Couldn\'t open .bib', 'Bibliography file not found', 'Toggle on Standard mode to skip citations'],
+                    ['Empty bibliography', 'No references in .bib', 'Add references or use Standard mode'],
+                  ].map(([err, cause, fix]) => (
+                    <tr key={err}>
+                      <td className="accent">{err}</td>
+                      <td>{cause}</td>
+                      <td>{fix}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Server, Capacity & Network */}
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555] mt-6 mb-3">Server, Capacity &amp; Network</p>
+              <table className="docs-table mb-6">
+                <thead>
+                  <tr>
+                    <th>Error</th>
+                    <th>Cause</th>
+                    <th>Fix</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Compilation timed out', 'LuaLaTeX exceeded 45s', 'Use Fast compile mode or split into smaller sections'],
+                    ['TeX capacity exceeded', 'Too many images or complex tables', 'Reduce image count or simplify tables'],
+                    ['queue_full', 'Server at capacity', 'Wait a moment and try again'],
+                    ['tier_required', 'Feature requires paid plan', 'Upgrade to Publisher or Studio'],
+                    ['Preview expired', 'Cached PDF cleared (server restart or TTL)', 'Hit Recompile to refresh'],
+                    ['Network disconnected', 'Lost server connection', 'Check your internet and retry'],
+                    ['Invalid UTF-8', 'Non-standard characters in manuscript', 'Paste through a plain text editor to clean encoding'],
+                    ['PDF/X conversion failed', 'Unsupported transparency or color profiles', 'Export as standard PDF instead'],
+                  ].map(([err, cause, fix]) => (
+                    <tr key={err}>
+                      <td className="accent">{err}</td>
+                      <td>{cause}</td>
+                      <td>{fix}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <Admonition type="tip" label="Automatic Suggestions">
+                When the editor detects a known error pattern, a blue &ldquo;Try:&rdquo; hint appears below the
+                error message with a specific fix. These suggestions cover the 12 most common failure modes.
               </Admonition>
             </div>
 
@@ -902,22 +1166,116 @@ export default function DocsPage() {
               </Admonition>
             </div>
 
-            {/* Template or package issues */}
-            <div className="mb-6">
-              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-2">Template or package issues</h3>
-              <Admonition type="info" label="Fix">
-                If the console lists missing LaTeX packages, add them to the Dockerfile via{' '}
-                <code>tlmgr install &lt;package&gt;</code>, rebuild, and redeploy.
-              </Admonition>
-            </div>
+            {/* Platform-specific pre-flight failures */}
+            <div className="mb-8">
+              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Pre-flight Failures by Platform</h3>
+              <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+                When you select a platform in the Press overlay, pre-flight runs automatically.
+                These are the checks that can block your export, grouped by platform.
+              </p>
 
+              {/* KDP */}
+              <div className="docs-template-card mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="docs-badge">Amazon KDP</span>
+                </div>
+                <table className="docs-table">
+                  <thead>
+                    <tr>
+                      <th>Check</th>
+                      <th>Requirement</th>
+                      <th>Fix</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ['Page count', '24\u2013828 pages', 'Adjust manuscript length or word count'],
+                      ['Inside margin (gutter)', '\u22650.375\u2033 for \u2264150pp, \u22650.5\u2033 for 151\u2013300pp, \u22650.625\u2033 for 301\u2013500pp, \u22650.75\u2033 for 501+', 'Increase margin preset (Normal or wider)'],
+                      ['Trim size', '5\u00d78\u2033 through 8.5\u00d711\u2033 only', 'Select a KDP-specific page size in the editor'],
+                      ['Font embedding', 'All fonts fully embedded', 'Handled automatically by LuaLaTeX'],
+                      ['PDF format', 'Standard PDF accepted', 'No PDF/X conversion needed for KDP'],
+                    ].map(([check, req, fix]) => (
+                      <tr key={check}>
+                        <td className="font-medium text-[#1a1a1a]">{check}</td>
+                        <td className="accent">{req}</td>
+                        <td>{fix}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-            {/* Style warnings */}
-            <div className="mb-6">
-              <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-2">Style warnings</h3>
-              <Admonition type="tip" label="Tip">
-                Double spaces after punctuation are flagged as warnings. They won&apos;t stop compilation but are worth fixing for polish.
-              </Admonition>
+              {/* IngramSpark */}
+              <div className="docs-template-card mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="docs-badge docs-badge-api">IngramSpark</span>
+                </div>
+                <table className="docs-table">
+                  <thead>
+                    <tr>
+                      <th>Check</th>
+                      <th>Requirement</th>
+                      <th>Fix</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ['Page count', '18\u20131,200 pages', 'Adjust manuscript length'],
+                      ['Inside margin', '\u22650.625\u2033 for all page counts', 'Use Wide, Academic, or Generous margins'],
+                      ['Outside margin', '\u22650.5\u2033 on all sides', 'Increase margin preset'],
+                      ['PDF format', 'PDF/X-1a:2001 required (CMYK, no transparency)', 'Select \u201CIngramSpark\u201D in Press overlay \u2014 requires Publisher+ tier'],
+                      ['ISBN', 'Required by IngramSpark', 'Obtain from Bowker or your national ISBN agency'],
+                      ['Bleed', '0.125\u2033 for full-bleed pages', 'Text-only interiors are compliant without bleed'],
+                    ].map(([check, req, fix]) => (
+                      <tr key={check}>
+                        <td className="font-medium text-[#1a1a1a]">{check}</td>
+                        <td className="accent">{req}</td>
+                        <td>{fix}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <Admonition type="warn" label="IngramSpark Rejects Standard PDFs">
+                  IngramSpark requires PDF/X-1a compliance — CMYK color space, all fonts embedded, no
+                  transparency, PDF 1.3. If you upload a standard PDF, IngramSpark will reject it.
+                  Use the &ldquo;Export PDF/X-1a&rdquo; option in the Press overlay (Publisher or Studio tier).
+                </Admonition>
+              </div>
+
+              {/* Lulu */}
+              <div className="docs-template-card mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="docs-badge docs-badge-warn">Lulu xPress</span>
+                </div>
+                <table className="docs-table">
+                  <thead>
+                    <tr>
+                      <th>Check</th>
+                      <th>Requirement</th>
+                      <th>Fix</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ['Page count', '2\u2013800 pages', 'Adjust manuscript length'],
+                      ['Inside margin', '\u22650.375\u2033 minimum', 'Use Normal or wider margins'],
+                      ['PDF format', 'Standard PDF accepted', 'No PDF/X conversion needed for Lulu'],
+                      ['API keys', 'LULU_CLIENT_KEY + LULU_CLIENT_SECRET required', 'Configure in backend environment variables'],
+                    ].map(([check, req, fix]) => (
+                      <tr key={check}>
+                        <td className="font-medium text-[#1a1a1a]">{check}</td>
+                        <td className="accent">{req}</td>
+                        <td>{fix}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <Admonition type="info" label="Lulu API Errors">
+                  If cost estimation or print job creation fails, check: (1) the shipping address is valid,
+                  (2) the page count is within Lulu&apos;s range for your selected trim size, and (3) your
+                  API keys are correct. Sandbox mode (<code>LULU_SANDBOX=true</code>) lets you test without charges.
+                </Admonition>
+              </div>
             </div>
 
             {/* Recommended Reading */}

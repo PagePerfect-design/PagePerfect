@@ -8,7 +8,7 @@ const TIERS = [
     price: 'Free',
     period: 'forever',
     body: 'Everything you need to draft and test. All 15 templates, unlimited manuscripts, real-time preview. Watermarked output.',
-    aside: 'Zero friction. See the grid in action before you pay a cent.',
+    aside: 'Zero friction. See your book professionally formatted before you pay a cent.',
     cta: 'Start Drafting',
     href: '/app',
   },
@@ -54,7 +54,7 @@ export function PricingPreview() {
           </h2>
           <p className="mt-6 font-body text-lg leading-relaxed text-[#111111]/60">
             The free tier is genuinely useful &mdash; not a demo.
-            All 15 typographic systems, unlimited manuscripts, real-time preview.
+            All 15 professional book designs, unlimited manuscripts, real-time preview.
           </p>
         </div>
 

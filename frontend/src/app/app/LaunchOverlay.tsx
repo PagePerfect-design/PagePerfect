@@ -39,6 +39,7 @@ export default function LaunchOverlay({
   userTier,
   publisherWindowEnd,
   quality,
+  targetPlatform,
 }: {
   title: string
   template: TemplateKey
@@ -57,9 +58,10 @@ export default function LaunchOverlay({
   userTier: string
   publisherWindowEnd: string | null
   quality: CompileQuality
+  targetPlatform?: Platform | null
 }) {
   const PAPER_STOCK_LABELS: Record<PaperStock, string> = { white: 'white paper', cream: 'cream paper' }
-  const [platform, setPlatform] = useState<Platform>('kdp')
+  const [platform, setPlatform] = useState<Platform>(targetPlatform || 'kdp')
   const [paper, setPaper] = useState<PaperStock>('white')
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf')
   const [epubLoading, setEpubLoading] = useState(false)
@@ -70,6 +72,7 @@ export default function LaunchOverlay({
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [contractAccepted, setContractAccepted] = useState(false)
   const [showContract, setShowContract] = useState(false)
+  const [qualityAcknowledged, setQualityAcknowledged] = useState(false)
 
   // Run real pre-flight when settings change
   useEffect(() => {
@@ -79,6 +82,7 @@ export default function LaunchOverlay({
     setPreflight(null)
     setContractAccepted(false)
     setShowContract(false)
+    setQualityAcknowledged(false)
 
     async function runPreflight() {
       try {
@@ -117,7 +121,8 @@ export default function LaunchOverlay({
   }, [pageSize, marginPreset, template, wordCount, platform, paper])
 
   const hasFailure = preflight?.checks.some(c => c.status === 'fail')
-  const canDownload = !checking && !hasFailure && !fetchError && pdfUrl
+  const isGradeD = quality?.typographyGrade === 'D'
+  const canDownload = !checking && !hasFailure && !fetchError && pdfUrl && (!isGradeD || qualityAcknowledged)
 
   async function handleEpubDownload() {
     setEpubLoading(true)
@@ -282,8 +287,8 @@ export default function LaunchOverlay({
               </div>
               <p className="mt-2 font-mono text-[10px] leading-relaxed text-[#111111]/30">
                 {platform === 'kdp'
-                  ? 'Standard PDF optimized for Amazon print.'
-                  : 'PDF/X-1a with CMYK color profile.'}
+                  ? 'Standard PDF with KDP spine and gutter calculations. Upload directly to your KDP dashboard.'
+                  : 'PDF/X-1a with CMYK color profile and bleed marks. Required by IngramSpark, also works for offset printing.'}
               </p>
             </div>
 
@@ -453,6 +458,50 @@ export default function LaunchOverlay({
           </div>
         )}
 
+        {/* Quality warning — shown when typography grade is C or D */}
+        {!checking && quality?.typographyGrade && (quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && (
+          <div className={`mt-3 border px-4 py-3 ${
+            quality.typographyGrade === 'D'
+              ? 'border-red-500/20 bg-red-500/[0.04]'
+              : 'border-amber-500/20 bg-amber-500/[0.04]'
+          }`}>
+            <div className="flex items-start gap-3">
+              <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${
+                quality.typographyGrade === 'D' ? 'text-red-500/70' : 'text-amber-600/70'
+              }`} />
+              <div className="flex-1">
+                <p className={`font-mono text-[11px] font-semibold ${
+                  quality.typographyGrade === 'D' ? 'text-red-800/80' : 'text-amber-800/80'
+                }`}>
+                  {quality.typographyGrade === 'D' ? 'Low Typography Quality' : 'Typography Needs Attention'}
+                </p>
+                <p className={`mt-1 font-mono text-[10px] leading-relaxed ${
+                  quality.typographyGrade === 'D' ? 'text-red-700/60' : 'text-amber-700/60'
+                }`}>
+                  {quality.typographyGrade === 'D'
+                    ? 'This layout has significant typography issues that may produce a poor reading experience. Consider adjusting margins, page size, or template before exporting.'
+                    : 'Some typography metrics are below ideal. The PDF is usable, but adjusting margins or template may improve readability.'
+                  }
+                  {quality.overfullBoxes > 0 && ` ${quality.overfullBoxes} overfull line${quality.overfullBoxes > 1 ? 's' : ''} detected.`}
+                </p>
+                {quality.typographyGrade === 'D' && (
+                  <label className="mt-2.5 flex cursor-pointer items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={qualityAcknowledged}
+                      onChange={(e) => setQualityAcknowledged(e.target.checked)}
+                      className="mt-0.5 h-3.5 w-3.5 rounded accent-red-600"
+                    />
+                    <span className="font-mono text-[10px] leading-relaxed text-red-700/50">
+                      I understand the typography quality is below recommended thresholds.
+                    </span>
+                  </label>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Download buttons */}
         <div className="mt-3 space-y-2">
           {exportFormat === 'pdf' ? (
@@ -547,15 +596,32 @@ export default function LaunchOverlay({
           </div>
         )}
 
-        {/* Pre-download watermark notice — visible before download for free tier */}
+        {/* Pre-download transparency gate — clearly explains what free tier gets */}
         {!hasTier(userTier, 'publisher') && exportFormat === 'pdf' && (
-          <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-3 py-2.5 text-center">
-            <p className="font-mono text-[10px] font-medium text-amber-700/80">
-              Free tier — exported PDF will include a watermark.
-            </p>
-            <p className="mt-1 font-mono text-[10px] text-amber-700/50">
-              <a href="/pricing" className="underline hover:text-amber-800">Upgrade to Publisher</a> for clean, print-ready exports.
-            </p>
+          <div className="mt-3 border border-amber-500/20 bg-amber-500/[0.04] px-4 py-3">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600/70" />
+              <div>
+                <p className="font-mono text-[11px] font-semibold text-amber-800/80">
+                  Free Preview — Watermark Included
+                </p>
+                <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-amber-700/60">
+                  This PDF includes a light watermark on every page. It&apos;s designed for
+                  proofing your layout, not for uploading to KDP or IngramSpark.
+                </p>
+                <div className="mt-2.5 flex items-center gap-4">
+                  <a
+                    href="/pricing"
+                    className="inline-flex h-7 items-center bg-amber-600 px-4 font-mono text-[10px] uppercase tracking-[0.08em] text-white transition-colors hover:bg-amber-700"
+                  >
+                    Remove watermark — $19.99
+                  </a>
+                  <span className="font-mono text-[9px] text-amber-700/40">
+                    One manuscript &middot; 14-day re-export window
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         {/* Post-download watermark confirmation */}

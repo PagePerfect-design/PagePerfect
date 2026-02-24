@@ -11,6 +11,12 @@
   "dependencies": {
     "@stripe/react-stripe-js": "^5.6.0",
     "@stripe/stripe-js": "^8.7.0",
+    "@tiptap/extension-highlight": "^3.20.0",
+    "@tiptap/extension-placeholder": "^3.20.0",
+    "@tiptap/extension-typography": "^3.20.0",
+    "@tiptap/pm": "^3.20.0",
+    "@tiptap/react": "^3.20.0",
+    "@tiptap/starter-kit": "^3.20.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.34.0",
     "idb-keyval": "^6.2.2",

@@ -153,6 +153,49 @@
 
 ---
 
+## Track D — Deferred (Separate PRs)
+
+> These items are deferred from the current pass. Each involves a distinct domain
+> (legal, infrastructure, documentation) and is better handled as a focused PR.
+
+### D1. Privacy policy incognito mode toggle (Day 9)
+- **Scope:** Policy/legal text changes
+- **Problem:** Users have no in-app control over session-scoped manuscript storage. The privacy policy describes session storage accurately (Clause 01), but there is no mechanism for users to opt into a stricter "incognito" mode that skips PocketBase persistence entirely and uses only client-side IndexedDB.
+- **Proposed work:**
+  - [ ] Add "Incognito mode" toggle to editor settings (persisted in localStorage, not PocketBase)
+  - [ ] When enabled: skip all PocketBase `manuscripts` writes, rely solely on IndexedDB
+  - [ ] Update privacy policy Clause 01 to document incognito mode behavior
+  - [ ] Add tooltip/help text explaining what incognito mode does and doesn't protect
+- **Why deferred:** Requires legal review of privacy policy language. Policy text changes should not ship alongside code changes without review.
+- **Signed off:** [ ]
+
+### D2. gVisor worker sandboxing (Day 10)
+- **Scope:** Infrastructure-level container security
+- **Problem:** The compile worker runs Pandoc/LuaLaTeX inside Docker with defense-in-depth (non-root user, isolated temp dirs, `-raw_tex` disabled, 14-pattern injection detection, `--cap-drop=ALL`, `--read-only` root filesystem). However, the container still uses the default Docker runtime (`runc`). gVisor (`runsc`) would add a user-space kernel layer that intercepts syscalls, providing stronger isolation against container escapes.
+- **Proposed work:**
+  - [ ] Install gVisor (`runsc`) on the Coolify/Digital Ocean host
+  - [ ] Configure Docker daemon to use `runsc` as the runtime for compile worker containers
+  - [ ] Verify LuaLaTeX, Pandoc, and Ghostscript function correctly under gVisor (some syscalls may need allowlisting)
+  - [ ] Update `docker:run` script in `package.json` to use `--runtime=runsc`
+  - [ ] Benchmark compile times under gVisor vs `runc` to quantify overhead
+  - [ ] Update CLAUDE.md "Security Architecture" section to document gVisor layer
+- **Why deferred:** Infrastructure-level change that requires host-level package installation, runtime configuration, and performance validation. Cannot be tested without access to the production/staging host. Risk of breaking compiles if LuaLaTeX syscalls are blocked.
+- **Signed off:** [ ]
+
+### D3. Final audit & security whitepaper (Day 14)
+- **Scope:** Documentation
+- **Problem:** The security architecture is documented across CLAUDE.md (Known Gaps section), TRANSFORMATION_COUNCIL.md (Security Engineer persona), and inline code comments. There is no single, auditable document that catalogs all security controls, their status, and residual risks.
+- **Proposed work:**
+  - [ ] Conduct final security audit of compile pipeline (input → sanitize → spawn → output)
+  - [ ] Document all 6 defense layers: input sanitization, Pandoc flags, process isolation, Docker hardening, network/API security, auth verification
+  - [ ] Catalog residual risks with severity ratings (seccomp profile, `--network none`, gVisor status)
+  - [ ] Produce `SECURITY.md` whitepaper at repo root with: threat model, control inventory, test evidence, known gaps, and remediation timeline
+  - [ ] Cross-reference with OWASP and CWE identifiers where applicable
+- **Why deferred:** Documentation-only deliverable that should reflect the final state of all security controls, including D1 and D2 if completed. Writing it now would require immediate revision.
+- **Signed off:** [ ]
+
+---
+
 ## Execution Order
 
 | Priority | Task | Track | Status |
@@ -168,3 +211,6 @@
 | 9 | B4–B7 — Touch/sidebar/polish | Mobile | DONE |
 | 10 | C1–C3 — CI fixes | Infra | DONE |
 | 11 | C4 — Lulu webhook | Infra | TODO |
+| — | D1 — Privacy policy incognito mode | Deferred | Separate PR (legal) |
+| — | D2 — gVisor worker sandboxing | Deferred | Separate PR (infra) |
+| — | D3 — Final audit & security whitepaper | Deferred | Separate PR (docs) |

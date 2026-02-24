@@ -1,26 +1,41 @@
 import StatusClient from './StatusClient'
 
 export const metadata = {
-  title: 'System Status — Page Perfect',
+  title: 'System Status — PagePerfect',
   description: 'Connectivity and capability checks for the compiler backend.',
 }
 
 export default function StatusPage() {
-  // Next rewrites send /api/* to this base; show it for ops clarity
   const apiBase = process.env.API_BASE_URL || 'http://localhost:4000'
   return (
-    <main id="main" className="min-h-screen">
-      <div className="container mx-auto px-6 py-12">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="font-display text-h2 font-bold tracking-tight text-text-primary mb-3">System Status</h1>
-          <p className="text-text-secondary mb-6">
+    <main id="main">
+      {/* Header */}
+      <section className="border-b-2 border-[#111111] py-16 md:py-24">
+        <div className="mx-auto max-w-7xl px-6 md:px-8">
+          <p className="mb-3 font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50">
+            Diagnostics
+          </p>
+          <h1
+            className="max-w-3xl font-display font-extrabold tracking-tighter text-[#111111]"
+            style={{
+              fontSize: 'clamp(1.75rem, 3.5vw, 3rem)',
+              lineHeight: 1.05,
+            }}
+          >
+            System Status
+          </h1>
+          <p className="mt-4 max-w-xl font-body text-base leading-relaxed text-[#555555]">
             Verifies that the proxy is healthy and shows enabled options from the compiler service.
           </p>
-          <div>
-            <StatusClient apiBase={apiBase} />
-          </div>
         </div>
-      </div>
+      </section>
+
+      {/* Status content */}
+      <section className="py-12 md:py-16">
+        <div className="mx-auto max-w-4xl px-6 md:px-8">
+          <StatusClient apiBase={apiBase} />
+        </div>
+      </section>
     </main>
   )
 }

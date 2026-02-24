@@ -513,17 +513,17 @@ export function TemplateGrid() {
         {/* ── Header ── */}
         <div className="mb-12 max-w-3xl md:mb-16">
           <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
-            Plates 1&ndash;15 &mdash; Typographic Systems
+            15 production-ready designs
           </p>
           <h2 className="font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
-            Fifteen systems.
+            Pick your genre.
             <br />
-            Not themes.
+            We handle the rest.
           </h2>
           <p className="mt-5 max-w-lg font-body text-sm leading-[1.7] text-[#111111]/45">
-            Each template is a mathematical typographic system &mdash; baseline grids,
-            calculated heading scales, and grid-unit spacing. Every line locks to
-            a M&uuml;ller-Brockmann grid.
+            Each template is a complete, print-validated layout system &mdash;
+            correct margins, professional heading hierarchy, and KDP-compliant
+            geometry. Every design passes platform review out of the box.
           </p>
         </div>
 

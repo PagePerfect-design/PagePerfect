@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import type {
   TemplateKey, HeadingVariant, PageSize, MarginPreset,
   CompileMode, CustomFont, Status, CompileError, Stage, Platform,
-  CompileQuality,
+  CompileQuality, Asset,
 } from './editor-types'
 import { adjustHeadingsForTemplate, buildFilename, abortableDelay } from './editor-utils'
 import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
@@ -25,13 +25,14 @@ export interface CompileQueueOptions {
   safeMode: boolean
   compileMode: CompileMode
   customFont: CustomFont
+  assets: Asset[]
   stage: Stage
   refreshUser: () => void
 }
 
 export function useCompileQueue({
   manuscript, template, headingVariant, title, pageSize, marginPreset,
-  safeMode, compileMode, customFont, stage, refreshUser,
+  safeMode, compileMode, customFont, assets, stage, refreshUser,
 }: CompileQueueOptions) {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
@@ -44,6 +45,7 @@ export function useCompileQueue({
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const compileGenRef = useRef(0)
+  const retryCountRef = useRef(0)
 
   // Clean blob URLs on unmount/swap
   useEffect(() => {
@@ -103,18 +105,18 @@ export function useCompileQueue({
   }, [title, template, pageSize, refreshUser])
 
   // ── The compile function ──
-  const compile = useCallback(async (downloadAfter: boolean, exportPlatform?: Platform) => {
+  const compile = useCallback(async (downloadAfter: boolean, exportPlatform?: Platform, _isAutoRetry?: boolean) => {
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
 
     const gen = ++compileGenRef.current
+    // Reset retry counter on fresh user-initiated compiles (not auto-retries)
+    if (!_isAutoRetry) retryCountRef.current = 0
 
     setLoading(true)
     setStatus('compiling')
     setErrors([])
-
-    let retried = false
 
     try {
       const effectiveMd = adjustHeadingsForTemplate(manuscript, template)
@@ -131,6 +133,7 @@ export function useCompileQueue({
       if (downloadAfter) body.download = true
       if (exportPlatform === 'ingram') body.outputFormat = 'pdfx1a'
       if (customFont) body.customFonts = { main: customFont.fontId }
+      if (assets.length > 0) body.assets = assets.map(a => a.assetId)
 
       const fetchHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
       if (isPocketBaseConfigured) {
@@ -184,8 +187,9 @@ export function useCompileQueue({
       const delays = [500, 1000, 2000, 3000, 5000]
       let pollIndex = 0
       let networkErrors = 0
+      const maxPolls = 60 // ~3 minutes max polling time
 
-      while (true) {
+      while (pollIndex < maxPolls) {
         if (gen !== compileGenRef.current) return
 
         const delay = delays[Math.min(pollIndex, delays.length - 1)]
@@ -199,11 +203,18 @@ export function useCompileQueue({
           if (gen !== compileGenRef.current) return
 
           if (!statusResp.ok) {
-            // 404 = job expired from server memory — auto-recompile once
-            if (statusResp.status === 404 && !retried) {
-              retried = true
-              setStatus('compiling')
-              setTimeout(() => { void compile(downloadAfter, exportPlatform) }, 300)
+            if (statusResp.status === 404 || statusResp.status === 410) {
+              // Job expired from server memory — auto-recompile silently
+              if (retryCountRef.current < 1) {
+                retryCountRef.current++
+                setStatus('compiling')
+                setTimeout(() => { void compileRef.current(false, undefined, true) }, 300)
+                return
+              }
+              // Already retried once — show a quiet message
+              pdfBlobRef.current = null
+              setErrors([{ message: 'Preview expired. Click Retry to recompile.' }])
+              setStatus('error')
               return
             }
             networkErrors++
@@ -258,20 +269,24 @@ export function useCompileQueue({
             if (gen !== compileGenRef.current) return
 
             if (!pdfResp.ok) {
-              // Auto-retry on expired/restarted results (410) — recompile once
-              if ((pdfResp.status === 410 || pdfResp.status === 404) && !retried) {
-                retried = true
+              // Expired/missing result — auto-recompile silently (once)
+              if ((pdfResp.status === 404 || pdfResp.status === 410) && retryCountRef.current < 1) {
+                retryCountRef.current++
                 setStatus('compiling')
-                // Re-submit the compile instead of showing "expired" to the user
-                setTimeout(() => { void compile(downloadAfter, exportPlatform) }, 300)
+                setTimeout(() => { void compileRef.current(downloadAfter, undefined, true) }, 300)
                 return
               }
               let payload: { message?: string; detail?: string } | null = null
               try { payload = await pdfResp.json() } catch { /* noop */ }
               pdfBlobRef.current = null
               const msgs: CompileError[] = []
-              if (payload?.message) msgs.push({ message: payload.message })
-              if (!msgs.length) msgs.push({ message: 'Failed to retrieve compiled PDF.' })
+              if (pdfResp.status === 404 || pdfResp.status === 410) {
+                msgs.push({ message: 'Preview expired. Click Retry to recompile.' })
+              } else {
+                if (payload?.message) msgs.push({ message: payload.message })
+                if (!msgs.length) msgs.push({ message: 'Failed to retrieve compiled PDF.' })
+              }
+              if (payload?.detail) msgs.push({ message: `__detail__${payload.detail}` })
               setErrors(msgs)
               setStatus('error')
               return
@@ -294,6 +309,11 @@ export function useCompileQueue({
           }
         }
       }
+
+      // Polling exhausted — compile took too long
+      pdfBlobRef.current = null
+      setErrors([{ message: 'Compilation timed out. Please try again.' }])
+      setStatus('error')
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === 'AbortError') return
       if (e instanceof Error && e.name !== 'AbortError') {
@@ -304,7 +324,11 @@ export function useCompileQueue({
     } finally {
       setLoading(false)
     }
-  }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, customFont, handlePdfBlob])
+  }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, customFont, assets, handlePdfBlob])
+
+  // Keep a ref to the latest compile so the debounce timer always calls the current version
+  const compileRef = useRef(compile)
+  compileRef.current = compile
 
   // ── Debounced auto-compile in design stage ──
   const prevManuscriptRef = useRef(manuscript)
@@ -314,7 +338,7 @@ export function useCompileQueue({
     const isTextChange = prevManuscriptRef.current !== manuscript
     prevManuscriptRef.current = manuscript
     const delay = isTextChange ? 3000 : 1500
-    debounceRef.current = window.setTimeout(() => { void compile(false) }, delay)
+    debounceRef.current = window.setTimeout(() => { void compileRef.current(false) }, delay)
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, stage])

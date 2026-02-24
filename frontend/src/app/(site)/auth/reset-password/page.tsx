@@ -36,10 +36,8 @@ function ResetPasswordForm() {
 
     try {
       if (token) {
-        // Token-based flow: user clicked a reset link in their email
         await pb.collection('users').confirmPasswordReset(token, password, confirmPassword)
       } else if (pb.authStore.isValid && pb.authStore.record) {
-        // Authenticated flow: user is changing their password while logged in
         await pb.collection('users').update(pb.authStore.record.id, {
           password,
           passwordConfirm: password,
@@ -65,16 +63,21 @@ function ResetPasswordForm() {
 
   if (success) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-6">
+      <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center px-6">
         <div className="w-full max-w-sm text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border border-[#111111]/20">
+            <svg className="h-6 w-6 text-[#16a34a]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="font-display text-2xl font-bold text-text-primary mb-2">Password updated</h1>
-          <p className="text-sm text-text-secondary">
-            Your password has been reset. Redirecting you to sign in...
+          <h1
+            className="font-display font-bold tracking-tight text-[#111111]"
+            style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}
+          >
+            Password updated
+          </h1>
+          <p className="mt-2 font-body text-sm text-[#555555]">
+            Your password has been reset. Redirecting you to sign in&hellip;
           </p>
         </div>
       </div>
@@ -82,32 +85,37 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-6">
+    <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="font-display text-2xl font-bold text-text-primary mb-2">
+        <div className="mb-8 text-center">
+          <h1
+            className="font-display font-bold tracking-tight text-[#111111]"
+            style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}
+          >
             Set a new password
           </h1>
-          <p className="text-sm text-text-secondary">
+          <p className="mt-2 font-body text-sm text-[#555555]">
             Enter your new password below.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="rounded-lg border border-danger/20 bg-danger/5 p-3 text-sm text-danger">
+            <div className="border border-[#dc2626]/20 bg-[#dc2626]/5 p-3 font-body text-sm text-[#dc2626]">
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="password" className="block text-xs font-medium text-text-tertiary mb-1.5">New password</label>
+            <label htmlFor="password" className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]">
+              New password
+            </label>
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-dark w-full text-sm"
+              className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-75 placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
               placeholder="At least 8 characters"
               required
               minLength={8}
@@ -117,13 +125,15 @@ function ResetPasswordForm() {
           </div>
 
           <div>
-            <label htmlFor="confirm-password" className="block text-xs font-medium text-text-tertiary mb-1.5">Confirm new password</label>
+            <label htmlFor="confirm-password" className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]">
+              Confirm new password
+            </label>
             <input
               id="confirm-password"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="input-dark w-full text-sm"
+              className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-75 placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
               placeholder="Repeat your new password"
               required
               minLength={8}
@@ -134,14 +144,14 @@ function ResetPasswordForm() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-pill btn-primary w-full py-3 text-sm"
+            className="min-h-[44px] w-full border border-[#FF3333] bg-[#FF3333] py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-colors duration-75 hover:bg-[#E52222] disabled:opacity-50"
           >
-            {loading ? 'Updating...' : 'Update password'}
+            {loading ? 'Updating\u2026' : 'Update password'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-text-ghost">
-          <Link href="/auth/login" className="underline hover:text-text-tertiary transition-colors">
+        <p className="mt-6 text-center font-body text-[12px] text-[#555555]">
+          <Link href="/auth/login" className="underline transition-colors duration-75 hover:text-[#FF3333]">
             Back to sign in
           </Link>
         </p>
@@ -153,8 +163,8 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+      <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center">
+        <div className="h-6 w-6 animate-spin border-2 border-[#FF3333] border-t-transparent" />
       </div>
     }>
       <ResetPasswordForm />

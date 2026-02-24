@@ -102,6 +102,39 @@ const fontUpload = multer({
   },
 });
 
+// ── Image asset upload setup ──
+const CUSTOM_ASSETS_DIR = path.join(os.tmpdir(), 'pp-assets');
+if (!fs.existsSync(CUSTOM_ASSETS_DIR)) fs.mkdirSync(CUSTOM_ASSETS_DIR, { recursive: true });
+
+const ALLOWED_IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.pdf', '.svg', '.eps', '.tiff', '.tif']);
+const ASSET_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const ASSET_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// Tier-based asset limits
+const ASSET_LIMITS = {
+  anonymous: { maxFiles: 5, maxFileSize: 5 * 1024 * 1024 },
+  drafter:   { maxFiles: 5, maxFileSize: 5 * 1024 * 1024 },
+  publisher: { maxFiles: 15, maxFileSize: ASSET_MAX_FILE_SIZE },
+  studio:    { maxFiles: 30, maxFileSize: ASSET_MAX_FILE_SIZE },
+};
+
+const assetStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const d = path.join(CUSTOM_ASSETS_DIR, crypto.randomUUID());
+    fs.mkdirSync(d, { recursive: true });
+    cb(null, d);
+  },
+  filename: (_req, file, cb) => cb(null, file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')),
+});
+const assetUpload = multer({
+  storage: assetStorage,
+  limits: { fileSize: ASSET_MAX_FILE_SIZE },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    ALLOWED_IMAGE_EXTS.has(ext) ? cb(null, true) : cb(new Error(`Unsupported image format "${ext}". Supported: PNG, JPG, PDF, SVG, EPS, TIFF.`));
+  },
+});
+
 /**
  * Compile, convert, batch, and font upload routes.
  * @param {object} ctx — shared context from index.js
@@ -138,11 +171,21 @@ module.exports = function compileRoutes(ctx) {
   // POST /api/compile — Async (202 + polling) with sync fallback
   // ══════════════════════════════════════════════════════════
   router.post('/api/compile', ctx.compileLimiter, async (req, res) => {
-    let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts, headingVariant: hv, download } = req.body || {};
+    let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts, headingVariant: hv, download, assets } = req.body || {};
     safeMode = Boolean(safeMode);
     compileMode = (compileMode === 'full') ? 'full' : 'fast';
     hv = headingVariants.HEADING_VARIANTS.includes(hv) ? hv : 'classic';
     const isDownload = Boolean(download);
+
+    // Validate assets: must be an array of UUID strings
+    let validAssets = [];
+    if (Array.isArray(assets)) {
+      validAssets = assets.filter(id =>
+        typeof id === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) &&
+        fs.existsSync(path.join(CUSTOM_ASSETS_DIR, id))
+      ).slice(0, 30); // cap at 30
+    }
 
     if (!manuscriptText || typeof manuscriptText !== 'string') return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
     const mdBytes = Buffer.byteLength(manuscriptText, 'utf8');
@@ -187,6 +230,7 @@ module.exports = function compileRoutes(ctx) {
           safeMode, compileMode, outputFormat,
           customFonts: customFonts || null, headingVariant: hv,
           isDownload, userId: user.userId, extensions: req.body.extensions || null,
+          assets: validAssets.length > 0 ? validAssets : null,
         }, { jobId: queueKey, priority: ctx.hasTier(userTier, 'publisher') ? 1 : 5 });
 
         const resultSecret = !user.userId ? crypto.randomBytes(16).toString('hex') : null;
@@ -213,7 +257,7 @@ module.exports = function compileRoutes(ctx) {
       await fsp.writeFile(manuscriptPath, manuscriptText, 'utf8');
 
       const result = await processCompileJob({
-        data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, extensions: req.body.extensions || null },
+        data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, extensions: req.body.extensions || null, assets: validAssets.length > 0 ? validAssets : null },
       }, ctx.DESIGN_TEMPLATES);
 
       if (!result.success) { fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {}); return res.status(400).json(result); }
@@ -252,7 +296,6 @@ module.exports = function compileRoutes(ctx) {
     const { id } = req.params;
     const cached = await ctx.getJobResult(id);
     if (cached) {
-      if (cached._redisOnly && cached.success) return res.status(410).json({ jobId: id, status: 'expired', error: 'restart_expired', message: 'Server restarted during compilation. Please recompile.' });
       if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, resultUrl: `/api/compile/result/${id}` });
       return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, warnings: cached.warnings, detail: cached.detail });
     }
@@ -271,7 +314,6 @@ module.exports = function compileRoutes(ctx) {
     const result = await ctx.getJobResult(id);
 
     if (!result) return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });
-    if (result._redisOnly) return res.status(410).json({ error: 'restart_expired', message: 'Server restarted. Please recompile.' });
     if (!result.success) return res.status(400).json(result);
 
     // Auth check
@@ -305,8 +347,7 @@ module.exports = function compileRoutes(ctx) {
     res.setHeader('Cache-Control', 'no-store');
 
     const stream = fs.createReadStream(result.pdfPath);
-    stream.on('close', () => { if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {}); ctx.deleteJobResult(id); });
-    stream.on('error', () => { if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' }); ctx.deleteJobResult(id); });
+    stream.on('error', () => { if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' }); });
     stream.pipe(res);
   });
 
@@ -326,6 +367,107 @@ module.exports = function compileRoutes(ctx) {
     setTimeout(() => { try { fs.rmSync(path.dirname(req.file.path), { recursive: true, force: true }); } catch {} }, 60 * 60 * 1000);
     log.info({ module: 'fonts', originalName: req.file.originalname, size: req.file.size, fontId }, 'Uploaded custom font');
     res.json({ fontId, fontName, originalName: req.file.originalname, size: req.file.size });
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // POST /api/assets/upload — Upload an image asset
+  // ══════════════════════════════════════════════════════════
+  router.post('/api/assets/upload', assetUpload.single('image'), async (req, res) => {
+    const user = await ctx.verifyUserTier(req);
+    const tier = user.tier || 'anonymous';
+    const limits = ASSET_LIMITS[tier] || ASSET_LIMITS.drafter;
+
+    // Clean up if file exceeds tier-specific size limit
+    if (req.file && req.file.size > limits.maxFileSize) {
+      try { fs.rmSync(path.dirname(req.file.path), { recursive: true, force: true }); } catch {}
+      const maxMB = Math.round(limits.maxFileSize / (1024 * 1024));
+      return res.status(413).json({ error: 'file_too_large', message: `Image exceeds ${maxMB} MB limit for your tier.` });
+    }
+
+    if (!req.file) return res.status(400).json({ error: 'no_file', message: 'No image file provided.' });
+
+    // Count existing assets for this user (prevent accumulation)
+    try {
+      const existingDirs = fs.readdirSync(CUSTOM_ASSETS_DIR);
+      // We track asset count by counting directories. For anonymous users, we use a
+      // softer limit since we can't scope by user.
+      if (existingDirs.length > limits.maxFiles * 10) {
+        // Global safety cap — prevent disk exhaustion
+        try { fs.rmSync(path.dirname(req.file.path), { recursive: true, force: true }); } catch {}
+        return res.status(429).json({ error: 'too_many_assets', message: 'Server asset storage is full. Please try again later.' });
+      }
+    } catch { /* directory read failed — continue */ }
+
+    const assetId = path.basename(path.dirname(req.file.path));
+    const safeFilename = req.file.filename; // already sanitized by multer storage
+
+    // Schedule cleanup after TTL
+    setTimeout(() => {
+      try { fs.rmSync(path.join(CUSTOM_ASSETS_DIR, assetId), { recursive: true, force: true }); } catch {}
+    }, ASSET_TTL_MS);
+
+    log.info({ module: 'assets', originalName: req.file.originalname, size: req.file.size, assetId }, 'Uploaded image asset');
+    res.json({
+      assetId,
+      filename: safeFilename,
+      originalName: req.file.originalname,
+      size: req.file.size,
+      mimeType: req.file.mimetype,
+    });
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // GET /api/assets/:id/:filename — Serve an uploaded image for preview
+  // ══════════════════════════════════════════════════════════
+  router.get('/api/assets/:id/:filename', (req, res) => {
+    const { id, filename } = req.params;
+    // Validate asset ID is UUID (prevents path traversal)
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ error: 'invalid_id', message: 'Invalid asset ID.' });
+    }
+    // Validate filename (no path separators)
+    if (/[/\\]/.test(filename) || filename.includes('..')) {
+      return res.status(400).json({ error: 'invalid_filename', message: 'Invalid filename.' });
+    }
+
+    const filePath = path.join(CUSTOM_ASSETS_DIR, id, filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'not_found', message: 'Asset not found or expired.' });
+    }
+
+    const ext = path.extname(filename).toLowerCase();
+    const mimeMap = {
+      '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+      '.svg': 'image/svg+xml', '.tiff': 'image/tiff', '.tif': 'image/tiff',
+      '.pdf': 'application/pdf', '.eps': 'application/postscript',
+    };
+    res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    fs.createReadStream(filePath).pipe(res);
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // DELETE /api/assets/:id — Remove an uploaded image
+  // ══════════════════════════════════════════════════════════
+  router.delete('/api/assets/:id', (req, res) => {
+    const { id } = req.params;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ error: 'invalid_id', message: 'Invalid asset ID.' });
+    }
+
+    const dirPath = path.join(CUSTOM_ASSETS_DIR, id);
+    if (!fs.existsSync(dirPath)) {
+      return res.status(404).json({ error: 'not_found', message: 'Asset not found or already deleted.' });
+    }
+
+    try {
+      fs.rmSync(dirPath, { recursive: true, force: true });
+      log.info({ module: 'assets', assetId: id }, 'Deleted image asset');
+      res.json({ deleted: true, assetId: id });
+    } catch (err) {
+      log.error({ module: 'assets', assetId: id, err: err.message }, 'Failed to delete asset');
+      res.status(500).json({ error: 'delete_failed', message: 'Failed to delete asset.' });
+    }
   });
 
   // ══════════════════════════════════════════════════════════

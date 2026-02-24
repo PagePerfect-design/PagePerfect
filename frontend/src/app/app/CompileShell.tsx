@@ -5,18 +5,21 @@ import Link from 'next/link'
 import CompositorMark from '@/components/CompositorMark'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Keyboard, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import dynamic from 'next/dynamic'
+
+const RichTextEditor = dynamic(() => import('./RichTextEditor'), { ssr: false })
 
 import { SAMPLES } from './sample'
 import PublishingSystems from './PublishingSystems'
 import { useAuth } from '@/lib/auth-context'
-import { loadManuscript as loadLocalManuscript, saveManuscript as saveLocalManuscript } from '@/lib/manuscript-store'
+import { loadManuscript as loadLocalManuscript, saveManuscript as saveLocalManuscript, loadAssets as loadLocalAssets, saveAssets as saveLocalAssets } from '@/lib/manuscript-store'
 import { useManuscript } from '@/lib/use-manuscript'
 import type { ManuscriptListItem } from '@/lib/use-manuscript'
 
 // Decomposed modules
 import type {
   TemplateKey, HeadingVariant, PageSize, MarginPreset,
-  CompileMode, Stage, HudTab, CustomFont, Platform, Prefs,
+  CompileMode, Stage, HudTab, CustomFont, Platform, Prefs, Asset,
 } from './editor-types'
 import { TEMPLATE_INFO, TEMPLATE_KEYS, PAGE_SIZES, MARGIN_INFO, PREFS_KEY, hasTier } from './editor-types'
 import PortalStage from './PortalStage'
@@ -25,6 +28,7 @@ import FloatingHUD from './FloatingHUD'
 import TopBar from './TopBar'
 import LaunchOverlay from './LaunchOverlay'
 import ManuscriptBrowser from './ManuscriptBrowser'
+import ImageUpload from './ImageUpload'
 import { useCompileQueue } from './useCompileQueue'
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -101,11 +105,36 @@ function EditorOverlay({
   manuscript,
   onChange,
   onClose,
+  assets,
+  onAssetsChange,
 }: {
   manuscript: string
   onChange: (m: string) => void
   onClose: () => void
+  assets: Asset[]
+  onAssetsChange: (assets: Asset[]) => void
 }) {
+  const [editorMode, setEditorMode] = useState<'markdown' | 'richtext'>('markdown')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const handleInsertMarkdown = useCallback((text: string) => {
+    const ta = textareaRef.current
+    if (ta) {
+      const start = ta.selectionStart
+      const before = manuscript.slice(0, start)
+      const after = manuscript.slice(ta.selectionEnd)
+      const newValue = `${before}${text}\n${after}`
+      onChange(newValue)
+      // Restore cursor after the inserted text
+      requestAnimationFrame(() => {
+        ta.selectionStart = ta.selectionEnd = start + text.length + 1
+        ta.focus()
+      })
+    } else {
+      onChange(manuscript + '\n' + text + '\n')
+    }
+  }, [manuscript, onChange])
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -114,19 +143,45 @@ function EditorOverlay({
       className="fixed inset-0 z-30 flex"
     >
       <div className="flex w-1/2 flex-col border-r border-[#111111]/[0.08] bg-white">
-        <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-5 py-2.5">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/30">Manuscript</span>
-          <button onClick={onClose} className="font-mono text-[11px] text-[#111111]/30 hover:text-[#111111]/50">
-            Close
-          </button>
-        </div>
-        <textarea
-          value={manuscript}
-          onChange={(e) => onChange(e.target.value)}
-          className="flex-1 resize-none bg-transparent p-6 font-mono text-sm leading-[1.8] text-[#111111]/70 caret-[#FF3333] focus:outline-none"
-          placeholder="# Chapter One&#10;&#10;Write here..."
-          autoFocus
-        />
+        {editorMode === 'markdown' ? (
+          <>
+            <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-5 py-2.5">
+              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/30">Markdown</span>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setEditorMode('richtext')}
+                  className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/30 hover:text-[#111111]/50"
+                >
+                  Switch to Rich Text
+                </button>
+                <button onClick={onClose} className="font-mono text-[11px] text-[#111111]/30 hover:text-[#111111]/50">
+                  Close
+                </button>
+              </div>
+            </div>
+            <textarea
+              ref={textareaRef}
+              value={manuscript}
+              onChange={(e) => onChange(e.target.value)}
+              className="flex-1 resize-none bg-transparent p-6 font-mono text-sm leading-[1.8] text-[#111111]/70 caret-[#FF3333] focus:outline-none"
+              placeholder="# Chapter One&#10;&#10;Write here..."
+              autoFocus
+            />
+            <div className="border-t border-[#111111]/[0.06] px-5 py-3">
+              <ImageUpload
+                assets={assets}
+                onAssetsChange={onAssetsChange}
+                onInsertMarkdown={handleInsertMarkdown}
+              />
+            </div>
+          </>
+        ) : (
+          <RichTextEditor
+            markdown={manuscript}
+            onChange={onChange}
+            onClose={() => setEditorMode('markdown')}
+          />
+        )}
       </div>
       <div className="w-1/2" onClick={onClose} />
     </motion.div>
@@ -153,11 +208,13 @@ export default function CompileShell() {
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showSystems, setShowSystems] = useState(false)
   const [customFont, setCustomFont] = useState<CustomFont>(null)
+  const [assets, setAssets] = useState<Asset[]>([])
   const [fontUploading, setFontUploading] = useState(false)
   const [mobileGateDismissed, setMobileGateDismissed] = useState(false)
   const [showManuscripts, setShowManuscripts] = useState(false)
   const [manuscriptList, setManuscriptList] = useState<ManuscriptListItem[]>([])
   const [manuscriptListLoading, setManuscriptListLoading] = useState(false)
+  const [targetPlatform, setTargetPlatform] = useState<Platform | null>(null)
 
   const { user, tier, publisherWindowEnd, refreshUser } = useAuth()
   const {
@@ -182,7 +239,7 @@ export default function CompileShell() {
     compile,
   } = useCompileQueue({
     manuscript, template, headingVariant, title, pageSize, marginPreset,
-    safeMode, compileMode, customFont, stage, refreshUser,
+    safeMode, compileMode, customFont, assets, stage, refreshUser,
   })
 
   // Read template from URL params
@@ -211,6 +268,9 @@ export default function CompileShell() {
       if (savedMs && savedMs.trim()) setManuscript(savedMs)
       if (savedTitle && savedTitle.trim()) setTitle(savedTitle)
     })
+    loadLocalAssets().then(savedAssets => {
+      if (savedAssets.length > 0) setAssets(savedAssets)
+    })
   }, [])
 
   // Save preferences
@@ -234,6 +294,11 @@ export default function CompileShell() {
     }, 3000)
     return () => { if (manuscriptSaveRef.current) window.clearTimeout(manuscriptSaveRef.current) }
   }, [manuscript, title, template, pageSize, marginPreset, safeMode, saveManuscript])
+
+  // Save assets to IndexedDB when they change
+  useEffect(() => {
+    void saveLocalAssets(assets)
+  }, [assets])
 
   // Keyboard shortcuts (design stage)
   useEffect(() => {
@@ -436,6 +501,7 @@ export default function CompileShell() {
               isLoggedIn={!!user}
               hasResumable={!!manuscript.trim()}
               onResume={() => setStage('design')}
+              onPlatformSelect={setTargetPlatform}
             />
             {/* Manuscript browser (portal stage) */}
             <AnimatePresence>
@@ -523,6 +589,7 @@ export default function CompileShell() {
                 onSafeModeChange={setSafeMode}
                 onFontUpload={handleFontUpload}
                 onFontRemove={handleFontRemove}
+                quality={quality}
               />
             </div>
 
@@ -546,6 +613,8 @@ export default function CompileShell() {
                   manuscript={manuscript}
                   onChange={setManuscript}
                   onClose={() => setShowEditor(false)}
+                  assets={assets}
+                  onAssetsChange={setAssets}
                 />
               )}
             </AnimatePresence>
@@ -629,6 +698,7 @@ export default function CompileShell() {
             userTier={tier}
             publisherWindowEnd={publisherWindowEnd}
             quality={quality}
+            targetPlatform={targetPlatform}
           />
         )}
       </AnimatePresence>

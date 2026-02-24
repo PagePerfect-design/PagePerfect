@@ -13,9 +13,9 @@ const STEPS = [
   },
   {
     num: '03',
-    title: 'Download and upload to KDP',
-    body: 'Get a print-ready PDF with embedded fonts, correct bleed, margins, and trim. Upload directly to Amazon KDP, IngramSpark, or Lulu \u2014 passes automated review on the first try.',
-    detail: 'Download, upload to your distributor, approve the proof \u2014 done.',
+    title: 'Export and upload \u2014 zero rejections',
+    body: 'Get a validated, print-compliant PDF with embedded fonts, correct bleed, gutter, and trim. Upload directly to Amazon KDP, IngramSpark, or Lulu \u2014 passes automated review on the first try.',
+    detail: 'Pre-flight checks run before export. If something fails, you\u2019ll know before you download \u2014 not after KDP rejects it.',
   },
 ]
 
