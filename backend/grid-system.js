@@ -21,6 +21,7 @@ class GridSystem {
     // Baseline grid: 12pt baseline for academic, 11pt for trade
     this.baseline = {
       academic: 12,  // 12pt baseline for Chicago template
+      thesis: 12,    // 12pt baseline for Thesis template (double-spaced)
       trade: 11,     // 11pt baseline for Paperback template
       editorial: 11, // 11pt baseline for Chronicle template
       corporate: 11, // 11pt baseline for Matrix template
@@ -41,6 +42,7 @@ class GridSystem {
     // Line height ratios for optimal readability
     this.lineHeight = {
       academic: 1.5,  // 18pt line height for 12pt text
+      thesis: 2.0,    // 24pt line height for 12pt text (double-spaced)
       trade: 1.4      // 15.4pt line height for 11pt text
     };
     

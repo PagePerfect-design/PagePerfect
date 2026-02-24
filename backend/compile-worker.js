@@ -448,8 +448,13 @@ async function processCompileJob(job, templateRegistry) {
     luaFilters.push('--lua-filter', path.join(filtersDir, 'fountain.lua'));
   }
 
+  // Determine top-level division from template class (article → section, book → chapter)
+  const tplClass = headingVariants.TEMPLATE_CLASS[tplKey] || 'article';
+  const topLevelDiv = tplClass === 'book' ? 'chapter' : 'section';
+
   const args = [
     mdPath, fromFmt, '--pdf-engine=lualatex',
+    `--top-level-division=${topLevelDiv}`,
     `--resource-path=${tmpBase}`,
     '-M', `title=${safeTitle}`,
     `--template=${path.join(tmpBase, 'template.latex')}`,
