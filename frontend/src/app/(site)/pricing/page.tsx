@@ -425,6 +425,13 @@ export default function PricingPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [successTier, setSuccessTier] = useState<string | null>(null)
+  const [publisherDaysLeft, setPublisherDaysLeft] = useState<number | null>(null)
+
+  // Hydration-safe: compute publisher window days left only on client
+  useEffect(() => {
+    if (!publisherWindowEnd || !hasActiveWindow) return
+    setPublisherDaysLeft(Math.ceil((new Date(publisherWindowEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+  }, [publisherWindowEnd, hasActiveWindow])
 
   const headerRef = useRef(null)
   const compareRef = useRef(null)
@@ -492,8 +499,8 @@ export default function PricingPage() {
     if (tier.key === 'publisher') {
       if (currentTier === 'studio') return { label: 'Included', disabled: true }
       if (hasActiveWindow && publisherWindowEnd) {
-        const daysLeft = Math.ceil((new Date(publisherWindowEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-        return { label: `Active — ${daysLeft}d left`, disabled: true }
+        const label = publisherDaysLeft !== null ? `Active — ${publisherDaysLeft}d left` : 'Active'
+        return { label, disabled: true }
       }
       return { label: user ? tier.cta : 'Sign in to Buy', disabled: false }
     }

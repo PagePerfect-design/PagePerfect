@@ -73,6 +73,13 @@ export default function LaunchOverlay({
   const [contractAccepted, setContractAccepted] = useState(false)
   const [showContract, setShowContract] = useState(false)
   const [qualityAcknowledged, setQualityAcknowledged] = useState(false)
+  const [publisherDaysLeft, setPublisherDaysLeft] = useState<number | null>(null)
+
+  // Hydration-safe: compute days remaining only on client
+  useEffect(() => {
+    if (!publisherWindowEnd || new Date(publisherWindowEnd) <= new Date()) return
+    setPublisherDaysLeft(Math.ceil((new Date(publisherWindowEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+  }, [publisherWindowEnd])
 
   // Run real pre-flight when settings change
   useEffect(() => {
@@ -634,8 +641,8 @@ export default function LaunchOverlay({
           </div>
         )}
         {publisherWindowEnd && new Date(publisherWindowEnd) > new Date() && (
-          <p className="mt-2 text-center font-mono text-[10px] text-emerald-600/60">
-            Publisher window active — {Math.ceil((new Date(publisherWindowEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} day{Math.ceil((new Date(publisherWindowEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) !== 1 ? 's' : ''} remaining
+          <p className="mt-2 text-center font-mono text-[10px] text-emerald-600/60" suppressHydrationWarning>
+            Publisher window active{publisherDaysLeft !== null ? ` — ${publisherDaysLeft} day${publisherDaysLeft !== 1 ? 's' : ''} remaining` : ''}
           </p>
         )}
 

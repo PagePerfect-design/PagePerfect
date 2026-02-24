@@ -213,6 +213,8 @@ export default function CompileShell() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [fontUploading, setFontUploading] = useState(false)
   const [mobileGateDismissed, setMobileGateDismissed] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [clientIsMobile, setClientIsMobile] = useState(false)
   const [showManuscripts, setShowManuscripts] = useState(false)
   const [manuscriptList, setManuscriptList] = useState<ManuscriptListItem[]>([])
   const [manuscriptListLoading, setManuscriptListLoading] = useState(false)
@@ -243,6 +245,15 @@ export default function CompileShell() {
     manuscript, template, headingVariant, title, pageSize, marginPreset,
     safeMode, compileMode, customFont, assets, stage, refreshUser,
   })
+
+  // Hydration-safe: only after mount do we read window (avoids server/client mismatch)
+  useEffect(() => {
+    setMounted(true)
+    setClientIsMobile(typeof window !== 'undefined' && window.innerWidth < 768)
+    const onResize = () => setClientIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   // Read template from URL params
   useEffect(() => {
@@ -452,9 +463,8 @@ export default function CompileShell() {
     setCustomFont(null)
   }
 
-  // ── Mobile gate — editor is desktop-only ──
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-  if (isMobile && !mobileGateDismissed) {
+  // ── Mobile gate — editor is desktop-only (only after mount to avoid hydration mismatch) ──
+  if (mounted && clientIsMobile && !mobileGateDismissed) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050505] px-6">
         <div className="max-w-md text-center">
