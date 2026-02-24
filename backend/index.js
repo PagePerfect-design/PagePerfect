@@ -649,6 +649,53 @@ const ctx = {
 };
 
 // ================================================================
+// Debug Ingest — client-side diagnostic logs (ephemeral, in-memory)
+// ================================================================
+
+const DEBUG_SESSION_LOGS = new Map();       // sessionId → [entries]
+const DEBUG_MAX_ENTRIES = 200;
+const DEBUG_MAX_SESSIONS = 50;
+const DEBUG_TTL_MS = 30 * 60 * 1000;       // 30 min
+
+app.post('/api/debug/ingest', (req, res) => {
+  const { sessionId, entries } = req.body || {};
+  if (!sessionId || !Array.isArray(entries)) return res.status(400).json({ ok: false });
+
+  if (!DEBUG_SESSION_LOGS.has(sessionId)) {
+    // Evict oldest if at capacity
+    if (DEBUG_SESSION_LOGS.size >= DEBUG_MAX_SESSIONS) {
+      const oldest = DEBUG_SESSION_LOGS.keys().next().value;
+      DEBUG_SESSION_LOGS.delete(oldest);
+    }
+    DEBUG_SESSION_LOGS.set(sessionId, { entries: [], createdAt: Date.now() });
+  }
+  const session = DEBUG_SESSION_LOGS.get(sessionId);
+  for (const e of entries.slice(0, 50)) {
+    session.entries.push({ t: Date.now(), ...e });
+    if (session.entries.length > DEBUG_MAX_ENTRIES) session.entries.shift();
+  }
+  // Log to server stdout for immediate visibility
+  for (const e of entries.slice(0, 10)) {
+    log.info({ module: 'debug-ingest', sessionId: sessionId.slice(0, 8), tag: e.tag }, e.msg || JSON.stringify(e.data || {}));
+  }
+  res.json({ ok: true });
+});
+
+app.get('/api/debug/session/:id', (req, res) => {
+  const session = DEBUG_SESSION_LOGS.get(req.params.id);
+  if (!session) return res.status(404).json({ error: 'not_found' });
+  res.json({ sessionId: req.params.id, entries: session.entries });
+});
+
+// Sweep expired sessions every 10 min
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, s] of DEBUG_SESSION_LOGS) {
+    if (now - s.createdAt > DEBUG_TTL_MS) DEBUG_SESSION_LOGS.delete(id);
+  }
+}, 10 * 60 * 1000);
+
+// ================================================================
 // Mount Route Modules
 // ================================================================
 
