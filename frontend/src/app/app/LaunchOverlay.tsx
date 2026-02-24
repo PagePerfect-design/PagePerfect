@@ -451,6 +451,7 @@ export default function LaunchOverlay({
                 </p>
                 <label className="mt-3 flex cursor-pointer items-start gap-2.5">
                   <input
+                    id="preflight-accept"
                     type="checkbox"
                     checked={contractAccepted}
                     onChange={(e) => setContractAccepted(e.target.checked)}
@@ -494,6 +495,7 @@ export default function LaunchOverlay({
                 {quality.typographyGrade === 'D' && (
                   <label className="mt-2.5 flex cursor-pointer items-start gap-2.5">
                     <input
+                      id="quality-acknowledge"
                       type="checkbox"
                       checked={qualityAcknowledged}
                       onChange={(e) => setQualityAcknowledged(e.target.checked)}
