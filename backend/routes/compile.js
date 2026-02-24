@@ -300,7 +300,20 @@ module.exports = function compileRoutes(ctx) {
       return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: cached.detail });
     }
     if (ctx.compileQueue) {
-      try { const job = await ctx.compileQueue.getJob(id); if (job) { const state = await job.getState(); return res.json({ jobId: id, status: state, progress: job.progress || 0 }); } }
+      try {
+        const job = await ctx.compileQueue.getJob(id);
+        if (job) {
+          const state = await job.getState();
+          // BullMQ marks the job 'completed' in Redis before the
+          // compileWorker.on('completed') handler has finished persisting
+          // the PDF and calling storeJobResult(). If we return 'completed'
+          // here, the client immediately fetches /result/:id — but the
+          // result isn't stored yet → 404. Remap to 'active' so the
+          // client keeps polling until getJobResult() finds the cached result.
+          const clientState = state === 'completed' ? 'active' : state;
+          return res.json({ jobId: id, status: clientState, progress: job.progress || 0 });
+        }
+      }
       catch (err) { log.error({ module: 'status', err: err.message }, 'Error fetching job'); }
     }
     return res.status(404).json({ error: 'not_found', message: 'Job not found or expired.' });

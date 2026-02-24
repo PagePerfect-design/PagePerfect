@@ -8,6 +8,7 @@ import type {
 } from './editor-types'
 import { adjustHeadingsForTemplate, buildFilename, abortableDelay } from './editor-utils'
 import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
+import { debugLog } from './debug-log'
 
 /* ═══════════════════════════════════════════════════════════════════
    useCompileQueue — Centralized compile + debounce hook
@@ -106,6 +107,9 @@ export function useCompileQueue({
 
   // ── The compile function ──
   const compile = useCallback(async (downloadAfter: boolean, exportPlatform?: Platform, _isAutoRetry?: boolean) => {
+    // ╔═ H5: compile() invoked ═╗
+    debugLog('H5', 'compile() called', { downloadAfter, _isAutoRetry: !!_isAutoRetry, template, pageSize, compileMode })
+
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -151,16 +155,22 @@ export function useCompileQueue({
         signal: controller.signal,
       })
 
+      // ╔═ H1: POST response received ═╗
+      const ct = resp.headers.get('content-type') || '(none)'
+      debugLog('H1', 'POST /api/compile response', { status: resp.status, ok: resp.ok, contentType: ct })
+
       if (gen !== compileGenRef.current) return
 
       // Sync fallback: PDF returned directly
       if (resp.ok && resp.headers.get('content-type')?.includes('application/pdf')) {
+        debugLog('H1', 'Sync PDF received directly', { size: 'streaming' })
         const blob = await resp.blob()
         if (gen !== compileGenRef.current) return
         handlePdfBlob(blob, resp, downloadAfter)
         return
       }
       if (resp.ok && resp.headers.get('content-type')?.includes('application/epub')) {
+        debugLog('H1', 'Sync EPUB received directly', { size: 'streaming' })
         const blob = await resp.blob()
         if (gen !== compileGenRef.current) return
         handlePdfBlob(blob, resp, downloadAfter)
@@ -170,6 +180,9 @@ export function useCompileQueue({
       // Handle immediate rejection
       if (!resp.ok && resp.status !== 202) {
         const payload = await resp.json().catch(() => null)
+        // ╔═ H1: POST rejected ═╗
+        debugLog('H1', 'POST rejected', { status: resp.status, payload })
+
         pdfBlobRef.current = null
         const msgs: CompileError[] = []
         // Prefer structured errors from backend
@@ -188,7 +201,9 @@ export function useCompileQueue({
       }
 
       // Phase 2: Async Polling (202 Accepted)
-      const { jobId } = await resp.json()
+      const { jobId, resultSecret } = await resp.json()
+      // ╔═ H2: 202 body parsed ═╗
+      debugLog('H2', '202 body parsed', { jobId, hasJobId: typeof jobId === 'string' && jobId.length > 0, hasSecret: !!resultSecret })
       setStatus('queued')
 
       const delays = [500, 1000, 2000, 3000, 5000]
@@ -211,6 +226,9 @@ export function useCompileQueue({
 
           if (!statusResp.ok) {
             if (statusResp.status === 404 || statusResp.status === 410) {
+              // ╔═ H3: Status poll 404/410 ═╗
+              debugLog('H3', 'Status poll returned 404/410', { jobId, pollIndex, status: statusResp.status, retryCount: retryCountRef.current })
+
               // Job expired from server memory — auto-recompile silently
               if (retryCountRef.current < 1) {
                 retryCountRef.current++
@@ -243,6 +261,7 @@ export function useCompileQueue({
           }
 
           if (statusData.status === 'failed') {
+            debugLog('H3', 'Job failed', { jobId, statusData })
             pdfBlobRef.current = null
             const msgs: CompileError[] = []
             // Prefer structured errors from backend
@@ -272,16 +291,24 @@ export function useCompileQueue({
               })
             }
 
+            // ╔═ H4: Status completed — about to fetch result ═╗
+            debugLog('H4', 'Status completed, fetching result', { jobId })
+
             setStatus('compiling')
 
             // Phase 3: Fetch final PDF
+            const resultHeaders = { ...fetchHeaders }
+            if (resultSecret) resultHeaders['x-pp-result-secret'] = resultSecret
             const pdfResp = await fetch(`/api/compile/result/${jobId}`, {
-              headers: fetchHeaders,
+              headers: resultHeaders,
               signal: controller.signal,
             })
             if (gen !== compileGenRef.current) return
 
             if (!pdfResp.ok) {
+              // ╔═ H4: Result fetch not ok ═╗
+              debugLog('H4', 'Result fetch failed', { jobId, status: pdfResp.status })
+
               // Expired/missing result — auto-recompile silently (once)
               if ((pdfResp.status === 404 || pdfResp.status === 410) && retryCountRef.current < 1) {
                 retryCountRef.current++
@@ -308,6 +335,7 @@ export function useCompileQueue({
             const blob = await pdfResp.blob()
             if (gen !== compileGenRef.current) return
 
+            debugLog('H4', 'PDF blob received', { jobId, blobSize: blob.size })
             handlePdfBlob(blob, pdfResp, downloadAfter)
             return
           }
@@ -329,7 +357,9 @@ export function useCompileQueue({
       setStatus('error')
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === 'AbortError') return
+      // ╔═ H1: Outer catch — compile threw ═╗
       if (e instanceof Error && e.name !== 'AbortError') {
+        debugLog('H1', 'compile() threw', { name: e.name, message: e.message })
         pdfBlobRef.current = null
         setErrors([{ message: 'Network or server error. Please try again.', fix: 'Check your connection or try again.', severity: 'error', category: 'network' }])
         setStatus('error')

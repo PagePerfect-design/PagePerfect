@@ -162,6 +162,7 @@ function EditorOverlay({
               </div>
             </div>
             <textarea
+              id="manuscript-editor"
               ref={textareaRef}
               value={manuscript}
               onChange={(e) => onChange(e.target.value)}
