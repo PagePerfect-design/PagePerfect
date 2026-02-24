@@ -48,20 +48,20 @@ export default function TopBar({
 }) {
   return (
     <div className="fixed left-0 right-0 top-0 z-30">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 md:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:px-6 sm:py-3 md:px-8">
         {/* Left: home + back + title */}
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Link
             href="/"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[#111111]/40 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/70"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#111111]/40 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/70"
             title="Home"
           >
             <CompositorMark size={18} />
           </Link>
-          <div className="h-4 w-px bg-[#111111]/10" />
+          <div className="hidden h-4 w-px bg-[#111111]/10 sm:block" />
           <button
             onClick={onBack}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/60"
+            className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/60 sm:flex"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
           </button>
@@ -69,17 +69,17 @@ export default function TopBar({
             type="text"
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
-            className="bg-transparent font-display text-sm font-semibold text-[#111111]/60 placeholder:text-[#111111]/25 focus:text-[#111111] focus:outline-none"
+            className="min-w-0 max-w-[120px] truncate bg-transparent font-display text-sm font-semibold text-[#111111]/60 placeholder:text-[#111111]/25 focus:text-[#111111] focus:outline-none sm:max-w-none"
             placeholder="Untitled"
           />
-          <span className="font-mono text-[10px] text-[#111111]/35">
+          <span className="hidden font-mono text-[10px] text-[#111111]/35 sm:inline">
             {wordCount.toLocaleString()} words
           </span>
 
           {/* Cloud sync status */}
           {isLoggedIn && (
             <>
-              <div className="h-3 w-px bg-[#111111]/10" />
+              <div className="hidden h-3 w-px bg-[#111111]/10 sm:block" />
               {saving ? (
                 <span className="inline-flex items-center gap-1 font-mono text-[10px] text-[#111111]/30">
                   <Loader2 className="h-2.5 w-2.5 animate-spin" />
@@ -95,7 +95,7 @@ export default function TopBar({
               )}
               <button
                 onClick={onShowManuscripts}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-[#111111]/25 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/50"
+                className="hidden h-7 w-7 items-center justify-center rounded-full text-[#111111]/25 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/50 sm:flex"
                 title="My Manuscripts"
               >
                 <FolderOpen className="h-3 w-3" />
@@ -105,7 +105,7 @@ export default function TopBar({
         </div>
 
         {/* Right: actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
           {errors.length > 0 && (() => {
             const e = errors[0]
             const msg = translateError(e.message)
@@ -115,9 +115,9 @@ export default function TopBar({
               /expired|recompile|refresh|try again/i.test(msg) && !/failed|error|missing/i.test(msg)
             )
             return (
-              <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] ${isSoft ? 'text-amber-500/70' : 'text-red-500/70'}`}>
-                <AlertTriangle className="h-3 w-3" />
-                {msg.slice(0, 50)}
+              <span className={`hidden items-center gap-1.5 font-mono text-[10px] sm:inline-flex ${isSoft ? 'text-amber-500/70' : 'text-red-500/70'}`}>
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                <span className="max-w-[120px] truncate md:max-w-none">{msg.slice(0, 50)}</span>
               </span>
             )
           })()}
@@ -125,28 +125,28 @@ export default function TopBar({
           <button
             onClick={onCompile}
             disabled={loading}
-            className="flex h-8 items-center gap-1.5 px-3 text-[11px] font-medium text-[#111111]/30 transition-all hover:bg-[#111111]/[0.04] hover:text-[#111111]/50 disabled:opacity-30"
+            className="flex h-8 items-center gap-1.5 px-2 text-[11px] font-medium text-[#111111]/30 transition-all hover:bg-[#111111]/[0.04] hover:text-[#111111]/50 disabled:opacity-30 sm:px-3"
             title="Recompile (Space)"
           >
             {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Keyboard className="h-3 w-3" />}
-            Compile
+            <span className="hidden sm:inline">Compile</span>
           </button>
 
           <button
             onClick={onToggleEditor}
-            className={`flex h-8 items-center gap-1.5 px-3 text-[11px] font-medium transition-all ${
+            className={`flex h-8 items-center gap-1.5 px-2 text-[11px] font-medium transition-all sm:px-3 ${
               showEditor
                 ? 'bg-[#111111]/[0.08] text-[#111111]/60'
                 : 'text-[#111111]/30 hover:bg-[#111111]/[0.04] hover:text-[#111111]/50'
             }`}
           >
             <FileText className="h-3 w-3" />
-            {showEditor ? 'Preview' : 'Edit'}
+            <span className="hidden sm:inline">{showEditor ? 'Preview' : 'Edit'}</span>
           </button>
 
           <button
             onClick={onToggleSystems}
-            className={`flex h-8 items-center gap-1.5 px-3 text-[11px] font-medium transition-all ${
+            className={`hidden h-8 items-center gap-1.5 px-3 text-[11px] font-medium transition-all sm:flex ${
               showSystems
                 ? 'bg-[#FF3333]/10 text-[#FF3333] ring-1 ring-[#FF3333]/30'
                 : 'text-[#111111]/30 hover:bg-[#111111]/[0.04] hover:text-[#111111]/50'
@@ -159,10 +159,10 @@ export default function TopBar({
           <button
             onClick={onPublish}
             disabled={status !== 'success'}
-            className="group inline-flex h-8 items-center gap-2 bg-[#FF3333] px-5 text-[12px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-30"
+            className="group inline-flex h-8 items-center gap-1.5 bg-[#FF3333] px-3 text-[11px] font-semibold text-white transition-all hover:bg-[#E52222] disabled:opacity-30 sm:gap-2 sm:px-5 sm:text-[12px]"
           >
             <Download className="h-3.5 w-3.5" />
-            Export
+            <span className="hidden sm:inline">Export</span>
           </button>
         </div>
       </div>

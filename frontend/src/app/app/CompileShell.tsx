@@ -142,17 +142,18 @@ function EditorOverlay({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-30 flex"
     >
-      <div className="flex w-1/2 flex-col border-r border-[#111111]/[0.08] bg-white">
+      <div className="flex w-full flex-col border-r border-[#111111]/[0.08] bg-white sm:w-1/2">
         {editorMode === 'markdown' ? (
           <>
-            <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-5 py-2.5">
+            <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-4 py-2.5 sm:px-5">
               <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/30">Markdown</span>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <button
                   onClick={() => setEditorMode('richtext')}
                   className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/30 hover:text-[#111111]/50"
                 >
-                  Switch to Rich Text
+                  <span className="hidden sm:inline">Switch to Rich Text</span>
+                  <span className="sm:hidden">Rich Text</span>
                 </button>
                 <button onClick={onClose} className="font-mono text-[11px] text-[#111111]/30 hover:text-[#111111]/50">
                   Close
@@ -163,11 +164,11 @@ function EditorOverlay({
               ref={textareaRef}
               value={manuscript}
               onChange={(e) => onChange(e.target.value)}
-              className="flex-1 resize-none bg-transparent p-6 font-mono text-sm leading-[1.8] text-[#111111]/70 caret-[#FF3333] focus:outline-none"
+              className="flex-1 resize-none bg-transparent p-4 font-mono text-sm leading-[1.8] text-[#111111]/70 caret-[#FF3333] focus:outline-none sm:p-6"
               placeholder="# Chapter One&#10;&#10;Write here..."
               autoFocus
             />
-            <div className="border-t border-[#111111]/[0.06] px-5 py-3">
+            <div className="border-t border-[#111111]/[0.06] px-4 py-3 sm:px-5">
               <ImageUpload
                 assets={assets}
                 onAssetsChange={onAssetsChange}
@@ -183,7 +184,7 @@ function EditorOverlay({
           />
         )}
       </div>
-      <div className="w-1/2" onClick={onClose} />
+      <div className="hidden w-1/2 sm:block" onClick={onClose} />
     </motion.div>
   )
 }
@@ -594,7 +595,7 @@ export default function CompileShell() {
             </div>
 
             {/* Keyboard shortcut hint */}
-            <div className="fixed bottom-8 right-6 z-30">
+            <div className="fixed bottom-20 right-4 z-30 sm:bottom-8 sm:right-6">
               <button
                 onClick={() => setShowShortcuts(prev => !prev)}
                 className="flex h-7 w-7 items-center justify-center rounded-full bg-[#111111]/[0.06] text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.10] hover:text-[#111111]/50"

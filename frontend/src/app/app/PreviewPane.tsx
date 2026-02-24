@@ -59,7 +59,7 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3, duration: 0.3 }}
-      className="absolute top-3 right-3 z-20 flex items-center gap-2"
+      className="absolute top-2 right-2 z-20 flex flex-wrap items-center gap-1 sm:top-3 sm:right-3 sm:gap-2"
     >
       <div className={`flex items-center gap-1.5 border px-2 py-1 ${gradeColor}`}>
         <span className="font-mono text-[9px] uppercase tracking-wider opacity-60">Typography</span>
@@ -109,8 +109,8 @@ function ErrorPanel({ errors, onRetry }: { errors: CompileError[]; onRetry?: () 
   })()
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3] p-8">
-      <div className="max-w-[420px]">
+    <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3] p-4 sm:p-8">
+      <div className="w-full max-w-[420px]">
         <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-full border ${isExpired ? 'border-amber-500/20 bg-amber-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
           {isExpired
             ? <RotateCcw className="h-4 w-4 text-amber-500/60" />
@@ -120,7 +120,7 @@ function ErrorPanel({ errors, onRetry }: { errors: CompileError[]; onRetry?: () 
           {isExpired ? 'Preview Expired' : 'Typesetting Error'}
         </p>
         {visibleErrors.map((e, i) => (
-          <p key={i} className="mb-1.5 font-mono text-[11px] leading-relaxed text-[#111111]/80">{translateError(e.message)}</p>
+          <p key={i} className="mb-1.5 break-words font-mono text-[11px] leading-relaxed text-[#111111]/80">{translateError(e.message)}</p>
         ))}
         {!isExpired && firstFix && (
           <div className="mt-3 flex items-start gap-2 border-l-2 border-blue-500/30 bg-blue-500/[0.04] px-3 py-2">
@@ -179,8 +179,8 @@ export default function PreviewPane({
   onRetry?: () => void
 }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center pb-24 pt-16">
-      <div className="relative flex h-full max-h-[680px] w-full max-w-[520px] items-center justify-center">
+    <div className="absolute inset-0 flex items-center justify-center px-4 pb-24 pt-16 sm:px-0">
+      <div className="relative flex h-full max-h-[680px] w-full max-w-[calc(100vw-2rem)] items-center justify-center sm:max-w-[520px]">
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.92 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
