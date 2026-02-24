@@ -239,7 +239,6 @@ export function useCompileQueue({
             pdfBlobRef.current = null
             const msgs: CompileError[] = []
             if (statusData.message) msgs.push({ message: statusData.message })
-            if (statusData.error && statusData.error !== 'worker_error') msgs.push({ message: statusData.error })
             if (!msgs.length) msgs.push({ message: 'Compilation failed.' })
             if (statusData.detail) msgs.push({ message: `__detail__${statusData.detail}` })
             setErrors(msgs)
