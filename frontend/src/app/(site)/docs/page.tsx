@@ -254,6 +254,89 @@ export default function DocsPage() {
           <DocsMobileNav />
 
           {/* ══════════════════════════════════════════════════════════
+              00 — PLATFORM OVERVIEW
+              ══════════════════════════════════════════════════════════ */}
+          <section id="overview" className="scroll-mt-16 mb-10">
+            <SectionLabel number="00">Overview</SectionLabel>
+            <h1 className="docs-section-title" style={{ fontSize: '2.25rem', borderBottomWidth: '2px' }}>
+              Navigating PagePerfect
+            </h1>
+            <p className="font-body text-lg leading-8 text-[#3a3a3a] mb-8 max-w-xl">
+              PagePerfect converts Markdown manuscripts into professionally typeset PDFs using LuaLaTeX.
+              This section orients you to the platform&apos;s key areas before you dive into the technical reference below.
+            </p>
+          </section>
+
+          {/* Site Areas */}
+          <section id="site-areas" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Where Things Are</h3>
+            <div className="grid gap-4 sm:grid-cols-2 mb-6">
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">Editor &mdash; /app</p>
+                <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
+                  Full-screen workspace for writing, formatting, and exporting. No navigation bar &mdash; purpose-built for focused work.
+                  Three stages: <strong>Portal</strong> (ingest your manuscript), <strong>Design</strong> (pick template, page size, margins, preview live), <strong>Launch</strong> (pre-flight checks, export).
+                </p>
+              </div>
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">Docs &mdash; /docs</p>
+                <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
+                  You are here. Complete reference for all 15 templates, page sizes, margin presets, KDP publishing workflow, troubleshooting, and API endpoints.
+                </p>
+              </div>
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">Journal &mdash; /journal</p>
+                <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
+                  Long-form articles on typography, grid systems, and book production. Background reading &mdash; not required to use the editor.
+                </p>
+              </div>
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">Pricing &mdash; /pricing</p>
+                <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
+                  Three tiers: <strong>Drafter</strong> (free, watermarked), <strong>Publisher</strong> ($19.99/manuscript, no watermark), <strong>Studio</strong> ($199 lifetime). Full comparison and FAQ.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Core Workflow */}
+          <section id="workflow" className="scroll-mt-16 mb-10">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">The Core Workflow</h3>
+            <div className="docs-template-card mb-6">
+              <ol className="space-y-2.5 font-body text-sm text-[#3a3a3a] leading-relaxed list-decimal pl-5">
+                <li><strong>Paste or upload</strong> your manuscript in the Portal stage. Accepts <code>.md</code>, <code>.txt</code>, <code>.docx</code>, or pasted text. Word artifacts are cleaned automatically.</li>
+                <li><strong>Pick a template and page size.</strong> Genre auto-detection suggests a starting template. Adjust margins, heading style, and compile mode in the Design stage &mdash; changes recompile instantly.</li>
+                <li><strong>Check quality and export.</strong> The typography grade (A&ndash;D) appears in the dock and preview. Open the Launch overlay to run pre-flight validation against KDP, IngramSpark, or Lulu, then download your PDF.</li>
+              </ol>
+            </div>
+          </section>
+
+          {/* Data & Persistence */}
+          <section id="persistence" className="scroll-mt-16 mb-20">
+            <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Data &amp; Persistence</h3>
+            <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
+              Manuscripts are <strong>session-scoped</strong> &mdash; they exist for crash recovery, not long-term storage.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">Browser Backup</p>
+                <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
+                  All users get automatic saves to IndexedDB every 3 seconds. Survives accidental refreshes and browser crashes.
+                </p>
+              </div>
+              <div className="docs-template-card">
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555] mb-1">Signed-In Users</p>
+                <p className="font-body text-sm text-[#3a3a3a] leading-relaxed">
+                  Additionally saved to the server during your session. All server-side manuscripts are deleted on sign-out. Unsaved sessions expire after 24 hours.
+                </p>
+              </div>
+            </div>
+            <Admonition type="info" label="Keep a Local Copy">
+              PagePerfect is a typesetting tool, not a document store. Always keep your manuscript source file (.md or .docx) on your own machine.
+            </Admonition>
+          </section>
+
+          {/* ══════════════════════════════════════════════════════════
               01 — QUICK START
               ══════════════════════════════════════════════════════════ */}
           <section id="quickstart" className="scroll-mt-16 mb-20">

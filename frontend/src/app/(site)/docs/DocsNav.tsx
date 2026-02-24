@@ -9,6 +9,10 @@ export type NavSection = {
 }
 
 export const SECTIONS: NavSection[] = [
+  { group: 'Overview', id: 'overview', label: 'Navigating PagePerfect' },
+  { id: 'site-areas', label: 'Where Things Are' },
+  { id: 'workflow', label: 'Core Workflow' },
+  { id: 'persistence', label: 'Data & Persistence' },
   { group: 'Getting Started', id: 'quickstart', label: 'Quick Start' },
   { id: 'requirements', label: 'Requirements Check' },
   { group: 'Editor', id: 'editor', label: 'Controlling the Editor' },
