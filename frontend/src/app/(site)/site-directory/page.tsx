@@ -82,7 +82,7 @@ export default function SitemapPage() {
           >
             Sitemap
           </h1>
-          <p className="mt-4 max-w-xl font-body text-base leading-relaxed text-[#444444]">
+          <p className="mt-4 max-w-xl font-body text-base leading-relaxed text-[#555555]">
             Complete index of every page, tool, and resource available on PagePerfect.
           </p>
         </div>
@@ -110,13 +110,13 @@ export default function SitemapPage() {
                     <li key={link.href} className="border-t border-[#e5e5e0] first:border-t-0">
                       <Link
                         href={link.href}
-                        className="group flex items-baseline justify-between gap-4 py-3 transition-colors duration-75"
+                        className="group block py-3 transition-colors duration-75"
                       >
                         <span className="font-display text-[0.9375rem] font-semibold text-[#111111] transition-colors duration-75 group-hover:text-[#FF3333]">
                           {link.label}
                         </span>
                         {link.description && (
-                          <span className="hidden text-right font-body text-[0.8125rem] text-[#555555] sm:block">
+                          <span className="mt-0.5 block font-body text-[0.8125rem] text-[#555555]">
                             {link.description}
                           </span>
                         )}

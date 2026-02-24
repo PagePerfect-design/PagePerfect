@@ -143,7 +143,7 @@ export default function PhilosophyPage() {
                 <h3 className="mt-2 font-display text-lg font-bold tracking-tight text-[#111111]">
                   {principle.title}
                 </h3>
-                <p className="mt-3 font-body text-[0.9375rem] leading-[1.7] text-[#444444]">
+                <p className="mt-3 font-body text-[0.9375rem] leading-[1.7] text-[#555555]">
                   {principle.body}
                 </p>
               </div>
@@ -227,7 +227,7 @@ export default function PhilosophyPage() {
           >
             Start Formatting
           </h2>
-          <p className="mx-auto mt-4 max-w-lg font-body text-base text-[#444444]">
+          <p className="mx-auto mt-4 max-w-lg font-body text-base text-[#555555]">
             Every principle on this page is built into PagePerfect — baseline
             grids, golden-ratio scales, and 15 templates engineered for
             readability and authority.
