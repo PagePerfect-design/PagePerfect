@@ -114,7 +114,7 @@ function EditorOverlay({
   assets: Asset[]
   onAssetsChange: (assets: Asset[]) => void
 }) {
-  const [editorMode, setEditorMode] = useState<'markdown' | 'richtext'>('markdown')
+  const [editorMode, setEditorMode] = useState<'markdown' | 'richtext'>('richtext')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const handleInsertMarkdown = useCallback((text: string) => {
@@ -137,12 +137,13 @@ function EditorOverlay({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-30 flex"
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.25 }}
+      className="fixed inset-0 z-30 flex pointer-events-none"
     >
-      <div className="flex w-full flex-col border-r border-[#111111]/[0.08] bg-white sm:w-1/2">
+      <div className="pointer-events-auto flex w-full flex-col border-r border-[#111111]/[0.08] bg-white sm:w-1/2">
         {editorMode === 'markdown' ? (
           <>
             <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-4 py-2.5 sm:px-5">
@@ -184,7 +185,7 @@ function EditorOverlay({
           />
         )}
       </div>
-      <div className="hidden w-1/2 sm:block" onClick={onClose} />
+      {/* Right half is transparent — preview shows through */}
     </motion.div>
   )
 }
@@ -205,7 +206,7 @@ export default function CompileShell() {
   const [safeMode, setSafeMode] = useState<boolean>(true)
   const [compileMode, setCompileMode] = useState<CompileMode>('fast')
   const [hudTab, setHudTab] = useState<HudTab>(null)
-  const [showEditor, setShowEditor] = useState(false)
+  const [showEditor, setShowEditor] = useState(true)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showSystems, setShowSystems] = useState(false)
   const [customFont, setCustomFont] = useState<CustomFont>(null)
@@ -535,13 +536,14 @@ export default function CompileShell() {
           >
             {/* Layer 1: The Levitating Book */}
             <PreviewPane
-              pdfUrl={showEditor ? null : pdfUrl}
+              pdfUrl={pdfUrl}
               loading={loading}
               status={status}
               errors={errors}
               isWatermarked={!hasTier(tier, 'publisher') && !!pdfUrl}
               quality={quality}
               onRetry={() => compile(false)}
+              sideBySide={showEditor}
             />
 
             {/* Layer 2: Top Bar */}

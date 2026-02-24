@@ -169,6 +169,7 @@ export default function PreviewPane({
   isWatermarked,
   quality,
   onRetry,
+  sideBySide = false,
 }: {
   pdfUrl: string | null
   loading: boolean
@@ -177,9 +178,10 @@ export default function PreviewPane({
   isWatermarked: boolean
   quality?: CompileQuality
   onRetry?: () => void
+  sideBySide?: boolean
 }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center px-4 pb-24 pt-16 sm:px-0">
+    <div className={`absolute inset-0 flex items-center justify-center px-4 pb-24 pt-16 sm:px-0 ${sideBySide ? 'sm:left-1/2' : ''}`}>
       <div className="relative flex h-full max-h-[680px] w-full max-w-[calc(100vw-2rem)] items-center justify-center sm:max-w-[520px]">
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.92 }}
