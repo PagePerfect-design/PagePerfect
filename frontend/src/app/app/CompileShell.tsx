@@ -457,7 +457,7 @@ export default function CompileShell() {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050505] px-6">
         <div className="max-w-md text-center">
-          <CompositorMark size={32} className="mx-auto mb-8 text-white/30" />
+          <CompositorMark size={32} className="mx-auto mb-8 invert opacity-30" />
           <h1 className="font-display text-2xl font-bold text-white/90">
             Desktop Required
           </h1>
