@@ -643,6 +643,8 @@ const ctx = {
   deleteJobResult,
   storeJobSecret,
   getJobSecret,
+  persistPdf,
+  RESULTS_DIR,
   get activeSyncCompiles() { return activeSyncCompiles; },
   set activeSyncCompiles(v) { activeSyncCompiles = v; },
   MAX_SYNC_CONCURRENT,

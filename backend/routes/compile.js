@@ -304,14 +304,37 @@ module.exports = function compileRoutes(ctx) {
         const job = await ctx.compileQueue.getJob(id);
         if (job) {
           const state = await job.getState();
-          // BullMQ marks the job 'completed' in Redis before the
-          // compileWorker.on('completed') handler has finished persisting
-          // the PDF and calling storeJobResult(). If we return 'completed'
-          // here, the client immediately fetches /result/:id — but the
-          // result isn't stored yet → 404. Remap to 'active' so the
-          // client keeps polling until getJobResult() finds the cached result.
-          const clientState = state === 'completed' ? 'active' : state;
-          return res.json({ jobId: id, status: clientState, progress: job.progress || 0 });
+
+          // Race condition: BullMQ marks the job 'completed' in Redis before
+          // the compileWorker.on('completed') handler stores the result.
+          // Previously we remapped 'completed' → 'active' which caused infinite
+          // polling if the handler never fired. Instead, read the return value
+          // directly from BullMQ and store it ourselves.
+          if (state === 'completed' || state === 'failed') {
+            const rv = job.returnvalue;
+            if (rv && typeof rv === 'object') {
+              // Persist PDF if the on('completed') handler hasn't done it yet
+              if (rv.success && rv.pdfPath && !rv.pdfPath.startsWith(ctx.RESULTS_DIR)) {
+                try {
+                  const persistedPath = await ctx.persistPdf(id, rv.pdfPath);
+                  if (persistedPath) {
+                    if (rv.tmpBase) fsp.rm(rv.tmpBase, { recursive: true, force: true }).catch(() => {});
+                    rv.pdfPath = persistedPath;
+                    delete rv.tmpBase;
+                  }
+                } catch { /* persist failed — pdfPath still points to temp dir */ }
+              }
+              ctx.storeJobResult(id, rv);
+              if (rv.success) {
+                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, resultUrl: `/api/compile/result/${id}` });
+              }
+              return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail });
+            }
+            // BullMQ says done but no return value yet — brief poll continuation
+            return res.json({ jobId: id, status: 'active', progress: job.progress || 0 });
+          }
+
+          return res.json({ jobId: id, status: state, progress: job.progress || 0 });
         }
       }
       catch (err) { log.error({ module: 'status', err: err.message }, 'Error fetching job'); }
