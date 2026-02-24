@@ -412,6 +412,7 @@ export default function FloatingHUD({
                     <><Upload className="h-3 w-3" />Upload .ttf / .otf</>
                   )}
                   <input
+                    id="font-upload"
                     type="file"
                     accept=".ttf,.otf"
                     className="hidden"

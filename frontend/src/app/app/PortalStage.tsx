@@ -397,6 +397,7 @@ export default function PortalStage({
           <div className="border-t border-[#111111]/[0.06] px-6 py-5">
             <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">Working title</label>
             <input
+              id="working-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
