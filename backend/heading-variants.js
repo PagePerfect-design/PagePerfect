@@ -134,6 +134,55 @@ const ARTICLE_BOLD = `
 `;
 
 // ================================================================
+// Thesis-class variants (article with mandatory section numbering)
+// ================================================================
+
+const THESIS_MODERN = `
+% ── Heading Variant: Modern (Thesis — numbered sections preserved) ──
+% Clean, restrained, letterspaced — but keeps \\thesection numbering
+% required by university submission standards.
+\\definecolor{hv@grey}{gray}{0.55}
+
+\\titleformat{\\section}
+  {\\normalfont\\sffamily\\fontsize{16pt}{20pt}\\selectfont\\addfontfeature{LetterSpace=6}}
+  {\\thesection\\quad}{0em}{}
+
+\\titleformat{\\subsection}
+  {\\normalfont\\sffamily\\fontsize{10pt}{13pt}\\selectfont\\addfontfeature{LetterSpace=10}\\color{hv@grey}\\MakeUppercase}
+  {\\thesubsection\\quad}{0em}{}
+
+\\titleformat{\\subsubsection}
+  {\\normalfont\\sffamily\\normalsize\\itshape\\color{hv@grey}}
+  {\\thesubsubsection\\quad}{0em}{}
+
+\\titlespacing*{\\section}{0pt}{22pt}{10pt}
+\\titlespacing*{\\subsection}{0pt}{16pt}{6pt}
+\\titlespacing*{\\subsubsection}{0pt}{10pt}{4pt}
+`;
+
+const THESIS_BOLD = `
+% ── Heading Variant: Bold (Thesis — numbered sections preserved) ──
+% Heavy rules, large type — but keeps \\thesection numbering
+% required by university submission standards.
+
+\\titleformat{\\section}[block]
+  {\\vspace{6pt}{\\color{black}\\rule{\\textwidth}{3pt}}\\vspace{8pt}\\normalfont\\bfseries\\fontsize{26pt}{30pt}\\selectfont}
+  {\\thesection\\quad}{0em}{}
+
+\\titleformat{\\subsection}[block]
+  {\\vspace{3pt}{\\color{black}\\rule{\\textwidth}{0.5pt}}\\vspace{6pt}\\normalfont\\bfseries\\fontsize{14pt}{17pt}\\selectfont\\MakeUppercase}
+  {\\thesubsection\\quad}{0em}{}
+
+\\titleformat{\\subsubsection}
+  {\\normalfont\\bfseries\\normalsize}
+  {\\thesubsubsection\\quad}{0em}{}
+
+\\titlespacing*{\\section}{0pt}{24pt}{10pt}
+\\titlespacing*{\\subsection}{0pt}{18pt}{6pt}
+\\titlespacing*{\\subsubsection}{0pt}{10pt}{4pt}
+`;
+
+// ================================================================
 // Variant Registry
 // ================================================================
 
@@ -174,9 +223,11 @@ function getVariantPreamble(templateKey, variant) {
   const cls = TEMPLATE_CLASS[templateKey] || 'article';
 
   if (variant === 'modern') {
+    if (templateKey === 'thesis') return THESIS_MODERN;
     return cls === 'book' ? BOOK_MODERN : ARTICLE_MODERN;
   }
   if (variant === 'bold') {
+    if (templateKey === 'thesis') return THESIS_BOLD;
     return cls === 'book' ? BOOK_BOLD : ARTICLE_BOLD;
   }
 

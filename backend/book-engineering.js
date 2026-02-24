@@ -27,6 +27,18 @@ const ENGINEERING_POLICIES = {
     microtype: true,           // Enable optical margin alignment
     csquotes: true,            // Enable context-sensitive quotes
   },
+  thesis: {
+    widowPenalty: 10000,       // Prevent widows absolutely (university requirement)
+    clubPenalty: 10000,        // Prevent orphans absolutely
+    hyphenPenalty: 50,         // Allow moderate hyphenation
+    tolerance: 250,            // Slightly relaxed for double-spacing
+    emergencyStretch: '3em',   // Emergency stretch before overfull
+    floatPlacement: 'htbp',   // Standard float placement
+    footnoteRule: '2in',       // 2-inch footnote rule
+    raggedBottom: false,       // Flush bottom for submissions
+    microtype: true,           // Enable optical margin alignment
+    csquotes: true,            // Enable context-sensitive quotes
+  },
   trade: {
     widowPenalty: 8000,
     clubPenalty: 8000,
