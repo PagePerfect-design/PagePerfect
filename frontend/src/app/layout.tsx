@@ -20,7 +20,6 @@ export const metadata: Metadata = {
     shortcut: '/favicon.svg',
     apple: '/apple-touch-icon.png',
   },
-  manifest: '/site.webmanifest',
   themeColor: '#FDFCF8',
 }
 
