@@ -54,6 +54,32 @@ type Details = {
   fonts?: FontCheck
 }
 
+/* ---------- tiny helpers ---------- */
+
+function Dot({ color }: { color: 'green' | 'red' | 'muted' }) {
+  const hex = color === 'green' ? '#16a34a' : color === 'red' ? '#dc2626' : '#111111'
+  const opacity = color === 'muted' ? 0.25 : 1
+  return (
+    <span aria-hidden style={{ color: hex, opacity }} className="text-[10px] leading-none">
+      &#x25CF;
+    </span>
+  )
+}
+
+function Badge({ ok, yes, no }: { ok: boolean; yes: string; no: string }) {
+  return (
+    <span
+      className={`inline-flex items-center px-3 py-1 font-mono text-[10px] uppercase tracking-[0.1em] ${
+        ok
+          ? 'border border-[#16a34a] text-[#16a34a]'
+          : 'border border-[#dc2626] text-[#dc2626]'
+      }`}
+    >
+      {ok ? yes : no}
+    </span>
+  )
+}
+
 export default function StatusClient({ apiBase }: { apiBase: string }) {
   const [health, setHealth] = useState<Details | null>(null)
   const [readiness, setReadiness] = useState<Readiness | null>(null)
@@ -91,65 +117,77 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
   const ok = health?.ok === true
 
   return (
-    <div className="grid gap-4">
-      {/* Proxy / Env card */}
-      <div className="card p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="text-xl font-bold text-text-primary mb-1">API Connectivity</div>
-            <p className="text-text-secondary">
-              Frontend calls <code className="rounded bg-surface-subtle px-2 py-1 text-accent text-sm font-mono">/api/*</code> and Next.js rewrites proxy to:
+    <div className="space-y-6">
+      {/* ── API Connectivity ── */}
+      <div className="border border-[#111111] bg-white p-5 md:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="font-display text-lg font-bold tracking-tight text-[#111111]">
+              API Connectivity
+            </h2>
+            <p className="mt-1 font-body text-sm text-[#555555]">
+              Frontend calls{' '}
+              <code className="border border-[#e5e5e0] bg-[#f5f5f0] px-1.5 py-0.5 font-mono text-[12px] text-[#111111]">
+                /api/*
+              </code>{' '}
+              proxied to:
             </p>
-            <p className="mt-1"><code className="rounded bg-surface-subtle px-2 py-1 text-accent text-sm font-mono">{apiBase || '(not set)'}</code></p>
+            <p className="mt-1">
+              <code className="border border-[#e5e5e0] bg-[#f5f5f0] px-1.5 py-0.5 font-mono text-[12px] text-[#111111] break-all">
+                {apiBase || '(not set)'}
+              </code>
+            </p>
           </div>
-          <div>
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${ok ? 'bg-success text-surface' : 'bg-danger text-surface'}`}>
-              {ok ? 'Healthy' : 'Unreachable'}
-            </span>
-          </div>
+          <Badge ok={ok} yes="Healthy" no="Unreachable" />
         </div>
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             onClick={() => fetchAll()}
             disabled={loading}
-            className="btn-pill btn-primary disabled:opacity-50"
+            className="min-h-[44px] border border-[#111111] bg-[#111111] px-5 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-colors duration-75 hover:bg-[#333333] disabled:opacity-50"
           >
             {loading ? 'Checking\u2026' : 'Re-check'}
           </button>
-          {ts && <span className="text-sm font-mono text-text-ghost">Last checked: {ts}</span>}
-          {error && <span className="text-sm font-mono text-danger">{error}</span>}
+          {ts && (
+            <span className="font-mono text-[11px] text-[#111111]/40">
+              Last checked: {ts}
+            </span>
+          )}
+          {error && (
+            <span className="font-mono text-[11px] text-[#dc2626]">{error}</span>
+          )}
         </div>
       </div>
 
-      {/* Readiness probe card */}
+      {/* ── Subsystem Readiness ── */}
       {readiness && (
-        <div className="card p-5">
-          <div className="flex items-start justify-between gap-4 mb-3">
-            <div className="text-xl font-bold text-text-primary">Subsystem Readiness</div>
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${readiness.ready ? 'bg-success text-surface' : 'bg-danger text-surface'}`}>
-              {readiness.ready ? 'All Systems Go' : 'Degraded'}
-            </span>
+        <div className="border border-[#111111] bg-white p-5 md:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <h2 className="font-display text-lg font-bold tracking-tight text-[#111111]">
+              Subsystem Readiness
+            </h2>
+            <Badge ok={readiness.ready} yes="All Systems Go" no="Degraded" />
           </div>
-          <ul className="divide-y divide-border">
+          <ul className="mt-4 divide-y divide-[#e5e5e0]">
             {Object.entries(readiness.checks).map(([key, value]) => (
-              <li key={key} className="py-2 flex items-center justify-between gap-4">
+              <li key={key} className="flex min-h-[44px] items-center justify-between gap-4 py-2">
                 <div className="flex items-center gap-3">
-                  <span aria-hidden>
-                    {value === 'ok' ? (
-                      <span className="text-success">&#x25CF;</span>
-                    ) : value === 'not_configured' ? (
-                      <span className="text-text-ghost">&#x25CF;</span>
-                    ) : (
-                      <span className="text-danger">&#x25CF;</span>
-                    )}
-                  </span>
-                  <span className="font-mono text-sm text-text-primary">{key}</span>
+                  <Dot
+                    color={
+                      value === 'ok' ? 'green' : value === 'not_configured' ? 'muted' : 'red'
+                    }
+                  />
+                  <span className="font-mono text-sm text-[#111111]">{key}</span>
                 </div>
-                <span className={`font-mono text-[11px] ${
-                  value === 'ok' ? 'text-success' :
-                  value === 'not_configured' ? 'text-text-ghost' :
-                  'text-danger'
-                }`}>
+                <span
+                  className={`font-mono text-[11px] ${
+                    value === 'ok'
+                      ? 'text-[#16a34a]'
+                      : value === 'not_configured'
+                        ? 'text-[#111111]/30'
+                        : 'text-[#dc2626]'
+                  }`}
+                >
                   {value}
                 </span>
               </li>
@@ -158,133 +196,169 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
         </div>
       )}
 
-      {/* Details card */}
-      <div className="card p-5">
-        <div className="text-xl font-bold text-text-primary mb-3">Server Capabilities</div>
+      {/* ── Server Capabilities ── */}
+      <div className="border border-[#111111] bg-white p-5 md:p-6">
+        <h2 className="font-display text-lg font-bold tracking-tight text-[#111111] mb-4">
+          Server Capabilities
+        </h2>
         {!details?.ok ? (
-          <p className="text-text-secondary">No details endpoint or not available. (Optional.)</p>
+          <p className="font-body text-sm text-[#555555]">
+            No details endpoint or not available.
+          </p>
         ) : (
           <>
-            <div className="grid gap-4 md:grid-cols-3">
+            {/* Three-column list */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
               <div>
-                <div className="font-semibold text-text-primary">Templates</div>
-                <ul className="mt-1 list-disc pl-5 text-text-secondary">
-                  {details.templates?.map(t => <li key={t}>{t}</li>)}
+                <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">
+                  Templates
+                </p>
+                <ul className="space-y-1">
+                  {details.templates?.map(t => (
+                    <li key={t} className="font-mono text-[12px] text-[#333333]">{t}</li>
+                  ))}
                 </ul>
               </div>
               <div>
-                <div className="font-semibold text-text-primary">Page sizes</div>
-                <ul className="mt-1 list-disc pl-5 text-text-secondary">
-                  {details.pageSizes?.map(s => <li key={s}>{s}</li>)}
+                <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">
+                  Page Sizes
+                </p>
+                <ul className="space-y-1">
+                  {details.pageSizes?.map(s => (
+                    <li key={s} className="font-mono text-[12px] text-[#333333]">{s}</li>
+                  ))}
                 </ul>
               </div>
               <div>
-                <div className="font-semibold text-text-primary">Margin presets</div>
-                <ul className="mt-1 list-disc pl-5 text-text-secondary">
-                  {details.marginPresets?.map(m => <li key={m}>{m}</li>)}
+                <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">
+                  Margin Presets
+                </p>
+                <ul className="space-y-1">
+                  {details.marginPresets?.map(m => (
+                    <li key={m} className="font-mono text-[12px] text-[#333333]">{m}</li>
+                  ))}
                 </ul>
               </div>
             </div>
 
-            {/* Font Availability — subsection of Server Capabilities */}
-            <div className="divider my-4" />
-            <div className="flex items-center justify-between gap-4 mb-2">
-              <div className="flex items-center gap-3">
-                <span aria-hidden>
-                  {!details.fonts ? (
-                    <span className="text-text-ghost">&#x25CF;</span>
-                  ) : details.fonts.ok ? (
-                    <span className="text-success">&#x25CF;</span>
-                  ) : (
-                    <span className="text-danger">&#x25CF;</span>
-                  )}
-                </span>
-                <span className="font-semibold text-text-primary">Typesetting Fonts</span>
+            {/* Font Availability */}
+            <div className="mt-6 border-t border-[#e5e5e0] pt-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <Dot
+                    color={
+                      !details.fonts ? 'muted' : details.fonts.ok ? 'green' : 'red'
+                    }
+                  />
+                  <span className="font-display text-[15px] font-semibold text-[#111111]">
+                    Typesetting Fonts
+                  </span>
+                </div>
+                {details.fonts?.probeWorking && (
+                  <span className="font-mono text-[11px] text-[#555555]">
+                    {details.fonts.available}/{details.fonts.total} installed
+                  </span>
+                )}
               </div>
-              {details.fonts?.probeWorking && (
-                <span className="font-mono text-[11px] text-text-tertiary">
-                  {details.fonts.available}/{details.fonts.total} installed
-                </span>
+              <p className="mt-1 ml-5 font-body text-sm text-[#555555]">
+                {details.pdfEngine === 'lualatex' ? 'LuaLaTeX' : 'XeLaTeX'} fonts required by the{' '}
+                {details.templates?.length || 15} design templates.
+              </p>
+
+              {details.fonts && !details.fonts.probeWorking && (
+                <p className="mt-1 ml-5 font-body text-sm text-[#111111]/40">
+                  Font probing unavailable — fc-list not found on server.
+                </p>
+              )}
+
+              {details.fonts?.criticalMissing && details.fonts.criticalMissing.length > 0 && (
+                <ul className="mt-3 ml-5 divide-y divide-[#e5e5e0]">
+                  {details.fonts.criticalMissing.map(f => (
+                    <li key={f} className="flex min-h-[44px] items-center gap-3 py-2">
+                      <Dot color="red" />
+                      <span className="font-mono text-sm text-[#111111]">{f}</span>
+                      <span className="font-mono text-[11px] text-[#dc2626]">
+                        missing — compilation may fail
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {fontAudit && fontAudit.probeWorking && (
+                <div className="mt-3 ml-5">
+                  <button
+                    onClick={() => setFontExpanded(!fontExpanded)}
+                    className="min-h-[44px] font-mono text-[11px] text-[#FF3333] transition-colors duration-75 hover:text-[#E52222]"
+                  >
+                    {fontExpanded ? 'Hide' : 'Show'} full font inventory
+                  </button>
+
+                  {fontExpanded && (
+                    <div className="mt-2 overflow-x-auto">
+                      <ul className="divide-y divide-[#e5e5e0]">
+                        {fontAudit.fonts.map(f => (
+                          <li
+                            key={f.name}
+                            className="flex min-h-[44px] items-center justify-between gap-4 py-2"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <Dot
+                                color={
+                                  f.available === true
+                                    ? 'green'
+                                    : f.available === false
+                                      ? 'red'
+                                      : 'muted'
+                                }
+                              />
+                              <span className="font-mono text-sm text-[#111111] truncate">
+                                {f.name}
+                                {f.critical && (
+                                  <span className="ml-1 text-[#FF3333]">*</span>
+                                )}
+                              </span>
+                              <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">
+                                {f.category}
+                              </span>
+                            </div>
+                            <div className="shrink-0 text-right font-mono text-[11px] text-[#555555]">
+                              {f.available === false && f.bestFallback ? (
+                                <span className="text-[#dc2626]">
+                                  fallback: {f.bestFallback}
+                                </span>
+                              ) : (
+                                f.usedBy[0] || '\u00A0'
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-2 font-mono text-[10px] text-[#111111]/40">
+                        * critical for template compilation
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-            <p className="text-sm text-text-secondary ml-6 mb-2">
-              {details.pdfEngine === 'lualatex' ? 'LuaLaTeX' : 'XeLaTeX'} fonts required by the {details.templates?.length || 15} design templates.
-            </p>
-
-            {details.fonts && !details.fonts.probeWorking && (
-              <p className="text-sm text-text-ghost ml-6">
-                Font probing unavailable — fc-list not found on server.
-              </p>
-            )}
-
-            {details.fonts?.criticalMissing && details.fonts.criticalMissing.length > 0 && (
-              <ul className="divide-y divide-border ml-6 mb-2">
-                {details.fonts.criticalMissing.map(f => (
-                  <li key={f} className="py-1.5 flex items-center gap-3">
-                    <span className="text-danger" aria-hidden>&#x25CF;</span>
-                    <span className="font-mono text-sm text-text-primary">{f}</span>
-                    <span className="font-mono text-[11px] text-danger">missing — compilation may fail</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {fontAudit && fontAudit.probeWorking && (
-              <div className="ml-6">
-                <button
-                  onClick={() => setFontExpanded(!fontExpanded)}
-                  className="text-sm text-accent hover:text-accent-hover transition-colors"
-                >
-                  {fontExpanded ? 'Hide' : 'Show'} full font inventory
-                </button>
-
-                {fontExpanded && (
-                  <ul className="divide-y divide-border mt-2">
-                    {fontAudit.fonts.map(f => (
-                      <li key={f.name} className="py-1.5 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span aria-hidden>
-                            {f.available === true && <span className="text-success">&#x25CF;</span>}
-                            {f.available === false && <span className="text-danger">&#x25CF;</span>}
-                            {f.available === null && <span className="text-text-ghost">&#x25CF;</span>}
-                          </span>
-                          <span className="font-mono text-sm text-text-primary truncate">
-                            {f.name}
-                            {f.critical && <span className="text-warning ml-1">*</span>}
-                          </span>
-                          <span className="label-mono shrink-0">{f.category}</span>
-                        </div>
-                        <div className="text-right font-mono text-[11px] text-text-secondary truncate shrink-0">
-                          {f.available === false && f.bestFallback
-                            ? <span className="text-warning">fallback: {f.bestFallback}</span>
-                            : f.usedBy[0] || '\u00A0'}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {fontExpanded && (
-                  <p className="caption mt-2">* critical for template compilation</p>
-                )}
-              </div>
-            )}
           </>
         )}
       </div>
 
-      {/* Links */}
-      <div className="flex gap-3">
+      {/* ── Actions ── */}
+      <div className="flex flex-wrap gap-3">
         <Link
           href="/app"
-          className="btn-pill btn-primary"
+          className="inline-flex min-h-[44px] items-center border border-[#FF3333] bg-[#FF3333] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-colors duration-75 hover:bg-[#E52222]"
         >
-          Back to Editor
+          Open Editor
         </Link>
         <Link
           href="/docs"
-          className="btn-pill btn-secondary"
+          className="inline-flex min-h-[44px] items-center border border-[#111111] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111] transition-colors duration-75 hover:bg-[#111111] hover:text-white"
         >
-          Docs
+          Documentation
         </Link>
       </div>
     </div>

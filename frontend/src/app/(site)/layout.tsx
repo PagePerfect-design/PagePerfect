@@ -2,6 +2,7 @@ import Link from 'next/link'
 import NavAuth from '@/components/NavAuth'
 import CompositorMark from '@/components/CompositorMark'
 import MobileNav from '@/components/MobileNav'
+import FooterAccordion from '@/components/FooterAccordion'
 import CookieConsent from '@/components/CookieConsent'
 
 function Nav() {
@@ -36,58 +37,59 @@ function Nav() {
 
 function Footer() {
   return (
-    <footer className="border-t-2 border-[#111111] bg-[#FDFCF8] py-16">
+    <footer className="border-t-2 border-[#111111] bg-[#FDFCF8] py-10 md:py-16">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-[1fr_auto_auto_auto] md:gap-16">
+        {/* Desktop: 4-column grid. Mobile: brand + accordions stacked */}
+        <div className="md:grid md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-12">
           {/* Brand */}
-          <div>
+          <div className="mb-8 md:mb-0">
             <div className="flex items-center gap-2.5">
               <CompositorMark size={26} />
               <span className="font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">PagePerfect</span>
             </div>
-            <p className="mt-4 max-w-xs font-body text-sm leading-relaxed text-[#111111]">
+            <p className="mt-3 max-w-xs font-body text-sm leading-relaxed text-[#555555]">
               Professional typesetting in your browser. Built on LuaLaTeX. Inspired by M&uuml;ller-Brockmann.
             </p>
-          </div>
-
-          {/* Links */}
-          <div>
-            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">Product</p>
-            <div className="flex flex-col gap-0 md:gap-2.5">
-              <Link href="/app" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Editor</Link>
-              <Link href="/pricing" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Pricing</Link>
-              <Link href="/journal" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Journal</Link>
-              <Link href="/docs" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Documentation</Link>
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">Legal</p>
-            <div className="flex flex-col gap-0 md:gap-2.5">
-              <Link href="/privacy" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Data &amp; Privacy</Link>
-              <Link href="/terms" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Operating Agreement</Link>
-              <Link href="/cookies" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Tracking &amp; Telemetry</Link>
-              <Link href="/philosophy" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Philosophy</Link>
-              <Link href="/status" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Status</Link>
-              <Link href="/site-directory" className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0">Sitemap</Link>
-            </div>
-          </div>
-
-          {/* Colophon */}
-          <div>
-            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]">Colophon</p>
-            <div className="space-y-1.5 font-mono text-[10px] text-[#111111]/60">
-              <p>Inter Tight / Source Serif 4</p>
-              <p>IBM Plex Mono</p>
+            {/* Colophon — desktop only, tucked under brand */}
+            <div className="mt-6 hidden space-y-1 font-mono text-[10px] text-[#111111]/40 md:block">
+              <p>Inter Tight / Source Serif 4 / IBM Plex Mono</p>
               <p>LuaLaTeX + Pandoc</p>
               <p>EST. 2024</p>
             </div>
           </div>
+
+          {/* Link columns — accordion on mobile, static on desktop */}
+          <FooterAccordion
+            title="Product"
+            links={[
+              { href: '/app', label: 'Editor' },
+              { href: '/pricing', label: 'Pricing' },
+              { href: '/journal', label: 'Journal' },
+              { href: '/docs', label: 'Documentation' },
+            ]}
+          />
+          <FooterAccordion
+            title="Legal"
+            links={[
+              { href: '/privacy', label: 'Data & Privacy' },
+              { href: '/terms', label: 'Operating Agreement' },
+              { href: '/cookies', label: 'Tracking & Telemetry' },
+              { href: '/philosophy', label: 'Philosophy' },
+            ]}
+          />
+          <FooterAccordion
+            title="Resources"
+            links={[
+              { href: '/status', label: 'System Status' },
+              { href: '/site-directory', label: 'Sitemap' },
+            ]}
+          />
         </div>
 
-        <div className="mt-12 border-t border-[#111111] pt-6">
+        {/* Copyright */}
+        <div className="mt-10 border-t border-[#111111] pt-6">
           <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/50">
-            &copy; {new Date().getFullYear()} PagePerfect — a subsidiary of eazyaccess ltd. Typography is the foundation of graphic design.
+            &copy; {new Date().getFullYear()} PagePerfect — a subsidiary of eazyaccess ltd.
           </p>
         </div>
       </div>
