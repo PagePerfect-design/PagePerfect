@@ -150,6 +150,7 @@ export default function PortalStage({
           </motion.div>
 
           <input
+            id="manuscript-upload"
             ref={fileInputRef}
             type="file"
             accept=".md,.txt,.markdown,.docx,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -167,6 +168,7 @@ export default function PortalStage({
                 className="mt-8 w-full"
               >
                 <textarea
+                  id="manuscript-paste"
                   ref={pasteAreaRef}
                   value={pasteText}
                   onChange={(e) => setPasteText(e.target.value)}

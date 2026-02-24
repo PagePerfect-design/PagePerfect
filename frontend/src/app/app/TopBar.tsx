@@ -66,6 +66,7 @@ export default function TopBar({
             <ArrowLeft className="h-3.5 w-3.5" />
           </button>
           <input
+            id="manuscript-title"
             type="text"
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
