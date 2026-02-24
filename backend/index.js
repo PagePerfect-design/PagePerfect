@@ -591,7 +591,7 @@ app.use(cors({
     ? (origin, callback) => callback(null, isAllowedOrigin(origin))
     : true,
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-PP-Result-Secret'],
   exposedHeaders: ['X-PP-Watermarked', 'X-PP-Credits-Remaining', 'X-PP-Filename', 'X-PP-Format'],
   credentials: true,
   optionsSuccessStatus: 200,

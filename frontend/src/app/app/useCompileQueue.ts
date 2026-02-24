@@ -201,9 +201,9 @@ export function useCompileQueue({
       }
 
       // Phase 2: Async Polling (202 Accepted)
-      const { jobId } = await resp.json()
+      const { jobId, resultSecret } = await resp.json()
       // ╔═ H2: 202 body parsed ═╗
-      debugLog('H2', '202 body parsed', { jobId, hasJobId: typeof jobId === 'string' && jobId.length > 0 })
+      debugLog('H2', '202 body parsed', { jobId, hasJobId: typeof jobId === 'string' && jobId.length > 0, hasSecret: !!resultSecret })
       setStatus('queued')
 
       const delays = [500, 1000, 2000, 3000, 5000]
@@ -297,8 +297,10 @@ export function useCompileQueue({
             setStatus('compiling')
 
             // Phase 3: Fetch final PDF
+            const resultHeaders = { ...fetchHeaders }
+            if (resultSecret) resultHeaders['x-pp-result-secret'] = resultSecret
             const pdfResp = await fetch(`/api/compile/result/${jobId}`, {
-              headers: fetchHeaders,
+              headers: resultHeaders,
               signal: controller.signal,
             })
             if (gen !== compileGenRef.current) return
