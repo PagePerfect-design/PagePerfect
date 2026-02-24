@@ -43,8 +43,6 @@ const {
   sanitizeStderr,
   stripCitations,
   styleWarnings,
-  parseMissingCitations,
-  parseMissingPackages,
   hasTier,
   POCKETBASE_URL,
   isPocketBaseConfigured,
@@ -494,10 +492,13 @@ async function processCompileJob(job, templateRegistry) {
   if (!result.ok) {
     try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
     const stderr = result.stderr || '';
-    const msgs = buildErrorMessages(stderr, safeMode);
+    const { errors: structuredErrors, fallbackMessage } = errorTranslator.translateCompileFailure(
+      stderr, { safeMode, errorCode: result.error }
+    );
     return {
       success: false, error: result.error || 'compile_failed',
-      message: msgs.join(' '), warnings,
+      message: fallbackMessage, warnings,
+      errors: structuredErrors,
       detail: sanitizeStderr(stderr.split('\n').slice(-15).join('\n')),
     };
   }
@@ -574,22 +575,7 @@ async function processCompileJob(job, templateRegistry) {
   };
 }
 
-function buildErrorMessages(stderr, safeMode) {
-  const msgs = [];
-  const fontErr = stderr.match(/The font "([^"]+)" cannot be found/i) || stderr.match(/font "([^"]+)" not found/i);
-  if (fontErr) msgs.push(`Font "${fontErr[1]}" not found.`);
-  const missCit = safeMode ? [] : parseMissingCitations(stderr);
-  if (missCit.length) msgs.push(`Undefined citations: ${missCit.join(', ')}.`);
-  const missPkg = parseMissingPackages(stderr);
-  if (missPkg.length) msgs.push(`Missing LaTeX packages: ${missPkg.join(', ')}.`);
-  const undef = stderr.match(/Undefined control sequence[\s\S]*?l\.\d+\s+(.*)/);
-  const latexErr = stderr.match(/^!\s+(.+?)\.?\s*$/m);
-  if (undef) msgs.push(`LaTeX error: Undefined control sequence near "${undef[1].trim().slice(0, 80)}".`);
-  else if (latexErr && !fontErr && !missPkg.length) msgs.push(`LaTeX error: ${latexErr[1].slice(0, 120)}.`);
-  if (msgs.length === 0) msgs.push('Typesetting failed. Please review your Markdown.');
-  if (safeMode) msgs.push('Safe mode was enabled — citations were not processed.');
-  return msgs;
-}
+// buildErrorMessages() removed — now handled by errorTranslator.translateCompileFailure()
 
 function compileEpub(tmpBase, mdPath, safeTitle, safeMode) {
   const epubPath = path.join(tmpBase, 'output.epub');

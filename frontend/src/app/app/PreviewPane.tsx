@@ -89,9 +89,24 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
    ═══════════════════════════════════════════════════════════════════ */
 
 function ErrorPanel({ errors, onRetry }: { errors: CompileError[]; onRetry?: () => void }) {
-  const isExpired = errors.some(e =>
-    /expired|not found|recompile|try again/i.test(e.message) && !/failed|error|missing/i.test(e.message)
+  // Prefer structured isSoft flag; fall back to regex detection for backward compat
+  const isExpired = errors.some(e => e.isSoft) || (
+    !errors.some(e => e.isSoft === false) &&
+    errors.some(e =>
+      /expired|not found|recompile|try again/i.test(e.message) && !/failed|error|missing/i.test(e.message)
+    )
   )
+
+  // Find the first actionable fix — prefer structured fix from backend, fall back to suggestFix()
+  const visibleErrors = errors.filter(e => !e.message.startsWith('__detail__'))
+  const firstFix = (() => {
+    // Check structured fix fields first
+    const structured = visibleErrors.find(e => e.fix)
+    if (structured?.fix) return structured.fix
+    // Fall back to pattern-based suggestions
+    const legacy = visibleErrors.find(e => suggestFix(e.message))
+    return legacy ? suggestFix(legacy.message) : null
+  })()
 
   return (
     <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3] p-8">
@@ -104,20 +119,16 @@ function ErrorPanel({ errors, onRetry }: { errors: CompileError[]; onRetry?: () 
         <p className={`mb-3 font-mono text-[11px] font-medium uppercase tracking-wider ${isExpired ? 'text-amber-600/70' : 'text-red-600/70'}`}>
           {isExpired ? 'Preview Expired' : 'Typesetting Error'}
         </p>
-        {errors.filter(e => !e.message.startsWith('__detail__')).map((e, i) => (
+        {visibleErrors.map((e, i) => (
           <p key={i} className="mb-1.5 font-mono text-[11px] leading-relaxed text-[#111111]/80">{translateError(e.message)}</p>
         ))}
-        {!isExpired && (() => {
-          const fix = errors.find(e => !e.message.startsWith('__detail__') && suggestFix(e.message))
-          if (!fix) return null
-          return (
-            <div className="mt-3 flex items-start gap-2 border-l-2 border-blue-500/30 bg-blue-500/[0.04] px-3 py-2">
-              <span className="font-mono text-[10px] leading-relaxed text-blue-700/70">
-                Try: {suggestFix(fix.message)}
-              </span>
-            </div>
-          )
-        })()}
+        {!isExpired && firstFix && (
+          <div className="mt-3 flex items-start gap-2 border-l-2 border-blue-500/30 bg-blue-500/[0.04] px-3 py-2">
+            <span className="font-mono text-[10px] leading-relaxed text-blue-700/70">
+              Try: {firstFix}
+            </span>
+          </div>
+        )}
         {errors.some(e => e.message.startsWith('__detail__')) && (
           <details className="mt-4">
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
