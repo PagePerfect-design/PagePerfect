@@ -7,7 +7,13 @@ export type HeadingVariant = 'classic' | 'modern' | 'bold'
 export type PageSize = 'letter' | 'a4' | 'sixByNine' | 'fiveFiveByEightFive' | 'a5' | 'sevenByTen' | 'royal' | 'bFormat' | 'massMarket' | 'aFormat' | 'demy' | 'fiveTwentyFiveByEight' | 'crownQuarto' | 'b5' | 'amazonFiveByEight' | 'amazonSixByNine' | 'amazonSevenByTen' | 'amazonEightByTen' | 'amazonEightFiveByEleven'
 export type MarginPreset = 'normal' | 'narrow' | 'wide' | 'minimal' | 'academic' | 'generous' | 'compact'
 export type CompileMode = 'fast' | 'full'
-export type CompileError = { message: string }
+export type CompileError = {
+  message: string
+  fix?: string | null
+  severity?: 'error' | 'warn' | 'info'
+  category?: string
+  isSoft?: boolean
+}
 export type Status = 'idle' | 'compiling' | 'queued' | 'success' | 'error'
 export type Stage = 'portal' | 'design' | 'launch'
 export type HudTab = 'style' | 'layout' | 'settings' | null

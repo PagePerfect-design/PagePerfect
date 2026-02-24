@@ -172,7 +172,14 @@ export function useCompileQueue({
         const payload = await resp.json().catch(() => null)
         pdfBlobRef.current = null
         const msgs: CompileError[] = []
-        if (payload?.message) msgs.push({ message: payload.message })
+        // Prefer structured errors from backend
+        if (Array.isArray(payload?.errors) && payload.errors.length > 0) {
+          for (const e of payload.errors) {
+            msgs.push({ message: e.message, fix: e.fix || null, severity: e.severity, category: e.category })
+          }
+        } else if (payload?.message) {
+          msgs.push({ message: payload.message })
+        }
         if (!msgs.length) msgs.push({ message: `Compile failed (${resp.status}).` })
         if (payload?.detail) msgs.push({ message: `__detail__${payload.detail}` })
         setErrors(msgs)
@@ -213,7 +220,7 @@ export function useCompileQueue({
               }
               // Already retried once — show a quiet message
               pdfBlobRef.current = null
-              setErrors([{ message: 'Preview expired. Click Retry to recompile.' }])
+              setErrors([{ message: 'Preview expired. Click Retry to recompile.', isSoft: true }])
               setStatus('error')
               return
             }
@@ -238,7 +245,14 @@ export function useCompileQueue({
           if (statusData.status === 'failed') {
             pdfBlobRef.current = null
             const msgs: CompileError[] = []
-            if (statusData.message) msgs.push({ message: statusData.message })
+            // Prefer structured errors from backend
+            if (Array.isArray(statusData.errors) && statusData.errors.length > 0) {
+              for (const e of statusData.errors) {
+                msgs.push({ message: e.message, fix: e.fix || null, severity: e.severity, category: e.category })
+              }
+            } else if (statusData.message) {
+              msgs.push({ message: statusData.message })
+            }
             if (!msgs.length) msgs.push({ message: 'Compilation failed.' })
             if (statusData.detail) msgs.push({ message: `__detail__${statusData.detail}` })
             setErrors(msgs)
@@ -280,7 +294,7 @@ export function useCompileQueue({
               pdfBlobRef.current = null
               const msgs: CompileError[] = []
               if (pdfResp.status === 404 || pdfResp.status === 410) {
-                msgs.push({ message: 'Preview expired. Click Retry to recompile.' })
+                msgs.push({ message: 'Preview expired. Click Retry to recompile.', isSoft: true })
               } else {
                 if (payload?.message) msgs.push({ message: payload.message })
                 if (!msgs.length) msgs.push({ message: 'Failed to retrieve compiled PDF.' })
@@ -302,7 +316,7 @@ export function useCompileQueue({
           networkErrors++
           if (networkErrors > 3) {
             pdfBlobRef.current = null
-            setErrors([{ message: 'Network disconnected.' }])
+            setErrors([{ message: 'Network disconnected.', fix: 'Check your internet connection and retry.', severity: 'error', category: 'network' }])
             setStatus('error')
             return
           }
@@ -311,13 +325,13 @@ export function useCompileQueue({
 
       // Polling exhausted — compile took too long
       pdfBlobRef.current = null
-      setErrors([{ message: 'Compilation timed out. Please try again.' }])
+      setErrors([{ message: 'Compilation timed out. Please try again.', fix: 'Try Fast compile mode, or split into smaller sections.', severity: 'error', category: 'timeout' }])
       setStatus('error')
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === 'AbortError') return
       if (e instanceof Error && e.name !== 'AbortError') {
         pdfBlobRef.current = null
-        setErrors([{ message: 'Network or server error. Please try again.' }])
+        setErrors([{ message: 'Network or server error. Please try again.', fix: 'Check your connection or try again.', severity: 'error', category: 'network' }])
         setStatus('error')
       }
     } finally {
