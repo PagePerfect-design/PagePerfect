@@ -57,9 +57,13 @@ RUN apt-get update && apt-get install -y \
     fontconfig \
     && rm -rf /var/lib/apt/lists/*
 
-# Rebuild fontconfig cache and TeX font maps so all fonts are visible
-# to both fontconfig (fc-list) and LuaLaTeX/XeLaTeX (fontspec).
+# ── Make TeX Live fonts visible to fontconfig (fc-list) ──
+# TeX Live installs OpenType/TrueType fonts under /usr/share/texlive/texmf-dist/fonts/
+# but fontconfig doesn't scan those directories by default. Without this, fc-list
+# won't find ETbb, Alegreya Sans, Fira Sans, Source Sans Pro, Libertinus, etc.
+# even though they're installed by texlive-fonts-extra.
 RUN cp /usr/share/texlive/texmf-dist/fontconfig/conf.avail/*.conf /etc/fonts/conf.d/ 2>/dev/null || true \
+    && printf '<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">\n<fontconfig>\n  <dir>/usr/share/texlive/texmf-dist/fonts/opentype</dir>\n  <dir>/usr/share/texlive/texmf-dist/fonts/truetype</dir>\n  <dir>/usr/share/texmf/fonts/opentype</dir>\n  <dir>/usr/share/texmf/fonts/truetype</dir>\n</fontconfig>\n' > /etc/fonts/conf.d/99-texlive-fonts.conf \
     && fc-cache -fv \
     && luaotfload-tool --update 2>/dev/null || true
 
