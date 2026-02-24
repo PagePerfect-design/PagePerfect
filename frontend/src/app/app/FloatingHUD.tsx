@@ -39,14 +39,14 @@ function DockButton({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium transition-all duration-150 ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-2 text-[11px] font-medium transition-all duration-150 sm:gap-2 sm:px-4 sm:text-[12px] ${
         active
           ? 'bg-[#111111] text-white shadow-lg'
           : 'text-[#111111]/40 hover:bg-[#111111]/[0.05] hover:text-[#111111]/70'
       }`}
     >
       {icon}
-      <span>{label}</span>
+      <span className="hidden sm:inline">{label}</span>
     </button>
   )
 }
@@ -112,7 +112,7 @@ export default function FloatingHUD({
     : TEMPLATE_KEYS.filter(k => TEMPLATE_INFO[k].genre === genreFilter)
 
   return (
-    <div className="fixed bottom-8 left-1/2 z-40 -translate-x-1/2">
+    <div className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-2rem)] max-w-fit -translate-x-1/2 sm:bottom-8 sm:w-auto">
       {/* Fan menus — pop up above the dock */}
       <AnimatePresence>
         {activeTab === 'style' && (
@@ -122,10 +122,10 @@ export default function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 w-[520px] border border-[#111111]/10 bg-white shadow-elevated backdrop-blur-xl"
+            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/10 bg-white shadow-elevated backdrop-blur-xl sm:w-[520px]"
           >
             {/* Genre tabs */}
-            <div className="flex gap-0.5 border-b border-[#111111]/[0.06] px-3 pt-2">
+            <div className="flex gap-0.5 overflow-x-auto border-b border-[#111111]/[0.06] px-3 pt-2">
               {(['all', ...GENRE_ORDER] as Genre[]).map((g) => (
                 <button
                   key={g}
@@ -143,7 +143,7 @@ export default function FloatingHUD({
 
             {/* Template cards */}
             <div className="max-h-[50vh] overflow-y-auto p-2">
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                 {filteredTemplates.map((key) => {
                   const info = TEMPLATE_INFO[key]
                   const isActive = key === template
@@ -217,7 +217,7 @@ export default function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
+            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/10 bg-white p-3 shadow-elevated backdrop-blur-xl sm:w-auto sm:p-4"
           >
             {/* Page Size */}
             <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Page Size</p>
@@ -351,7 +351,7 @@ export default function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 w-72 border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
+            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl sm:w-72"
           >
             <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Compile Options</p>
 
