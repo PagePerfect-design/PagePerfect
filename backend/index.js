@@ -261,9 +261,11 @@ async function checkDiskSpace() {
           } catch { /* best-effort */ }
         }
         // Also clear expired in-memory results to free file handles
+        // Use 10 min TTL in emergency (vs normal 30 min) — still gives users time to download
+        const EMERGENCY_RESULT_TTL_MS = 10 * 60 * 1000;
         const now = Date.now();
         for (const [id, res] of jobResults) {
-          if (res._storedAt && now - res._storedAt > 2 * 60 * 1000) { // 2 min in emergency
+          if (res._storedAt && now - res._storedAt > EMERGENCY_RESULT_TTL_MS) {
             if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {});
             if (res.pdfPath && res.pdfPath.startsWith(RESULTS_DIR)) fsp.unlink(res.pdfPath).catch(() => {});
             deleteJobResult(id);
@@ -428,7 +430,9 @@ const ALLOWED_ORIGINS = [
 function isAllowedOrigin(origin) {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.includes(origin)) return true;
-  if (/^https:\/\/page-perfect-[a-z0-9]{9}-[a-z0-9-]+\.vercel\.app$/.test(origin)) return true;
+  // Vercel preview deployments: {project}-{hash}-{scope}.vercel.app
+  // Tightened: require 'page-perfect' project name + exactly 9-char hash + team scope (alphanumeric, no dots)
+  if (/^https:\/\/page-perfect-[a-z0-9]{9}-[a-z0-9]+\.vercel\.app$/.test(origin)) return true;
   return false;
 }
 
@@ -477,9 +481,9 @@ const isPocketBaseConfigured = !!(POCKETBASE_URL && process.env.POCKETBASE_ADMIN
 
 // ── Tier Verification ──
 async function verifyUserTier(req) {
-  if (!isPocketBaseConfigured) return { userId: null, tier: 'anonymous', credits: 0, publisherWindowEnd: null };
+  if (!isPocketBaseConfigured) return { userId: null, tier: 'anonymous', publisherWindowEnd: null };
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) return { userId: null, tier: 'anonymous', credits: 0, publisherWindowEnd: null };
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return { userId: null, tier: 'anonymous', publisherWindowEnd: null };
   const token = authHeader.slice(7);
   try {
     const authResp = await fetch(`${POCKETBASE_URL}/api/collections/users/auth-refresh`, {
@@ -503,7 +507,7 @@ async function verifyUserTier(req) {
   } catch (err) {
     log.error({ module: 'auth', err: err.message }, 'Tier verification failed');
   }
-  return { userId: null, tier: 'anonymous', credits: 0, publisherWindowEnd: null };
+  return { userId: null, tier: 'anonymous', publisherWindowEnd: null };
 }
 
 const TIER_LEVEL = { anonymous: 0, drafter: 1, publisher: 2, studio: 3 };
@@ -517,10 +521,11 @@ try {
   if (process.env.STRIPE_SECRET_KEY) stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 } catch { /* stripe not configured */ }
 
-const processedStripeEventsSet = new Set();
+const processedStripeEventsMap = new Map(); // eventId → timestamp
 const processedStripeEventsQueue = [];
 const MAX_STRIPE_EVENTS = 10000;
-const STRIPE_IDEM_TTL = 72 * 60 * 60;
+const STRIPE_IDEM_TTL = 72 * 60 * 60; // seconds (Redis)
+const STRIPE_IDEM_TTL_MS = STRIPE_IDEM_TTL * 1000; // milliseconds (memory)
 
 async function isStripeEventProcessed(eventId) {
   if (redis && redisHealthy) {
@@ -531,12 +536,29 @@ async function isStripeEventProcessed(eventId) {
       log.warn({ module: 'stripe:idem', err: err.message }, 'Redis SETNX failed, falling back to memory');
     }
   }
-  if (processedStripeEventsSet.has(eventId)) return true;
-  processedStripeEventsSet.add(eventId);
+  // Memory fallback — warn that replays are possible across restarts
+  if (!redis || !redisHealthy) {
+    log.warn({ module: 'stripe:idem' }, 'Redis unavailable — using in-memory idempotency (not durable across restarts)');
+  }
+  const now = Date.now();
+  // Expire old entries beyond TTL
+  while (processedStripeEventsQueue.length > 0) {
+    const oldest = processedStripeEventsQueue[0];
+    const ts = processedStripeEventsMap.get(oldest);
+    if (ts && now - ts > STRIPE_IDEM_TTL_MS) {
+      processedStripeEventsQueue.shift();
+      processedStripeEventsMap.delete(oldest);
+    } else {
+      break;
+    }
+  }
+  if (processedStripeEventsMap.has(eventId)) return true;
+  processedStripeEventsMap.set(eventId, now);
   processedStripeEventsQueue.push(eventId);
+  // Cap at MAX_STRIPE_EVENTS as safety net
   while (processedStripeEventsQueue.length > MAX_STRIPE_EVENTS) {
-    const oldest = processedStripeEventsQueue.shift();
-    processedStripeEventsSet.delete(oldest);
+    const evicted = processedStripeEventsQueue.shift();
+    processedStripeEventsMap.delete(evicted);
   }
   return false;
 }
@@ -575,7 +597,22 @@ app.set('trust proxy', 1);
 const gridSystem = new GridSystem();
 
 // ── Security & Middleware ──
-app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'none'"],
+      scriptSrc: ["'none'"],
+      styleSrc: ["'none'"],
+      imgSrc: ["'none'"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'none'"],
+      formAction: ["'self'"],
+    },
+  },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 
 // Request logging
 app.use((req, res, next) => {

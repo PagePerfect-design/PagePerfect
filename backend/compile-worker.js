@@ -104,11 +104,11 @@ async function getPbAdminToken() {
  */
 async function verifyUserTierById(userId) {
   if (!isPocketBaseConfigured || !userId) {
-    return { userId: null, tier: 'anonymous', credits: 0 };
+    return { userId: null, tier: 'anonymous' };
   }
   try {
     const token = await getPbAdminToken();
-    if (!token) return { userId, tier: 'drafter', credits: 0 };
+    if (!token) return { userId, tier: 'drafter' };
 
     const resp = await fetch(`${POCKETBASE_URL}/api/collections/users/records/${userId}`, {
       headers: { Authorization: token, 'Content-Type': 'application/json' },
@@ -182,11 +182,10 @@ async function processCompileJob(job, templateRegistry) {
       return { success: false, error: 'tier_required', message: 'Custom fonts require Studio.' };
 
   // ── Watermark decision — re-evaluated at compile time ──
+  // Publisher+ tiers get unwatermarked downloads; everyone else gets watermarked.
   let needsWatermark = false;
   if (isDownload && isPocketBaseConfigured) {
-    if (hasTier(userTier, 'publisher')) needsWatermark = false;
-    else if (user.credits > 0 && userId) needsWatermark = false;
-    else needsWatermark = true;
+    needsWatermark = !hasTier(userTier, 'publisher');
   } else if (isDownload && !isPocketBaseConfigured) {
     needsWatermark = true;
   }
