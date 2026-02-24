@@ -61,6 +61,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.2,
     },
+    {
+      url: `${BASE_URL}/site-directory`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.3,
+    },
   ]
 
   const articleRoutes: MetadataRoute.Sitemap = ARTICLES.map((article) => ({

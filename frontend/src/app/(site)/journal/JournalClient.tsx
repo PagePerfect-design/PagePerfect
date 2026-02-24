@@ -186,7 +186,7 @@ export default function JournalClient() {
           <h2 className="font-display text-h2 font-extrabold tracking-tighter text-[#111111]" style={{ lineHeight: 0.95 }}>
             Typeset your manuscript
           </h2>
-          <p className="mt-4 max-w-lg font-body text-base text-[#444444]">
+          <p className="mt-4 max-w-lg font-body text-base text-[#555555]">
             Every principle in these essays is built into PagePerfect — baseline grids,
             golden-ratio scales, and 12 templates engineered for readability and conversion.
           </p>
