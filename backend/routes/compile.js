@@ -316,10 +316,30 @@ module.exports = function compileRoutes(ctx) {
   // ══════════════════════════════════════════════════════════
   router.get('/api/compile/status/:id', async (req, res) => {
     const { id } = req.params;
+
+    // Helper: ensure failed results always have a debug object, never null.
+    // The compile worker always returns debug on failure paths, but BullMQ's
+    // JSON serialization round-trip (worker → Redis → status endpoint) can
+    // drop the field under edge conditions (large payloads, memory pressure).
+    const ensureDebug = (result) => {
+      if (!result.success && !result.debug) {
+        log.warn({ module: 'status', jobId: id, error: result.error }, 'debug field missing from compile result — reconstructing placeholder');
+        result.debug = {
+          texSource: null,
+          latexLog: null,
+          headerTex: null,
+          filesInDir: [],
+          captureError: 'debug object was undefined when status endpoint read the result (possible BullMQ serialization loss)',
+        };
+      }
+      return result.debug || null;
+    };
+
     const cached = await ctx.getJobResult(id);
     if (cached) {
       if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, resultUrl: `/api/compile/result/${id}` });
-      return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: cached.detail, debug: cached.debug || null });
+      const debug = ensureDebug(cached);
+      return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: cached.detail, debug });
     }
     if (ctx.compileQueue) {
       try {
@@ -351,7 +371,8 @@ module.exports = function compileRoutes(ctx) {
               if (rv.success) {
                 return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, resultUrl: `/api/compile/result/${id}` });
               }
-              return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail, debug: rv.debug || null });
+              const debug = ensureDebug(rv);
+              return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail, debug });
             }
             // BullMQ says done but no return value yet — brief poll continuation
             return res.json({ jobId: id, status: 'active', progress: job.progress || 0 });
