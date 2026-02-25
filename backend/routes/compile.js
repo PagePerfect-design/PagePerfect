@@ -200,7 +200,7 @@ module.exports = function compileRoutes(ctx) {
     if (wantPdfX && !ctx.hasTier(userTier, 'publisher')) return res.status(403).json({ error: 'tier_required', message: 'PDF/X-1a requires Publisher or Studio.', requiredTier: 'publisher' });
     if (customFonts && typeof customFonts === 'object' && Object.keys(customFonts).length > 0 && !ctx.hasTier(userTier, 'studio'))
       return res.status(403).json({ error: 'tier_required', message: 'Custom fonts require Studio.', requiredTier: 'studio' });
-    if (isDownload && userTier === 'drafter' && user.credits <= 0 && pageSize && !FREE_TIER_SIZES.has(pageSize))
+    if (isDownload && !ctx.hasTier(userTier, 'publisher') && pageSize && !FREE_TIER_SIZES.has(pageSize))
       return res.status(403).json({ error: 'tier_required', message: `Page size "${pageSize}" requires a paid plan.`, requiredTier: 'publisher' });
     if (!safeMode && !ctx.hasTier(userTier, 'publisher')) safeMode = true;
 
