@@ -155,7 +155,11 @@ async function processCompileJob(job, templateRegistry) {
   try {
     manuscriptText = await fsp.readFile(manuscriptPath, 'utf8');
   } catch (err) {
-    throw new Error(`Manuscript file not found: ${err.message}`);
+    return {
+      success: false, error: 'manuscript_not_found',
+      message: `Manuscript file not found: ${err.message}`,
+      debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: null, manuscriptPath },
+    };
   }
 
   // ── Security: check for LaTeX injection attempts in manuscript ──
@@ -425,8 +429,18 @@ async function processCompileJob(job, templateRegistry) {
       ].join('\n'));
     }
   } catch (err) {
+    let debugFiles = [];
+    let debugHeaderTex = null;
+    try { debugFiles = fs.readdirSync(tmpBase); } catch {}
+    try {
+      const hp = path.join(tmpBase, 'header.tex');
+      if (fs.existsSync(hp)) debugHeaderTex = fs.readFileSync(hp, 'utf8');
+    } catch {}
     try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-    return { success: false, error: 'preamble_error', message: String(err) };
+    return {
+      success: false, error: 'preamble_error', message: String(err), warnings,
+      debug: { texSource: null, latexLog: null, headerTex: debugHeaderTex, filesInDir: debugFiles, captureError: null },
+    };
   }
 
   await fsp.writeFile(path.join(tmpBase, 'header.tex'), preamble.join('\n\n'), 'utf8');
@@ -441,11 +455,14 @@ async function processCompileJob(job, templateRegistry) {
     const freeMB = Math.round(freeBytes / (1024 * 1024));
     if (freeBytes < 50 * 1024 * 1024) {
       log.warn({ jobId: job.id, freeMB }, 'Insufficient disk space for compilation');
+      let debugFiles = [];
+      try { debugFiles = fs.readdirSync(tmpBase); } catch {}
       try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
       return {
         success: false, error: 'disk_full',
         message: `Insufficient disk space (${freeMB} MB free). The server needs at least 50 MB to compile a PDF. Please try again later.`,
         warnings,
+        debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: debugFiles, captureError: null, freeMB },
       };
     }
   } catch (err) {
@@ -540,62 +557,90 @@ async function processCompileJob(job, templateRegistry) {
 
   if (!result.ok) {
     // ── Capture debug artifacts before cleanup ──
+    // SAFETY: The entire debug capture block is wrapped in try/catch so that
+    // a throw during artifact collection (errorTranslator, sanitizeStderr, etc.)
+    // can never prevent the failure result from being returned to BullMQ.
     let debugTexSource = null;
     let debugLatexLog = null;
     let debugHeaderTex = null;
     let debugFiles = [];
+    let debugCaptureError = null;
 
-    try { debugFiles = fs.readdirSync(tmpBase); } catch {}
-
-    // Read LuaLaTeX .log file (name varies by engine invocation)
-    for (const f of debugFiles) {
-      if (f.endsWith('.log')) {
-        try {
-          const raw = fs.readFileSync(path.join(tmpBase, f), 'utf8');
-          debugLatexLog = sanitizeStderr(raw).substring(0, 100000);
-        } catch {}
-        break;
-      }
-    }
-
-    // Read the preamble we injected
-    const headerPath = path.join(tmpBase, 'header.tex');
-    if (fs.existsSync(headerPath)) {
-      try { debugHeaderTex = fs.readFileSync(headerPath, 'utf8'); } catch {}
-    }
-
-    // Generate .tex source for diagnostics (no LuaLaTeX — just Pandoc template rendering)
     try {
-      const texPath = path.join(tmpBase, 'debug-output.tex');
-      const texArgs = args.map(a => a === pdfPath ? texPath : a);
-      const texProc = spawn('pandoc', texArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV });
-      await new Promise((resolve) => {
-        const t = setTimeout(() => { try { texProc.kill('SIGKILL'); } catch {} resolve(); }, 10000);
-        texProc.on('close', () => { clearTimeout(t); resolve(); });
-        texProc.on('error', () => { clearTimeout(t); resolve(); });
-      });
-      if (fs.existsSync(texPath)) {
-        debugTexSource = fs.readFileSync(texPath, 'utf8').substring(0, 100000);
+      try { debugFiles = fs.readdirSync(tmpBase); } catch {}
+
+      // Read LuaLaTeX .log file (name varies by engine invocation)
+      for (const f of debugFiles) {
+        if (f.endsWith('.log')) {
+          try {
+            const raw = fs.readFileSync(path.join(tmpBase, f), 'utf8');
+            debugLatexLog = sanitizeStderr(raw).substring(0, 100000);
+          } catch {}
+          break;
+        }
       }
-    } catch {}
+
+      // Read the preamble we injected
+      const headerPath = path.join(tmpBase, 'header.tex');
+      if (fs.existsSync(headerPath)) {
+        try { debugHeaderTex = fs.readFileSync(headerPath, 'utf8'); } catch {}
+      }
+
+      // Generate .tex source for diagnostics (no LuaLaTeX — just Pandoc template rendering)
+      try {
+        const texPath = path.join(tmpBase, 'debug-output.tex');
+        const texArgs = args.map(a => a === pdfPath ? texPath : a);
+        const texProc = spawn('pandoc', texArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV });
+        await new Promise((resolve) => {
+          const t = setTimeout(() => { try { texProc.kill('SIGKILL'); } catch {} resolve(); }, 10000);
+          texProc.on('close', () => { clearTimeout(t); resolve(); });
+          texProc.on('error', () => { clearTimeout(t); resolve(); });
+        });
+        if (fs.existsSync(texPath)) {
+          debugTexSource = fs.readFileSync(texPath, 'utf8').substring(0, 100000);
+        }
+      } catch {}
+    } catch (captureErr) {
+      debugCaptureError = String(captureErr);
+      log.error({ jobId: job.id, err: captureErr.message }, 'Debug artifact capture threw — returning partial debug');
+    }
 
     // NOW clean up
     try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
 
+    // Build the failure response — also wrapped so errorTranslator/sanitizeStderr can't throw us out
+    let structuredErrors = [];
+    let fallbackMessage = 'Compilation failed.';
+    let detail = null;
     const stderr = result.stderr || '';
-    const { errors: structuredErrors, fallbackMessage } = errorTranslator.translateCompileFailure(
-      stderr, { safeMode, errorCode: result.error }
-    );
+    try {
+      const translated = errorTranslator.translateCompileFailure(
+        stderr, { safeMode, errorCode: result.error }
+      );
+      structuredErrors = translated.errors;
+      fallbackMessage = translated.fallbackMessage;
+    } catch (translErr) {
+      log.error({ jobId: job.id, err: translErr.message }, 'errorTranslator.translateCompileFailure threw');
+      fallbackMessage = stderr.split('\n').filter(l => l.trim()).slice(-5).join(' ') || 'Compilation failed.';
+    }
+    try {
+      detail = sanitizeStderr(stderr.split('\n').slice(-80).join('\n'));
+    } catch (sanErr) {
+      log.error({ jobId: job.id, err: sanErr.message }, 'sanitizeStderr threw');
+      detail = stderr.substring(0, 5000);
+    }
+
     return {
       success: false, error: result.error || 'compile_failed',
       message: fallbackMessage, warnings,
       errors: structuredErrors,
-      detail: sanitizeStderr(stderr.split('\n').slice(-80).join('\n')),
+      detail,
       debug: {
         texSource: debugTexSource,
         latexLog: debugLatexLog,
         headerTex: debugHeaderTex,
         filesInDir: debugFiles,
+        captureError: debugCaptureError,
       },
     };
   }
@@ -607,8 +652,13 @@ async function processCompileJob(job, templateRegistry) {
     const pdfxPath = path.join(tmpBase, 'output-pdfx1a.pdf');
     const conv = await publishing.convertToPdfX1a(pdfPath, pdfxPath, safeTitle);
     if (!conv.success) {
+      let debugFiles = [];
+      try { debugFiles = fs.readdirSync(tmpBase); } catch {}
       try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-      return { success: false, error: 'pdfx_conversion_failed', message: conv.error };
+      return {
+        success: false, error: 'pdfx_conversion_failed', message: conv.error, warnings,
+        debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: debugFiles, captureError: null },
+      };
     }
     finalPdfPath = pdfxPath;
     finalFormat = 'PDF/X-1a:2001';

@@ -378,6 +378,7 @@ if (redis) {
           success: false,
           error: 'worker_error',
           message: err.message || 'Compilation failed unexpectedly.',
+          debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: `BullMQ failed event: ${err.message}`, stack: err.stack?.substring(0, 2000) || null },
         });
         log.error({ module: 'queue', jobId: job?.id, err: err.message }, 'Job failed');
       });
