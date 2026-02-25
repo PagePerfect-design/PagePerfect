@@ -41,18 +41,32 @@ function createRedisConnection(opts = {}) {
 }
 
 // ── Template Registry (must match index.js) ──
+// CRITICAL: Must include mainfont, sansfont, monofont, gridType — compile-worker.js
+// reads these for font resolution, grid calculation, and preamble assembly.
+// A registry with only templatePath will cause resolveFont(undefined) to throw.
 
-const DESIGN_TEMPLATES = {};
+const DESIGN_TEMPLATES = {
+  symphony: { name: 'Symphony', templatePath: null, mainfont: 'EB Garamond', sansfont: 'Libertinus Sans', monofont: 'DejaVu Sans Mono', gridType: 'academic' },
+  chicago: { name: 'Chicago', templatePath: null, mainfont: 'ETbb', sansfont: 'Latin Modern Sans', monofont: 'Latin Modern Mono', gridType: 'academic' },
+  paperback: { name: 'Paperback', templatePath: null, mainfont: 'Alegreya Sans', sansfont: 'TeX Gyre Heros', monofont: 'DejaVu Sans Mono', gridType: 'trade' },
+  chronicle: { name: 'Chronicle', templatePath: null, mainfont: 'TeX Gyre Heros', sansfont: null, monofont: 'Fira Mono', gridType: 'editorial' },
+  exhibit: { name: 'Exhibit', templatePath: null, mainfont: 'Fira Sans', sansfont: 'TeX Gyre Adventor', monofont: 'Fira Mono', gridType: 'trade' },
+  matrix: { name: 'Matrix', templatePath: null, mainfont: 'Fira Sans', sansfont: null, monofont: 'Fira Mono', gridType: 'corporate' },
+  avantgarde: { name: 'Avant-Garde', templatePath: null, mainfont: 'Source Sans 3', sansfont: 'DejaVu Sans', monofont: 'TeX Gyre Cursor', gridType: 'creative' },
+  minimal: { name: 'Minimal', templatePath: null, mainfont: 'Latin Modern Roman', sansfont: null, monofont: null, gridType: 'basic' },
+  international: { name: 'International', templatePath: null, mainfont: 'TeX Gyre Heros', sansfont: 'TeX Gyre Heros', monofont: 'TeX Gyre Cursor', gridType: 'editorial' },
+  cinema: { name: 'Cinema', templatePath: null, mainfont: 'TeX Gyre Cursor', sansfont: null, monofont: 'TeX Gyre Cursor', gridType: 'basic' },
+  heirloom: { name: 'Heirloom', templatePath: null, mainfont: 'Fira Sans', sansfont: 'DejaVu Serif', monofont: 'Fira Mono', gridType: 'trade' },
+  operator: { name: 'Operator', templatePath: null, mainfont: 'Fira Sans', sansfont: null, monofont: 'Fira Mono', gridType: 'editorial' },
+  verse: { name: 'Verse', templatePath: null, mainfont: 'EB Garamond', sansfont: 'Libertinus Sans', monofont: 'DejaVu Sans Mono', gridType: 'creative' },
+  thesis: { name: 'Thesis', templatePath: null, mainfont: 'Latin Modern Roman', sansfont: 'Latin Modern Sans', monofont: 'Latin Modern Mono', gridType: 'thesis' },
+  memoir: { name: 'Memoir', templatePath: null, mainfont: 'Libre Baskerville', sansfont: 'TeX Gyre Heros', monofont: 'DejaVu Sans Mono', gridType: 'trade' },
+};
 const templateDir = path.resolve(__dirname, 'templates');
-const templateFiles = [
-  'symphony', 'chicago', 'paperback', 'chronicle', 'exhibit', 'matrix',
-  'avantgarde', 'minimal', 'international', 'cinema', 'heirloom',
-  'operator', 'verse', 'thesis', 'memoir',
-];
-for (const name of templateFiles) {
+for (const name of Object.keys(DESIGN_TEMPLATES)) {
   const tplPath = path.resolve(templateDir, `${name}.latex`);
   if (fs.existsSync(tplPath)) {
-    DESIGN_TEMPLATES[name] = { templatePath: tplPath };
+    DESIGN_TEMPLATES[name].templatePath = tplPath;
   }
 }
 
@@ -109,7 +123,10 @@ worker.on('completed', (job) => {
 });
 
 worker.on('failed', async (job, err) => {
-  const result = { success: false, error: 'worker_error', message: err.message || 'Compilation failed.' };
+  const result = {
+    success: false, error: 'worker_error', message: err.message || 'Compilation failed.',
+    debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: `BullMQ failed event: ${err.message}`, stack: err.stack?.substring(0, 2000) || null },
+  };
   await persistAndStore(job.id, result);
   log.error({ module: 'worker', jobId: job?.id, err: err.message }, 'Job failed');
 });
