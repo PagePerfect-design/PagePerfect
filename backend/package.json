@@ -7,6 +7,9 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
+    "start:cluster": "node cluster.js",
+    "start:worker": "node worker.js",
+    "start:api-only": "WORKER_ONLY=true node index.js",
     "docker:build": "docker build -t pageperfect-backend .",
     "docker:run": "docker run --rm -p 4000:4000 -e PORT=4000 --cap-drop=ALL --security-opt=no-new-privileges --read-only --tmpfs /tmp:rw,noexec,nosuid,size=1024m --tmpfs /var/cache/fontconfig:rw,size=32m --memory=1g --pids-limit=100 pageperfect-backend",
     "test": "jest --verbose",
