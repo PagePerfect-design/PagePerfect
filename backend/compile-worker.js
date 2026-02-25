@@ -471,9 +471,14 @@ async function processCompileJob(job, templateRegistry) {
       ? `--from=markdown+citations${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
       : `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`;
 
-  // ── Template-aware Lua filters ──
+  // ── Lua filters ──
   const luaFilters = [];
   const filtersDir = path.join(__dirname, 'filters');
+
+  // Vertical-mode fix — prevents titlesec "entered in horizontal mode" error
+  // by inserting \par before every heading in the Pandoc AST. Applied to all
+  // templates universally; \par is a no-op when already in vertical mode.
+  luaFilters.push('--lua-filter', path.join(filtersDir, 'heading-vmode.lua'));
 
   // Drop-cap filter for fiction/literary book-class templates
   if (textNormalizer.DROP_CAP_TEMPLATES.has(tplKey)) {

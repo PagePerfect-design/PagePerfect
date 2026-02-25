@@ -59,6 +59,7 @@ export function translateError(raw: string): string {
     [/inputenc Error.*Invalid.*byte/i, () => 'A non-standard character was found. Try removing special symbols or copy-pasting from Notepad/TextEdit.'],
 
     // ── Package errors ──
+    [/Package titlesec Error.*?[Ee]ntered in horizontal mode/i, () => 'A heading was placed in an unexpected context. Add a blank line before the heading in your manuscript.'],
     [/Package .* Error/i, () => 'A LaTeX package reported an error. Try a different template.'],
     [/! LaTeX Error:\s*(.*)/i, (m) => m[1]],
 

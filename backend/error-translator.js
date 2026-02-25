@@ -257,6 +257,15 @@ const ERROR_PATTERNS = [
 
   // ── Package errors ──
   {
+    pattern: /Package titlesec Error.*?[Ee]ntered in horizontal mode/i,
+    severity: 'error',
+    category: 'package',
+    translate: () => ({
+      message: 'A heading was placed in an unexpected context',
+      fix: 'Add a blank line before the heading in your manuscript. If this persists, try a different template.',
+    }),
+  },
+  {
     pattern: /! LaTeX Error:\s*(.{1,120})/i,
     severity: 'error',
     category: 'package',
