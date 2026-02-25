@@ -318,13 +318,12 @@ module.exports = function compileRoutes(ctx) {
     const { id } = req.params;
 
     // Helper: ensure failed results always have a debug object, never null.
-    // The compile worker always returns debug on failure paths, but BullMQ's
-    // JSON serialization round-trip (worker → Redis → status endpoint) can
-    // drop the field under edge conditions (large payloads, memory pressure).
-    const ensureDebug = (result) => {
+    // Debug artifacts may be stored on disk (via debugRef) to keep Redis payloads small.
+    // This function resolves the reference and loads from disk if needed.
+    const resolveDebug = (result) => {
       if (!result.success && !result.debug) {
         log.warn({ module: 'status', jobId: id, error: result.error }, 'debug field missing from compile result — reconstructing placeholder');
-        result.debug = {
+        return {
           texSource: null,
           latexLog: null,
           headerTex: null,
@@ -332,14 +331,24 @@ module.exports = function compileRoutes(ctx) {
           captureError: 'debug object was undefined when status endpoint read the result (possible BullMQ serialization loss)',
         };
       }
+      // If debug contains a disk reference, load and return the full payload
+      if (result.debug && result.debug.debugRef && typeof result.debug.debugRef === 'string') {
+        try {
+          const raw = fs.readFileSync(result.debug.debugRef, 'utf8');
+          return JSON.parse(raw);
+        } catch {
+          log.warn({ module: 'status', jobId: id, debugRef: result.debug.debugRef }, 'Failed to load debug artifacts from disk');
+          return { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: `Debug file not found: ${result.debug.debugRef}` };
+        }
+      }
       return result.debug || null;
     };
 
     const cached = await ctx.getJobResult(id);
     if (cached) {
-      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, resultUrl: `/api/compile/result/${id}` });
-      const debug = ensureDebug(cached);
-      return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: cached.detail, debug });
+      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, debugMeta: cached.debugMeta || null, resultUrl: `/api/compile/result/${id}` });
+      const debug = resolveDebug(cached);
+      return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: cached.detail, debug, debugMeta: cached.debugMeta || null });
     }
     if (ctx.compileQueue) {
       try {
@@ -369,10 +378,10 @@ module.exports = function compileRoutes(ctx) {
               }
               ctx.storeJobResult(id, rv);
               if (rv.success) {
-                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, resultUrl: `/api/compile/result/${id}` });
+                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, debugMeta: rv.debugMeta || null, resultUrl: `/api/compile/result/${id}` });
               }
-              const debug = ensureDebug(rv);
-              return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail, debug });
+              const debug = resolveDebug(rv);
+              return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail, debug, debugMeta: rv.debugMeta || null });
             }
             // BullMQ says done but no return value yet — brief poll continuation
             return res.json({ jobId: id, status: 'active', progress: job.progress || 0 });

@@ -54,24 +54,49 @@ module.exports = function healthRoutes(ctx) {
       checks.pocketbase = 'not_configured';
     }
 
-    // Pandoc
+    // Pandoc — version detection
     try {
-      execSync('pandoc --version', { timeout: 3000, stdio: 'pipe' });
-      checks.pandoc = 'ok';
+      const pv = execSync('pandoc --version 2>/dev/null | head -1', { encoding: 'utf8', timeout: 3000 });
+      const m = pv.match(/pandoc(?:\.exe)?\s+([\d.]+)/);
+      checks.pandoc = m ? `ok (${m[1]})` : 'ok';
     } catch { checks.pandoc = 'missing'; ready = false; }
 
-    // LuaLaTeX
+    // LuaLaTeX — version detection
     try {
-      execSync('lualatex --version', { timeout: 3000, stdio: 'pipe' });
-      checks.lualatex = 'ok';
+      const lv = execSync('lualatex --version 2>/dev/null | head -1', { encoding: 'utf8', timeout: 3000 });
+      const m = lv.match(/Version\s+([^\s(]+)/i) || lv.match(/([\d.]+)/);
+      checks.lualatex = m ? `ok (${m[1]})` : 'ok';
     } catch { checks.lualatex = 'missing'; ready = false; }
 
-    // Disk (/tmp writable)
+    // Locale — verify the configured locale exists
+    try {
+      const localeList = execSync('locale -a 2>/dev/null', { encoding: 'utf8', timeout: 3000 });
+      const configuredLocale = (process.env.LANG || 'C.UTF-8').toLowerCase();
+      const available = localeList.split('\n').map(l => l.trim().toLowerCase());
+      const found = available.some(l => l === configuredLocale || l === configuredLocale.replace('.utf-8', '.utf8') || l === configuredLocale.replace('.utf8', '.utf-8'));
+      checks.locale = found ? `ok (${process.env.LANG || 'C.UTF-8'})` : 'missing';
+      if (!found) ready = false;
+    } catch { checks.locale = 'check_skipped'; }
+
+    // Ghostscript — needed for PDF/X-1a conversion
+    try {
+      const gsv = execSync('gs --version 2>/dev/null', { encoding: 'utf8', timeout: 3000 });
+      checks.ghostscript = `ok (${gsv.trim()})`;
+    } catch { checks.ghostscript = 'missing'; }
+
+    // Disk (/tmp writable + free space)
     try {
       const testFile = path.join(os.tmpdir(), `pp-health-${Date.now()}`);
       fs.writeFileSync(testFile, 'ok');
       fs.unlinkSync(testFile);
       checks.disk = 'ok';
+      // Check free space
+      try {
+        const tmpStats = fs.statfsSync(os.tmpdir());
+        const freeMB = Math.round((tmpStats.bavail * tmpStats.bsize) / (1024 * 1024));
+        checks.diskFreeMB = freeMB;
+        if (freeMB < 50) { checks.disk = `low (${freeMB} MB)`; ready = false; }
+      } catch { /* statfs not available */ }
     } catch { checks.disk = 'read_only'; ready = false; }
 
     const status = ready ? 200 : 503;
