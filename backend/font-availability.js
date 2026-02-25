@@ -30,6 +30,11 @@ const FONT_ALIASES = {
   'Libertinus Sans': ['Libertinus Sans Display', 'LibertinusSans'],
   'Libre Baskerville': ['LibreBaskerville'],
   'Noto Naskh Arabic': ['Noto Naskh Arabic UI'],
+  // TeX Live 2021 may register these with or without spaces
+  'Alegreya Sans': ['AlegreyaSans', 'Alegreya Sans Regular'],
+  'Alegreya': ['Alegreya Regular'],
+  'Fira Sans': ['FiraSans', 'Fira Sans Regular'],
+  'Fira Mono': ['FiraMono', 'Fira Mono Regular'],
 };
 
 // ================================================================

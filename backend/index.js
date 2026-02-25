@@ -399,10 +399,9 @@ if (redis) {
             delete result.tmpBase;
           }
         }
-        // DEFENSIVE: Ensure debug field survives BullMQ JSON serialization round-trip.
-        // BullMQ stores returnvalue in Redis via JSON.stringify. If the debug object
-        // was lost during deserialization (edge case), reconstruct a placeholder so
-        // the status endpoint never returns debug: null for a known failure.
+        // DEFENSIVE: Ensure debug and debugMeta fields survive BullMQ JSON serialization.
+        // BullMQ stores returnvalue in Redis via JSON.stringify. If fields are lost
+        // during deserialization (edge case), reconstruct placeholders.
         if (!result.success && !result.debug) {
           log.warn({ module: 'queue', jobId: job.id }, 'debug field missing from worker return value — BullMQ may have dropped it during serialization');
           result.debug = {
@@ -411,6 +410,18 @@ if (redis) {
             headerTex: null,
             filesInDir: [],
             captureError: 'debug object lost during BullMQ completed event — field was undefined after JSON round-trip',
+          };
+        }
+        if (!result.debugMeta) {
+          result.debugMeta = {
+            locale: process.env.LANG || 'C.UTF-8',
+            pandocVersion: PANDOC_VERSION,
+            lualatexVersion: LUALATEX_VERSION,
+            nodeVersion: process.version,
+            workerPid: process.pid,
+            containerId: os.hostname(),
+            timestamp: new Date().toISOString(),
+            reconstructed: true,
           };
         }
         storeJobResult(job.id, result);
