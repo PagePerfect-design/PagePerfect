@@ -319,7 +319,7 @@ module.exports = function compileRoutes(ctx) {
     const cached = await ctx.getJobResult(id);
     if (cached) {
       if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, resultUrl: `/api/compile/result/${id}` });
-      return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: cached.detail });
+      return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: cached.detail, debug: cached.debug || null });
     }
     if (ctx.compileQueue) {
       try {
@@ -351,7 +351,7 @@ module.exports = function compileRoutes(ctx) {
               if (rv.success) {
                 return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, resultUrl: `/api/compile/result/${id}` });
               }
-              return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail });
+              return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail, debug: rv.debug || null });
             }
             // BullMQ says done but no return value yet — brief poll continuation
             return res.json({ jobId: id, status: 'active', progress: job.progress || 0 });

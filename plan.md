@@ -1,128 +1,252 @@
-# Mobile Optimisation Plan — PagePerfect
+# Plan: Debug LaTeX File Generation
 
-## Audit Summary
+## Root Cause Analysis
 
-The site is desktop-first with limited mobile handling. Three areas are **critical** (nav, pricing table, editor), two are **high** (touch targets, sidebar navigation), and the rest are **medium** fixes.
+All three hypotheses are confirmed:
 
----
+### 1. No `.tex` file is ever written to disk
 
-## Phase 1 — Navigation (Critical)
+Pandoc with `-o output.pdf` generates LaTeX **in memory** and pipes it to LuaLaTeX via an internal stdin pipe. It never writes an intermediate `.tex` file. The only files written to the worker temp dir (`/tmp/pp-worker-XXXXXX/`) before Pandoc runs are:
 
-**Problem:** No hamburger menu. All nav items (Pricing, Journal, NavAuth, Open Editor) overflow horizontally on phones. 10px text is untappable.
+| File | Purpose |
+|------|---------|
+| `input.md` | Processed manuscript markdown |
+| `template.latex` | Patched Pandoc template (copy of selected template with font substitutions) |
+| `header.tex` | Assembled preamble (geometry, extensions, watermark, engineering policies) |
 
-**Fix in `frontend/src/app/(site)/layout.tsx`:**
-- Add a `MobileNav` client component with hamburger icon (3 horizontal lines)
-- Desktop: current horizontal bar unchanged (`hidden md:flex` on the link group)
-- Mobile: hamburger button (`md:hidden`) opens a full-screen overlay or slide-down panel
-  - Stack links vertically: Pricing, Journal, Docs, Sign in / User menu
-  - "Open Editor" as full-width red CTA at bottom
-  - Each link = 48px min height for touch targets
-  - Close on link click or X button
-- Keep sticky `top-0 z-40` behavior on both
+LuaLaTeX **does** create `.log` and `.aux` files during compilation, but...
 
-**Files:** `(site)/layout.tsx`, new `components/MobileNav.tsx` (client component)
+### 2. The temp directory is destroyed immediately on failure
 
----
+At `compile-worker.js:541-542`:
+```javascript
+if (!result.ok) {
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+```
 
-## Phase 2 — Pricing Comparison Table (Critical)
+This runs **before** the error response is even constructed. The `.log`, `.aux`, and any other LuaLaTeX output files exist briefly during compilation but are destroyed before anyone can inspect them.
 
-**Problem:** `min-w-[640px]` forces horizontal scroll. Four tier columns are unreadable on 375px screens.
+### 3. The "Engine log" in the UI is truncated stderr, not a real log file
 
-**Fix in `frontend/src/app/(site)/pricing/page.tsx`:**
-- Replace horizontal scroll table with **stacked cards on mobile** (`md:hidden` / `hidden md:block` pattern):
-  - Desktop (md+): current Swiss-style table grid — unchanged
-  - Mobile: each feature becomes a card row showing feature name + value for each tier stacked vertically, or a single-tier-at-a-time tabbed view
-- Simplest approach: on mobile, show a vertical list where each row displays the feature name and all 4 values in a 2x2 grid beneath it
-- Tier number sizing: reduce `text-[4rem]` to `text-[2.5rem]` on mobile via responsive class (`text-[2.5rem] md:text-[4rem] md:text-[5rem]`)
+At `compile-worker.js:551`:
+```javascript
+detail: sanitizeStderr(stderr.split('\n').slice(-15).join('\n')),
+```
 
-**Files:** `(site)/pricing/page.tsx`
+Only the **last 15 lines** of stderr (with server paths stripped) are returned. The full LuaLaTeX log (often hundreds of lines with critical context) is discarded. This truncated string is sent to the frontend via the `detail` field, prefixed with `__detail__` in `useCompileQueue.ts`, and rendered in a collapsible "Engine log" `<details>` section in `PreviewPane.tsx`.
 
 ---
 
-## Phase 3 — Editor Mobile Gate (Critical)
+## The Fix
 
-**Problem:** The editor is entirely desktop-dependent — fixed-dimension PDF preview (520x680px), dock toolbar, split-pane layout. Redesigning it for mobile is a large project.
+### Phase 1: Capture debug artifacts before temp dir cleanup (Backend)
 
-**Fix in `frontend/src/app/app/CompileShell.tsx`:**
-- Add a **mobile gate** at the top of the main editor component:
-  - Detect viewport width < 768px
-  - Show a full-screen message: "PagePerfect's editor requires a desktop browser. Open this page on a laptop or tablet for the best experience."
-  - Include a "Continue anyway" link that dismisses the gate (for adventurous users)
-- This is a pragmatic short-term solution — a full mobile editor would be a separate project
+**File:** `backend/compile-worker.js`
 
-**Files:** `app/CompileShell.tsx`
+**Change A** — After `result.ok` check fails (line 541), before `fs.rmSync`, capture everything useful:
 
----
+1. List all files in `tmpBase` (diagnostic — shows what compilation stage was reached)
+2. Read any `.log` file (LuaLaTeX writes `input.log` or similar — try all `*.log` names)
+3. Read `header.tex` (the assembled preamble — already on disk)
+4. Generate the `.tex` source by re-running Pandoc with `-o output.tex` instead of `-o output.pdf` (fast — no LuaLaTeX, just template rendering, 10s timeout). This shows exactly what LaTeX Pandoc would have sent to the engine.
+5. **Then** run `fs.rmSync` to clean up as before.
 
-## Phase 4 — Touch Targets & Small Interactions (High)
+**Change B** — Increase stderr capture from 15 lines to 80 lines (line 551).
 
-**Problem:** Many buttons are `h-8` (32px), nav/footer links have no padding, all below the 44px iOS minimum.
+**Change C** — Include debug artifacts in the error return object:
+```javascript
+return {
+  success: false, error: result.error || 'compile_failed',
+  message: fallbackMessage, warnings,
+  errors: structuredErrors,
+  detail: sanitizeStderr(stderr.split('\n').slice(-80).join('\n')),
+  debug: {
+    texSource: <generated .tex content, capped at 100KB>,
+    latexLog: <full .log file content, sanitized>,
+    headerTex: <the preamble that was injected>,
+    filesInDir: <string[] of filenames that existed>,
+  },
+};
+```
 
-**Fixes across multiple files:**
-- Footer links: add `py-1` minimum padding to create 44px tap zones
-- Nav links (desktop): already adequate with hamburger replacing them on mobile
-- Journal article cards: already 32px padding — OK
-- Pricing CTA buttons: `h-10` (40px) -> add `sm:h-12` or increase base to `h-11` (44px)
-- Editor dock buttons: increase from `h-8` to `h-10` on mobile, but editor has mobile gate so lower priority
+### Phase 2: Pass debug data through the status endpoint (Backend)
 
-**Files:** `(site)/layout.tsx` (footer), `(site)/pricing/page.tsx`
+**File:** `backend/routes/compile.js` (or `backend/index.js` — wherever job results are stored/returned)
 
----
+The BullMQ job result is stored in memory and returned via `GET /api/compile/status/:jobId`. The `debug` field needs to flow through:
+- Store it in the in-memory job result
+- Return it in the status response
+- Also handle the sync fallback path (direct `processCompileJob` call)
 
-## Phase 5 — Journal & Docs Mobile Sidebar (High)
+### Phase 3: Display debug artifacts in the frontend error panel
 
-**Problem:** Both pages hide sidebar navigation on mobile. Users have no way to filter journal categories or navigate docs sections on phones.
+**File:** `frontend/src/app/app/PreviewPane.tsx`
 
-**Journal fix in `frontend/src/app/(site)/journal/page.tsx`:**
-- Add a horizontal scrollable category filter bar above the article list on mobile (`md:hidden`)
-- Pills/chips for each category: All, Typography, Layout, Conversion, etc.
-- Active state: solid black fill. Tapping filters the article list
+Extend the existing "Engine log" `<details>` section to also show:
+- **"Generated LaTeX"** — collapsible `<pre>` block showing the `.tex` source (if available)
+- **"Full Engine Log"** — the complete `.log` file (if available), replacing the truncated stderr
+- **"Compile Directory"** — list of files that existed (diagnostic)
+- **"Preamble (header.tex)"** — the injected preamble
 
-**Docs fix in `frontend/src/app/(site)/docs/page.tsx`:**
-- Add a collapsible "Sections" button at the top of docs content on mobile (`lg:hidden`)
-- Tapping reveals a full-width vertical list of section anchors
-- Closes after selection
+These go inside the existing error panel, as additional collapsible sections below the current "Engine log".
 
-**Files:** `(site)/journal/page.tsx`, `(site)/docs/page.tsx`, possibly `DocsNav.tsx`
+**File:** `frontend/src/app/app/useCompileQueue.ts`
 
----
+Pass the `debug` field through from the status response to the error state.
 
-## Phase 6 — Typography & Spacing Polish (Medium)
+**File:** `frontend/src/app/app/editor-types.ts`
 
-**Problem:** Many inline `text-[Xpx]` values don't scale. Padding is sometimes aggressive on small screens.
-
-**Fixes:**
-- Pricing tier numbers: `text-[4rem] md:text-[5rem]` -> `text-[2.5rem] md:text-[4rem] lg:text-[5rem]`
-- Pricing tier prices: `text-[2rem] md:text-[2.5rem]` — already responsive, OK
-- Docs content padding: `px-8 md:px-16` -> `px-4 sm:px-8 md:px-16` (more breathing room on small phones)
-- Hero section: already uses clamp() — OK
-- Section headings: already use responsive Tailwind text scale — OK
-
-**Files:** `(site)/pricing/page.tsx`, `(site)/docs/page.tsx`
-
----
-
-## Phase 7 — Global Mobile Utilities (Medium)
-
-**Fixes in `frontend/src/app/globals.css`:**
-- Add `:active` states for touch feedback on buttons (background shift on press)
-- Add scrollbar hide utility for horizontal scroll containers on mobile
-- Ensure `.skip-link` is accessible on mobile screen readers
-
-**Files:** `globals.css`
+Add a `CompileDebug` type:
+```typescript
+export type CompileDebug = {
+  texSource?: string | null
+  latexLog?: string | null
+  headerTex?: string | null
+  filesInDir?: string[] | null
+} | null
+```
 
 ---
 
-## Execution Order
+## Specific Code Changes
 
-| Phase | Severity | Scope | Files |
-|-------|----------|-------|-------|
-| 1. Nav hamburger | Critical | ~80 lines new component | layout.tsx, MobileNav.tsx |
-| 2. Pricing table | Critical | ~60 lines refactor | pricing/page.tsx |
-| 3. Editor gate | Critical | ~30 lines | CompileShell.tsx |
-| 4. Touch targets | High | ~15 lines tweaks | layout.tsx, pricing |
-| 5. Sidebar mobile | High | ~50 lines each | journal, docs |
-| 6. Typography | Medium | ~10 lines tweaks | pricing, docs |
-| 7. Global CSS | Medium | ~15 lines | globals.css |
+### 1. `backend/compile-worker.js` — Lines 541-552
 
-All changes maintain the Swiss-Ogilvy design system: sharp geometry, solid ink, red accent CTA, no rounded corners on marketing pages.
+**Before (current):**
+```javascript
+if (!result.ok) {
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+    const stderr = result.stderr || '';
+    const { errors: structuredErrors, fallbackMessage } = errorTranslator.translateCompileFailure(
+      stderr, { safeMode, errorCode: result.error }
+    );
+    return {
+      success: false, error: result.error || 'compile_failed',
+      message: fallbackMessage, warnings,
+      errors: structuredErrors,
+      detail: sanitizeStderr(stderr.split('\n').slice(-15).join('\n')),
+    };
+}
+```
+
+**After (new):**
+```javascript
+if (!result.ok) {
+    // ── Capture debug artifacts before cleanup ──
+    let debugTexSource = null;
+    let debugLatexLog = null;
+    let debugHeaderTex = null;
+    let debugFiles = [];
+
+    try {
+      debugFiles = fs.readdirSync(tmpBase);
+    } catch {}
+
+    // Read LuaLaTeX .log file (name varies by engine invocation)
+    for (const f of debugFiles) {
+      if (f.endsWith('.log')) {
+        try {
+          const raw = fs.readFileSync(path.join(tmpBase, f), 'utf8');
+          debugLatexLog = sanitizeStderr(raw).substring(0, 100000);
+        } catch {}
+        break;
+      }
+    }
+
+    // Read the preamble we injected
+    const headerPath = path.join(tmpBase, 'header.tex');
+    if (fs.existsSync(headerPath)) {
+      try { debugHeaderTex = fs.readFileSync(headerPath, 'utf8'); } catch {}
+    }
+
+    // Generate .tex source (fast: no LuaLaTeX, just Pandoc template rendering)
+    try {
+      const texPath = path.join(tmpBase, 'debug-output.tex');
+      const texArgs = args.map(a => a === pdfPath ? texPath : a);
+      const texProc = spawn('pandoc', texArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV });
+      await new Promise((resolve) => {
+        const t = setTimeout(() => { try { texProc.kill('SIGKILL'); } catch {} resolve(); }, 10000);
+        texProc.on('close', () => { clearTimeout(t); resolve(); });
+        texProc.on('error', () => { clearTimeout(t); resolve(); });
+      });
+      if (fs.existsSync(texPath)) {
+        debugTexSource = fs.readFileSync(texPath, 'utf8').substring(0, 100000);
+      }
+    } catch {}
+
+    // NOW clean up
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+
+    const stderr = result.stderr || '';
+    const { errors: structuredErrors, fallbackMessage } = errorTranslator.translateCompileFailure(
+      stderr, { safeMode, errorCode: result.error }
+    );
+    return {
+      success: false, error: result.error || 'compile_failed',
+      message: fallbackMessage, warnings,
+      errors: structuredErrors,
+      detail: sanitizeStderr(stderr.split('\n').slice(-80).join('\n')),
+      debug: {
+        texSource: debugTexSource,
+        latexLog: debugLatexLog,
+        headerTex: debugHeaderTex,
+        filesInDir: debugFiles,
+      },
+    };
+}
+```
+
+### 2. `backend/routes/compile.js` — Status endpoint
+
+Ensure the `debug` field from the job result is included in the status response. Find the status handler (likely `GET /api/compile/status/:jobId`) and add `debug` to the response body when the job has failed.
+
+### 3. `frontend/src/app/app/editor-types.ts`
+
+Add `CompileDebug` type. Add `debug` field to whichever type holds compile results.
+
+### 4. `frontend/src/app/app/useCompileQueue.ts`
+
+When a job fails and the status response includes `debug`, pass it through to the component state alongside the existing `errors` array.
+
+### 5. `frontend/src/app/app/PreviewPane.tsx`
+
+In the `ErrorPanel` component, after the existing "Engine log" `<details>`, add new collapsible sections:
+
+```jsx
+{debug?.texSource && (
+  <details className="mt-2">
+    <summary className="...">Generated LaTeX source</summary>
+    <pre className="...">{debug.texSource}</pre>
+  </details>
+)}
+{debug?.latexLog && (
+  <details className="mt-2">
+    <summary className="...">Full engine log</summary>
+    <pre className="...">{debug.latexLog}</pre>
+  </details>
+)}
+{debug?.headerTex && (
+  <details className="mt-2">
+    <summary className="...">Injected preamble (header.tex)</summary>
+    <pre className="...">{debug.headerTex}</pre>
+  </details>
+)}
+{debug?.filesInDir && debug.filesInDir.length > 0 && (
+  <details className="mt-2">
+    <summary className="...">Files in compile directory</summary>
+    <pre className="...">{debug.filesInDir.join('\n')}</pre>
+  </details>
+)}
+```
+
+---
+
+## Tasks for You (the user) After Implementation
+
+1. **Test locally:** Start backend + frontend, trigger a compile failure (e.g., invalid markdown with unmatched `$`), and verify the error panel now shows the debug sections.
+
+2. **Inspect the `.tex` source:** With the generated LaTeX visible, you can identify the exact issue — missing packages, broken preamble, font problems, etc.
+
+3. **Check Docker:** The `.tex` generation step runs Pandoc a second time (without LuaLaTeX). Ensure Pandoc is available in the Docker container (it is — it's the primary tool).
+
+4. **Optional: Gate behind debug flag.** The debug artifacts can be large (up to 100KB each). If you want to keep production responses lean, we can gate behind a `debug=true` query parameter. Let me know.
