@@ -4,16 +4,20 @@ FROM ubuntu:22.04
 # Set environment variables to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
-# LOCALE: C.UTF-8 is built into glibc on Debian/Ubuntu — no locale-gen needed.
-# This removes the en_US.UTF-8 dependency entirely. LuaLaTeX's luaotfload reads
-# LANG/LC_ALL; C.UTF-8 satisfies the "valid locale" requirement without the
-# locale package or locale-gen. One fewer failure surface.
+# Install system dependencies + locale support
+# BELT AND SUSPENDERS: Generate en_US.UTF-8 AND default to C.UTF-8.
+# C.UTF-8 is built into glibc (always available without locale-gen).
+# en_US.UTF-8 is generated as insurance — if any tool doesn't recognize C.UTF-8,
+# the compile-worker probes and falls back to en_US.UTF-8 automatically.
+# LuaLaTeX's luaotfload calls os.setlocale("") which reads LANG — it MUST resolve
+# to a valid locale or luaotfload exits with "Unable to read environment locale".
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
     gnupg \
     software-properties-common \
+    locales \
+    && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV LANG=C.UTF-8

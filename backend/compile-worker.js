@@ -92,18 +92,41 @@ function buildDebugMeta(job, opts = {}) {
 // SECURITY: Minimal environment for spawned Pandoc/LuaLaTeX processes.
 // Strips all backend secrets (Stripe, PocketBase, Redis) that Pandoc doesn't need.
 //
-// LOCALE: C.UTF-8 is the default — present on all modern glibc systems without
-// locale-gen. The Dockerfile sets LANG=C.UTF-8 and LC_ALL=C.UTF-8.
-// LuaLaTeX's luaotfload reads these to verify a valid locale exists.
-// Using C.UTF-8 removes the en_US.UTF-8 dependency entirely.
-const SPAWN_LOCALE = process.env.LANG || 'C.UTF-8';
+// LOCALE: LuaLaTeX's luaotfload calls os.setlocale("") which reads LANG.
+// If the locale doesn't exist, luaotfload exits with "Unable to read environment locale".
+// We probe at module load time to find a locale that ACTUALLY WORKS — never assume.
+// Priority: LANG env → C.UTF-8 → en_US.UTF-8 → C (bare C always exists)
+function probeWorkingLocale() {
+  const candidates = [
+    process.env.LANG,
+    'C.UTF-8',
+    'en_US.UTF-8',
+    'C',
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    try {
+      // Test if the locale is actually usable by running `locale` with it set
+      execSync(`LANG=${candidate} locale 2>&1`, { timeout: 3000, stdio: 'pipe' });
+      log.info({ locale: candidate }, `Locale probe: "${candidate}" works`);
+      return candidate;
+    } catch {
+      log.warn({ locale: candidate }, `Locale probe: "${candidate}" failed`);
+    }
+  }
+  // Nothing worked — return C as absolute last resort
+  log.error('Locale probe: ALL candidates failed, using bare "C"');
+  return 'C';
+}
+
+const SPAWN_LOCALE = probeWorkingLocale();
 const SAFE_SPAWN_ENV = {
   PATH: process.env.PATH,
   HOME: process.env.HOME || '/app',
   TMPDIR: os.tmpdir(),
   LANG: SPAWN_LOCALE,
-  LC_ALL: process.env.LC_ALL || SPAWN_LOCALE,
-  LC_CTYPE: process.env.LC_CTYPE || SPAWN_LOCALE,
+  LC_ALL: SPAWN_LOCALE,
+  LC_CTYPE: SPAWN_LOCALE,
   TEXMFHOME: process.env.TEXMFHOME || '',
   TEXMFVAR: process.env.TEXMFVAR || '',
   SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
