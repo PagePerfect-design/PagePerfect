@@ -52,6 +52,13 @@ export type PreflightResult = {
   }
 }
 
+export type CompileDebug = {
+  texSource?: string | null
+  latexLog?: string | null
+  headerTex?: string | null
+  filesInDir?: string[] | null
+} | null
+
 export type CompileQuality = {
   typographyScore: number | null
   typographyGrade: string | null

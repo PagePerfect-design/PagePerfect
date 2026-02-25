@@ -539,7 +539,49 @@ async function processCompileJob(job, templateRegistry) {
   });
 
   if (!result.ok) {
+    // ── Capture debug artifacts before cleanup ──
+    let debugTexSource = null;
+    let debugLatexLog = null;
+    let debugHeaderTex = null;
+    let debugFiles = [];
+
+    try { debugFiles = fs.readdirSync(tmpBase); } catch {}
+
+    // Read LuaLaTeX .log file (name varies by engine invocation)
+    for (const f of debugFiles) {
+      if (f.endsWith('.log')) {
+        try {
+          const raw = fs.readFileSync(path.join(tmpBase, f), 'utf8');
+          debugLatexLog = sanitizeStderr(raw).substring(0, 100000);
+        } catch {}
+        break;
+      }
+    }
+
+    // Read the preamble we injected
+    const headerPath = path.join(tmpBase, 'header.tex');
+    if (fs.existsSync(headerPath)) {
+      try { debugHeaderTex = fs.readFileSync(headerPath, 'utf8'); } catch {}
+    }
+
+    // Generate .tex source for diagnostics (no LuaLaTeX — just Pandoc template rendering)
+    try {
+      const texPath = path.join(tmpBase, 'debug-output.tex');
+      const texArgs = args.map(a => a === pdfPath ? texPath : a);
+      const texProc = spawn('pandoc', texArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV });
+      await new Promise((resolve) => {
+        const t = setTimeout(() => { try { texProc.kill('SIGKILL'); } catch {} resolve(); }, 10000);
+        texProc.on('close', () => { clearTimeout(t); resolve(); });
+        texProc.on('error', () => { clearTimeout(t); resolve(); });
+      });
+      if (fs.existsSync(texPath)) {
+        debugTexSource = fs.readFileSync(texPath, 'utf8').substring(0, 100000);
+      }
+    } catch {}
+
+    // NOW clean up
     try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+
     const stderr = result.stderr || '';
     const { errors: structuredErrors, fallbackMessage } = errorTranslator.translateCompileFailure(
       stderr, { safeMode, errorCode: result.error }
@@ -548,7 +590,13 @@ async function processCompileJob(job, templateRegistry) {
       success: false, error: result.error || 'compile_failed',
       message: fallbackMessage, warnings,
       errors: structuredErrors,
-      detail: sanitizeStderr(stderr.split('\n').slice(-15).join('\n')),
+      detail: sanitizeStderr(stderr.split('\n').slice(-80).join('\n')),
+      debug: {
+        texSource: debugTexSource,
+        latexLog: debugLatexLog,
+        headerTex: debugHeaderTex,
+        filesInDir: debugFiles,
+      },
     };
   }
 

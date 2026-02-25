@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, FileText, RotateCcw } from 'lucide-react'
 
-import type { Status, CompileError, CompileQuality } from './editor-types'
+import type { Status, CompileError, CompileQuality, CompileDebug } from './editor-types'
 import { ease } from './editor-types'
 import { translateError, suggestFix } from './editor-utils'
 
@@ -88,7 +88,7 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
    ERROR PANEL — Differentiates expired previews from compile failures
    ═══════════════════════════════════════════════════════════════════ */
 
-function ErrorPanel({ errors, onRetry }: { errors: CompileError[]; onRetry?: () => void }) {
+function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?: CompileDebug; onRetry?: () => void }) {
   // Prefer structured isSoft flag; fall back to regex detection for backward compat
   const isExpired = errors.some(e => e.isSoft) || (
     !errors.some(e => e.isSoft === false) &&
@@ -139,6 +139,46 @@ function ErrorPanel({ errors, onRetry }: { errors: CompileError[]; onRetry?: () 
             </pre>
           </details>
         )}
+        {debug?.latexLog && (
+          <details className="mt-2">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+              Full LaTeX log
+            </summary>
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+              {debug.latexLog}
+            </pre>
+          </details>
+        )}
+        {debug?.texSource && (
+          <details className="mt-2">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+              Generated LaTeX source
+            </summary>
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+              {debug.texSource}
+            </pre>
+          </details>
+        )}
+        {debug?.headerTex && (
+          <details className="mt-2">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+              Injected preamble (header.tex)
+            </summary>
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+              {debug.headerTex}
+            </pre>
+          </details>
+        )}
+        {debug?.filesInDir && debug.filesInDir.length > 0 && (
+          <details className="mt-2">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+              Files in compile directory
+            </summary>
+            <pre className="mt-2 max-h-[150px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+              {debug.filesInDir.join('\n')}
+            </pre>
+          </details>
+        )}
         {onRetry && (
           <button
             onClick={onRetry}
@@ -166,6 +206,7 @@ export default function PreviewPane({
   loading,
   status,
   errors,
+  debug,
   isWatermarked,
   quality,
   onRetry,
@@ -175,6 +216,7 @@ export default function PreviewPane({
   loading: boolean
   status: Status
   errors: CompileError[]
+  debug?: CompileDebug
   isWatermarked: boolean
   quality?: CompileQuality
   onRetry?: () => void
@@ -242,7 +284,7 @@ export default function PreviewPane({
             ) : loading ? (
               <BookSkeleton />
             ) : status === 'error' && errors.length > 0 ? (
-              <ErrorPanel errors={errors} onRetry={onRetry} />
+              <ErrorPanel errors={errors} debug={debug} onRetry={onRetry} />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3]">
                 <div className="text-center">

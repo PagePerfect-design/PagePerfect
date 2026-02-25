@@ -238,6 +238,7 @@ export default function CompileShell() {
     loading,
     status,
     errors,
+    debug,
     pdfUrl,
     lastDownloadWatermarked,
     quality,
@@ -551,6 +552,7 @@ export default function CompileShell() {
               loading={loading}
               status={status}
               errors={errors}
+              debug={debug}
               isWatermarked={!hasTier(tier, 'publisher') && !!pdfUrl}
               quality={quality}
               onRetry={() => compile(false)}

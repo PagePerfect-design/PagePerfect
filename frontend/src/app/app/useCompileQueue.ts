@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import type {
   TemplateKey, HeadingVariant, PageSize, MarginPreset,
   CompileMode, CustomFont, Status, CompileError, Stage, Platform,
-  CompileQuality, Asset,
+  CompileQuality, CompileDebug, Asset,
 } from './editor-types'
 import { adjustHeadingsForTemplate, buildFilename, abortableDelay } from './editor-utils'
 import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
@@ -38,6 +38,7 @@ export function useCompileQueue({
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [errors, setErrors] = useState<CompileError[]>([])
+  const [debug, setDebug] = useState<CompileDebug>(null)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [lastDownloadWatermarked, setLastDownloadWatermarked] = useState(false)
   const [quality, setQuality] = useState<CompileQuality>(null)
@@ -121,6 +122,7 @@ export function useCompileQueue({
     setLoading(true)
     setStatus('compiling')
     setErrors([])
+    setDebug(null)
 
     try {
       const effectiveMd = adjustHeadingsForTemplate(manuscript, template)
@@ -196,6 +198,7 @@ export function useCompileQueue({
         if (!msgs.length) msgs.push({ message: `Compile failed (${resp.status}).` })
         if (payload?.detail) msgs.push({ message: `__detail__${payload.detail}` })
         setErrors(msgs)
+        if (payload?.debug) setDebug(payload.debug)
         setStatus('error')
         return
       }
@@ -275,6 +278,7 @@ export function useCompileQueue({
             if (!msgs.length) msgs.push({ message: 'Compilation failed.' })
             if (statusData.detail) msgs.push({ message: `__detail__${statusData.detail}` })
             setErrors(msgs)
+            if (statusData.debug) setDebug(statusData.debug)
             setStatus('error')
             return
           }
@@ -390,6 +394,7 @@ export function useCompileQueue({
     loading,
     status,
     errors,
+    debug,
     pdfUrl,
     pdfBlobRef,
     lastDownloadWatermarked,
