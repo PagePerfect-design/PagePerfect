@@ -4,13 +4,21 @@ FROM ubuntu:22.04
 # Set environment variables to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
+# Install system dependencies + locale support
+# CRITICAL: Without locales + locale-gen, LuaLaTeX's luaotfload will fail with
+# "Unable to read environment locale: exit now." because en_US.UTF-8 doesn't exist.
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
     gnupg \
     software-properties-common \
+    locales \
+    && locale-gen en_US.UTF-8 \
+    && update-locale LANG=en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 # Install Node.js 18
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \

@@ -364,6 +364,17 @@ const ERROR_PATTERNS = [
     }),
   },
 
+  // ── Locale / environment errors ──
+  {
+    pattern: /Unable to read environment locale/i,
+    severity: 'error',
+    category: 'server',
+    translate: () => ({
+      message: 'Server locale configuration error — the typesetting engine cannot start',
+      fix: 'This is a server configuration issue. Please try again later or contact support.',
+    }),
+  },
+
   // ── Lua runtime errors (LuaTeX-specific) ──
   {
     pattern: /LuaTeX error.*?:\s*(.{1,150})/i,

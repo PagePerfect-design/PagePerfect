@@ -55,11 +55,20 @@ const MAX_STDERR_BYTES = 256 * 1024; // 256KB — cap stderr accumulation from P
 
 // SECURITY: Minimal environment for spawned Pandoc/LuaLaTeX processes.
 // Strips all backend secrets (Stripe, PocketBase, Redis) that Pandoc doesn't need.
+//
+// LOCALE FIX: LuaLaTeX's luaotfload reads LANG/LC_ALL to determine the locale.
+// If the locale specified doesn't exist in the container (no locale-gen), luaotfload
+// fails with "Unable to read environment locale: exit now." — a fatal error.
+// Defense in depth: set LANG, LC_ALL, and LC_CTYPE. The Dockerfile generates
+// en_US.UTF-8, but if that's missing we fall back to C.UTF-8 (always available).
+const PREFERRED_LOCALE = process.env.LANG || 'en_US.UTF-8';
 const SAFE_SPAWN_ENV = {
   PATH: process.env.PATH,
   HOME: process.env.HOME || '/app',
   TMPDIR: os.tmpdir(),
-  LANG: process.env.LANG || 'en_US.UTF-8',
+  LANG: PREFERRED_LOCALE,
+  LC_ALL: process.env.LC_ALL || PREFERRED_LOCALE,
+  LC_CTYPE: process.env.LC_CTYPE || PREFERRED_LOCALE,
   TEXMFHOME: process.env.TEXMFHOME || '',
   TEXMFVAR: process.env.TEXMFVAR || '',
   SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
