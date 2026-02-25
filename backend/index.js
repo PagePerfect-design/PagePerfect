@@ -10,6 +10,7 @@ const { execSync } = require('child_process');
 const GridSystem = require('./grid-system');
 const lulu = require('./lulu');
 const log = require('./logger');
+const { createResultStore } = require('./result-store');
 
 // ── Redis (optional — gracefully degrades if not configured) ──
 let redis = null;
@@ -46,26 +47,18 @@ let compileQueueEvents = null;
 const jobResults = new Map();
 const RESULT_REDIS_TTL = 1800; // 30 minutes (up from 10 — results now persist)
 
-// ── Persistent results directory ──
-// Compiled PDFs are copied here after compilation so they survive temp dir cleanup.
-// Uses 'ppresults' prefix (not 'pp-') to avoid being swept by the orphan sweeper.
-const RESULTS_DIR = path.join(os.tmpdir(), 'ppresults');
-if (!fs.existsSync(RESULTS_DIR)) fs.mkdirSync(RESULTS_DIR, { recursive: true });
+// ── Result Store (pluggable: local disk or S3) ──
+// Set RESULT_STORE_TYPE=s3 for multi-replica deployments.
+// See result-store.js for full configuration.
+const resultStore = createResultStore();
+const RESULTS_DIR = resultStore.type === 'local' ? resultStore.dir : '__s3__';
 
 /**
- * Persist a compiled PDF from the ephemeral temp dir to the results dir.
- * Returns the new path, or null on failure.
+ * Persist a compiled PDF via the result store abstraction.
+ * Returns the new path/reference, or null on failure.
  */
 async function persistPdf(jobId, srcPdfPath) {
-  try {
-    const ext = path.extname(srcPdfPath) || '.pdf';
-    const destPath = path.join(RESULTS_DIR, `${jobId}${ext}`);
-    await fsp.copyFile(srcPdfPath, destPath);
-    return destPath;
-  } catch (err) {
-    log.error({ module: 'persist', jobId, err: err.message }, 'Failed to persist PDF');
-    return null;
-  }
+  return resultStore.persist(jobId, srcPdfPath);
 }
 
 function storeJobResult(id, value) {
@@ -88,15 +81,15 @@ async function getJobResult(id) {
     const raw = await redis.get(`pp:result:${id}`);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // Check if the PDF file still exists on disk
+    // Check if the PDF file still exists (local disk or S3)
     if (parsed.pdfPath && parsed.success) {
-      try {
-        await fsp.access(parsed.pdfPath);
+      const fileExists = await resultStore.exists(parsed.pdfPath);
+      if (fileExists) {
         // File exists — promote back to in-memory for faster subsequent access
         parsed._recoveredFromRedis = true;
         jobResults.set(id, parsed);
         return parsed;
-      } catch {
+      } else {
         // File was cleaned up — result is unservable, clean up Redis
         redis.del(`pp:result:${id}`).catch(() => {});
         return null;
@@ -136,9 +129,9 @@ const resultCleanupInterval = setInterval(() => {
   for (const [id, res] of jobResults) {
     if (res._storedAt && now - res._storedAt > RESULT_TTL_MS) {
       if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {});
-      // Clean persisted PDF from results dir
-      if (res.pdfPath && res.pdfPath.startsWith(RESULTS_DIR)) {
-        fsp.unlink(res.pdfPath).catch(() => {});
+      // Clean persisted PDF via result store
+      if (res.pdfPath && resultStore.owns(res.pdfPath)) {
+        resultStore.remove(res.pdfPath).catch(() => {});
       }
       deleteJobResult(id);
     }
@@ -146,25 +139,11 @@ const resultCleanupInterval = setInterval(() => {
 }, 60_000);
 resultCleanupInterval.unref();
 
-// Results dir sweeper: catch orphaned PDFs (e.g. from unclean shutdowns)
+// Result store sweeper: catch orphaned PDFs (e.g. from unclean shutdowns)
 const RESULTS_MAX_AGE_MS = 45 * 60 * 1000; // 45 minutes
 const resultsCleanupInterval = setInterval(async () => {
-  try {
-    const entries = await fsp.readdir(RESULTS_DIR);
-    const now = Date.now();
-    let swept = 0;
-    for (const entry of entries) {
-      const fullPath = path.join(RESULTS_DIR, entry);
-      try {
-        const stats = await fsp.stat(fullPath);
-        if (now - stats.mtimeMs > RESULTS_MAX_AGE_MS) {
-          await fsp.unlink(fullPath);
-          swept++;
-        }
-      } catch { /* already cleaned */ }
-    }
-    if (swept > 0) log.info({ module: 'disk-sweep', swept }, 'Cleaned orphaned result PDFs');
-  } catch { /* best-effort */ }
+  const swept = await resultStore.sweep(RESULTS_MAX_AGE_MS);
+  if (swept > 0) log.info({ module: 'result-sweep', swept, storeType: resultStore.type }, 'Cleaned orphaned result PDFs');
 }, 5 * 60 * 1000);
 resultsCleanupInterval.unref();
 
@@ -267,7 +246,7 @@ async function checkDiskSpace() {
         for (const [id, res] of jobResults) {
           if (res._storedAt && now - res._storedAt > EMERGENCY_RESULT_TTL_MS) {
             if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {});
-            if (res.pdfPath && res.pdfPath.startsWith(RESULTS_DIR)) fsp.unlink(res.pdfPath).catch(() => {});
+            if (res.pdfPath && resultStore.owns(res.pdfPath)) resultStore.remove(res.pdfPath).catch(() => {});
             deleteJobResult(id);
           }
         }
@@ -355,51 +334,60 @@ const manuscriptSweepInterval = setInterval(sweepExpiredManuscripts, 6 * 60 * 60
 manuscriptSweepInterval.unref();
 
 // ── BullMQ Setup ──
+// Set WORKER_ONLY=true to disable the embedded compile worker.
+// In that mode, compile jobs are enqueued but processed by standalone worker.js processes.
+// This enables horizontal scaling: multiple API servers + dedicated worker fleet.
+const WORKER_ONLY = process.env.WORKER_ONLY === 'true';
+
 if (redis) {
   try {
     const { Queue, Worker, QueueEvents } = require('bullmq');
 
     compileQueue = new Queue('pp-compile', { connection: createRedisConnection({ forBullMQ: true }) });
 
-    compileWorker = new Worker('pp-compile', async (job) => {
-      return processCompileJob(job, DESIGN_TEMPLATES);
-    }, {
-      connection: createRedisConnection({ forBullMQ: true }),
-      concurrency: Number(process.env.COMPILE_CONCURRENCY || 3),
-      lockDuration: 60_000,
-      stalledInterval: 30_000,
-      maxStalledCount: 0,
-      removeOnComplete: { count: 200 },
-      removeOnFail: { count: 500 },
-    });
-
-    compileWorker.on('completed', async (job, result) => {
-      // Persist PDF to results dir so it survives temp dir cleanup and restarts
-      if (result.success && result.pdfPath) {
-        const persistedPath = await persistPdf(job.id, result.pdfPath);
-        if (persistedPath) {
-          // Clean up the compile temp dir immediately — PDF is safe in results dir
-          if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
-          result.pdfPath = persistedPath;
-          delete result.tmpBase;
-        }
-      }
-      storeJobResult(job.id, result);
-      log.info({ module: 'queue', jobId: job.id, elapsed: result.elapsed || '?' }, 'Job completed');
-    });
-
-    compileWorker.on('failed', (job, err) => {
-      storeJobResult(job.id, {
-        success: false,
-        error: 'worker_error',
-        message: err.message || 'Compilation failed unexpectedly.',
+    if (!WORKER_ONLY) {
+      compileWorker = new Worker('pp-compile', async (job) => {
+        return processCompileJob(job, DESIGN_TEMPLATES);
+      }, {
+        connection: createRedisConnection({ forBullMQ: true }),
+        concurrency: Number(process.env.COMPILE_CONCURRENCY || 3),
+        lockDuration: 60_000,
+        stalledInterval: 30_000,
+        maxStalledCount: 0,
+        removeOnComplete: { count: 200 },
+        removeOnFail: { count: 500 },
       });
-      log.error({ module: 'queue', jobId: job?.id, err: err.message }, 'Job failed');
-    });
+
+      compileWorker.on('completed', async (job, result) => {
+        // Persist PDF to results store so it survives temp dir cleanup and restarts
+        if (result.success && result.pdfPath) {
+          const persistedPath = await persistPdf(job.id, result.pdfPath);
+          if (persistedPath) {
+            // Clean up the compile temp dir immediately — PDF is safe in results store
+            if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
+            result.pdfPath = persistedPath;
+            delete result.tmpBase;
+          }
+        }
+        storeJobResult(job.id, result);
+        log.info({ module: 'queue', jobId: job.id, elapsed: result.elapsed || '?' }, 'Job completed');
+      });
+
+      compileWorker.on('failed', (job, err) => {
+        storeJobResult(job.id, {
+          success: false,
+          error: 'worker_error',
+          message: err.message || 'Compilation failed unexpectedly.',
+        });
+        log.error({ module: 'queue', jobId: job?.id, err: err.message }, 'Job failed');
+      });
+    } else {
+      log.info({ module: 'queue' }, 'WORKER_ONLY=true — embedded worker disabled, use standalone worker.js');
+    }
 
     compileQueueEvents = new QueueEvents('pp-compile', { connection: createRedisConnection({ forBullMQ: true }) });
 
-    log.info({ module: 'queue', concurrency: process.env.COMPILE_CONCURRENCY || 3 }, 'BullMQ initialized');
+    log.info({ module: 'queue', concurrency: WORKER_ONLY ? 'external' : (process.env.COMPILE_CONCURRENCY || 3), workerOnly: WORKER_ONLY }, 'BullMQ initialized');
   } catch (err) {
     log.warn({ module: 'queue', err: err.message }, 'BullMQ setup failed, using sync fallback');
     compileQueue = null;
@@ -681,6 +669,7 @@ const ctx = {
   storeJobSecret,
   getJobSecret,
   persistPdf,
+  resultStore,
   RESULTS_DIR,
   get activeSyncCompiles() { return activeSyncCompiles; },
   set activeSyncCompiles(v) { activeSyncCompiles = v; },
@@ -773,6 +762,7 @@ const server = app.listen(PORT, () => {
     resend: process.env.RESEND_API_KEY ? 'configured' : 'not configured',
     templates: Object.keys(DESIGN_TEMPLATES).length,
     rateLimit: '20 compiles/min, 120 requests/min',
+    resultStore: resultStore.type + (resultStore.type === 's3' ? ` (${resultStore.bucket})` : ` (${resultStore.dir})`),
     queue: compileQueue ? 'BullMQ (concurrency ' + (process.env.COMPILE_CONCURRENCY || 3) + ')' : 'sync fallback',
   }, `Backend listening on http://localhost:${PORT}`);
 });

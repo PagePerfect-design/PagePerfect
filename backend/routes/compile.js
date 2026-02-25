@@ -15,6 +15,7 @@ const multilingual = require('../multilingual');
 const provenance = require('../provenance');
 const log = require('../logger');
 const { processCompileJob } = require('../compile-worker');
+const { checkExportEntitlement } = require('../entitlements');
 
 // ── Constants ──
 const MAX_MD_BYTES = Number(process.env.MAX_MD_BYTES || 2_000_000);
@@ -209,6 +210,27 @@ module.exports = function compileRoutes(ctx) {
     if (!ALL_SIZES.has(pageSize)) pageSize = 'letter';
     if (!ALL_MARGINS.has(marginPreset)) marginPreset = 'normal';
 
+    // ── Per-manuscript entitlement check (Publisher tier) ──
+    // Publisher tier is per-manuscript: each $19.99 purchase binds to one manuscript.
+    // Studio tier is lifetime unlimited — no entitlement check needed.
+    if (isDownload && userTier === 'publisher' && user.publisherWindowEnd) {
+      const entitlement = await checkExportEntitlement({
+        userId: user.userId,
+        publisherWindowEnd: user.publisherWindowEnd,
+        title,
+        content: manuscriptText,
+        redis: ctx.redis,
+        redisHealthy: ctx.redisHealthy,
+      });
+      if (!entitlement.allowed) {
+        return res.status(403).json({
+          error: 'entitlement_exhausted',
+          message: entitlement.reason,
+          requiredTier: 'publisher',
+        });
+      }
+    }
+
     // ── Async path: enqueue to BullMQ ──
     if (ctx.compileQueue && ctx.redisHealthy) {
       try {
@@ -314,7 +336,8 @@ module.exports = function compileRoutes(ctx) {
             const rv = job.returnvalue;
             if (rv && typeof rv === 'object') {
               // Persist PDF if the on('completed') handler hasn't done it yet
-              if (rv.success && rv.pdfPath && !rv.pdfPath.startsWith(ctx.RESULTS_DIR)) {
+              const alreadyPersisted = ctx.resultStore ? ctx.resultStore.owns(rv.pdfPath) : (rv.pdfPath && rv.pdfPath.startsWith(ctx.RESULTS_DIR));
+              if (rv.success && rv.pdfPath && !alreadyPersisted) {
                 try {
                   const persistedPath = await ctx.persistPdf(id, rv.pdfPath);
                   if (persistedPath) {
@@ -365,7 +388,10 @@ module.exports = function compileRoutes(ctx) {
       }
     }
 
-    if (!result.pdfPath || !fs.existsSync(result.pdfPath)) { ctx.deleteJobResult(id); return res.status(410).json({ error: 'expired', message: 'Result has expired. Please recompile.' }); }
+    const fileExists = ctx.resultStore
+      ? await ctx.resultStore.exists(result.pdfPath)
+      : (result.pdfPath && fs.existsSync(result.pdfPath));
+    if (!result.pdfPath || !fileExists) { ctx.deleteJobResult(id); return res.status(410).json({ error: 'expired', message: 'Result has expired. Please recompile.' }); }
 
     const isEpub = result.outputFormat === 'EPUB3';
     const contentType = isEpub ? 'application/epub+zip' : 'application/pdf';
@@ -382,7 +408,9 @@ module.exports = function compileRoutes(ctx) {
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     res.setHeader('Cache-Control', 'no-store');
 
-    const stream = fs.createReadStream(result.pdfPath);
+    const stream = ctx.resultStore
+      ? ctx.resultStore.createReadStream(result.pdfPath)
+      : fs.createReadStream(result.pdfPath);
     stream.on('error', () => { if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' }); });
     stream.pipe(res);
   });
