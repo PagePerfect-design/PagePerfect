@@ -49,26 +49,61 @@ const {
   BIB_PATH,
 } = require('./compile-utils');
 
+const { execSync } = require('child_process');
+
 const gridSystem = new GridSystem();
 const COMPILE_TIMEOUT_MS = Number(process.env.COMPILE_TIMEOUT_MS || 45_000);
 const MAX_STDERR_BYTES = 256 * 1024; // 256KB — cap stderr accumulation from Pandoc
 
+// ── Toolchain version detection (once at module load) ──
+let _pandocVersion = 'unknown';
+let _lualatexVersion = 'unknown';
+try {
+  const pv = execSync('pandoc --version 2>/dev/null | head -1', { encoding: 'utf8', timeout: 5000 });
+  const m = pv.match(/pandoc(?:\.exe)?\s+([\d.]+)/);
+  if (m) _pandocVersion = m[1];
+} catch {}
+try {
+  const lv = execSync('lualatex --version 2>/dev/null | head -1', { encoding: 'utf8', timeout: 5000 });
+  const m = lv.match(/Version\s+([^\s(]+)/i) || lv.match(/([\d.]+)/);
+  if (m) _lualatexVersion = m[1];
+} catch {}
+
+/**
+ * Build deterministic runtime metadata for every compile result.
+ * Always present — allows correlating failures with environment state
+ * without digging into server logs.
+ */
+function buildDebugMeta(job, opts = {}) {
+  return {
+    locale: SAFE_SPAWN_ENV.LANG,
+    pandocVersion: _pandocVersion,
+    lualatexVersion: _lualatexVersion,
+    template: opts.template || job.data.template,
+    safeMode: Boolean(opts.safeMode ?? job.data.safeMode),
+    compileMode: opts.compileMode || job.data.compileMode || 'fast',
+    nodeVersion: process.version,
+    workerPid: process.pid,
+    containerId: os.hostname(),
+    timestamp: new Date().toISOString(),
+  };
+}
+
 // SECURITY: Minimal environment for spawned Pandoc/LuaLaTeX processes.
 // Strips all backend secrets (Stripe, PocketBase, Redis) that Pandoc doesn't need.
 //
-// LOCALE FIX: LuaLaTeX's luaotfload reads LANG/LC_ALL to determine the locale.
-// If the locale specified doesn't exist in the container (no locale-gen), luaotfload
-// fails with "Unable to read environment locale: exit now." — a fatal error.
-// Defense in depth: set LANG, LC_ALL, and LC_CTYPE. The Dockerfile generates
-// en_US.UTF-8, but if that's missing we fall back to C.UTF-8 (always available).
-const PREFERRED_LOCALE = process.env.LANG || 'en_US.UTF-8';
+// LOCALE: C.UTF-8 is the default — present on all modern glibc systems without
+// locale-gen. The Dockerfile sets LANG=C.UTF-8 and LC_ALL=C.UTF-8.
+// LuaLaTeX's luaotfload reads these to verify a valid locale exists.
+// Using C.UTF-8 removes the en_US.UTF-8 dependency entirely.
+const SPAWN_LOCALE = process.env.LANG || 'C.UTF-8';
 const SAFE_SPAWN_ENV = {
   PATH: process.env.PATH,
   HOME: process.env.HOME || '/app',
   TMPDIR: os.tmpdir(),
-  LANG: PREFERRED_LOCALE,
-  LC_ALL: process.env.LC_ALL || PREFERRED_LOCALE,
-  LC_CTYPE: process.env.LC_CTYPE || PREFERRED_LOCALE,
+  LANG: SPAWN_LOCALE,
+  LC_ALL: process.env.LC_ALL || SPAWN_LOCALE,
+  LC_CTYPE: process.env.LC_CTYPE || SPAWN_LOCALE,
   TEXMFHOME: process.env.TEXMFHOME || '',
   TEXMFVAR: process.env.TEXMFVAR || '',
   SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
@@ -168,6 +203,7 @@ async function processCompileJob(job, templateRegistry) {
       success: false, error: 'manuscript_not_found',
       message: `Manuscript file not found: ${err.message}`,
       debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: null, manuscriptPath },
+      debugMeta: buildDebugMeta(job),
     };
   }
 
@@ -186,13 +222,14 @@ async function processCompileJob(job, templateRegistry) {
   const wantEpub = outputFormat === 'epub';
 
   // ── Feature gates (re-checked — tier may have changed) ──
+  const meta = buildDebugMeta(job, { template: tplKey, safeMode, compileMode });
   if (wantEpub && !hasTier(userTier, 'studio'))
-    return { success: false, error: 'tier_required', message: 'EPUB export requires Studio.' };
+    return { success: false, error: 'tier_required', message: 'EPUB export requires Studio.', debugMeta: meta };
   if (wantPdfX && !hasTier(userTier, 'publisher'))
-    return { success: false, error: 'tier_required', message: 'PDF/X-1a requires Publisher or Studio.' };
+    return { success: false, error: 'tier_required', message: 'PDF/X-1a requires Publisher or Studio.', debugMeta: meta };
   if (customFonts && typeof customFonts === 'object' && Object.keys(customFonts).length > 0)
     if (!hasTier(userTier, 'studio'))
-      return { success: false, error: 'tier_required', message: 'Custom fonts require Studio.' };
+      return { success: false, error: 'tier_required', message: 'Custom fonts require Studio.', debugMeta: meta };
 
   // ── Watermark decision — re-evaluated at compile time ──
   // Publisher+ tiers get unwatermarked downloads; everyone else gets watermarked.
@@ -449,6 +486,7 @@ async function processCompileJob(job, templateRegistry) {
     return {
       success: false, error: 'preamble_error', message: String(err), warnings,
       debug: { texSource: null, latexLog: null, headerTex: debugHeaderTex, filesInDir: debugFiles, captureError: null },
+      debugMeta: meta,
     };
   }
 
@@ -472,6 +510,7 @@ async function processCompileJob(job, templateRegistry) {
         message: `Insufficient disk space (${freeMB} MB free). The server needs at least 50 MB to compile a PDF. Please try again later.`,
         warnings,
         debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: debugFiles, captureError: null, freeMB },
+        debugMeta: meta,
       };
     }
   } catch (err) {
@@ -639,18 +678,33 @@ async function processCompileJob(job, templateRegistry) {
       detail = stderr.substring(0, 5000);
     }
 
+    // ── Persist debug artifacts to disk (keep Redis payload small) ──
+    const debugPayload = {
+      texSource: debugTexSource,
+      latexLog: debugLatexLog,
+      headerTex: debugHeaderTex,
+      filesInDir: debugFiles,
+      captureError: debugCaptureError,
+    };
+    let debugRef = null;
+    try {
+      const debugDir = path.join(os.tmpdir(), 'pp-debug');
+      if (!fs.existsSync(debugDir)) fs.mkdirSync(debugDir, { recursive: true });
+      const debugPath = path.join(debugDir, `${job.id}.json`);
+      fs.writeFileSync(debugPath, JSON.stringify(debugPayload), 'utf8');
+      debugRef = debugPath;
+    } catch (debugWriteErr) {
+      log.warn({ jobId: job.id, err: debugWriteErr.message }, 'Failed to persist debug artifacts to disk — inlining in result');
+    }
+
     return {
       success: false, error: result.error || 'compile_failed',
       message: fallbackMessage, warnings,
       errors: structuredErrors,
       detail,
-      debug: {
-        texSource: debugTexSource,
-        latexLog: debugLatexLog,
-        headerTex: debugHeaderTex,
-        filesInDir: debugFiles,
-        captureError: debugCaptureError,
-      },
+      // If disk persist succeeded, only send the reference. Otherwise inline the full payload.
+      debug: debugRef ? { debugRef } : debugPayload,
+      debugMeta: meta,
     };
   }
 
@@ -667,6 +721,7 @@ async function processCompileJob(job, templateRegistry) {
       return {
         success: false, error: 'pdfx_conversion_failed', message: conv.error, warnings,
         debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: debugFiles, captureError: null },
+        debugMeta: meta,
       };
     }
     finalPdfPath = pdfxPath;
@@ -723,6 +778,7 @@ async function processCompileJob(job, templateRegistry) {
     warnings,
     outputFormat: finalFormat,
     exportSnapshot,
+    debugMeta: meta,
     userId, userTier,
     isDownload,
     template: tplKey,

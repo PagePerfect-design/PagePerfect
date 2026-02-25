@@ -6,6 +6,10 @@
  * pipeline. Both success-path warnings and failure-path errors flow through
  * this module so the frontend receives consistent structured objects.
  *
+ * ERROR CLASSIFICATION:
+ *   isServerError: true  → "This is our fault" (locale, engine, disk, permissions)
+ *   isServerError: false → "This is your document" (syntax, encoding, capacity, images)
+ *
  * Used by compile-worker.js on both success and failure paths.
  */
 
@@ -15,12 +19,16 @@ const { parseMissingCitations, parseMissingPackages } = require('./compile-utils
 // Error Pattern Registry — exhaustive patterns from stderr
 // ================================================================
 
+// Categories classified as server errors (our fault, not the user's document):
+const SERVER_ERROR_CATEGORIES = new Set(['server', 'pdfx']);
+
 const ERROR_PATTERNS = [
-  // ── Font errors (blocking) ──
+  // ── Font errors (blocking — usually a server-side font missing from the container) ──
   {
     pattern: /The font "([^"]+)" cannot be found/i,
     severity: 'error',
     category: 'font',
+    isServerError: true, // font should be in the container
     translate: (m) => ({
       message: `Font "${m[1]}" is not available on the server`,
       fix: 'Try a different template — each template bundles its own fonts.',
@@ -30,6 +38,7 @@ const ERROR_PATTERNS = [
     pattern: /Package fontspec Error.*?"([^"]+)"/i,
     severity: 'error',
     category: 'font',
+    isServerError: true,
     translate: (m) => ({
       message: `Font "${m[1]}" is not available on the server`,
       fix: 'Try a different template.',
@@ -39,6 +48,7 @@ const ERROR_PATTERNS = [
     pattern: /luaotfload.*cannot/i,
     severity: 'error',
     category: 'font',
+    isServerError: true,
     translate: () => ({
       message: 'A font could not be loaded by the engine',
       fix: 'Try a different template.',
@@ -463,10 +473,12 @@ function translateStderr(stderr) {
     let match;
     while ((match = regex.exec(stderr)) !== null) {
       const translated = entry.translate(match);
+      const isServer = entry.isServerError ?? SERVER_ERROR_CATEGORIES.has(entry.category);
       const item = {
         ...translated,
         severity: entry.severity,
         category: entry.category,
+        isServerError: isServer,
         raw: match[0].slice(0, 200),
       };
 
@@ -488,6 +500,8 @@ function translateStderr(stderr) {
       total: dedupedErrors.length + dedupedWarnings.length,
       critical: dedupedErrors.length,
       cosmetic: dedupedWarnings.filter(w => w.severity === 'info').length,
+      serverErrors: dedupedErrors.filter(e => e.isServerError).length,
+      clientErrors: dedupedErrors.filter(e => !e.isServerError).length,
     },
   };
 }
@@ -516,6 +530,7 @@ function translateCompileFailure(stderr, { safeMode = false, errorCode } = {}) {
       fix: 'Try Fast compile mode, or split into smaller sections.',
       severity: 'error',
       category: 'timeout',
+      isServerError: false, // timeout is ambiguous but usually user's large document
     });
   }
   if (errorCode === 'spawn_failed') {
@@ -524,6 +539,7 @@ function translateCompileFailure(stderr, { safeMode = false, errorCode } = {}) {
       fix: 'This is a server issue. Please try again later.',
       severity: 'error',
       category: 'server',
+      isServerError: true,
     });
   }
 
@@ -537,11 +553,13 @@ function translateCompileFailure(stderr, { safeMode = false, errorCode } = {}) {
       let match;
       while ((match = regex.exec(stderr)) !== null) {
         const translated = entry.translate(match);
+        const isServer = entry.isServerError ?? SERVER_ERROR_CATEGORIES.has(entry.category);
         errors.push({
           message: translated.message,
           fix: translated.fix || null,
           severity: entry.severity,
           category: entry.category,
+          isServerError: isServer,
         });
       }
     }
@@ -581,6 +599,7 @@ function translateCompileFailure(stderr, { safeMode = false, errorCode } = {}) {
       fix: null,
       severity: 'error',
       category: 'unknown',
+      isServerError: false,
     });
   }
 
@@ -591,6 +610,7 @@ function translateCompileFailure(stderr, { safeMode = false, errorCode } = {}) {
       fix: null,
       severity: 'info',
       category: 'info',
+      isServerError: false,
     });
   }
 
@@ -607,4 +627,4 @@ function translateCompileFailure(stderr, { safeMode = false, errorCode } = {}) {
 // Exports
 // ================================================================
 
-module.exports = { translateStderr, translateCompileFailure, ERROR_PATTERNS };
+module.exports = { translateStderr, translateCompileFailure, ERROR_PATTERNS, SERVER_ERROR_CATEGORIES };

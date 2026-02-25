@@ -207,6 +207,36 @@ setTimeout(sweepExpiredAssets, 60_000); // first sweep 1 min after boot
 const assetSweepInterval = setInterval(sweepExpiredAssets, 60 * 60 * 1000); // hourly
 assetSweepInterval.unref();
 
+// ── Debug Artifact Sweeper (1h TTL) ──
+// Debug artifacts (texSource, latexLog, headerTex) are written to /tmp/pp-debug/{jobId}.json
+// by the compile worker to keep Redis payloads small. Expire after 1 hour.
+const DEBUG_DIR = path.join(os.tmpdir(), 'pp-debug');
+const DEBUG_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour
+
+async function sweepExpiredDebugArtifacts() {
+  try {
+    if (!fs.existsSync(DEBUG_DIR)) return;
+    const entries = await fsp.readdir(DEBUG_DIR);
+    const now = Date.now();
+    let swept = 0;
+    for (const entry of entries) {
+      const fullPath = path.join(DEBUG_DIR, entry);
+      try {
+        const stats = await fsp.stat(fullPath);
+        if (now - stats.mtimeMs > DEBUG_MAX_AGE_MS) {
+          await fsp.unlink(fullPath);
+          swept++;
+        }
+      } catch { /* already cleaned */ }
+    }
+    if (swept > 0) log.info({ module: 'debug-sweep', swept }, 'Cleaned expired debug artifacts');
+  } catch { /* best-effort */ }
+}
+
+setTimeout(sweepExpiredDebugArtifacts, 90_000);
+const debugSweepInterval = setInterval(sweepExpiredDebugArtifacts, 30 * 60 * 1000); // every 30 min
+debugSweepInterval.unref();
+
 // ── Disk Space Sentinel ──
 // Monitors /tmp usage and triggers emergency sweep if above threshold
 const DISK_SPACE_CHECK_INTERVAL_MS = 5 * 60 * 1000; // Check every 5 minutes
@@ -354,8 +384,8 @@ if (redis) {
         lockDuration: 60_000,
         stalledInterval: 30_000,
         maxStalledCount: 0,
-        removeOnComplete: { count: 200 },
-        removeOnFail: { count: 500 },
+        removeOnComplete: { count: 200, age: 3600 },       // keep last 200 or 1 hour, whichever is smaller
+        removeOnFail: { count: 1000, age: 24 * 3600 },   // keep last 1000 or 24 hours — more forensic retention for failures
       });
 
       compileWorker.on('completed', async (job, result) => {
@@ -384,17 +414,56 @@ if (redis) {
           };
         }
         storeJobResult(job.id, result);
-        log.info({ module: 'queue', jobId: job.id, elapsed: result.elapsed || '?', hasDebug: !!result.debug }, 'Job completed');
+
+        // Structured compile logging — success and failure
+        if (result.success) {
+          log.info({
+            module: 'queue', jobId: job.id,
+            elapsed: result.elapsed || '?',
+            template: result.template, pageSize: result.pageSize,
+            typographyGrade: result.typographyReport?.grade || null,
+            watermarked: result.needsWatermark || false,
+          }, 'Job completed');
+        } else {
+          // Structured failure log — full forensic context for every compile failure.
+          // This lets you immediately correlate failures with runtime environment.
+          log.error({
+            module: 'queue', jobId: job.id,
+            errorCode: result.error,
+            errorCategory: result.errors?.[0]?.category || 'unknown',
+            locale: result.debugMeta?.locale || process.env.LANG,
+            pandocVersion: result.debugMeta?.pandocVersion || PANDOC_VERSION,
+            workerPid: result.debugMeta?.workerPid || process.pid,
+            containerId: result.debugMeta?.containerId || os.hostname(),
+            template: result.debugMeta?.template || job.data?.template,
+            debugSize: result.debug ? JSON.stringify(result.debug).length : 0,
+            hasDebugRef: !!(result.debug?.debugRef),
+          }, `Compile failed: ${result.message?.substring(0, 200) || 'unknown'}`);
+        }
       });
 
       compileWorker.on('failed', (job, err) => {
-        storeJobResult(job.id, {
+        const failResult = {
           success: false,
           error: 'worker_error',
           message: err.message || 'Compilation failed unexpectedly.',
           debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: `BullMQ failed event: ${err.message}`, stack: err.stack?.substring(0, 2000) || null },
-        });
-        log.error({ module: 'queue', jobId: job?.id, err: err.message }, 'Job failed');
+          debugMeta: {
+            locale: process.env.LANG || 'C.UTF-8',
+            pandocVersion: PANDOC_VERSION,
+            lualatexVersion: LUALATEX_VERSION,
+            nodeVersion: process.version,
+            workerPid: process.pid,
+            containerId: os.hostname(),
+            timestamp: new Date().toISOString(),
+          },
+        };
+        storeJobResult(job.id, failResult);
+        log.error({
+          module: 'queue', jobId: job?.id,
+          err: err.message, stack: err.stack?.substring(0, 500),
+          containerId: os.hostname(),
+        }, 'Job failed (BullMQ error)');
       });
     } else {
       log.info({ module: 'queue' }, 'WORKER_ONLY=true — embedded worker disabled, use standalone worker.js');
@@ -410,8 +479,28 @@ if (redis) {
   }
 }
 
+// ── Locale runtime assertion ──
+// Verify the configured locale exists in the OS. A missing locale will cause
+// LuaLaTeX's luaotfload to fail with "Unable to read environment locale".
+// This catches base image changes that could silently reintroduce the bug.
+try {
+  const localeList = execSync('locale -a 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
+  const configuredLocale = (process.env.LANG || 'C.UTF-8').replace(/\./, '.').toLowerCase();
+  const available = localeList.split('\n').map(l => l.trim().toLowerCase());
+  // Check both exact match and common alias (C.UTF-8 vs C.utf8)
+  const localeFound = available.some(l => l === configuredLocale || l === configuredLocale.replace('.utf-8', '.utf8') || l === configuredLocale.replace('.utf8', '.utf-8'));
+  if (localeFound) {
+    log.info({ module: 'startup', locale: process.env.LANG || 'C.UTF-8' }, 'Locale verified');
+  } else {
+    log.fatal({ module: 'startup', locale: process.env.LANG || 'C.UTF-8', available: available.filter(l => l).slice(0, 20) }, 'CONFIGURED LOCALE NOT FOUND — LuaLaTeX will fail. Set LANG to an available locale (e.g. C.UTF-8).');
+  }
+} catch (err) {
+  log.warn({ module: 'startup', err: err.message }, 'Locale check skipped (locale command not available)');
+}
+
 // ── Pandoc version detection ──
 let PANDOC_VERSION = 'unknown';
+let LUALATEX_VERSION = 'unknown';
 try {
   const versionOutput = execSync('pandoc --version', { encoding: 'utf8', timeout: 5000 });
   const match = versionOutput.match(/pandoc(?:\.exe)?\s+(\d+)\.(\d+)(?:\.(\d+))?/);
@@ -421,6 +510,13 @@ try {
   }
 } catch {
   log.warn({ module: 'startup' }, 'Could not detect Pandoc version');
+}
+try {
+  const lualatexOutput = execSync('lualatex --version 2>/dev/null | head -1', { encoding: 'utf8', timeout: 5000 });
+  const luaMatch = lualatexOutput.match(/Version\s+([^\s(]+)/i) || lualatexOutput.match(/([\d.]+)/);
+  if (luaMatch) LUALATEX_VERSION = luaMatch[1];
+} catch {
+  // non-fatal — version is advisory
 }
 
 // ── Allowed origins ──
