@@ -658,8 +658,21 @@ module.exports = function compileRoutes(ctx) {
         const args = [mdPath, batchFromFormat, '--pdf-engine=lualatex', `--resource-path=${tmpBase}`, '-M', `title=${title}`, `--template=${tplPath}`, '-H', headerPath, '-V', `mainfont=${effectiveMainfont}`, ...(isFast ? [] : ['-V', 'microtype=true', '-V', 'csquotes=true']), '-o', pdfPath];
         if (!safeMode) args.push(...citeprocArgs(BIB_PATH));
 
+        // SECURITY + LOCALE: Use the same minimal environment as the main compile path.
+        // Without this, batch compiles inherit all server env vars (secrets, invalid locale).
+        const BATCH_SPAWN_ENV = {
+          PATH: process.env.PATH,
+          HOME: process.env.HOME || '/app',
+          TMPDIR: os.tmpdir(),
+          LANG: 'C.UTF-8',
+          LC_ALL: 'C.UTF-8',
+          LC_CTYPE: 'C.UTF-8',
+          TEXMFHOME: process.env.TEXMFHOME || '',
+          TEXMFVAR: process.env.TEXMFVAR || '',
+          SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
+        };
         const compileResult = await new Promise((resolve) => {
-          const proc = spawn('pandoc', args, { cwd: tmpBase });
+          const proc = spawn('pandoc', args, { cwd: tmpBase, env: BATCH_SPAWN_ENV });
           let stderr = '';
           proc.stderr.on('data', (d) => { stderr += d.toString(); });
           proc.on('error', () => resolve({ success: false, error: 'Pandoc spawn failed' }));

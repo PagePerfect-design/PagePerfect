@@ -469,7 +469,10 @@ function translateStderr(stderr) {
   const warnings = [];
 
   for (const entry of ERROR_PATTERNS) {
-    const regex = new RegExp(entry.pattern.source, entry.pattern.flags);
+    // CRITICAL: Always add 'g' flag for exec() in a while loop. Without 'g',
+    // regex.exec() never advances lastIndex, creating an infinite loop.
+    const flags = entry.pattern.flags.includes('g') ? entry.pattern.flags : entry.pattern.flags + 'g';
+    const regex = new RegExp(entry.pattern.source, flags);
     let match;
     while ((match = regex.exec(stderr)) !== null) {
       const translated = entry.translate(match);
@@ -549,7 +552,10 @@ function translateCompileFailure(stderr, { safeMode = false, errorCode } = {}) {
       // Only collect errors and warnings (skip info for failure path)
       if (entry.severity === 'info') continue;
 
-      const regex = new RegExp(entry.pattern.source, entry.pattern.flags);
+      // CRITICAL: Always add 'g' flag for exec() in a while loop. Without 'g',
+      // regex.exec() never advances lastIndex, creating an infinite loop.
+      const flags = entry.pattern.flags.includes('g') ? entry.pattern.flags : entry.pattern.flags + 'g';
+      const regex = new RegExp(entry.pattern.source, flags);
       let match;
       while ((match = regex.exec(stderr)) !== null) {
         const translated = entry.translate(match);
@@ -617,7 +623,7 @@ function translateCompileFailure(stderr, { safeMode = false, errorCode } = {}) {
   // Build flat fallback message for backward compat
   const fallbackMessage = deduped
     .filter(e => e.severity === 'error')
-    .map(e => e.message + '.')
+    .map(e => e.message.endsWith('.') ? e.message : e.message + '.')
     .join(' ') || 'Typesetting failed.';
 
   return { errors: deduped, fallbackMessage };
