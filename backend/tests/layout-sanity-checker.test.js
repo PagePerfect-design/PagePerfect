@@ -21,6 +21,8 @@ describe('constants', () => {
     expect(CATEGORY.UNDERFULL).toBe('underfull');
     expect(CATEGORY.SHORT_PAGE).toBe('short_page');
     expect(CATEGORY.FONT_WARNING).toBe('font_warning');
+    expect(CATEGORY.IMAGE).toBe('image');
+    expect(CATEGORY.REFERENCE).toBe('reference');
   });
 });
 
@@ -98,6 +100,71 @@ describe('analyzeTypstLayout', () => {
     const lines = Array(4).fill('warning: content does not fit at different locations').map((m, i) => m + ` ${i}`);
     const result = analyzeTypstLayout(lines.join('\n'));
     expect(['B', 'C']).toContain(result.grade);
+  });
+
+  test('detects "out of bounds" as overfull error', () => {
+    const result = analyzeTypstLayout('error: element out of page bounds');
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0].category).toBe(CATEGORY.OVERFULL);
+    expect(result.issues[0].severity).toBe(SEVERITY.ERROR);
+  });
+
+  test('detects "unknown font family" as font warning', () => {
+    const result = analyzeTypstLayout('error: unknown font family: Missing Font');
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0].category).toBe(CATEGORY.FONT_WARNING);
+  });
+
+  test('detects "font not found" as font warning', () => {
+    const result = analyzeTypstLayout('warning: font "Arial" not found on system');
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0].category).toBe(CATEGORY.FONT_WARNING);
+  });
+
+  test('detects "file not found" as image error', () => {
+    const result = analyzeTypstLayout('error: file not found: image.png');
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0].category).toBe(CATEGORY.IMAGE);
+    expect(result.issues[0].severity).toBe(SEVERITY.ERROR);
+  });
+
+  test('detects "failed to decode image" as image error', () => {
+    const result = analyzeTypstLayout('error: failed to decode image data.jpg');
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0].category).toBe(CATEGORY.IMAGE);
+  });
+
+  test('detects "undefined label" as reference warning', () => {
+    const result = analyzeTypstLayout('warning: undefined label <my-label>');
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0].category).toBe(CATEGORY.REFERENCE);
+    expect(result.issues[0].severity).toBe(SEVERITY.WARNING);
+  });
+
+  test('detects "undefined reference" as reference warning', () => {
+    const result = analyzeTypstLayout('warning: undefined reference to section 3');
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0].category).toBe(CATEGORY.REFERENCE);
+  });
+
+  test('handles mixed Typst warnings correctly', () => {
+    const stderr = [
+      'warning: content does not fit on page',
+      'error: file not found: hero.png',
+      'warning: unknown font family: Futura',
+      'warning: undefined label <ch1>',
+      'info: compilation took 0.5s',
+    ].join('\n');
+    const result = analyzeTypstLayout(stderr);
+    expect(result.issues).toHaveLength(4);
+    expect(result.issues.map(i => i.category)).toEqual([
+      CATEGORY.OVERFULL, CATEGORY.IMAGE, CATEGORY.FONT_WARNING, CATEGORY.REFERENCE
+    ]);
+  });
+
+  test('extracts line numbers from :LINE:COL: format', () => {
+    const result = analyzeTypstLayout('warning: input:99:3: content does not fit');
+    expect(result.issues[0].line).toBe(99);
   });
 });
 

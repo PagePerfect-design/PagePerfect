@@ -34,6 +34,8 @@ const CATEGORY = {
   UNDERFULL: 'underfull',
   SHORT_PAGE: 'short_page',
   FONT_WARNING: 'font_warning',
+  IMAGE: 'image',
+  REFERENCE: 'reference',
 };
 
 /**
@@ -63,21 +65,11 @@ function analyzeTypstLayout(stderr, options = {}) {
         line: extractTypstLineNumber(line),
         fix: 'Content exceeds page bounds. Consider reducing font size, widening margins, or breaking long words with soft hyphens.',
       });
-    }
-
-    // Missing glyph warnings — font can't render certain characters
-    if (/missing glyph/i.test(line) || /font.*does not contain/i.test(line)) {
-      issues.push({
-        category: CATEGORY.FONT_WARNING,
-        severity: SEVERITY.WARNING,
-        message: line.trim(),
-        line: extractTypstLineNumber(line),
-        fix: 'A character is missing from the selected font. The PDF may show a blank or fallback glyph.',
-      });
+      continue;
     }
 
     // Page overflow — content pushed past the last page
-    if (/could not fit all content/i.test(line)) {
+    if (/could not fit all content/i.test(line) || /out of (?:page )?bounds/i.test(line)) {
       issues.push({
         category: CATEGORY.OVERFULL,
         severity: SEVERITY.ERROR,
@@ -85,6 +77,45 @@ function analyzeTypstLayout(stderr, options = {}) {
         line: extractTypstLineNumber(line),
         fix: 'Content overflows the page. This usually means a very long unbreakable element (image, table, code block) exceeds available space.',
       });
+      continue;
+    }
+
+    // Missing glyph / font warnings — font can't render certain characters
+    if (/missing glyph/i.test(line) || /font.*does not contain/i.test(line) ||
+        /unknown font family/i.test(line) || /font.*not found/i.test(line)) {
+      issues.push({
+        category: CATEGORY.FONT_WARNING,
+        severity: SEVERITY.WARNING,
+        message: line.trim(),
+        line: extractTypstLineNumber(line),
+        fix: 'A font or character is unavailable. The PDF may use a fallback font or show blank glyphs.',
+      });
+      continue;
+    }
+
+    // Image errors — missing or corrupt image files
+    if (/file not found/i.test(line) || /image.*not found/i.test(line) ||
+        /failed to (?:decode|load) image/i.test(line) || /cannot (?:read|open) image/i.test(line)) {
+      issues.push({
+        category: CATEGORY.IMAGE,
+        severity: SEVERITY.ERROR,
+        message: line.trim(),
+        line: extractTypstLineNumber(line),
+        fix: 'An image file is missing or corrupted. Verify the image path and re-upload if needed.',
+      });
+      continue;
+    }
+
+    // Undefined label/reference warnings
+    if (/undefined (?:label|reference)/i.test(line) || /label.*not found/i.test(line)) {
+      issues.push({
+        category: CATEGORY.REFERENCE,
+        severity: SEVERITY.WARNING,
+        message: line.trim(),
+        line: extractTypstLineNumber(line),
+        fix: 'A cross-reference points to a label that does not exist. Check for typos in label names.',
+      });
+      continue;
     }
   }
 
@@ -179,11 +210,15 @@ function analyzeLatexLayout(logContent, options = {}) {
 
 /**
  * Extract line number from a Typst error/warning line.
- * Format: "warning: file.typ:12:5: message"
+ * Formats: "warning: file.typ:12:5: message" or "error: at file.typ:12:5"
  */
 function extractTypstLineNumber(line) {
+  // Try .typ:LINE:COL format first
   const m = line.match(/\.typ:(\d+):\d+/);
-  return m ? parseInt(m[1]) : null;
+  if (m) return parseInt(m[1]);
+  // Try standalone :LINE:COL format (e.g., "input:12:5")
+  const m2 = line.match(/:(\d+):\d+:/);
+  return m2 ? parseInt(m2[1]) : null;
 }
 
 /**
