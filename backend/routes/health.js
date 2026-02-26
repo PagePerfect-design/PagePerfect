@@ -25,7 +25,7 @@ module.exports = function healthRoutes(ctx) {
       service: 'pageperfect-backend',
       timestamp: new Date().toISOString(),
       version: '3.1',
-      pdfEngine: 'lualatex',
+      pdfEngines: ['typst', 'lualatex'],
       redis: ctx.redis ? (redisOk ? 'connected' : 'down') : 'not_configured',
     });
   });
@@ -67,6 +67,13 @@ module.exports = function healthRoutes(ctx) {
       const m = lv.match(/Version\s+([^\s(]+)/i) || lv.match(/([\d.]+)/);
       checks.lualatex = m ? `ok (${m[1]})` : 'ok';
     } catch { checks.lualatex = 'missing'; ready = false; }
+
+    // Typst — version detection (modern engine, preferred when available)
+    try {
+      const tv = execSync('typst --version 2>/dev/null', { encoding: 'utf8', timeout: 3000 });
+      const m = tv.match(/typst\s+([\d.]+)/i) || tv.match(/([\d.]+)/);
+      checks.typst = m ? `ok (${m[1]})` : 'ok';
+    } catch { checks.typst = 'not_installed'; /* Typst is optional — LuaLaTeX is fallback */ }
 
     // Locale — verify the configured locale exists
     try {
@@ -116,7 +123,8 @@ module.exports = function healthRoutes(ctx) {
       pageSizes,
       marginPresets,
       compileModes,
-      pdfEngine: 'lualatex',
+      pdfEngines: ['typst', 'lualatex'],
+      defaultEngine: 'typst',
       safeModeAvailable: true,
       auth: ctx.isPocketBaseConfigured,
       payments: !!ctx.stripe,

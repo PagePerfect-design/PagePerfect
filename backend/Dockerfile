@@ -74,6 +74,19 @@ RUN cp /usr/share/texlive/texmf-dist/fontconfig/conf.avail/*.conf /etc/fonts/con
     && fc-cache -fv \
     && luaotfload-tool --update 2>/dev/null || true
 
+# Install Typst (modern typesetting engine — Rust binary, zero locale deps)
+# Typst uses the same Knuth-Plass line-breaking algorithm as TeX but compiles ~27x faster.
+# Single static binary (~30MB) — no TeX Live, no fontconfig, no locale-gen needed.
+# Typst reads fonts from system fontconfig dirs + any --font-path arguments.
+RUN TYPST_VERSION="0.13.1" \
+    && curl -fsSL -o /tmp/typst.tar.xz \
+       "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" \
+    && tar -xf /tmp/typst.tar.xz -C /tmp \
+    && mv /tmp/typst-x86_64-unknown-linux-musl/typst /usr/local/bin/typst \
+    && chmod +x /usr/local/bin/typst \
+    && rm -rf /tmp/typst* \
+    && typst --version
+
 # App dir
 WORKDIR /app
 
@@ -93,7 +106,7 @@ RUN groupadd -r ppuser && useradd -r -g ppuser -d /app ppuser \
 
 # SECURITY: Make application code read-only to prevent tampering.
 # /tmp and /var/cache/fontconfig remain writable for compilation and font caching.
-RUN chmod -R a-w /app/templates /app/filters 2>/dev/null || true
+RUN chmod -R a-w /app/templates /app/typst-templates /app/filters 2>/dev/null || true
 
 # SECURITY: Set resource limits for compile processes in the ppuser profile.
 # Pandoc/LuaLaTeX spawns inherit these limits to prevent resource exhaustion.

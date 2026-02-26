@@ -34,8 +34,11 @@ const watermark = require('./watermark');
 const fontAvailability = require('./font-availability');
 const publishing = require('./publishing');
 const errorTranslator = require('./error-translator');
+const typstErrorTranslator = require('./typst-error-translator');
 const typographyAssurance = require('./typography-assurance');
 const textNormalizer = require('./text-normalizer');
+const watermarkTypst = require('./watermark-typst');
+const headingVariantsTypst = require('./heading-variants-typst');
 const latexSanitizer = require('./latex-sanitizer');
 const {
   PANDOC_HAS_CITEPROC,
@@ -58,6 +61,8 @@ const MAX_STDERR_BYTES = 256 * 1024; // 256KB — cap stderr accumulation from P
 // ── Toolchain version detection (once at module load) ──
 let _pandocVersion = 'unknown';
 let _lualatexVersion = 'unknown';
+let _typstVersion = 'unknown';
+let _typstAvailable = false;
 try {
   const pv = execSync('pandoc --version 2>/dev/null | head -1', { encoding: 'utf8', timeout: 5000 });
   const m = pv.match(/pandoc(?:\.exe)?\s+([\d.]+)/);
@@ -68,6 +73,16 @@ try {
   const m = lv.match(/Version\s+([^\s(]+)/i) || lv.match(/([\d.]+)/);
   if (m) _lualatexVersion = m[1];
 } catch {}
+try {
+  const tv = execSync('typst --version 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
+  const m = tv.match(/typst\s+([\d.]+)/i) || tv.match(/([\d.]+)/);
+  if (m) { _typstVersion = m[1]; _typstAvailable = true; }
+} catch {}
+if (_typstAvailable) {
+  log.info({ typstVersion: _typstVersion }, 'Typst engine available');
+} else {
+  log.info('Typst engine not found — using LuaLaTeX only');
+}
 
 /**
  * Build deterministic runtime metadata for every compile result.
@@ -75,10 +90,13 @@ try {
  * without digging into server logs.
  */
 function buildDebugMeta(job, opts = {}) {
+  const engine = opts.engine || job.data.engine || (_typstAvailable ? 'typst' : 'lualatex');
   return {
     locale: SAFE_SPAWN_ENV.LANG,
     pandocVersion: _pandocVersion,
     lualatexVersion: _lualatexVersion,
+    typstVersion: _typstVersion,
+    engine,
     template: opts.template || job.data.template,
     safeMode: Boolean(opts.safeMode ?? job.data.safeMode),
     compileMode: opts.compileMode || job.data.compileMode || 'fast',
@@ -301,8 +319,22 @@ async function processCompileJob(job, templateRegistry) {
 
   // ── PDF compilation ──
   const templateType = tpl.gridType || 'academic';
-  const geo = gridSystem.calculateMargins(pageSize, marginPreset, templateType);
   const isFast = compileMode === 'fast';
+
+  // ── Engine selection: Typst (preferred) or LuaLaTeX (fallback) ──
+  // Typst is used when available AND a .typ template exists for this template key.
+  const typstTemplatePath = path.resolve(__dirname, 'typst-templates', `${tplKey}.typ`);
+  const requestedEngine = job.data.engine || 'auto';
+  const useTypst = (requestedEngine === 'typst' || requestedEngine === 'auto')
+    && _typstAvailable
+    && fs.existsSync(typstTemplatePath);
+  const engine = useTypst ? 'typst' : 'lualatex';
+
+  log.info({ jobId: job.id, engine, tplKey, typstAvailable: _typstAvailable }, 'Engine selected');
+
+  const geo = useTypst
+    ? gridSystem.calculateTypstMargins(pageSize, marginPreset, templateType)
+    : gridSystem.calculateMargins(pageSize, marginPreset, templateType);
 
   // Lint manuscript for common issues (double spaces, bad dashes, heading hierarchy)
   try {
@@ -324,6 +356,215 @@ async function processCompileJob(job, templateRegistry) {
   const monoRes = tpl.monofont ? fontAvailability.resolveFont(tpl.monofont) : null;
   if (sansRes?.warning) warnings.push(sansRes.warning);
   if (monoRes?.warning) warnings.push(monoRes.warning);
+
+  // ════════════════════════════════════════════════════════════
+  // ── TYPST ENGINE PATH ──
+  // ════════════════════════════════════════════════════════════
+  if (useTypst) {
+    // Read and prepare Typst template
+    let typstTpl = await fsp.readFile(typstTemplatePath, 'utf8');
+    await fsp.writeFile(path.join(tmpBase, 'template.typ'), typstTpl, 'utf8');
+
+    // Assemble Typst preamble (header-includes)
+    const typstPreamble = [geo];
+    let buildMeta;
+    try {
+      typstPreamble.push(bookEngineering.generateTypstEngineeringPreamble(templateType));
+
+      buildMeta = provenance.generateBuildMetadata({
+        manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
+        outputFormat: wantPdfX ? 'pdfx1a' : 'pdf',
+        headingVariant, needsWatermark, customFonts: customFonts || null,
+      });
+      // Provenance as Typst comment
+      typstPreamble.push(`// Build: ${buildMeta.buildId} | ${buildMeta.timestamp}`);
+
+      const vp = headingVariantsTypst.getTypstVariantPreamble(tplKey, headingVariant);
+      if (vp) typstPreamble.push(vp);
+
+      if (needsWatermark) typstPreamble.push(watermarkTypst.generateTypstWatermarkPreamble());
+    } catch (err) {
+      let debugFiles = [];
+      try { debugFiles = fs.readdirSync(tmpBase); } catch {}
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+      return {
+        success: false, error: 'preamble_error', message: String(err), warnings,
+        debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: debugFiles, captureError: null },
+        debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+      };
+    }
+
+    await fsp.writeFile(path.join(tmpBase, 'header-includes.typ'), typstPreamble.join('\n\n'), 'utf8');
+
+    // Pre-flight: disk space check
+    try {
+      const tmpStats = await fsp.statfs(tmpBase);
+      const freeBytes = tmpStats.bavail * tmpStats.bsize;
+      const freeMB = Math.round(freeBytes / (1024 * 1024));
+      if (freeBytes < 50 * 1024 * 1024) {
+        log.warn({ jobId: job.id, freeMB }, 'Insufficient disk space for compilation');
+        try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+        return {
+          success: false, error: 'disk_full',
+          message: `Insufficient disk space (${freeMB} MB free).`,
+          warnings,
+          debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+        };
+      }
+    } catch {}
+
+    // Pandoc format flags (same logic as LuaLaTeX path)
+    const hardBreaks = tplKey === 'verse' ? '+hard_line_breaks' : '';
+    const disableMath = !textNormalizer.MATH_TEMPLATES.has(tplKey) ? '-tex_math_dollars' : '';
+    const fencedDivs = tplKey === 'cinema' ? '+fenced_divs' : '';
+    const fromFmt = safeMode
+      ? `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
+      : PANDOC_HAS_CITEPROC
+        ? `--from=markdown+citations${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
+        : `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`;
+
+    const tplClass = headingVariants.TEMPLATE_CLASS[tplKey] || 'article';
+    const topLevelDiv = tplClass === 'book' ? 'chapter' : 'section';
+
+    // Typst Pandoc args — NOTE: no Lua filters needed!
+    // heading-vmode.lua → not needed (Typst has no titlesec bug)
+    // drop-cap.lua → TODO: implement as Typst show rule
+    // table-safety.lua → not needed (Typst tables work in multi-column)
+    // fountain.lua → still applied via Pandoc Lua filter (works with any output format)
+    const luaFilters = [];
+    const filtersDir = path.join(__dirname, 'filters');
+    if (tplKey === 'cinema') {
+      luaFilters.push('--lua-filter', path.join(filtersDir, 'fountain.lua'));
+    }
+
+    const typstArgs = [
+      mdPath, fromFmt, '--pdf-engine=typst',
+      `--top-level-division=${topLevelDiv}`,
+      `--resource-path=${tmpBase}`,
+      '-M', `title=${safeTitle}`,
+      `--template=${path.join(tmpBase, 'template.typ')}`,
+      '-V', `mainfont=${mainFont}`,
+      ...luaFilters,
+      '-o', pdfPath,
+      ...(safeMode ? [] : citeprocArgs(BIB_PATH)),
+    ];
+
+    const startTs = Date.now();
+    const result = await new Promise((resolve) => {
+      let proc;
+      try { proc = spawn('pandoc', typstArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV }); }
+      catch (e) { resolve({ ok: false, error: 'spawn_failed', message: String(e) }); return; }
+
+      let stderr = '';
+      let stderrBytes = 0;
+      proc.stderr.on('data', (d) => { if (stderrBytes < MAX_STDERR_BYTES) { stderr += d.toString(); stderrBytes += d.length; } });
+      proc.on('error', (e) => resolve({ ok: false, error: 'spawn_failed', message: String(e) }));
+
+      let timedOut = false;
+      const kill = setTimeout(() => { timedOut = true; try { proc.kill('SIGKILL'); } catch {} }, COMPILE_TIMEOUT_MS);
+
+      proc.on('close', (code) => {
+        clearTimeout(kill);
+        if (timedOut) { resolve({ ok: false, error: 'compile_timeout', stderr }); return; }
+        if (code === 0 && fs.existsSync(pdfPath)) {
+          resolve({ ok: true, stderr, elapsed: Date.now() - startTs });
+        } else {
+          resolve({ ok: false, error: 'compile_failed', stderr });
+        }
+      });
+    });
+
+    if (!result.ok) {
+      // Debug capture for Typst failures
+      let debugFiles = [];
+      let debugCaptureError = null;
+      try { debugFiles = fs.readdirSync(tmpBase); } catch {}
+
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+
+      let structuredErrors = [];
+      let fallbackMessage = 'Compilation failed.';
+      let detail = null;
+      const stderr = result.stderr || '';
+      try {
+        const translated = typstErrorTranslator.translateCompileFailure(
+          stderr, { safeMode, errorCode: result.error }
+        );
+        structuredErrors = translated.errors;
+        fallbackMessage = translated.fallbackMessage;
+      } catch (translErr) {
+        log.error({ jobId: job.id, err: translErr.message }, 'typstErrorTranslator threw');
+        fallbackMessage = stderr.split('\n').filter(l => l.trim()).slice(-5).join(' ') || 'Compilation failed.';
+      }
+      try { detail = sanitizeStderr(stderr.split('\n').slice(-80).join('\n')); } catch {}
+
+      return {
+        success: false, error: result.error || 'compile_failed',
+        message: fallbackMessage, warnings,
+        errors: structuredErrors,
+        detail,
+        debug: { filesInDir: debugFiles, captureError: debugCaptureError },
+        debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+      };
+    }
+
+    // Success! PDF/X-1a conversion if needed (same Ghostscript pipeline)
+    let finalPdfPath = pdfPath;
+    let finalFormat = 'PDF';
+    if (wantPdfX) {
+      const pdfxPath = path.join(tmpBase, 'output-pdfx1a.pdf');
+      const conv = await publishing.convertToPdfX1a(pdfPath, pdfxPath, safeTitle);
+      if (!conv.success) {
+        try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+        return {
+          success: false, error: 'pdfx_conversion_failed', message: conv.error, warnings,
+          debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+        };
+      }
+      finalPdfPath = pdfxPath;
+      finalFormat = 'PDF/X-1a:2001';
+    }
+
+    const compileLog = bookEngineering.analyzeTypstCompileLog(result.stderr);
+    const translatedErrors = typstErrorTranslator.translateStderr(result.stderr);
+
+    let typographyReport = null;
+    try {
+      const preAnalysis = typographyAssurance.analyzeTypography({
+        template: tplKey, pageSize, marginPreset, extensions,
+      });
+      typographyReport = typographyAssurance.generateTypographicReport(preAnalysis, compileLog);
+    } catch (err) {
+      log.warn({ err: err.message }, 'Typography report generation failed');
+    }
+
+    const contentHash = require('crypto').createHash('sha256').update(manuscriptText).digest('hex').substring(0, 16);
+
+    log.info({ jobId: job.id, engine: 'typst', elapsed: result.elapsed, template: tplKey }, 'Typst compile SUCCESS');
+
+    return {
+      success: true,
+      pdfPath: finalPdfPath,
+      tmpBase,
+      elapsed: result.elapsed,
+      engine: 'typst',
+      buildId: buildMeta?.buildId || `typst-${Date.now()}`,
+      contentHash,
+      pageSize, marginPreset,
+      format: finalFormat,
+      watermark: needsWatermark,
+      fontFallbacks: [],
+      compileLog,
+      translatedErrors,
+      typographyReport,
+      warnings,
+      debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // ── LUALATEX ENGINE PATH (original) ──
+  // ════════════════════════════════════════════════════════════
 
   // Template patching
   let tplContent = await fsp.readFile(tpl.templatePath, 'utf8');
