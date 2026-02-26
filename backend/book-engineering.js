@@ -430,22 +430,21 @@ function generateTypstEngineeringPreamble(templateType, overrides = {}) {
   const policy = { ...(ENGINEERING_POLICIES[templateType] || ENGINEERING_POLICIES.academic), ...overrides };
   const commands = [
     '// ── Book Engineering System ──',
-    '',
-    '// Widow and orphan control',
   ];
 
-  // Typst 0.13+ supports widow-penalty and orphan-penalty via #set par()
-  // Map LaTeX penalty values (0-10000) to Typst's percentage-based system
-  // 10000 = prevent absolutely → 100%, 8000 → 80%, etc.
-  const widowPct = Math.min(100, Math.round(policy.widowPenalty / 100));
-  const clubPct = Math.min(100, Math.round(policy.clubPenalty / 100));
+  // Typst handles widow/orphan control internally via its own line-breaking
+  // algorithm (Knuth-Plass). Unlike LaTeX, there are no user-facing penalty
+  // knobs — Typst's algorithm inherently avoids widows/orphans in most cases.
+  // We only emit the controls Typst actually exposes: justify and hyphenate.
 
-  // Note: Typst uses 'avoid' for widow/orphan control at the paragraph level.
-  // Exact penalty mapping is approximated; Typst's algorithm handles this differently.
-  commands.push(`#set par(justify: true)`);
+  // Justification
+  if (policy.raggedRight) {
+    commands.push('#set par(justify: false)');
+  } else {
+    commands.push('#set par(justify: true)');
+  }
 
-  commands.push('');
-  commands.push('// Hyphenation control');
+  // Hyphenation control
   // LaTeX hyphenpenalty: 50=aggressive, 200=minimal, 10000=none
   if (policy.hyphenPenalty >= 5000) {
     commands.push('#set text(hyphenate: false)');
@@ -453,20 +452,6 @@ function generateTypstEngineeringPreamble(templateType, overrides = {}) {
     commands.push('#set text(hyphenate: true)');
   }
 
-  commands.push('');
-  if (policy.raggedBottom) {
-    commands.push('// Ragged bottom (natural page breaks)');
-    commands.push('// Typst uses ragged bottom by default — no action needed');
-  } else {
-    commands.push('// Flush bottom (justified vertical spacing)');
-    commands.push('// Note: Typst doesn\'t have \\flushbottom equivalent yet');
-  }
-
-  if (policy.raggedRight) {
-    commands.push('');
-    commands.push('// Flush left / ragged right');
-    commands.push('#set par(justify: false)');
-  }
 
   return commands.join('\n');
 }

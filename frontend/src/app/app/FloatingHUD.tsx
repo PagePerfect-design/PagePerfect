@@ -489,6 +489,15 @@ export default function FloatingHUD({
             </div>
           </>
         )}
+        {/* Engine indicator — shows typst/lualatex after successful compile */}
+        {status === 'success' && quality?.engine && (
+          <>
+            <div className="mx-0.5 h-4 w-px bg-[#111111]/[0.08]" />
+            <span className="px-1.5 font-mono text-[8px] text-[#111111]/25" title={quality.engine}>
+              {quality.engine}
+            </span>
+          </>
+        )}
       </div>
     </div>
   )

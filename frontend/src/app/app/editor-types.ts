@@ -59,12 +59,20 @@ export type CompileDebug = {
   filesInDir?: string[] | null
 } | null
 
+export type LayoutReport = {
+  grade: string
+  issues: number
+  summary: string
+} | null
+
 export type CompileQuality = {
   typographyScore: number | null
   typographyGrade: string | null
   overfullBoxes: number
   underfullBoxes: number
   buildId: string | null
+  engine: string | null
+  layoutReport: LayoutReport
 } | null
 
 export const PREFS_KEY = 'pp-prefs-v1'
