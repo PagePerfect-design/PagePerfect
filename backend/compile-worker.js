@@ -36,6 +36,7 @@ const publishing = require('./publishing');
 const errorTranslator = require('./error-translator');
 const typstErrorTranslator = require('./typst-error-translator');
 const typographyAssurance = require('./typography-assurance');
+const layoutSanityChecker = require('./layout-sanity-checker');
 const textNormalizer = require('./text-normalizer');
 const watermarkTypst = require('./watermark-typst');
 const headingVariantsTypst = require('./heading-variants-typst');
@@ -527,6 +528,7 @@ async function processCompileJob(job, templateRegistry) {
 
     const compileLog = bookEngineering.analyzeTypstCompileLog(result.stderr);
     const translatedErrors = typstErrorTranslator.translateStderr(result.stderr);
+    const layoutReport = layoutSanityChecker.analyzeTypstLayout(result.stderr, { template: tplKey });
 
     let typographyReport = null;
     try {
@@ -557,6 +559,7 @@ async function processCompileJob(job, templateRegistry) {
       compileLog,
       translatedErrors,
       typographyReport,
+      layoutReport: layoutReport.issues.length > 0 ? { grade: layoutReport.grade, issues: layoutReport.issues.length, summary: layoutReport.summary } : null,
       warnings,
       debugMeta: buildDebugMeta(job, { engine: 'typst' }),
     };
@@ -975,6 +978,7 @@ async function processCompileJob(job, templateRegistry) {
 
   // Translate raw stderr into structured, human-readable errors
   const translatedErrors = errorTranslator.translateStderr(result.stderr);
+  const layoutReport = layoutSanityChecker.analyzeLatexLayout(result.stderr, { template: tplKey });
 
   // Generate typography quality report (pre-analysis + compile log)
   let typographyReport = null;
@@ -1018,6 +1022,7 @@ async function processCompileJob(job, templateRegistry) {
       grade: typographyReport.grade,
       compileStats: typographyReport.compileStats || null,
     } : null,
+    layoutReport: layoutReport.issues.length > 0 ? { grade: layoutReport.grade, issues: layoutReport.issues.length, summary: layoutReport.summary } : null,
     warnings,
     outputFormat: finalFormat,
     exportSnapshot,
