@@ -452,6 +452,7 @@ function generateTypstEngineeringPreamble(templateType, overrides = {}) {
     commands.push('#set text(hyphenate: true)');
   }
 
+
   return commands.join('\n');
 }
 
