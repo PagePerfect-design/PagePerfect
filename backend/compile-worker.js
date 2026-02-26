@@ -92,18 +92,19 @@ function buildDebugMeta(job, opts = {}) {
 // SECURITY: Minimal environment for spawned Pandoc/LuaLaTeX processes.
 // Strips all backend secrets (Stripe, PocketBase, Redis) that Pandoc doesn't need.
 //
-// LOCALE: C.UTF-8 is the default — present on all modern glibc systems without
-// locale-gen. The Dockerfile sets LANG=C.UTF-8 and LC_ALL=C.UTF-8.
-// LuaLaTeX's luaotfload reads these to verify a valid locale exists.
-// Using C.UTF-8 removes the en_US.UTF-8 dependency entirely.
-const SPAWN_LOCALE = process.env.LANG || 'C.UTF-8';
+// LOCALE: Always hardcode C.UTF-8 — present on all modern glibc systems without
+// locale-gen. Do NOT inherit from process.env.LANG because the hosting environment
+// (Coolify, Docker Compose, K8s) may inject a locale that doesn't exist in the
+// container (e.g. en_US.UTF-8 without the locales package), causing luaotfload to
+// exit with "Unable to read environment locale".
+const SPAWN_LOCALE = 'C.UTF-8';
 const SAFE_SPAWN_ENV = {
   PATH: process.env.PATH,
   HOME: process.env.HOME || '/app',
   TMPDIR: os.tmpdir(),
   LANG: SPAWN_LOCALE,
-  LC_ALL: process.env.LC_ALL || SPAWN_LOCALE,
-  LC_CTYPE: process.env.LC_CTYPE || SPAWN_LOCALE,
+  LC_ALL: SPAWN_LOCALE,
+  LC_CTYPE: SPAWN_LOCALE,
   TEXMFHOME: process.env.TEXMFHOME || '',
   TEXMFVAR: process.env.TEXMFVAR || '',
   SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
