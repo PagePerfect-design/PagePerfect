@@ -2,7 +2,6 @@
 
 const {
   analyzeTypstLayout,
-  analyzeLatexLayout,
   SEVERITY,
   CATEGORY,
 } = require('../layout-sanity-checker');
@@ -168,106 +167,11 @@ describe('analyzeTypstLayout', () => {
   });
 });
 
-describe('analyzeLatexLayout', () => {
-  test('returns grade A for empty log', () => {
-    const result = analyzeLatexLayout('');
-    expect(result.issues).toHaveLength(0);
-    expect(result.grade).toBe('A');
-  });
-
-  test('returns grade A for null log', () => {
-    const result = analyzeLatexLayout(null);
-    expect(result.grade).toBe('A');
-  });
-
-  test('detects overfull hbox with severity based on amount', () => {
-    const log = 'Overfull \\hbox (15.5pt too wide) in paragraph';
-    const result = analyzeLatexLayout(log);
-    expect(result.issues).toHaveLength(1);
-    expect(result.issues[0].category).toBe(CATEGORY.OVERFULL);
-    expect(result.issues[0].severity).toBe(SEVERITY.WARNING);
-    expect(result.issues[0].excess).toBeCloseTo(15.5);
-  });
-
-  test('small overfull hbox is info severity', () => {
-    const log = 'Overfull \\hbox (3.2pt too wide)';
-    const result = analyzeLatexLayout(log);
-    expect(result.issues[0].severity).toBe(SEVERITY.INFO);
-  });
-
-  test('detects underfull hbox with high badness', () => {
-    const log = 'Underfull \\hbox (badness 10000)';
-    const result = analyzeLatexLayout(log);
-    expect(result.issues).toHaveLength(1);
-    expect(result.issues[0].category).toBe(CATEGORY.UNDERFULL);
-    expect(result.issues[0].severity).toBe(SEVERITY.WARNING);
-    expect(result.issues[0].badness).toBe(10000);
-  });
-
-  test('ignores underfull hbox with low badness', () => {
-    const log = 'Underfull \\hbox (badness 3000)';
-    const result = analyzeLatexLayout(log);
-    expect(result.issues).toHaveLength(0);
-  });
-
-  test('underfull hbox 5000-9999 is info severity', () => {
-    const log = 'Underfull \\hbox (badness 6000)';
-    const result = analyzeLatexLayout(log);
-    expect(result.issues[0].severity).toBe(SEVERITY.INFO);
-  });
-
-  test('detects underfull vbox as short_page', () => {
-    const log = 'Underfull \\vbox (badness 10000)';
-    const result = analyzeLatexLayout(log);
-    expect(result.issues).toHaveLength(1);
-    expect(result.issues[0].category).toBe(CATEGORY.SHORT_PAGE);
-  });
-
-  test('ignores underfull vbox with low badness', () => {
-    const log = 'Underfull \\vbox (badness 2000)';
-    const result = analyzeLatexLayout(log);
-    expect(result.issues).toHaveLength(0);
-  });
-
-  test('detects font warnings', () => {
-    const log = 'Font Warning: Font shape not available';
-    const result = analyzeLatexLayout(log);
-    expect(result.issues).toHaveLength(1);
-    expect(result.issues[0].category).toBe(CATEGORY.FONT_WARNING);
-  });
-
-  test('detects missing character warnings', () => {
-    const log = 'missing character: There is no X in font Y';
-    const result = analyzeLatexLayout(log);
-    expect(result.issues).toHaveLength(1);
-    expect(result.issues[0].category).toBe(CATEGORY.FONT_WARNING);
-  });
-
-  test('extracts LaTeX line numbers from l.123 format', () => {
-    const log = 'Overfull \\hbox (20pt too wide)\nl.42 some content';
-    const result = analyzeLatexLayout(log);
-    expect(result.issues[0].line).toBe(42);
-  });
-
-  test('line is null when no l.NNN found', () => {
-    const log = 'Overfull \\hbox (20pt too wide)';
-    const result = analyzeLatexLayout(log);
-    expect(result.issues[0].line).toBeNull();
-  });
-});
-
 describe('grading system', () => {
-  test('grade A for score >= 95', () => {
-    // 1 info = -1 = 99 = A
-    const result = analyzeLatexLayout('Overfull \\hbox (2pt too wide)');
+  test('grade A for single info-level issue', () => {
+    // 1 warning = -5 = 95 = A
+    const result = analyzeTypstLayout('warning: content does not fit on one spot');
     expect(result.grade).toBe('A');
-  });
-
-  test('grade B for many info-level issues', () => {
-    // 10 infos = -10 = 90 = B
-    const lines = Array(10).fill(null).map((_, i) => `Overfull \\hbox (${i + 1}pt too wide)`).join('\n');
-    const result = analyzeLatexLayout(lines);
-    expect(result.grade).toBe('B');
   });
 
   test('grade degrades with errors', () => {

@@ -360,33 +360,30 @@ describe('Grid system integration', () => {
 // ── Template file integrity (always run) ──
 
 describe('Template file integrity', () => {
-  const TEMPLATE_DIR = path.join(__dirname, '..', 'templates');
+  const TYPST_DIR = path.join(__dirname, '..', 'typst-templates');
 
-  test('all 15 template files exist and are non-empty', () => {
+  test('all 15 Typst template files exist and are non-empty', () => {
     const expected = [
       'chicago', 'symphony', 'thesis', 'minimal', 'paperback', 'memoir',
       'exhibit', 'heirloom', 'verse', 'chronicle', 'international',
       'operator', 'matrix', 'avantgarde', 'cinema',
     ];
     for (const tpl of expected) {
-      const tplPath = path.join(TEMPLATE_DIR, `${tpl}.latex`);
+      const tplPath = path.join(TYPST_DIR, `${tpl}.typ`);
       expect(fs.existsSync(tplPath)).toBe(true);
       const content = fs.readFileSync(tplPath, 'utf8');
-      expect(content.length).toBeGreaterThan(100);
-      // Every template should have a document class
-      expect(content).toMatch(/\\documentclass/);
+      expect(content.length).toBeGreaterThan(50);
+      // Every Typst template should set the document body
+      expect(content).toContain('$body$');
     }
   });
 
-  test('templates use lualatex-compatible features', () => {
-    const TEMPLATE_DIR_PATH = path.join(__dirname, '..', 'templates');
-    const templates = fs.readdirSync(TEMPLATE_DIR_PATH).filter(f => f.endsWith('.latex'));
+  test('Typst templates use valid Typst syntax patterns', () => {
+    const templates = fs.readdirSync(TYPST_DIR).filter(f => f.endsWith('.typ'));
     for (const file of templates) {
-      const content = fs.readFileSync(path.join(TEMPLATE_DIR_PATH, file), 'utf8');
-      // Should use fontspec (LuaLaTeX) not fontenc (pdfLaTeX)
-      if (content.includes('\\usepackage{fontspec}') || content.includes('fontspec')) {
-        expect(content).not.toContain('\\usepackage[T1]{fontenc}');
-      }
+      const content = fs.readFileSync(path.join(TYPST_DIR, file), 'utf8');
+      // Should contain #set or #show directives (valid Typst)
+      expect(content).toMatch(/#(?:set|show|let|import)/);
     }
   });
 });
@@ -395,7 +392,7 @@ describe('Template file integrity', () => {
 
 if (require.main === module) {
   if (!canRun) {
-    console.log('SKIP: pandoc and/or lualatex not available');
+    console.log('SKIP: pandoc and/or typst not available');
     process.exit(0);
   }
 
