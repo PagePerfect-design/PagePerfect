@@ -292,6 +292,8 @@ export function useCompileQueue({
                 overfullBoxes: statusData.compileLog?.overfull ?? 0,
                 underfullBoxes: statusData.compileLog?.underfull ?? 0,
                 buildId: statusData.buildId ?? null,
+                engine: statusData.engine ?? null,
+                layoutReport: statusData.layoutReport ?? null,
               })
             }
 

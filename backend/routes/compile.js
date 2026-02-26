@@ -356,7 +356,7 @@ module.exports = function compileRoutes(ctx) {
 
     const cached = await ctx.getJobResult(id);
     if (cached) {
-      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, debugMeta: cached.debugMeta || null, resultUrl: `/api/compile/result/${id}` });
+      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, debugMeta: cached.debugMeta || null, engine: cached.engine || null, layoutReport: cached.layoutReport || null, resultUrl: `/api/compile/result/${id}` });
       const debug = resolveDebug(cached);
       return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: cached.detail, debug, debugMeta: cached.debugMeta || null });
     }
@@ -388,7 +388,7 @@ module.exports = function compileRoutes(ctx) {
               }
               ctx.storeJobResult(id, rv);
               if (rv.success) {
-                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, debugMeta: rv.debugMeta || null, resultUrl: `/api/compile/result/${id}` });
+                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, debugMeta: rv.debugMeta || null, engine: rv.engine || null, layoutReport: rv.layoutReport || null, resultUrl: `/api/compile/result/${id}` });
               }
               const debug = resolveDebug(rv);
               return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail, debug, debugMeta: rv.debugMeta || null });

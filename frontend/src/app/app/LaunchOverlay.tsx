@@ -380,33 +380,40 @@ export default function LaunchOverlay({
 
             {/* Real stats from backend */}
             {!checking && preflight && (
-              <div className={`grid gap-px border-t border-[#111111]/[0.06] bg-[#111111]/[0.03] ${quality?.typographyGrade ? 'grid-cols-4' : 'grid-cols-3'}`}>
-                <div className="bg-white p-2.5 text-center">
-                  <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Pages</p>
-                  <p className="font-display text-sm font-bold text-[#111111]">~{preflight.stats.estimatedPages}</p>
-                </div>
-                <div className="bg-white p-2.5 text-center">
-                  <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Spine</p>
-                  <p className="font-display text-sm font-bold text-[#111111]">{preflight.stats.spineInches}&quot;</p>
-                </div>
-                <div className="bg-white p-2.5 text-center">
-                  <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Trim</p>
-                  <p className="font-display text-sm font-bold text-[#111111]">{preflight.stats.trimWidth}&times;{preflight.stats.trimHeight}&quot;</p>
-                </div>
-                {quality?.typographyGrade && (
+              <>
+                <div className={`grid gap-px border-t border-[#111111]/[0.06] bg-[#111111]/[0.03] ${quality?.typographyGrade ? 'grid-cols-4' : 'grid-cols-3'}`}>
                   <div className="bg-white p-2.5 text-center">
-                    <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Quality</p>
-                    <p className={`font-display text-sm font-bold ${
-                      quality.typographyGrade === 'A' ? 'text-emerald-600' :
-                      quality.typographyGrade === 'B' ? 'text-[#111111]' :
-                      quality.typographyGrade === 'C' ? 'text-amber-600' :
-                      'text-red-600'
-                    }`}>
-                      {quality.typographyGrade}
-                    </p>
+                    <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Pages</p>
+                    <p className="font-display text-sm font-bold text-[#111111]">~{preflight.stats.estimatedPages}</p>
+                  </div>
+                  <div className="bg-white p-2.5 text-center">
+                    <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Spine</p>
+                    <p className="font-display text-sm font-bold text-[#111111]">{preflight.stats.spineInches}&quot;</p>
+                  </div>
+                  <div className="bg-white p-2.5 text-center">
+                    <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Trim</p>
+                    <p className="font-display text-sm font-bold text-[#111111]">{preflight.stats.trimWidth}&times;{preflight.stats.trimHeight}&quot;</p>
+                  </div>
+                  {quality?.typographyGrade && (
+                    <div className="bg-white p-2.5 text-center">
+                      <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Quality</p>
+                      <p className={`font-display text-sm font-bold ${
+                        quality.typographyGrade === 'A' ? 'text-emerald-600' :
+                        quality.typographyGrade === 'B' ? 'text-[#111111]' :
+                        quality.typographyGrade === 'C' ? 'text-amber-600' :
+                        'text-red-600'
+                      }`}>
+                        {quality.typographyGrade}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {quality?.engine && (
+                  <div className="border-t border-[#111111]/[0.06] bg-white px-4 py-1.5 text-center">
+                    <span className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/25">Engine: {quality.engine}</span>
                   </div>
                 )}
-              </div>
+              </>
             )}
           </div>
         </div>

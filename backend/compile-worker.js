@@ -438,12 +438,19 @@ async function processCompileJob(job, templateRegistry) {
       luaFilters.push('--lua-filter', path.join(filtersDir, 'fountain.lua'));
     }
 
+    // Extract author/date from job data for title page rendering
+    const authorMeta = job.data.author ? ['-M', `author=${latexSanitizer.sanitizeTitle(job.data.author, 200)}`] : [];
+    const dateMeta = job.data.date ? ['-M', `date=${latexSanitizer.sanitizeTitle(job.data.date, 100)}`] : [];
+
     const typstArgs = [
       mdPath, fromFmt, '--pdf-engine=typst',
       `--top-level-division=${topLevelDiv}`,
       `--resource-path=${tmpBase}`,
       '-M', `title=${safeTitle}`,
+      ...authorMeta,
+      ...dateMeta,
       `--template=${path.join(tmpBase, 'template.typ')}`,
+      '-H', path.join(tmpBase, 'header-includes.typ'),
       '-V', `mainfont=${mainFont}`,
       ...luaFilters,
       '-o', pdfPath,
