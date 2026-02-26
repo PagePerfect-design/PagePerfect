@@ -171,6 +171,89 @@ class GridSystem {
   }
 
   /**
+   * Calculate Typst page geometry string.
+   * Returns a Typst #set page(...) snippet for the compile pipeline.
+   */
+  calculateTypstMargins(pageSize, preset, template = 'academic') {
+    const base = this.baseline[template] || this.baseline.academic;
+    const marginMultipliers = {
+      minimal: 2, compact: 3, narrow: 4, normal: 5,
+      wide: 6, academic: 7, generous: 8,
+    };
+    const multiplier = marginMultipliers[preset] || marginMultipliers.normal;
+    let gridMargin = (base * multiplier) / 72; // pt to inches
+
+    const pageWidths = {
+      a4: 8.27, letter: 8.5, sixByNine: 6, fiveFiveByEightFive: 5.5,
+      sevenByTen: 7, a5: 5.83, royal: 6.14, bFormat: 5.08, aFormat: 4.37,
+      demy: 5.43, crownQuarto: 7.44, b5: 6.93, massMarket: 4.25,
+      fiveTwentyFiveByEight: 5.25, amazonFiveByEight: 5,
+      amazonSixByNine: 6, amazonSevenByTen: 7, amazonEightByTen: 8,
+      amazonEightFiveByEleven: 8.5,
+    };
+    const pageWidth = pageWidths[pageSize] || pageWidths.letter;
+    const maxMargin = pageWidth * 0.20;
+    if (gridMargin > maxMargin) gridMargin = maxMargin;
+
+    // Page dimensions lookup
+    const pageDims = {
+      a4:           { w: '210mm',    h: '297mm' },
+      letter:       { w: '8.5in',    h: '11in' },
+      sixByNine:    { w: '6in',      h: '9in' },
+      fiveFiveByEightFive: { w: '5.5in', h: '8.5in' },
+      sevenByTen:   { w: '7in',      h: '10in' },
+      a5:           { w: '148mm',    h: '210mm' },
+      royal:        { w: '156mm',    h: '234mm' },
+      bFormat:      { w: '129mm',    h: '198mm' },
+      aFormat:      { w: '111mm',    h: '178mm' },
+      demy:         { w: '138mm',    h: '216mm' },
+      crownQuarto:  { w: '189mm',    h: '246mm' },
+      b5:           { w: '176mm',    h: '250mm' },
+      massMarket:   { w: '4.25in',   h: '6.87in' },
+      fiveTwentyFiveByEight: { w: '5.25in', h: '8in' },
+      amazonFiveByEight:     { w: '5in',    h: '8in' },
+      amazonSixByNine:       { w: '6in',    h: '9in' },
+      amazonSevenByTen:      { w: '7in',    h: '10in' },
+      amazonEightByTen:      { w: '8in',    h: '10in' },
+      amazonEightFiveByEleven: { w: '8.5in', h: '11in' },
+    };
+
+    const dims = pageDims[pageSize] || pageDims.letter;
+    const useMm = dims.w.endsWith('mm');
+    const marginStr = useMm
+      ? `${(gridMargin * 25.4).toFixed(1)}mm`
+      : `${gridMargin.toFixed(3)}in`;
+
+    return `#set page(width: ${dims.w}, height: ${dims.h}, margin: ${marginStr})`;
+  }
+
+  /**
+   * Generate Typst typographic commands.
+   * Returns Typst set rules for text sizing and paragraph spacing.
+   */
+  generateTypstCommands(template = 'academic') {
+    const typo = this.generateTypography(template);
+    return `
+// Grid System Typography
+#set par(leading: ${(typo.baseSize * typo.lineHeight / 2).toFixed(1)}pt)
+
+// Typographic Scale (available as functions)
+#let grid-h1(body) = text(size: ${typo.h1Size}pt, weight: "bold", body)
+#let grid-h2(body) = text(size: ${typo.h2Size}pt, weight: "bold", body)
+#let grid-h3(body) = text(size: ${typo.h3Size}pt, weight: "bold", body)
+#let grid-small(body) = text(size: ${typo.smallSize}pt, body)
+
+// Grid-based Spacing
+#let grid-space-xs = v(${typo.spacingXs}pt)
+#let grid-space-sm = v(${typo.spacingSm}pt)
+#let grid-space-md = v(${typo.spacingMd}pt)
+#let grid-space-lg = v(${typo.spacingLg}pt)
+#let grid-space-xl = v(${typo.spacingXl}pt)
+#let grid-space-xxl = v(${typo.spacingXxl}pt)
+`;
+  }
+
+  /**
    * Generate LaTeX commands for grid system
    */
   generateLaTeXCommands(template = 'academic') {

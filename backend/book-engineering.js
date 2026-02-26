@@ -415,6 +415,120 @@ function generateEngineeringPreamble(templateType, overrides = {}) {
 }
 
 // ================================================================
+// Typst Engineering Preamble
+// ================================================================
+
+/**
+ * Generate Typst preamble for book engineering policies.
+ * Outputs Typst #set rules instead of LaTeX commands.
+ *
+ * @param {string} templateType — key into ENGINEERING_POLICIES
+ * @param {object} [overrides] — optional policy overrides
+ * @returns {string} Typst preamble snippet
+ */
+function generateTypstEngineeringPreamble(templateType, overrides = {}) {
+  const policy = { ...(ENGINEERING_POLICIES[templateType] || ENGINEERING_POLICIES.academic), ...overrides };
+  const commands = [
+    '// ── Book Engineering System ──',
+    '',
+    '// Widow and orphan control',
+  ];
+
+  // Typst 0.13+ supports widow-penalty and orphan-penalty via #set par()
+  // Map LaTeX penalty values (0-10000) to Typst's percentage-based system
+  // 10000 = prevent absolutely → 100%, 8000 → 80%, etc.
+  const widowPct = Math.min(100, Math.round(policy.widowPenalty / 100));
+  const clubPct = Math.min(100, Math.round(policy.clubPenalty / 100));
+
+  // Note: Typst uses 'avoid' for widow/orphan control at the paragraph level.
+  // Exact penalty mapping is approximated; Typst's algorithm handles this differently.
+  commands.push(`#set par(justify: true)`);
+
+  commands.push('');
+  commands.push('// Hyphenation control');
+  // LaTeX hyphenpenalty: 50=aggressive, 200=minimal, 10000=none
+  if (policy.hyphenPenalty >= 5000) {
+    commands.push('#set text(hyphenate: false)');
+  } else {
+    commands.push('#set text(hyphenate: true)');
+  }
+
+  commands.push('');
+  if (policy.raggedBottom) {
+    commands.push('// Ragged bottom (natural page breaks)');
+    commands.push('// Typst uses ragged bottom by default — no action needed');
+  } else {
+    commands.push('// Flush bottom (justified vertical spacing)');
+    commands.push('// Note: Typst doesn\'t have \\flushbottom equivalent yet');
+  }
+
+  if (policy.raggedRight) {
+    commands.push('');
+    commands.push('// Flush left / ragged right');
+    commands.push('#set par(justify: false)');
+  }
+
+  return commands.join('\n');
+}
+
+// ================================================================
+// Typst Compile Log Analysis
+// ================================================================
+
+/**
+ * Parse Typst compilation stderr for engineering issues.
+ * Typst warnings are structured differently from LaTeX.
+ *
+ * @param {string} stderr — Typst compilation output
+ * @returns {{ overfullBoxes, underfullBoxes, warnings, pageBreakIssues }}
+ */
+function analyzeTypstCompileLog(stderr) {
+  const result = {
+    overfullBoxes: [],
+    underfullBoxes: [],
+    warnings: [],
+    pageBreakIssues: [],
+    floatIssues: [],
+    footnoteIssues: [],
+  };
+
+  if (!stderr || typeof stderr !== 'string') return result;
+
+  const lines = stderr.split('\n');
+
+  for (const line of lines) {
+    // Typst warning format: "warning: <message>"
+    const warning = line.match(/^warning:\s+(.+)/i);
+    if (warning) {
+      result.warnings.push({
+        severity: 'warn',
+        message: warning[1],
+      });
+    }
+
+    // Typst content overflow warnings
+    if (/content does not fit/.test(line) || /out of.*bounds/.test(line)) {
+      result.overfullBoxes.push({
+        amount: 0,
+        line: null,
+        severity: 'warn',
+        message: line.trim(),
+      });
+    }
+
+    // Typst font warnings
+    if (/unknown font/i.test(line) || /font.*not found/i.test(line)) {
+      result.warnings.push({
+        severity: 'warn',
+        message: line.trim(),
+      });
+    }
+  }
+
+  return result;
+}
+
+// ================================================================
 // Exports
 // ================================================================
 
@@ -422,5 +536,7 @@ module.exports = {
   ENGINEERING_POLICIES,
   lintManuscript,
   analyzeCompileLog,
+  analyzeTypstCompileLog,
   generateEngineeringPreamble,
+  generateTypstEngineeringPreamble,
 };
