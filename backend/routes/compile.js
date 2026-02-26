@@ -182,7 +182,7 @@ module.exports = function compileRoutes(ctx) {
   // POST /api/compile — Async (202 + polling) with sync fallback
   // ══════════════════════════════════════════════════════════
   router.post('/api/compile', ctx.compileLimiter, async (req, res) => {
-    let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts, headingVariant: hv, download, assets } = req.body || {};
+    let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts, headingVariant: hv, download, assets, author, date: docDate } = req.body || {};
     safeMode = Boolean(safeMode);
     compileMode = (compileMode === 'full') ? 'full' : 'fast';
     hv = headingVariants.HEADING_VARIANTS.includes(hv) ? hv : 'classic';
@@ -263,6 +263,8 @@ module.exports = function compileRoutes(ctx) {
           customFonts: customFonts || null, headingVariant: hv,
           isDownload, userId: user.userId, extensions: req.body.extensions || null,
           assets: validAssets.length > 0 ? validAssets : null,
+          author: typeof author === 'string' ? author.slice(0, 200) : null,
+          date: typeof docDate === 'string' ? docDate.slice(0, 100) : null,
         }, { jobId: queueKey, priority: ctx.hasTier(userTier, 'publisher') ? 1 : 5 });
 
         const resultSecret = !user.userId ? crypto.randomBytes(16).toString('hex') : null;
@@ -289,7 +291,7 @@ module.exports = function compileRoutes(ctx) {
       await fsp.writeFile(manuscriptPath, manuscriptText, 'utf8');
 
       const result = await processCompileJob({
-        data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, extensions: req.body.extensions || null, assets: validAssets.length > 0 ? validAssets : null },
+        data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, extensions: req.body.extensions || null, assets: validAssets.length > 0 ? validAssets : null, author: typeof author === 'string' ? author.slice(0, 200) : null, date: typeof docDate === 'string' ? docDate.slice(0, 100) : null },
       }, ctx.DESIGN_TEMPLATES);
 
       if (!result.success) { fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {}); return res.status(400).json(result); }

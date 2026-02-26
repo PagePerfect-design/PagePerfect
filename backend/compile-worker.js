@@ -551,6 +551,21 @@ async function processCompileJob(job, templateRegistry) {
 
     log.info({ jobId: job.id, engine: 'typst', elapsed: result.elapsed, template: tplKey }, 'Typst compile SUCCESS');
 
+    // Create export snapshot for provenance audit trail (same as LuaLaTeX path)
+    let exportSnapshot = null;
+    if (buildMeta) {
+      try {
+        exportSnapshot = provenance.createExportSnapshot(buildMeta, {
+          success: true,
+          compileTimeMs: result.elapsed,
+          preflightPassed: null,
+          lintIssueCount: compileLog.overfullBoxes.length + compileLog.underfullBoxes.length,
+        });
+      } catch (err) {
+        log.warn({ err: err.message }, 'Typst export snapshot creation failed');
+      }
+    }
+
     return {
       success: true,
       pdfPath: finalPdfPath,
@@ -560,15 +575,24 @@ async function processCompileJob(job, templateRegistry) {
       buildId: buildMeta?.buildId || `typst-${Date.now()}`,
       contentHash,
       pageSize, marginPreset,
-      format: finalFormat,
-      watermark: needsWatermark,
-      fontFallbacks: [],
-      compileLog,
-      translatedErrors,
-      typographyReport,
+      outputFormat: finalFormat,
+      needsWatermark,
+      fontFallback: fontRes.isFallback ? `${fontRes.original} -> ${fontRes.resolved}` : null,
+      compileLog: { overfull: compileLog.overfullBoxes.length, underfull: compileLog.underfullBoxes.length },
+      translatedErrors: translatedErrors.summary.total > 0 ? translatedErrors : null,
+      typographyReport: typographyReport ? {
+        score: typographyReport.score,
+        grade: typographyReport.grade,
+        compileStats: typographyReport.compileStats || null,
+      } : null,
       layoutReport: layoutReport.issues.length > 0 ? { grade: layoutReport.grade, issues: layoutReport.issues.length, summary: layoutReport.summary } : null,
       warnings,
+      exportSnapshot,
       debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+      userId, userTier,
+      isDownload,
+      template: tplKey,
+      title: safeTitle,
     };
   }
 
@@ -1018,6 +1042,7 @@ async function processCompileJob(job, templateRegistry) {
     pdfPath: finalPdfPath,
     tmpBase,
     elapsed: result.elapsed,
+    engine: 'lualatex',
     buildId: buildMeta?.buildId,
     contentHash: buildMeta?.contentHash,
     needsWatermark,
