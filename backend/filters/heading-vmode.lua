@@ -6,13 +6,15 @@
 -- correctness when the preceding content (tight lists, images,
 -- blockquotes, environments) leaves TeX in horizontal mode.
 --
+-- \noindent prevents a spurious paragraph indent before the heading.
+--
 -- Applied universally to all templates that use titlesec.
 
 function Pandoc(doc)
   local new = {}
   for _, block in ipairs(doc.blocks) do
     if block.t == "Header" then
-      table.insert(new, pandoc.RawBlock("latex", "\\par"))
+      table.insert(new, pandoc.RawBlock("latex", "\\par\\noindent"))
     end
     table.insert(new, block)
   end

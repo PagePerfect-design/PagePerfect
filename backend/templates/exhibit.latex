@@ -40,17 +40,17 @@
 % ── CHAPTER HEADINGS — Giant UltraLight Number + Label ──────
 \titleformat{\chapter}[display]
   {\normalfont\raggedright}
-  {\vspace*{72pt}{\fontsize{80pt}{80pt}\selectfont\sffamily\fontseries{l}\selectfont\color{ghostgrey}\thechapter}}
+  {{\fontsize{80pt}{80pt}\selectfont\sffamily\fontseries{l}\selectfont\color{ghostgrey}\thechapter}}
   {24pt}
   {\fontsize{14pt}{18pt}\selectfont\sffamily\addfontfeature{LetterSpace=15}\MakeUppercase}
 
 \titleformat{name=\chapter,numberless}[display]
   {\normalfont\raggedright}
-  {\vspace*{72pt}}
+  {}
   {0pt}
   {\fontsize{14pt}{18pt}\selectfont\sffamily\addfontfeature{LetterSpace=15}\MakeUppercase}
 
-\titlespacing*{\chapter}{0pt}{0pt}{40pt}
+\titlespacing*{\chapter}{0pt}{72pt}{40pt}
 
 % Section headers — tiny, uppercase, tracked, no bold
 \titleformat{\section}

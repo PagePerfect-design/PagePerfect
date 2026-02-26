@@ -41,17 +41,17 @@
 % Massive outlined number behind text + rotated title concept
 \titleformat{\chapter}[display]
   {\normalfont\raggedright}
-  {\vspace*{36pt}{\fontsize{120pt}{120pt}\selectfont\bfseries\color{ghostnum}\thechapter}}
+  {{\fontsize{120pt}{120pt}\selectfont\bfseries\color{ghostnum}\thechapter}}
   {-60pt}
   {\fontsize{20pt}{24pt}\selectfont\bfseries\MakeUppercase}
 
 \titleformat{name=\chapter,numberless}[display]
   {\normalfont\raggedright}
-  {\vspace*{36pt}}
+  {}
   {0pt}
   {\fontsize{20pt}{24pt}\selectfont\bfseries\MakeUppercase}
 
-\titlespacing*{\chapter}{0pt}{0pt}{20pt}
+\titlespacing*{\chapter}{0pt}{36pt}{20pt}
 
 % Section headers — aggressive, uppercase
 \titleformat{\section}

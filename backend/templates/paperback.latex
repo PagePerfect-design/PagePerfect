@@ -34,19 +34,21 @@
 
 % ── CHAPTER HEADINGS — Cinematic Title Card ─────────────────
 % Dramatic drop with massive grey number + bold title
+% NOTE: \vspace* belongs in \titlespacing* (before-sep), NOT inside the label.
+% Putting \vspace* in the label triggers "titlesec: entered in horizontal mode".
 \titleformat{\chapter}[display]
   {\normalfont\raggedleft}
-  {\vspace*{48pt}{\fontsize{60pt}{60pt}\selectfont\sffamily\bfseries\color{chapnum}\thechapter}}
+  {{\fontsize{60pt}{60pt}\selectfont\sffamily\bfseries\color{chapnum}\thechapter}}
   {-8pt}
   {\Large\bfseries}
 
 \titleformat{name=\chapter,numberless}[display]
   {\normalfont\raggedleft}
-  {\vspace*{48pt}}
+  {}
   {0pt}
   {\Large\bfseries}
 
-\titlespacing*{\chapter}{0pt}{0pt}{24pt}
+\titlespacing*{\chapter}{0pt}{48pt}{24pt}
 
 \titleformat{\section}{\normalfont\large\bfseries}{}{0em}{}
 \titleformat{\subsection}{\normalfont\normalsize\bfseries}{}{0em}{}

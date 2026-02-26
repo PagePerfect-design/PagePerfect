@@ -42,19 +42,19 @@
 % ── CHAPTER HEADINGS — Ornamental Style ─────────────────────
 \titleformat{\chapter}[display]
   {\normalfont\centering}
-  {\vspace*{20pt}{\fontsize{11pt}{11pt}\selectfont\scshape\color{chaptergrey}\chaptertitlename\ \thechapter}}
+  {{\fontsize{11pt}{11pt}\selectfont\scshape\color{chaptergrey}\chaptertitlename\ \thechapter}}
   {12pt}
   {\LARGE\bfseries\scshape\color{oxblood}}
   [\vspace{4pt}{\centering\rule{1cm}{0.4pt}}\vspace{8pt}]
 
 \titleformat{name=\chapter,numberless}[display]
   {\normalfont\centering}
-  {\vspace*{20pt}}
+  {}
   {0pt}
   {\LARGE\bfseries\scshape\color{oxblood}}
   [\vspace{4pt}{\centering\rule{1cm}{0.4pt}}\vspace{8pt}]
 
-\titlespacing*{\chapter}{0pt}{50pt}{30pt}
+\titlespacing*{\chapter}{0pt}{70pt}{30pt}
 
 % Section headings — restrained serif hierarchy
 \titleformat{\section}

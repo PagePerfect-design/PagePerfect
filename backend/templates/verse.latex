@@ -40,19 +40,19 @@
 % Poem titles as chapter openings — centered, small caps, thin rule
 \titleformat{\chapter}[display]
   {\normalfont\centering}
-  {\vspace*{60pt}{\fontsize{10pt}{10pt}\selectfont\scshape\color{titlegrey}\chaptertitlename\ \thechapter}}
+  {{\fontsize{10pt}{10pt}\selectfont\scshape\color{titlegrey}\chaptertitlename\ \thechapter}}
   {10pt}
   {\Large\itshape}
   [\vspace{4pt}{\centering\rule{0.6cm}{0.3pt}}\vspace{12pt}]
 
 \titleformat{name=\chapter,numberless}[display]
   {\normalfont\centering}
-  {\vspace*{60pt}}
+  {}
   {0pt}
   {\Large\itshape}
   [\vspace{4pt}{\centering\rule{0.6cm}{0.3pt}}\vspace{12pt}]
 
-\titlespacing*{\chapter}{0pt}{0pt}{24pt}
+\titlespacing*{\chapter}{0pt}{60pt}{24pt}
 
 % Section = poem title within a chapter/section
 \titleformat{\section}{\normalfont\large\itshape\centering}{}{0em}{}

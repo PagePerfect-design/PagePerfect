@@ -447,7 +447,10 @@ if (redis) {
           success: false,
           error: 'worker_error',
           message: err.message || 'Compilation failed unexpectedly.',
-          debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: `BullMQ failed event: ${err.message}`, stack: err.stack?.substring(0, 2000) || null },
+          errors: [{ message: err.message || 'Worker error', fix: 'Try again or contact support.', severity: 'error', category: 'server', isServerError: true }],
+          warnings: [],
+          detail: err.stack?.substring(0, 2000) || null,
+          debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: `BullMQ failed event: ${err.message}` },
           debugMeta: {
             locale: process.env.LANG || 'C.UTF-8',
             pandocVersion: PANDOC_VERSION,

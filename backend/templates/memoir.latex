@@ -37,19 +37,19 @@
 % Centered italic title with thin ornamental rule
 \titleformat{\chapter}[display]
   {\normalfont\centering}
-  {\vspace*{36pt}{\fontsize{11pt}{11pt}\selectfont\color{chapgrey}\thechapter}}
+  {{\fontsize{11pt}{11pt}\selectfont\color{chapgrey}\thechapter}}
   {12pt}
   {\Large\itshape\color{memoiramber}}
   [\vspace{6pt}{\centering\rule{1.2cm}{0.3pt}}\vspace{10pt}]
 
 \titleformat{name=\chapter,numberless}[display]
   {\normalfont\centering}
-  {\vspace*{36pt}}
+  {}
   {0pt}
   {\Large\itshape\color{memoiramber}}
   [\vspace{6pt}{\centering\rule{1.2cm}{0.3pt}}\vspace{10pt}]
 
-\titlespacing*{\chapter}{0pt}{0pt}{24pt}
+\titlespacing*{\chapter}{0pt}{36pt}{24pt}
 
 \titleformat{\section}{\normalfont\large\bfseries}{}{0em}{}
 \titleformat{\subsection}{\normalfont\normalsize\itshape}{}{0em}{}

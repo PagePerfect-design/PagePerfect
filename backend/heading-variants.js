@@ -23,21 +23,23 @@
 const BOOK_MODERN = `
 % ── Heading Variant: Modern ──────────────────────────────────
 % Clean, restrained, letterspaced. No ornament, no drama.
+% NOTE: \\vspace* belongs in \\titlespacing* (before-sep), NOT inside the label.
+% Putting \\vspace* in the label triggers "titlesec: entered in horizontal mode".
 \\definecolor{hv@grey}{gray}{0.55}
 
 \\titleformat{\\chapter}[display]
   {\\normalfont\\raggedright}
-  {\\vspace*{40pt}{\\fontsize{10pt}{10pt}\\selectfont\\sffamily\\addfontfeature{LetterSpace=15}\\color{hv@grey}\\MakeUppercase{\\chaptertitlename\\ \\thechapter}}}
+  {{\\fontsize{10pt}{10pt}\\selectfont\\sffamily\\addfontfeature{LetterSpace=15}\\color{hv@grey}\\MakeUppercase{\\chaptertitlename\\ \\thechapter}}}
   {8pt}
   {\\fontsize{18pt}{22pt}\\selectfont\\sffamily\\addfontfeature{LetterSpace=3}}
 
 \\titleformat{name=\\chapter,numberless}[display]
   {\\normalfont\\raggedright}
-  {\\vspace*{40pt}}
+  {}
   {0pt}
   {\\fontsize{18pt}{22pt}\\selectfont\\sffamily\\addfontfeature{LetterSpace=3}}
 
-\\titlespacing*{\\chapter}{0pt}{0pt}{28pt}
+\\titlespacing*{\\chapter}{0pt}{40pt}{28pt}
 
 \\titleformat{\\section}
   {\\normalfont\\sffamily\\fontsize{11pt}{14pt}\\selectfont\\addfontfeature{LetterSpace=8}\\MakeUppercase}
@@ -60,23 +62,24 @@ const BOOK_BOLD = `
 
 \\titleformat{\\chapter}[display]
   {\\normalfont\\raggedright}
-  {\\vspace*{24pt}{\\fontsize{96pt}{96pt}\\selectfont\\bfseries\\color{hv@ghost}\\thechapter}}
+  {{\\fontsize{96pt}{96pt}\\selectfont\\bfseries\\color{hv@ghost}\\thechapter}}
   {-40pt}
   {\\fontsize{24pt}{28pt}\\selectfont\\bfseries\\MakeUppercase}
   [\\vspace{6pt}{\\color{black}\\rule{\\textwidth}{2pt}}\\vspace{10pt}]
 
 \\titleformat{name=\\chapter,numberless}[display]
   {\\normalfont\\raggedright}
-  {\\vspace*{24pt}}
+  {}
   {0pt}
   {\\fontsize{24pt}{28pt}\\selectfont\\bfseries\\MakeUppercase}
   [\\vspace{6pt}{\\color{black}\\rule{\\textwidth}{2pt}}\\vspace{10pt}]
 
-\\titlespacing*{\\chapter}{0pt}{0pt}{20pt}
+\\titlespacing*{\\chapter}{0pt}{24pt}{20pt}
 
 \\titleformat{\\section}
-  {\\vspace{4pt}{\\color{black}\\rule{\\textwidth}{1pt}}\\vspace{6pt}\\normalfont\\bfseries\\fontsize{14pt}{17pt}\\selectfont\\MakeUppercase}
+  {\\normalfont\\bfseries\\fontsize{14pt}{17pt}\\selectfont\\MakeUppercase}
   {}{0em}{}
+  [\\vspace{2pt}{\\color{black}\\rule{\\textwidth}{1pt}}]
 \\titleformat{\\subsection}
   {\\normalfont\\bfseries\\fontsize{11pt}{14pt}\\selectfont}
   {}{0em}{}
@@ -116,14 +119,17 @@ const ARTICLE_MODERN = `
 const ARTICLE_BOLD = `
 % ── Heading Variant: Bold ────────────────────────────────────
 % Heavy rules, large type, maximum presence.
+% NOTE: \\rule moved from format arg to after-code [] to avoid horizontal mode errors.
 
-\\titleformat{\\section}[block]
-  {\\vspace{6pt}{\\color{black}\\rule{\\textwidth}{3pt}}\\vspace{8pt}\\normalfont\\bfseries\\fontsize{26pt}{30pt}\\selectfont}
+\\titleformat{\\section}
+  {\\normalfont\\bfseries\\fontsize{26pt}{30pt}\\selectfont}
   {}{0em}{}
+  [\\vspace{2pt}{\\color{black}\\rule{\\textwidth}{3pt}}]
 
-\\titleformat{\\subsection}[block]
-  {\\vspace{3pt}{\\color{black}\\rule{\\textwidth}{0.5pt}}\\vspace{6pt}\\normalfont\\bfseries\\fontsize{14pt}{17pt}\\selectfont\\MakeUppercase}
+\\titleformat{\\subsection}
+  {\\normalfont\\bfseries\\fontsize{14pt}{17pt}\\selectfont\\MakeUppercase}
   {}{0em}{}
+  [\\vspace{2pt}{\\color{black}\\rule{\\textwidth}{0.5pt}}]
 
 \\titleformat{\\subsubsection}
   {\\normalfont\\bfseries\\normalsize}{}{0em}{}
@@ -165,13 +171,15 @@ const THESIS_BOLD = `
 % Heavy rules, large type — but keeps \\thesection numbering
 % required by university submission standards.
 
-\\titleformat{\\section}[block]
-  {\\vspace{6pt}{\\color{black}\\rule{\\textwidth}{3pt}}\\vspace{8pt}\\normalfont\\bfseries\\fontsize{26pt}{30pt}\\selectfont}
+\\titleformat{\\section}
+  {\\normalfont\\bfseries\\fontsize{26pt}{30pt}\\selectfont}
   {\\thesection\\quad}{0em}{}
+  [\\vspace{2pt}{\\color{black}\\rule{\\textwidth}{3pt}}]
 
-\\titleformat{\\subsection}[block]
-  {\\vspace{3pt}{\\color{black}\\rule{\\textwidth}{0.5pt}}\\vspace{6pt}\\normalfont\\bfseries\\fontsize{14pt}{17pt}\\selectfont\\MakeUppercase}
+\\titleformat{\\subsection}
+  {\\normalfont\\bfseries\\fontsize{14pt}{17pt}\\selectfont\\MakeUppercase}
   {\\thesubsection\\quad}{0em}{}
+  [\\vspace{2pt}{\\color{black}\\rule{\\textwidth}{0.5pt}}]
 
 \\titleformat{\\subsubsection}
   {\\normalfont\\bfseries\\normalsize}
