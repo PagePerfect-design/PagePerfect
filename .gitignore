@@ -60,3 +60,6 @@ trade-grid-test.pdf
 .vercel
 .netlify/
 .env*.local
+
+# Nested duplicate project folder (avoids untracked clutter)
+PagePerfect/

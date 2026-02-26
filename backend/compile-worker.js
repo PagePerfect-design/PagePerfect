@@ -92,12 +92,13 @@ function buildDebugMeta(job, opts = {}) {
 // SECURITY: Minimal environment for spawned Pandoc/LuaLaTeX processes.
 // Strips all backend secrets (Stripe, PocketBase, Redis) that Pandoc doesn't need.
 //
-// LOCALE: Always hardcode C.UTF-8 — present on all modern glibc systems without
-// locale-gen. Do NOT inherit from process.env.LANG because the hosting environment
-// (Coolify, Docker Compose, K8s) may inject a locale that doesn't exist in the
-// container (e.g. en_US.UTF-8 without the locales package), causing luaotfload to
-// exit with "Unable to read environment locale".
-const SPAWN_LOCALE = 'C.UTF-8';
+// LOCALE: C.UTF-8 is present on modern glibc without locale-gen. Do NOT inherit from
+// process.env.LANG — hosting (Coolify, Docker Compose, K8s) may inject an invalid
+// locale. PP_SPAWN_LOCALE override: set to empty string to try LANG= (works in some
+// environments when C.UTF-8 fails — see TeX.SE / COMPILE_DEBUG_GUIDE.md).
+const SPAWN_LOCALE = (process.env.PP_SPAWN_LOCALE !== undefined)
+  ? process.env.PP_SPAWN_LOCALE
+  : 'C.UTF-8';
 const SAFE_SPAWN_ENV = {
   PATH: process.env.PATH,
   HOME: process.env.HOME || '/app',

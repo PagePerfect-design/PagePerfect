@@ -154,7 +154,17 @@ module.exports = function compileRoutes(ctx) {
     const tmpBase = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-conv-'));
     const docxPath = path.join(tmpBase, 'input.docx');
     await fsp.writeFile(docxPath, buf);
-    const pandoc = spawn('pandoc', [docxPath, '-t', 'markdown', '--wrap=none', `--resource-path=${tmpBase}`], { cwd: tmpBase });
+    // Use minimal env with locale (same as compile path) — prevents "Unable to read environment locale"
+    const convLocale = process.env.PP_SPAWN_LOCALE !== undefined ? process.env.PP_SPAWN_LOCALE : 'C.UTF-8';
+    const convEnv = {
+      PATH: process.env.PATH,
+      HOME: process.env.HOME || '/app',
+      TMPDIR: os.tmpdir(),
+      LANG: convLocale,
+      LC_ALL: convLocale,
+      LC_CTYPE: convLocale,
+    };
+    const pandoc = spawn('pandoc', [docxPath, '-t', 'markdown', '--wrap=none', `--resource-path=${tmpBase}`], { cwd: tmpBase, env: convEnv });
     let stdout = '', stderr = '';
     pandoc.stdout.on('data', (d) => { stdout += d.toString(); });
     pandoc.stderr.on('data', (d) => { stderr += d.toString(); });
@@ -659,14 +669,14 @@ module.exports = function compileRoutes(ctx) {
         if (!safeMode) args.push(...citeprocArgs(BIB_PATH));
 
         // SECURITY + LOCALE: Use the same minimal environment as the main compile path.
-        // Without this, batch compiles inherit all server env vars (secrets, invalid locale).
+        const batchLocale = process.env.PP_SPAWN_LOCALE !== undefined ? process.env.PP_SPAWN_LOCALE : 'C.UTF-8';
         const BATCH_SPAWN_ENV = {
           PATH: process.env.PATH,
           HOME: process.env.HOME || '/app',
           TMPDIR: os.tmpdir(),
-          LANG: 'C.UTF-8',
-          LC_ALL: 'C.UTF-8',
-          LC_CTYPE: 'C.UTF-8',
+          LANG: batchLocale,
+          LC_ALL: batchLocale,
+          LC_CTYPE: batchLocale,
           TEXMFHOME: process.env.TEXMFHOME || '',
           TEXMFVAR: process.env.TEXMFVAR || '',
           SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
