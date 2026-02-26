@@ -480,19 +480,38 @@ if (redis) {
 }
 
 // ── Locale runtime assertion ──
-// Verify the configured locale exists in the OS. A missing locale will cause
-// LuaLaTeX's luaotfload to fail with "Unable to read environment locale".
-// This catches base image changes that could silently reintroduce the bug.
+// Verify a working locale exists for LuaLaTeX's luaotfload.
+// If the configured LANG isn't available, try fallbacks and override process.env.LANG
+// so that the compile worker's SAFE_SPAWN_ENV picks up a working value.
 try {
   const localeList = execSync('locale -a 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
-  const configuredLocale = (process.env.LANG || 'C.UTF-8').replace(/\./, '.').toLowerCase();
-  const available = localeList.split('\n').map(l => l.trim().toLowerCase());
-  // Check both exact match and common alias (C.UTF-8 vs C.utf8)
-  const localeFound = available.some(l => l === configuredLocale || l === configuredLocale.replace('.utf-8', '.utf8') || l === configuredLocale.replace('.utf8', '.utf-8'));
-  if (localeFound) {
-    log.info({ module: 'startup', locale: process.env.LANG || 'C.UTF-8' }, 'Locale verified');
+  const available = localeList.split('\n').map(l => l.trim().toLowerCase()).filter(Boolean);
+
+  function isLocaleAvailable(locale) {
+    const lower = locale.toLowerCase();
+    return available.some(l =>
+      l === lower ||
+      l === lower.replace('.utf-8', '.utf8') ||
+      l === lower.replace('.utf8', '.utf-8')
+    );
+  }
+
+  const configuredLocale = process.env.LANG || 'C.UTF-8';
+  if (isLocaleAvailable(configuredLocale)) {
+    log.info({ module: 'startup', locale: configuredLocale }, 'Locale verified');
   } else {
-    log.fatal({ module: 'startup', locale: process.env.LANG || 'C.UTF-8', available: available.filter(l => l).slice(0, 20) }, 'CONFIGURED LOCALE NOT FOUND — LuaLaTeX will fail. Set LANG to an available locale (e.g. C.UTF-8).');
+    // Try fallback locales
+    const fallbacks = ['C.UTF-8', 'en_US.UTF-8', 'C'];
+    const working = fallbacks.find(l => isLocaleAvailable(l));
+    if (working) {
+      process.env.LANG = working;
+      process.env.LC_ALL = working;
+      log.warn({ module: 'startup', configured: configuredLocale, fallback: working, available: available.slice(0, 20) },
+        `Configured locale "${configuredLocale}" not found — falling back to "${working}"`);
+    } else {
+      log.fatal({ module: 'startup', locale: configuredLocale, available: available.slice(0, 20) },
+        'NO WORKING LOCALE FOUND — LuaLaTeX will fail with "Unable to read environment locale"');
+    }
   }
 } catch (err) {
   log.warn({ module: 'startup', err: err.message }, 'Locale check skipped (locale command not available)');

@@ -92,18 +92,48 @@ function buildDebugMeta(job, opts = {}) {
 // SECURITY: Minimal environment for spawned Pandoc/LuaLaTeX processes.
 // Strips all backend secrets (Stripe, PocketBase, Redis) that Pandoc doesn't need.
 //
-// LOCALE: C.UTF-8 is the default — present on all modern glibc systems without
-// locale-gen. The Dockerfile sets LANG=C.UTF-8 and LC_ALL=C.UTF-8.
-// LuaLaTeX's luaotfload reads these to verify a valid locale exists.
-// Using C.UTF-8 removes the en_US.UTF-8 dependency entirely.
-const SPAWN_LOCALE = process.env.LANG || 'C.UTF-8';
+// LOCALE: LuaLaTeX's luaotfload requires a valid locale (os.setlocale must succeed).
+// If the configured locale isn't available, luaotfload exits with:
+//   "Unable to read environment locale: exit now."
+// We probe for a working locale at module load: try C.UTF-8 first (Dockerfile default),
+// then en_US.UTF-8, then fall back to C (POSIX — always available).
+function detectWorkingLocale() {
+  const candidates = [
+    process.env.LANG,
+    'C.UTF-8',
+    'en_US.UTF-8',
+    'C',
+  ].filter(Boolean);
+  try {
+    const available = execSync('locale -a 2>/dev/null', { encoding: 'utf8', timeout: 5000 })
+      .split('\n').map(l => l.trim().toLowerCase()).filter(Boolean);
+    for (const candidate of candidates) {
+      const lower = candidate.toLowerCase();
+      if (available.some(l =>
+        l === lower ||
+        l === lower.replace('.utf-8', '.utf8') ||
+        l === lower.replace('.utf8', '.utf-8')
+      )) {
+        return candidate;
+      }
+    }
+  } catch {
+    // locale command not available — try C.UTF-8 and hope for the best
+  }
+  // C is the POSIX locale — always available as a last resort
+  return 'C';
+}
+
+const SPAWN_LOCALE = detectWorkingLocale();
+log.info({ detectedLocale: SPAWN_LOCALE, envLang: process.env.LANG }, 'Locale for compile processes');
+
 const SAFE_SPAWN_ENV = {
   PATH: process.env.PATH,
   HOME: process.env.HOME || '/app',
   TMPDIR: os.tmpdir(),
   LANG: SPAWN_LOCALE,
-  LC_ALL: process.env.LC_ALL || SPAWN_LOCALE,
-  LC_CTYPE: process.env.LC_CTYPE || SPAWN_LOCALE,
+  LC_ALL: SPAWN_LOCALE,
+  LC_CTYPE: SPAWN_LOCALE,
   TEXMFHOME: process.env.TEXMFHOME || '',
   TEXMFVAR: process.env.TEXMFVAR || '',
   SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),

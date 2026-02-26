@@ -470,8 +470,18 @@ function translateStderr(stderr) {
 
   for (const entry of ERROR_PATTERNS) {
     const regex = new RegExp(entry.pattern.source, entry.pattern.flags);
-    let match;
-    while ((match = regex.exec(stderr)) !== null) {
+    // FIX: Non-global regexes always return the same match from exec(),
+    // causing an infinite while loop. Use a single exec() for non-global.
+    const matches = [];
+    if (regex.global) {
+      let m;
+      while ((m = regex.exec(stderr)) !== null) matches.push(m);
+    } else {
+      const m = regex.exec(stderr);
+      if (m) matches.push(m);
+    }
+
+    for (const match of matches) {
       const translated = entry.translate(match);
       const isServer = entry.isServerError ?? SERVER_ERROR_CATEGORIES.has(entry.category);
       const item = {
@@ -550,8 +560,18 @@ function translateCompileFailure(stderr, { safeMode = false, errorCode } = {}) {
       if (entry.severity === 'info') continue;
 
       const regex = new RegExp(entry.pattern.source, entry.pattern.flags);
-      let match;
-      while ((match = regex.exec(stderr)) !== null) {
+      // FIX: Non-global regexes always return the same match from exec(),
+      // causing an infinite while loop. Use a single exec() for non-global.
+      const matches = [];
+      if (regex.global) {
+        let m;
+        while ((m = regex.exec(stderr)) !== null) matches.push(m);
+      } else {
+        const m = regex.exec(stderr);
+        if (m) matches.push(m);
+      }
+
+      for (const match of matches) {
         const translated = entry.translate(match);
         const isServer = entry.isServerError ?? SERVER_ERROR_CATEGORIES.has(entry.category);
         errors.push({
