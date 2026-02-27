@@ -30,7 +30,7 @@ function BookSkeleton() {
             ))}
           </div>
         </div>
-        <p className="absolute bottom-[8%] left-0 right-0 text-center font-mono text-[10px] text-[#111111]/30">
+        <p className="absolute bottom-[8%] left-0 right-0 text-center font-mono text-[10px] text-[#111111]/50">
           Typesetting...
         </p>
       </div>
@@ -50,7 +50,7 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
     'B': 'text-blue-600 border-blue-500/20 bg-blue-500/[0.06]',
     'C': 'text-amber-600 border-amber-500/20 bg-amber-500/[0.06]',
     'D': 'text-red-600 border-red-500/20 bg-red-500/[0.06]',
-  }[quality.typographyGrade] || 'text-[#111111]/40 border-[#111111]/10 bg-[#111111]/[0.03]'
+  }[quality.typographyGrade] || 'text-[#111111]/60 border-[#111111]/10 bg-[#111111]/[0.03]'
 
   const hasWarnings = quality.overfullBoxes > 0 || quality.underfullBoxes > 0
 
@@ -77,12 +77,12 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
       )}
       {quality.engine && (
         <div className="border border-[#111111]/[0.06] bg-[#111111]/[0.02] px-2 py-1" title={quality.engine}>
-          <span className="font-mono text-[8px] text-[#111111]/30">{quality.engine}</span>
+          <span className="font-mono text-[8px] text-[#111111]/50">{quality.engine}</span>
         </div>
       )}
       {quality.buildId && (
         <div className="border border-[#111111]/[0.06] bg-[#111111]/[0.02] px-2 py-1" title={quality.buildId}>
-          <span className="font-mono text-[8px] text-[#111111]/30">{quality.buildId.slice(0, 20)}</span>
+          <span className="font-mono text-[8px] text-[#111111]/50">{quality.buildId.slice(0, 20)}</span>
         </div>
       )}
     </motion.div>
@@ -136,50 +136,50 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
         )}
         {errors.some(e => e.message.startsWith('__detail__')) && (
           <details className="mt-4">
-            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
               Engine log
             </summary>
-            <pre className="mt-2 max-h-[200px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+            <pre className="mt-2 max-h-[200px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
               {errors.filter(e => e.message.startsWith('__detail__')).map(e => e.message.replace('__detail__', '')).join('\n')}
             </pre>
           </details>
         )}
         {debug?.latexLog && (
           <details className="mt-2">
-            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
               Full engine log
             </summary>
-            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
               {debug.latexLog}
             </pre>
           </details>
         )}
         {debug?.texSource && (
           <details className="mt-2">
-            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
               Generated Typst source
             </summary>
-            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
               {debug.texSource}
             </pre>
           </details>
         )}
         {debug?.headerTex && (
           <details className="mt-2">
-            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
               Injected preamble (header.tex)
             </summary>
-            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
               {debug.headerTex}
             </pre>
           </details>
         )}
         {debug?.filesInDir && debug.filesInDir.length > 0 && (
           <details className="mt-2">
-            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
               Files in compile directory
             </summary>
-            <pre className="mt-2 max-h-[150px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+            <pre className="mt-2 max-h-[150px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
               {debug.filesInDir.join('\n')}
             </pre>
           </details>
@@ -294,9 +294,9 @@ export default function PreviewPane({
               <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3]">
                 <div className="text-center">
                   <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-[#111111]/[0.08]">
-                    <FileText className="h-5 w-5 text-[#111111]/20" />
+                    <FileText className="h-5 w-5 text-[#111111]/40" />
                   </div>
-                  <p className="font-mono text-[11px] text-[#111111]/30">Preview appears here</p>
+                  <p className="font-mono text-[11px] text-[#111111]/50">Preview appears here</p>
                 </div>
               </div>
             )}
@@ -312,7 +312,7 @@ export default function PreviewPane({
                 >
                   <div className="flex flex-col items-center gap-3">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
-                    <span className="font-mono text-[11px] text-[#111111]/40">Typesetting...</span>
+                    <span className="font-mono text-[11px] text-[#111111]/60">Typesetting...</span>
                   </div>
                 </motion.div>
               )}

@@ -34,7 +34,7 @@ export default function StatusBar({
     status === 'compiling' || status === 'queued' ? 'text-[#FF3333]' :
     status === 'success' ? 'text-emerald-600' :
     status === 'error' ? 'text-red-500' :
-    'text-[#111111]/35'
+    'text-[#111111]/50'
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-30 flex h-7 items-center justify-between border-t border-[#111111]/[0.08] bg-[#FDFCF8] px-4">
@@ -42,28 +42,28 @@ export default function StatusBar({
         {/* Engine */}
         {quality?.engine && (
           <>
-            <span className="text-[#111111]/30">{quality.engine}</span>
-            <span className="text-[#111111]/15">·</span>
+            <span className="text-[#111111]/50">{quality.engine}</span>
+            <span className="text-[#111111]/30">·</span>
           </>
         )}
 
         {/* Grade */}
         {quality?.typographyGrade && (
           <>
-            <span className="text-[#111111]/30">
+            <span className="text-[#111111]/50">
               GRADE <span className={`font-bold ${gradeColor}`}>{quality.typographyGrade}</span>
             </span>
-            <span className="text-[#111111]/15">·</span>
+            <span className="text-[#111111]/30">·</span>
           </>
         )}
 
         {/* Build ID */}
         {quality?.buildId && (
           <>
-            <span className="text-[#111111]/25" title={quality.buildId}>
+            <span className="text-[#111111]/40" title={quality.buildId}>
               {quality.buildId.slice(0, 12)}
             </span>
-            <span className="text-[#111111]/15">·</span>
+            <span className="text-[#111111]/30">·</span>
           </>
         )}
 
@@ -78,7 +78,7 @@ export default function StatusBar({
 
       {/* Overfull warnings */}
       {quality && (quality.overfullBoxes > 0 || quality.underfullBoxes > 0) && (
-        <span className="font-mono text-[9px] text-amber-600/60">
+        <span className="font-mono text-[9px] text-amber-600/80">
           {quality.overfullBoxes > 0 && `${quality.overfullBoxes} overfull`}
           {quality.overfullBoxes > 0 && quality.underfullBoxes > 0 && ' · '}
           {quality.underfullBoxes > 0 && `${quality.underfullBoxes} underfull`}

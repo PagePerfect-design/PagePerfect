@@ -180,7 +180,7 @@ export default function PortalStage({
                     }
                   }}
                   placeholder="Paste or type your manuscript here..."
-                  className="w-full h-48 resize-none border border-[#111111]/10 bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/25 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
+                  className="w-full h-48 resize-none border border-[#111111]/15 bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/40 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
                   autoFocus
                 />
                 <div className="mt-3 flex items-center justify-between">
@@ -252,7 +252,7 @@ export default function PortalStage({
               <span className="text-[#111111]/40">|</span>
               {SAMPLES.map((s, i) => (
                 <span key={s.key} className="inline-flex items-center gap-1">
-                  {i > 0 && <span className="text-[#111111]/20">/</span>}
+                  {i > 0 && <span className="text-[#111111]/40">/</span>}
                   <button
                     onClick={() => onLoadSample(s.key)}
                     className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
@@ -403,7 +403,7 @@ export default function PortalStage({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="My Manuscript"
               autoFocus
-              className="w-full border-b border-[#111111]/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-[#111111] placeholder:text-[#111111]/25 focus:border-[#FF3333] focus:outline-none"
+              className="w-full border-b border-[#111111]/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-[#111111] placeholder:text-[#111111]/40 focus:border-[#FF3333] focus:outline-none"
             />
           </div>
 

@@ -208,7 +208,7 @@ export default function RichTextEditor({
         <div className="flex-1" />
 
         {/* Mode toggle */}
-        <span className="mr-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/25">
+        <span className="mr-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">
           Rich Text
         </span>
         <button

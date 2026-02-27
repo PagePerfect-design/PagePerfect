@@ -52,7 +52,7 @@ export default function TemplateHelp() {
         onMouseLeave={() => setOpen(false)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        className="inline-flex h-6 w-6 items-center justify-center border border-[#111111]/10 text-[#111111]/30 bg-[#111111]/[0.03] hover:bg-[#111111]/[0.06] hover:text-[#111111]/50 focus:outline-none focus:ring-2 focus:ring-[#FF3333]/30"
+        className="inline-flex h-6 w-6 items-center justify-center border border-[#111111]/15 text-[#111111]/50 bg-[#111111]/[0.03] hover:bg-[#111111]/[0.06] hover:text-[#111111]/70 focus:outline-none focus:ring-2 focus:ring-[#FF3333]/30"
         title="About templates"
       >
         <span className="font-mono text-xs">?</span>
@@ -91,7 +91,7 @@ export default function TemplateHelp() {
               <span className="font-semibold">📚 Legacy Templates</span> — Classic Academic (Chicago) and Modern Trade Paperback for existing users.
             </li>
           </ul>
-          <p className="mt-2 text-xs text-[#111111]/35">
+          <p className="mt-2 text-xs text-[#111111]/55">
             You can switch templates any time — the PDF recompiles automatically.
           </p>
         </div>,

@@ -178,7 +178,7 @@ function StructurePanel({ data }: { data: any }) {
           {sections.map((s: any, i: number) => (
             <div key={i} className="flex items-center gap-2 text-[10px]">
               <span className={`h-1.5 w-1.5 rounded-full ${s.matter === 'front' ? 'bg-blue-500' : s.matter === 'body' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              <span className="text-[#111111]/40">{s.label}</span>
+              <span className="text-[#111111]/60">{s.label}</span>
               <span className="text-[#111111]/20">line {s.line}</span>
             </div>
           ))}
@@ -306,7 +306,7 @@ function LintPanel({ data }: { data: any }) {
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <StatusBadge status={issue.severity as StatusIcon} />
               <div>
-                <span className="text-[#111111]/40">{issue.message}</span>
+                <span className="text-[#111111]/60">{issue.message}</span>
                 {issue.fix && <p className="text-[#111111]/25">{issue.fix}</p>}
               </div>
             </div>
@@ -326,7 +326,7 @@ function MultilingualPanel({ data }: { data: any }) {
         {scriptAnalysis.scripts.map((s: any) => (
           <span key={s.script} className="inline-flex items-center gap-1 bg-[#111111]/[0.04] px-2 py-0.5 text-[10px]">
             <span className={`h-1.5 w-1.5 rounded-full ${s.direction === 'rtl' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-            <span className="text-[#111111]/40">{s.label}</span>
+            <span className="text-[#111111]/60">{s.label}</span>
             <span className="text-[#111111]/20">{s.percentage}%</span>
           </span>
         ))}
@@ -385,13 +385,13 @@ function ProvenancePanel({ data }: { data: any }) {
   return (
     <div className="space-y-2">
       <div className="bg-[#111111]/[0.02] p-3 font-mono text-[10px] leading-[1.8]">
-        <div className="flex justify-between"><span className="text-[#111111]/25">Build ID</span><span className="text-[#111111]/40">{data.buildId}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Content Hash</span><span className="text-[#111111]/40">{data.contentHash}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Settings Hash</span><span className="text-[#111111]/40">{data.settingsHash}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Template</span><span className="text-[#111111]/40">{data.config?.template}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Page Size</span><span className="text-[#111111]/40">{data.config?.pageSize}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Words</span><span className="text-[#111111]/40">{data.wordCount?.toLocaleString()}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Engine</span><span className="text-[#111111]/40">{data.system?.engine} {data.system?.version}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Build ID</span><span className="text-[#111111]/60">{data.buildId}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Content Hash</span><span className="text-[#111111]/60">{data.contentHash}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Settings Hash</span><span className="text-[#111111]/60">{data.settingsHash}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Template</span><span className="text-[#111111]/60">{data.config?.template}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Page Size</span><span className="text-[#111111]/60">{data.config?.pageSize}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Words</span><span className="text-[#111111]/60">{data.wordCount?.toLocaleString()}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/25">Engine</span><span className="text-[#111111]/60">{data.system?.engine} {data.system?.version}</span></div>
       </div>
     </div>
   )
@@ -556,7 +556,7 @@ export default function PublishingSystems({
             {status === 'loading' ? <Loader2 className="h-3 w-3 animate-spin" /> : <BarChart3 className="h-3 w-3" />}
             {status === 'loading' ? 'Analyzing...' : 'Analyze'}
           </button>
-          <button onClick={onClose} className="text-[#111111]/25 hover:text-[#111111]/40">
+          <button onClick={onClose} className="text-[#111111]/25 hover:text-[#111111]/60">
             <X className="h-4 w-4" />
           </button>
         </div>
