@@ -28,7 +28,7 @@ import { cleanFromWord, analyzeManuscript } from './editor-utils'
 
 import ControlStrip from './ControlStrip'
 import StatusBar from './StatusBar'
-import IngestZone from './IngestZone'
+import PortalStage from './PortalStage'
 import PreviewPane from './PreviewPane'
 import ManuscriptBrowser from './ManuscriptBrowser'
 import { useCompileQueue } from './useCompileQueue'
@@ -279,6 +279,12 @@ export default function CompileShell() {
     setShowManuscripts(false)
   }
 
+  function handlePortalAccept(text: string, inTitle: string, detectedTemplate?: TemplateKey) {
+    setManuscript(text)
+    if (inTitle) setTitle(inTitle)
+    if (detectedTemplate) setTemplate(detectedTemplate)
+  }
+
   function handleDownload(exportPlatform?: Platform) {
     compile(true, exportPlatform)
   }
@@ -481,13 +487,13 @@ export default function CompileShell() {
         </div>
       ) : (
         /* ── Ingestion gate: full-screen when no manuscript ── */
-        <div className="flex-1 overflow-hidden">
-          <IngestZone
-            onFileAccepted={handleFileAccepted}
-            onLoadSample={handleLoadSample}
-            onPaste={handleTextAccepted}
-          />
-        </div>
+        <PortalStage
+          onAccept={handlePortalAccept}
+          onLoadSample={handleLoadSample}
+          onOpenManuscripts={user ? handleOpenManuscripts : undefined}
+          isLoggedIn={!!user}
+          onPlatformSelect={setTargetPlatform}
+        />
       )}
 
       {/* ── Status bar ────────────────────────────────────── */}

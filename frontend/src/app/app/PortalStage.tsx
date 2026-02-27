@@ -113,7 +113,7 @@ export default function PortalStage({
   if (phase === 'idle') {
     return (
       <div
-        className="fixed inset-0 z-20 flex items-center justify-center"
+        className="fixed inset-0 z-20 flex items-center justify-center bg-[#FDFCF8]"
         onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
         onDragLeave={(e) => { if (e.currentTarget === e.target) setDragActive(false) }}
         onDrop={handleDrop}
@@ -317,7 +317,7 @@ export default function PortalStage({
 
   if (phase === 'analyzing') {
     return (
-      <div className="fixed inset-0 z-20 flex items-center justify-center">
+      <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#FDFCF8]">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -356,7 +356,7 @@ export default function PortalStage({
   const otherGenres = GENRE_ORDER.filter(g => g !== detectedGenre)
 
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center px-6 overflow-y-auto py-8">
+    <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#FDFCF8] px-6 overflow-y-auto py-8">
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
