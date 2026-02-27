@@ -42,7 +42,7 @@ function DockButton({
       className={`inline-flex items-center gap-1.5 px-2.5 py-2 text-[11px] font-medium transition-all duration-150 sm:gap-2 sm:px-4 sm:text-[12px] ${
         active
           ? 'bg-[#111111] text-white shadow-lg'
-          : 'text-[#111111]/40 hover:bg-[#111111]/[0.05] hover:text-[#111111]/70'
+          : 'text-[#111111]/60 hover:bg-[#111111]/[0.05] hover:text-[#111111]/70'
       }`}
     >
       {icon}
@@ -122,7 +122,7 @@ export default function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/10 bg-white shadow-elevated backdrop-blur-xl sm:w-[520px]"
+            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/15 bg-white shadow-elevated backdrop-blur-xl sm:w-[520px]"
           >
             {/* Genre tabs */}
             <div className="flex gap-0.5 overflow-x-auto border-b border-[#111111]/[0.06] px-3 pt-2">
@@ -133,7 +133,7 @@ export default function FloatingHUD({
                   className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] transition-all ${
                     genreFilter === g
                       ? 'bg-[#111111]/[0.06] text-[#111111]/70'
-                      : 'text-[#111111]/25 hover:text-[#111111]/50'
+                      : 'text-[#111111]/50 hover:text-[#111111]/70'
                   }`}
                 >
                   {GENRE_LABELS[g]}
@@ -163,7 +163,7 @@ export default function FloatingHUD({
                       <span className={`text-[12px] font-semibold ${isActive ? 'text-[#111111]' : 'text-[#111111]/60'}`}>
                         {info.name}
                       </span>
-                      <span className={`text-[10px] ${isActive ? 'text-[#FF3333]/80' : 'text-[#111111]/30'}`}>
+                      <span className={`text-[10px] ${isActive ? 'text-[#FF3333]/80' : 'text-[#111111]/50'}`}>
                         {info.subtitle}
                       </span>
 
@@ -174,7 +174,7 @@ export default function FloatingHUD({
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 4 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute -top-12 left-0 z-50 w-48 border border-[#111111]/10 bg-white px-3 py-2 shadow-elevated"
+                            className="absolute -top-12 left-0 z-50 w-48 border border-[#111111]/15 bg-white px-3 py-2 shadow-elevated"
                           >
                             <p className="font-body text-[10px] leading-[1.5] text-[#111111]/50">
                               {info.vibe}
@@ -190,7 +190,7 @@ export default function FloatingHUD({
 
             {/* Heading variant toggle */}
             <div className="flex items-center justify-between border-t border-[#111111]/[0.06] px-4 py-2.5">
-              <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/30">Headings</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50">Headings</span>
               <div className="flex gap-1">
                 {(['classic', 'modern', 'bold'] as HeadingVariant[]).map((v) => (
                   <button
@@ -199,7 +199,7 @@ export default function FloatingHUD({
                     className={`px-3 py-1 font-mono text-[10px] transition-all ${
                       headingVariant === v
                         ? 'bg-[#111111] text-white'
-                        : 'text-[#111111]/35 hover:bg-[#111111]/[0.05] hover:text-[#111111]/60'
+                        : 'text-[#111111]/55 hover:bg-[#111111]/[0.05] hover:text-[#111111]/80'
                     }`}
                   >
                     {HEADING_VARIANT_INFO[v].label}
@@ -217,10 +217,10 @@ export default function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/10 bg-white p-3 shadow-elevated backdrop-blur-xl sm:w-auto sm:p-4"
+            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/15 bg-white p-3 shadow-elevated backdrop-blur-xl sm:w-auto sm:p-4"
           >
             {/* Page Size */}
-            <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Page Size</p>
+            <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">Page Size</p>
             <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
               {(['fiveFiveByEightFive', 'sixByNine', 'a5', 'royal', 'letter', 'a4'] as PageSize[]).map((key) => {
                 const info = PAGE_SIZES[key]
@@ -238,7 +238,7 @@ export default function FloatingHUD({
                     <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                       {info.label}
                     </span>
-                    <span className="block font-mono text-[8px] text-[#111111]/25">{info.desc}</span>
+                    <span className="block font-mono text-[8px] text-[#111111]/50">{info.desc}</span>
                   </button>
                 )
               })}
@@ -246,7 +246,7 @@ export default function FloatingHUD({
 
             {/* More book sizes */}
             <details className="mt-3">
-              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/35 hover:text-[#111111]/55">
+              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/55 hover:text-[#111111]/75">
                 More book sizes {userTier === 'drafter' && <Lock className="ml-1 inline h-2.5 w-2.5 opacity-40" />}
               </summary>
               <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-4">
@@ -267,22 +267,22 @@ export default function FloatingHUD({
                       <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                         {info.label}
                       </span>
-                      <span className="block font-mono text-[8px] text-[#111111]/25">{info.desc}</span>
-                      {locked && <Lock className="absolute right-1 top-1 h-2 w-2 text-[#111111]/20" />}
+                      <span className="block font-mono text-[8px] text-[#111111]/50">{info.desc}</span>
+                      {locked && <Lock className="absolute right-1 top-1 h-2 w-2 text-[#111111]/40" />}
                     </button>
                   )
                 })}
               </div>
               {userTier === 'drafter' && (
-                <p className="mt-1.5 text-center font-mono text-[8px] text-[#111111]/30">
-                  Preview only — <a href="/pricing" className="underline hover:text-[#111111]/50">upgrade</a> to download these sizes
+                <p className="mt-1.5 text-center font-mono text-[8px] text-[#111111]/50">
+                  Preview only — <a href="/pricing" className="underline hover:text-[#111111]/70">upgrade</a> to download these sizes
                 </p>
               )}
             </details>
 
             {/* Amazon KDP */}
             <details className="mt-3">
-              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/35 hover:text-[#111111]/55">
+              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/55 hover:text-[#111111]/75">
                 Amazon KDP sizes {userTier === 'drafter' && <Lock className="ml-1 inline h-2.5 w-2.5 opacity-40" />}
               </summary>
               <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-5">
@@ -303,21 +303,21 @@ export default function FloatingHUD({
                       <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                         {info.label}
                       </span>
-                      <span className="block font-mono text-[8px] text-[#111111]/25">{info.desc}</span>
-                      {locked && <Lock className="absolute right-1 top-1 h-2 w-2 text-[#111111]/20" />}
+                      <span className="block font-mono text-[8px] text-[#111111]/50">{info.desc}</span>
+                      {locked && <Lock className="absolute right-1 top-1 h-2 w-2 text-[#111111]/40" />}
                     </button>
                   )
                 })}
               </div>
               {userTier === 'drafter' && (
-                <p className="mt-1.5 text-center font-mono text-[8px] text-[#111111]/30">
-                  Preview only — <a href="/pricing" className="underline hover:text-[#111111]/50">upgrade</a> to download these sizes
+                <p className="mt-1.5 text-center font-mono text-[8px] text-[#111111]/50">
+                  Preview only — <a href="/pricing" className="underline hover:text-[#111111]/70">upgrade</a> to download these sizes
                 </p>
               )}
             </details>
 
             {/* Margins */}
-            <p className="mb-2 mt-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Margins</p>
+            <p className="mb-2 mt-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">Margins</p>
             <div className="flex gap-1.5 overflow-x-auto">
               {(Object.keys(MARGIN_INFO) as MarginPreset[]).map((key) => {
                 const info = MARGIN_INFO[key]
@@ -336,7 +336,7 @@ export default function FloatingHUD({
                     <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
                       {info.label}
                     </span>
-                    <span className="block font-mono text-[8px] text-[#111111]/25">{info.desc}</span>
+                    <span className="block font-mono text-[8px] text-[#111111]/50">{info.desc}</span>
                   </button>
                 )
               })}
@@ -351,9 +351,9 @@ export default function FloatingHUD({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2, ease }}
-            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl sm:w-72"
+            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/15 bg-white p-4 shadow-elevated backdrop-blur-xl sm:w-72"
           >
-            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Compile Options</p>
+            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">Compile Options</p>
 
             <div className="mb-3 flex bg-[#111111]/[0.03] p-0.5">
               {(['fast', 'full'] as CompileMode[]).map((mode) => (
@@ -363,7 +363,7 @@ export default function FloatingHUD({
                   className={`flex-1 px-3 py-1.5 text-center text-[11px] font-medium transition-all duration-150 ${
                     compileMode === mode
                       ? 'bg-[#111111]/[0.08] text-[#111111]'
-                      : 'text-[#111111]/40 hover:text-[#111111]/60'
+                      : 'text-[#111111]/60 hover:text-[#111111]/80'
                   }`}
                 >
                   {mode === 'fast' ? 'Fast' : 'Full'}
@@ -380,16 +380,16 @@ export default function FloatingHUD({
               />
               <div>
                 <span className="text-[11px] text-[#111111]/50">Standard mode</span>
-                <p className="text-[10px] leading-snug text-[#111111]/30">
+                <p className="text-[10px] leading-snug text-[#111111]/50">
                   {safeMode ? 'Citations skipped — toggle off for bibliography processing' : 'Citations active — uses bibliography references'}
                 </p>
               </div>
             </label>
 
             <div className="mt-3 border-t border-[#111111]/[0.06] pt-3">
-              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Custom Font</p>
+              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">Custom Font</p>
               {!hasTier(userTier, 'studio') ? (
-                <a href="/pricing" className="flex items-center justify-center gap-2 border border-dashed border-[#111111]/[0.08] py-2.5 text-[11px] text-[#111111]/25 transition-all hover:border-[#111111]/15 hover:text-[#111111]/40">
+                <a href="/pricing" className="flex items-center justify-center gap-2 border border-dashed border-[#111111]/[0.08] py-2.5 text-[11px] text-[#111111]/50 transition-all hover:border-[#111111]/20 hover:text-[#111111]/60">
                   <Lock className="h-3 w-3" />Studio — <span className="underline">Upgrade</span>
                 </a>
               ) : customFont ? (
@@ -397,14 +397,14 @@ export default function FloatingHUD({
                   <span className="flex-1 truncate text-[11px] text-[#111111]/50">{customFont.originalName}</span>
                   <button
                     onClick={onFontRemove}
-                    className="text-[#111111]/25 transition-colors hover:text-red-500/60"
+                    className="text-[#111111]/50 transition-colors hover:text-red-500/60"
                   >
                     <X className="h-3 w-3" />
                   </button>
                 </div>
               ) : (
                 <label className={`flex cursor-pointer items-center justify-center gap-2 border border-dashed border-[#111111]/[0.12] py-2.5 text-[11px] transition-all ${
-                  fontUploading ? 'text-[#111111]/30' : 'text-[#111111]/30 hover:border-[#111111]/25 hover:text-[#111111]/50'
+                  fontUploading ? 'text-[#111111]/50' : 'text-[#111111]/50 hover:border-[#111111]/25 hover:text-[#111111]/70'
                 }`}>
                   {fontUploading ? (
                     <><Loader2 className="h-3 w-3 animate-spin" />Uploading&hellip;</>
@@ -431,7 +431,7 @@ export default function FloatingHUD({
       </AnimatePresence>
 
       {/* The Dock */}
-      <div className="flex items-center gap-1 border border-[#111111]/10 bg-white/95 p-1.5 shadow-elevated backdrop-blur-xl">
+      <div className="flex items-center gap-1 border border-[#111111]/15 bg-white/95 p-1.5 shadow-elevated backdrop-blur-xl">
         <DockButton
           active={activeTab === 'style'}
           onClick={() => toggleTab('style')}
@@ -466,7 +466,7 @@ export default function FloatingHUD({
             status === 'compiling' || status === 'queued' ? 'text-[#FF3333]' :
             status === 'success' ? 'text-emerald-600/70' :
             status === 'error' ? 'text-red-500/70' :
-            'text-[#111111]/35'
+            'text-[#111111]/55'
           }`}>
             {status === 'queued' ? 'Queued' : status === 'compiling' ? 'Setting' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
           </span>
@@ -493,7 +493,7 @@ export default function FloatingHUD({
         {status === 'success' && quality?.engine && (
           <>
             <div className="mx-0.5 h-4 w-px bg-[#111111]/[0.08]" />
-            <span className="px-1.5 font-mono text-[8px] text-[#111111]/25" title={quality.engine}>
+            <span className="px-1.5 font-mono text-[8px] text-[#111111]/50" title={quality.engine}>
               {quality.engine}
             </span>
           </>

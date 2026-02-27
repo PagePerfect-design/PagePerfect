@@ -97,7 +97,7 @@ export default function IngestZone({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15, duration: 0.4 }}
-          className="mt-5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30"
+          className="mt-5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50"
         >
           01&ensp;Input
         </motion.p>
@@ -119,7 +119,7 @@ export default function IngestZone({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.35, duration: 0.4 }}
-          className="mt-5 max-w-sm font-body text-sm leading-[1.7] text-[#111111]/45"
+          className="mt-5 max-w-sm font-body text-sm leading-[1.7] text-[#333333]"
         >
           Paste from Word, drag in a .docx, or start from a sample.
           Smart quotes and encoding artifacts are cleaned automatically.
@@ -148,22 +148,22 @@ export default function IngestZone({
                 'group flex w-full items-center justify-center gap-3 border-2 px-6 py-10 transition-all duration-200',
                 dragActive
                   ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                  : 'border-[#111111]/15 bg-white hover:border-[#111111]/40',
+                  : 'border-[#111111]/25 bg-white hover:border-[#111111]/50',
               ].join(' ')}
             >
               <Upload className={[
                 'h-4 w-4 transition-colors duration-200',
-                dragActive ? 'text-[#FF3333]' : 'text-[#111111]/25 group-hover:text-[#111111]/50',
+                dragActive ? 'text-[#FF3333]' : 'text-[#111111]/40 group-hover:text-[#111111]/60',
               ].join(' ')} />
               <span className={[
                 'font-mono text-[10px] uppercase tracking-[0.12em] transition-colors duration-200',
-                dragActive ? 'text-[#FF3333]' : 'text-[#111111]/35 group-hover:text-[#111111]/60',
+                dragActive ? 'text-[#FF3333]' : 'text-[#111111]/50 group-hover:text-[#111111]/70',
               ].join(' ')}>
                 {dragActive ? 'Release to upload' : 'Drop file or browse'}
               </span>
             </button>
 
-            <p className="mt-2.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/20">
+            <p className="mt-2.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/40">
               .md&ensp;&middot;&ensp;.txt&ensp;&middot;&ensp;.docx&ensp;&mdash;&ensp;up to 10 MB
             </p>
           </motion.div>
@@ -190,13 +190,13 @@ export default function IngestZone({
                   }
                 }}
                 placeholder="Paste or type your manuscript here..."
-                className="w-full h-40 resize-none border-2 border-[#111111]/15 bg-white px-5 py-4 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/20 focus:border-[#111111]/40 focus:outline-none"
+                className="w-full h-40 resize-none border-2 border-[#111111]/25 bg-white px-5 py-4 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/40 focus:border-[#111111]/50 focus:outline-none"
                 autoFocus
               />
               <div className="mt-3 flex items-center justify-between">
                 <button
                   onClick={() => { setPasteMode(false); setPasteText('') }}
-                  className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/35 transition-colors hover:text-[#111111]/60"
+                  className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors hover:text-[#111111]/70"
                 >
                   Cancel
                 </button>
@@ -223,26 +223,26 @@ export default function IngestZone({
           >
             {/* Divider with "or" */}
             <div className="flex items-center gap-3">
-              <div className="h-px flex-1 bg-[#111111]/8" />
-              <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/20">or</span>
-              <div className="h-px flex-1 bg-[#111111]/8" />
+              <div className="h-px flex-1 bg-[#e5e5e0]" />
+              <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/40">or</span>
+              <div className="h-px flex-1 bg-[#e5e5e0]" />
             </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <button
                 onClick={() => setPasteMode(true)}
-                className="inline-flex h-9 items-center border border-[#111111]/15 px-5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-200 hover:border-[#111111]/40 hover:text-[#111111]/80"
+                className="inline-flex h-9 items-center border border-[#111111]/20 px-5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/60 transition-all duration-200 hover:border-[#111111]/50 hover:text-[#111111]/90"
               >
                 Paste Text
               </button>
 
-              <span className="font-mono text-[9px] text-[#111111]/15">&middot;</span>
+              <span className="font-mono text-[9px] text-[#111111]/30">&middot;</span>
 
               {SAMPLES.map((s) => (
                 <button
                   key={s.key}
                   onClick={() => onLoadSample(s.key)}
-                  className="inline-flex h-9 items-center border border-[#111111]/15 px-5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-200 hover:border-[#111111]/40 hover:text-[#111111]/80"
+                  className="inline-flex h-9 items-center border border-[#111111]/20 px-5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/60 transition-all duration-200 hover:border-[#111111]/50 hover:text-[#111111]/90"
                 >
                   {s.label} Sample
                 </button>
@@ -256,7 +256,7 @@ export default function IngestZone({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="mt-10 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/20"
+          className="mt-10 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40"
         >
           Session-scoped&ensp;&middot;&ensp;deleted on sign-out or within 24h
         </motion.p>

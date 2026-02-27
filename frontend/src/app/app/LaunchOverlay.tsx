@@ -240,7 +240,7 @@ export default function LaunchOverlay({
     s === 'pass'  ? <Check className="h-3 w-3 shrink-0 text-emerald-500" /> :
     s === 'fail'  ? <X className="h-3 w-3 shrink-0 text-red-500" /> :
     s === 'warn'  ? <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" /> :
-                    <span className="inline-block h-3 w-3 shrink-0 text-center font-mono text-[10px] text-[#111111]/25">·</span>
+                    <span className="inline-block h-3 w-3 shrink-0 text-center font-mono text-[10px] text-[#111111]/50">·</span>
 
   return (
     <motion.div
@@ -258,7 +258,7 @@ export default function LaunchOverlay({
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-xl font-bold text-[#111111]">Export &amp; Publish</h2>
-          <button onClick={onBack} className="flex h-8 w-8 items-center justify-center bg-[#111111]/[0.06] text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.1] hover:text-[#111111]/50">
+          <button onClick={onBack} className="flex h-8 w-8 items-center justify-center bg-[#111111]/[0.06] text-[#111111]/50 transition-colors hover:bg-[#111111]/[0.1] hover:text-[#111111]/70">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -267,15 +267,15 @@ export default function LaunchOverlay({
           {/* Left column: export settings */}
           <div className="space-y-3">
             {/* Platform selector */}
-            <div className="border border-[#111111]/[0.08] bg-white p-4">
-              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Target Platform</p>
+            <div className="border border-[#111111]/[0.12] bg-white p-4">
+              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">Target Platform</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPlatform('kdp')}
                   className={`flex-1 py-2 text-[11px] font-semibold transition-all ${
                     platform === 'kdp'
                       ? 'bg-[#111111] text-white'
-                      : 'border border-[#111111]/[0.08] text-[#111111]/40 hover:border-[#111111]/20'
+                      : 'border border-[#111111]/[0.12] text-[#111111]/60 hover:border-[#111111]/25'
                   }`}
                 >
                   Amazon KDP
@@ -285,14 +285,14 @@ export default function LaunchOverlay({
                   className={`flex-1 py-2 text-[11px] font-semibold transition-all ${
                     platform === 'ingram'
                       ? 'bg-[#FF3333] text-white'
-                      : 'border border-[#111111]/[0.08] text-[#111111]/40 hover:border-[#111111]/20'
+                      : 'border border-[#111111]/[0.12] text-[#111111]/60 hover:border-[#111111]/25'
                   } ${!hasTier(userTier, 'publisher') ? 'opacity-40 cursor-not-allowed' : ''}`}
                   title={!hasTier(userTier, 'publisher') ? 'PDF/X-1a requires Publisher or Studio' : ''}
                 >
                   IngramSpark {!hasTier(userTier, 'publisher') && <Lock className="ml-1 inline h-2.5 w-2.5" />}
                 </button>
               </div>
-              <p className="mt-2 font-mono text-[10px] leading-relaxed text-[#111111]/30">
+              <p className="mt-2 font-mono text-[10px] leading-relaxed text-[#111111]/50">
                 {platform === 'kdp'
                   ? 'Standard PDF with KDP spine and gutter calculations. Upload directly to your KDP dashboard.'
                   : 'PDF/X-1a with CMYK color profile and bleed marks. Required by IngramSpark, also works for offset printing.'}
@@ -300,15 +300,15 @@ export default function LaunchOverlay({
             </div>
 
             {/* Paper stock selector */}
-            <div className="border border-[#111111]/[0.08] bg-white p-4">
-              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Paper Stock</p>
+            <div className="border border-[#111111]/[0.12] bg-white p-4">
+              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">Paper Stock</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPaper('white')}
                   className={`flex-1 py-2 text-[11px] font-medium transition-all ${
                     paper === 'white'
                       ? 'bg-[#111111] text-white'
-                      : 'border border-[#111111]/[0.08] text-[#111111]/40 hover:border-[#111111]/20'
+                      : 'border border-[#111111]/[0.12] text-[#111111]/60 hover:border-[#111111]/25'
                   }`}
                 >
                   White
@@ -318,7 +318,7 @@ export default function LaunchOverlay({
                   className={`flex-1 py-2 text-[11px] font-medium transition-all ${
                     paper === 'cream'
                       ? 'bg-[#f5f0d0] text-[#111111]'
-                      : 'border border-[#111111]/[0.08] text-[#111111]/40 hover:border-[#111111]/20'
+                      : 'border border-[#111111]/[0.12] text-[#111111]/60 hover:border-[#111111]/25'
                   }`}
                 >
                   Cream
@@ -328,15 +328,15 @@ export default function LaunchOverlay({
           </div>
 
           {/* Right column: pre-flight terminal */}
-          <div className="flex flex-col overflow-hidden border border-[#111111]/[0.08] bg-white">
+          <div className="flex flex-col overflow-hidden border border-[#111111]/[0.12] bg-white">
             {/* Terminal chrome */}
-            <div className="flex items-center gap-2 border-b border-[#111111]/[0.06] bg-[#111111]/[0.02] px-4 py-2.5">
+            <div className="flex items-center gap-2 border-b border-[#111111]/[0.10] bg-[#111111]/[0.02] px-4 py-2.5">
               <div className={`h-2 w-2 rounded-full ${
                 checking ? 'bg-amber-500 animate-pulse'
                 : fetchError || hasFailure ? 'bg-red-500'
                 : 'bg-emerald-500'
               }`} />
-              <span className="font-mono text-[10px] text-[#111111]/30">
+              <span className="font-mono text-[10px] text-[#111111]/50">
                 PRE-FLIGHT // {platform.toUpperCase()}
               </span>
             </div>
@@ -344,8 +344,8 @@ export default function LaunchOverlay({
             {/* Check results */}
             <div className="flex-1 p-4 font-mono text-[11px] leading-[1.9]">
               {checking ? (
-                <div className="flex items-center gap-2 text-[#111111]/30">
-                  <div className="h-3 w-3 animate-spin rounded-full border border-[#111111]/20 border-t-transparent" />
+                <div className="flex items-center gap-2 text-[#111111]/50">
+                  <div className="h-3 w-3 animate-spin rounded-full border border-[#111111]/25 border-t-transparent" />
                   Running pre-flight analysis...
                 </div>
               ) : fetchError ? (
@@ -366,11 +366,11 @@ export default function LaunchOverlay({
                           check.status === 'pass' ? 'text-[#111111]/50' :
                           check.status === 'fail' ? 'text-red-600/90' :
                           check.status === 'warn' ? 'text-amber-600/80' :
-                          'text-[#111111]/35'
+                          'text-[#111111]/55'
                         }>
                           {check.name}
                         </span>
-                        <p className="text-[10px] text-[#111111]/35">{check.detail}</p>
+                        <p className="text-[10px] text-[#111111]/55">{check.detail}</p>
                       </div>
                     </div>
                   </motion.div>
@@ -381,22 +381,22 @@ export default function LaunchOverlay({
             {/* Real stats from backend */}
             {!checking && preflight && (
               <>
-                <div className={`grid gap-px border-t border-[#111111]/[0.06] bg-[#111111]/[0.03] ${quality?.typographyGrade ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                <div className={`grid gap-px border-t border-[#111111]/[0.10] bg-[#111111]/[0.03] ${quality?.typographyGrade ? 'grid-cols-4' : 'grid-cols-3'}`}>
                   <div className="bg-white p-2.5 text-center">
-                    <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Pages</p>
+                    <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/55">Pages</p>
                     <p className="font-display text-sm font-bold text-[#111111]">~{preflight.stats.estimatedPages}</p>
                   </div>
                   <div className="bg-white p-2.5 text-center">
-                    <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Spine</p>
+                    <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/55">Spine</p>
                     <p className="font-display text-sm font-bold text-[#111111]">{preflight.stats.spineInches}&quot;</p>
                   </div>
                   <div className="bg-white p-2.5 text-center">
-                    <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Trim</p>
+                    <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/55">Trim</p>
                     <p className="font-display text-sm font-bold text-[#111111]">{preflight.stats.trimWidth}&times;{preflight.stats.trimHeight}&quot;</p>
                   </div>
                   {quality?.typographyGrade && (
                     <div className="bg-white p-2.5 text-center">
-                      <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/35">Quality</p>
+                      <p className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/55">Quality</p>
                       <p className={`font-display text-sm font-bold ${
                         quality.typographyGrade === 'A' ? 'text-emerald-600' :
                         quality.typographyGrade === 'B' ? 'text-[#111111]' :
@@ -409,8 +409,8 @@ export default function LaunchOverlay({
                   )}
                 </div>
                 {quality?.engine && (
-                  <div className="border-t border-[#111111]/[0.06] bg-white px-4 py-1.5 text-center">
-                    <span className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/25">Engine: {quality.engine}</span>
+                  <div className="border-t border-[#111111]/[0.10] bg-white px-4 py-1.5 text-center">
+                    <span className="font-mono text-[8px] uppercase tracking-wider text-[#111111]/50">Engine: {quality.engine}</span>
                   </div>
                 )}
               </>
@@ -427,7 +427,7 @@ export default function LaunchOverlay({
               className={`flex-1 px-3 py-2 text-center text-[11px] font-medium transition-all duration-150 ${
                 exportFormat === fmt
                   ? 'bg-[#111111]/[0.08] text-[#111111]'
-                  : 'text-[#111111]/40 hover:text-[#111111]/60'
+                  : 'text-[#111111]/60 hover:text-[#111111]/80'
               }`}
             >
               {fmt === 'pdf' ? 'PDF' : (<span className="inline-flex items-center gap-1">EPUB{!hasTier(userTier, 'studio') && <Lock className="h-2.5 w-2.5 opacity-40" />}</span>)}
@@ -562,7 +562,7 @@ export default function LaunchOverlay({
           ) : !hasTier(userTier, 'studio') ? (
             <a
               href="/pricing"
-              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 border border-[#111111]/[0.12] font-display text-[13px] font-medium text-[#111111]/40 transition-all hover:border-[#111111]/20 hover:text-[#111111]/60"
+              className="group inline-flex h-12 w-full items-center justify-center gap-2.5 border border-[#111111]/[0.16] font-display text-[13px] font-medium text-[#111111]/60 transition-all hover:border-[#111111]/25 hover:text-[#111111]/80"
             >
               <Lock className="h-4 w-4" />EPUB — Studio Only
             </a>
@@ -584,7 +584,7 @@ export default function LaunchOverlay({
           {!hasTier(userTier, 'studio') ? (
             <a
               href="/pricing"
-              className="group inline-flex h-10 w-full items-center justify-center gap-2 border border-[#111111]/[0.08] text-[12px] font-medium text-[#111111]/25 transition-all hover:border-[#111111]/15 hover:text-[#111111]/40"
+              className="group inline-flex h-10 w-full items-center justify-center gap-2 border border-[#111111]/[0.12] text-[12px] font-medium text-[#111111]/50 transition-all hover:border-[#111111]/25 hover:text-[#111111]/70"
             >
               <Lock className="h-3.5 w-3.5" />Batch Export — Studio Only
             </a>
@@ -592,7 +592,7 @@ export default function LaunchOverlay({
             <button
               onClick={handleBatchExport}
               disabled={batchLoading || !pdfUrl}
-              className="group inline-flex h-10 w-full items-center justify-center gap-2 border border-[#111111]/[0.08] text-[12px] font-medium text-[#111111]/40 transition-all hover:border-[#111111]/20 hover:text-[#111111]/60 disabled:opacity-30 disabled:cursor-not-allowed"
+              className="group inline-flex h-10 w-full items-center justify-center gap-2 border border-[#111111]/[0.12] text-[12px] font-medium text-[#111111]/60 transition-all hover:border-[#111111]/25 hover:text-[#111111]/80 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {batchLoading ? (
                 <><Loader2 className="h-3.5 w-3.5 animate-spin" />{batchProgress || 'Batch exporting...'}</>
@@ -655,7 +655,7 @@ export default function LaunchOverlay({
           </p>
         )}
 
-        <p className="mt-3 text-center font-mono text-[10px] text-[#111111]/25">
+        <p className="mt-3 text-center font-mono text-[10px] text-[#111111]/50">
           {TEMPLATE_INFO[template]?.name} / {PAGE_SIZES[pageSize]?.label} / {title || 'Untitled'}
           {quality?.buildId && <> / {quality.buildId.slice(0, 20)}</>}
         </p>

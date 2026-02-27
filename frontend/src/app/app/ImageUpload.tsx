@@ -121,7 +121,7 @@ export default function ImageUpload({
           font-mono text-[10px] uppercase tracking-[0.1em] transition-colors
           ${dragOver
             ? 'border-[#FF3333] bg-[#FF3333]/5 text-[#FF3333]'
-            : 'border-[#111111]/15 text-[#111111]/30 hover:border-[#111111]/30 hover:text-[#111111]/50'
+            : 'border-[#111111]/20 text-[#111111]/50 hover:border-[#111111]/40 hover:text-[#111111]/70'
           }
           ${uploading ? 'pointer-events-none opacity-50' : ''}
         `}
@@ -169,7 +169,7 @@ export default function ImageUpload({
                 exit={{ opacity: 0, x: -8 }}
                 className="group flex items-center gap-2 border border-[#111111]/8 bg-white px-2 py-1.5"
               >
-                <ImageIcon className="h-3 w-3 flex-shrink-0 text-[#111111]/25" />
+                <ImageIcon className="h-3 w-3 flex-shrink-0 text-[#111111]/40" />
                 <button
                   onClick={() => insertAsset(asset)}
                   className="flex-1 truncate text-left font-mono text-[10px] text-[#111111]/50 hover:text-[#FF3333] transition-colors"
@@ -177,12 +177,12 @@ export default function ImageUpload({
                 >
                   {asset.originalName}
                 </button>
-                <span className="font-mono text-[9px] text-[#111111]/20">
+                <span className="font-mono text-[9px] text-[#111111]/40">
                   {formatSize(asset.size)}
                 </span>
                 <button
                   onClick={() => removeAsset(asset.assetId)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-[#111111]/20 hover:text-[#FF3333]"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-[#111111]/40 hover:text-[#FF3333]"
                   title="Remove image"
                 >
                   <X className="h-3 w-3" />

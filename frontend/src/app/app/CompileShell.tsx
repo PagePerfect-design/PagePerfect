@@ -338,7 +338,7 @@ export default function CompileShell() {
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="flex h-8 w-8 items-center justify-center text-[#111111]/30 transition-colors duration-200 hover:text-[#111111]/60"
+            className="flex h-8 w-8 items-center justify-center text-[#111111]/50 transition-colors duration-200 hover:text-[#111111]/70"
             title="Home"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -350,10 +350,10 @@ export default function CompileShell() {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="max-w-[200px] bg-transparent font-display text-sm font-semibold text-[#111111]/60 placeholder:text-[#111111]/25 focus:text-[#111111] focus:outline-none"
+                className="max-w-[200px] bg-transparent font-display text-sm font-semibold text-[#111111]/70 placeholder:text-[#111111]/40 focus:text-[#111111] focus:outline-none"
                 placeholder="Untitled"
               />
-              <span className="hidden font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/25 sm:inline">
+              <span className="hidden font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/50 sm:inline">
                 {wordCount.toLocaleString()} words
               </span>
               {/* Cloud sync */}
@@ -361,7 +361,7 @@ export default function CompileShell() {
                 <>
                   <div className="h-3 w-px bg-[#111111]/[0.08]" />
                   {manuscriptSaving ? (
-                    <Loader2 className="h-2.5 w-2.5 animate-spin text-[#111111]/25" />
+                    <Loader2 className="h-2.5 w-2.5 animate-spin text-[#111111]/50" />
                   ) : manuscriptSaveError ? (
                     <span title={manuscriptSaveError || undefined}><CloudOff className="h-2.5 w-2.5 text-red-500/50" /></span>
                   ) : (
@@ -371,7 +371,7 @@ export default function CompileShell() {
               )}
             </>
           ) : (
-            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/30">PagePerfect</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/50">PagePerfect</span>
           )}
         </div>
 
@@ -381,7 +381,7 @@ export default function CompileShell() {
           {hasManuscript && (
             <button
               onClick={handleNewManuscript}
-              className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/30 transition-colors duration-200 hover:text-[#111111]/60"
+              className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors duration-200 hover:text-[#111111]/70"
             >
               New
             </button>
@@ -390,7 +390,7 @@ export default function CompileShell() {
           {!!user && (
             <button
               onClick={handleOpenManuscripts}
-              className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/30 transition-colors duration-200 hover:text-[#111111]/60"
+              className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors duration-200 hover:text-[#111111]/70"
             >
               Manuscripts
             </button>
@@ -403,7 +403,7 @@ export default function CompileShell() {
               <button
                 onClick={() => compile(false)}
                 disabled={loading}
-                className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/30 transition-colors duration-200 hover:text-[#111111]/60 disabled:opacity-30"
+                className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors duration-200 hover:text-[#111111]/70 disabled:opacity-30"
               >
                 {loading ? <Loader2 className="inline h-3 w-3 animate-spin" /> : 'Compile'}
               </button>
