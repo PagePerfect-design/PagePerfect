@@ -3,7 +3,7 @@
 // Latin Modern body, wide margins, plain page style
 // Target: Drafts, screenplays, documentation, submissions
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── PAGE GEOMETRY ─────────────────────────────────────────────
 #set page(
@@ -17,7 +17,7 @@
 
 // ── TYPOGRAPHY — Latin Modern ─────────────────────────────────
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$Latin Modern Roman$endif$",
+  font: pp-mainfont,
   size: 12pt,
   hyphenate: true,
   lang: "en",
@@ -58,36 +58,19 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 10pt)
 
-// ── Pandoc compatibility ─────────────────────────────────────
-// Pandoc emits #horizontalrule for Markdown "---" thematic breaks
-#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+// %% CONTENT %%
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
-
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 #align(center)[
-  #text(size: 20pt, weight: "bold")[$title$]
-  $if(author)$
+  #text(size: 20pt, weight: "bold")[#pp-title]
+  #if pp-author != none [
   #v(8pt)
-  #text(size: 14pt)[$author$]
-  $endif$
-  $if(date)$
+  #text(size: 14pt)[#pp-author]
+  ]
+  #if pp-date != none [
   #v(4pt)
-  #text(size: 12pt)[$date$]
-  $endif$
+  #text(size: 12pt)[#pp-date]
+  ]
 ]
 #v(24pt)
-$endif$
-
-$body$
-
-$if(bibliography)$
-#pagebreak()
-#heading(level: 1, numbering: none)[References]
-$bibliography$
-$endif$
+]

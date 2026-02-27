@@ -3,7 +3,7 @@
 // Fira Sans body + Fira Mono code, structured layout with sidenote margins
 // Target: Developers, engineers, product makers, technical writers
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── COLORS ────────────────────────────────────────────────────
 #let warningred = rgb("CC0000")
@@ -21,7 +21,7 @@
     set text(size: 8pt, font: "Fira Sans")
     grid(
       columns: (1fr, 1fr),
-      align(left, text(fill: rulegrey)[$if(title)$$title$$endif$]),
+      align(left, text(fill: rulegrey)[#pp-title]),
       align(right)[#counter(page).display()],
     )
     v(2pt)
@@ -32,7 +32,7 @@
 
 // ── TYPOGRAPHY — Machine Precision ───────────────────────────
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$Fira Sans$endif$",
+  font: pp-mainfont,
   size: 10pt,
   ligatures: true,
   kerning: true,
@@ -118,39 +118,22 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 9pt)
 
-// ── Pandoc compatibility ─────────────────────────────────────
-// Pandoc emits #horizontalrule for Markdown "---" thematic breaks
-#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+// %% CONTENT %%
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
-
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 #align(left)[
   #v(16pt)
-  #text(size: 26pt, weight: "bold", fill: headblue)[$title$]
+  #text(size: 26pt, weight: "bold", fill: headblue)[#pp-title]
   #v(4pt)
   #line(length: 3cm, stroke: 2pt + headblue)
-  $if(author)$
+  #if pp-author != none [
   #v(8pt)
-  #text(size: 12pt)[$author$]
-  $endif$
-  $if(date)$
+  #text(size: 12pt)[#pp-author]
+  ]
+  #if pp-date != none [
   #v(4pt)
-  #text(size: 10pt, fill: rulegrey)[$date$]
-  $endif$
+  #text(size: 10pt, fill: rulegrey)[#pp-date]
+  ]
 ]
 #v(12pt)
-$endif$
-
-$body$
-
-$if(bibliography)$
-#pagebreak()
-#heading(level: 1, numbering: none)[References]
-$bibliography$
-$endif$
+]

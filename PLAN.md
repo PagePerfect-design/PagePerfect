@@ -1,271 +1,257 @@
-# PagePerfect Editor UX/UI Redesign Plan
+# PLAN: Split Pipeline — Pandoc Body-Only + Direct Typst Compile
 
-## Executive Summary
+## Problem
 
-Replace the current 3-stage gauntlet (Portal → Design → Launch) with a **single-screen workspace** where the book is always visible. Inspired by Vellum/Atticus's proven three-panel pattern and Apple's progressive disclosure, but adapted to PagePerfect's compile-based workflow.
+Pandoc is a middleman between our templates and Typst. It forces:
+- Templates written in Pandoc's `$variable$` syntax instead of native Typst
+- `#let horizontalrule` needed because Pandoc's Typst writer emits it (not a Typst concept)
+- Debugging across TWO systems (Pandoc template expansion + Typst compilation)
+- Header-include scoping issues, variable conflicts, version-dependent bugs
+
+## Solution: Split the Pipeline
+
+**Current (broken):**
+```
+Markdown → Pandoc [parse + template + call typst] → PDF
+```
+
+**New (clean):**
+```
+Markdown → Pandoc [parse only] → body.typ → JS assembles main.typ → Typst compile → PDF
+```
+
+Keep Pandoc for what it's great at (Markdown parsing, citations, Lua filters).
+Remove Pandoc from what it's bad at (template system, engine management).
 
 ---
 
-## Current Problems (from research + code audit)
+## Architecture
 
-1. **Three stages force a linear funnel** — users must "complete" Portal before seeing Design, and can't export without switching to Launch. Both Vellum and Atticus have zero stage transitions.
-2. **FloatingHUD dock uses novel interaction patterns** — fan menus popping UP from a bottom dock are unfamiliar. Users must discover them.
-3. **Six overlay surfaces compete** — EditorOverlay, PublishingSystems, FloatingHUD fans, ShortcutLegend, ManuscriptBrowser, LaunchOverlay all have independent z-index, animations, and dismiss behaviors.
-4. **Preview gets crowded out** — with editor (50%) + systems panel (380px), the PDF preview shrinks to unusable widths.
-5. **Portal demands analysis before the user cares** — genre detection, template recommendation, platform selection all happen before the user has seen a single formatted page.
-6. **Export is a full-screen takeover** — 665-line LaunchOverlay with two-column grid, pre-flight terminal, quality gates, and contract acceptance is intimidating.
+### New Pandoc Command (body conversion only)
+```
+pandoc input.md \
+  --from=markdown[+citations][-raw_tex][-raw_attribute] \
+  -t typst \
+  --top-level-division=chapter|section \
+  --resource-path=<tmpBase> \
+  [--citeproc --bibliography=refs.bib] \
+  [--lua-filter fountain.lua] \
+  -o body.typ
+```
+
+No `--pdf-engine`. No `--template`. No `-H`. No `-V`. No `-M`.
+
+### New Typst Command (direct compilation)
+```
+typst compile [--font-path <dir>] main.typ output.pdf
+```
+
+### main.typ Assembly (JavaScript string concatenation)
+
+Order matters — Typst #set rules are cumulative, later overrides earlier:
+
+```typst
+// ── 1. PREAMBLE (compile-worker.js) ──
+#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+#let pp-title = "Book Title"
+#let pp-author = "Author Name"        // or: none
+#let pp-date = none
+#let pp-mainfont = "Alegreya Sans"
+
+// ── 2. TEMPLATE STYLE (from template file, before %% CONTENT %% marker) ──
+// #set page(...), #set text(...), #show heading..., #show quote..., etc.
+
+// ── 3. GRID OVERRIDE (grid-system.js — overrides template's default margins) ──
+#set page(width: 6in, height: 9in, margin: 0.694in)
+
+// ── 4. ENGINEERING (book-engineering.js) ──
+#set par(justify: true)
+#set text(hyphenate: true)
+
+// ── 5. HEADING VARIANT (heading-variants-typst.js — if not 'classic') ──
+#show heading.where(level: 1): it => { ... }
+
+// ── 6. WATERMARK (watermark-typst.js — if free tier) ──
+#set page(background: { ... })
+
+// ── 7. BUILD PROVENANCE ──
+// Build: abc123 | 2026-02-27T12:00:00Z
+
+// ── 8. TEMPLATE CONTENT (from template file, after %% CONTENT %% marker) ──
+// Title page using pp-title, pp-author
+
+// ── 9. BODY (from Pandoc's body.typ output) ──
+// All converted Markdown content, citations already resolved by citeproc
+```
 
 ---
 
-## Design Principles
+## Template Conversion (15 files)
 
-1. **The book is always visible.** The PDF preview is the anchor. Nothing covers it completely.
-2. **Progressive disclosure.** Start simple: drop your manuscript, see a book. Reveal controls as the user explores.
-3. **Familiar patterns only.** Sidebar for tools, toolbar for actions, inline panels. No custom interaction patterns (no fan menus, no floating docks).
-4. **One screen, zero stage transitions.** Portal is an empty state. Design is the workspace. Export is a sidebar action — not a new page.
-5. **Speed over ceremony.** Auto-compile on every change. Skip the analysis spinner. Show the book within seconds.
+Each template: Pandoc-Typst hybrid → pure Typst.
+
+### Syntax changes per template:
+| Before (Pandoc syntax) | After (pure Typst) |
+|---|---|
+| `$title$` | `pp-title` |
+| `$author$` | `pp-author` |
+| `$date$` | `pp-date` |
+| `$if(title)$...$endif$` | `#if pp-title != none [...]` |
+| `$if(author)$...$endif$` | `#if pp-author != none [...]` |
+| `$if(mainfont)$$mainfont$$else$Default$endif$` | `pp-mainfont` |
+| `$for(header-includes)$...$endfor$` | **DELETE** (JS assembly handles this) |
+| `$body$` | **DELETE** (JS assembly appends body) |
+| `$if(bibliography)$...$endif$` | **DELETE** (citeproc inlines it in body) |
+| `#let horizontalrule = ...` | **DELETE** (preamble defines it once) |
+
+### Structural change:
+Add `// %% CONTENT %%` marker between style rules and title page.
+compile-worker.js splits on this to insert overrides between style and content.
+
+### Example: paperback.typ
+
+**Before:**
+```typst
+#set text(font: "$if(mainfont)$$mainfont$$else$Alegreya Sans$endif$", ...)
+align(left, smallcaps[$if(title)$$title$$endif$])
+#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+$for(header-includes)$
+$header-includes$
+$endfor$
+$if(title)$
+#page(...)[#text(...)[$title$] $if(author)$#text(...)[$author$]$endif$]
+$endif$
+$body$
+$if(bibliography)$...$endif$
+```
+
+**After:**
+```typst
+#set text(font: pp-mainfont, ...)
+align(left, smallcaps[#pp-title])
+// %% CONTENT %%
+#if pp-title != none [
+  #page(...)[#text(...)[#pp-title] #if pp-author != none [#text(...)[#pp-author]]]
+]
+```
 
 ---
 
-## New Architecture: Single-Screen Workspace
+## Files Changed
 
-### Layout
-
+### Phase 1: Convert 15 templates (independent, can be done in parallel)
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│ TopBar: [← Back]  Title  [word count]  [cloud]   [Compile] [Export] │
-├──────────────────────┬───────────────────────────────────────────┤
-│                      │                                           │
-│   Left Sidebar       │          PDF Preview                      │
-│   (collapsible)      │          (always centered)                │
-│                      │                                           │
-│   ┌──────────────┐   │                                           │
-│   │ Ingest Zone  │   │        ┌─────────────────────────┐        │
-│   │ (empty state)│   │        │                         │        │
-│   └──────────────┘   │        │                         │        │
-│                      │        │    Your Book            │        │
-│   ┌──────────────┐   │        │                         │        │
-│   │ Template     │   │        │                         │        │
-│   │ Picker       │   │        │                         │        │
-│   └──────────────┘   │        │                         │        │
-│                      │        │                         │        │
-│   ┌──────────────┐   │        └─────────────────────────┘        │
-│   │ Page & Layout│   │                                           │
-│   └──────────────┘   │          [Quality Badge]                  │
-│                      │          [Status: Ready / Typesetting]    │
-│   ┌──────────────┐   │                                           │
-│   │ Settings     │   │                                           │
-│   └──────────────┘   │                                           │
-│                      │                                           │
-├──────────────────────┴───────────────────────────────────────────┤
-│ Status bar: engine · grade · build-id                            │
-└──────────────────────────────────────────────────────────────────┘
+backend/typst-templates/chicago.typ
+backend/typst-templates/symphony.typ
+backend/typst-templates/thesis.typ
+backend/typst-templates/minimal.typ
+backend/typst-templates/paperback.typ
+backend/typst-templates/memoir.typ
+backend/typst-templates/exhibit.typ
+backend/typst-templates/heirloom.typ
+backend/typst-templates/verse.typ
+backend/typst-templates/chronicle.typ
+backend/typst-templates/international.typ
+backend/typst-templates/operator.typ
+backend/typst-templates/matrix.typ
+backend/typst-templates/avantgarde.typ
+backend/typst-templates/cinema.typ
 ```
 
-### Empty State (replaces Portal)
+### Phase 2: Rewrite compile-worker.js (core change)
+Lines ~295-570: Replace monolithic Pandoc call with 2-step pipeline.
+Keep: PocketBase auth, EPUB, error handling, provenance, pre-flight, PDF/X.
 
-When no manuscript is loaded, the preview area shows a large ingest zone:
+### Phase 3: Update batch compile in routes/compile.js
+Lines ~620-700: Same structural change as compile-worker.js.
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│ TopBar: [← Home]                                    [Help]       │
-├──────────────────────┬───────────────────────────────────────────┤
-│                      │                                           │
-│   Sidebar shows:     │     ┌─────────────────────────────┐      │
-│   - "Getting Started"│     │                             │      │
-│   - Template browser │     │    Drop your manuscript     │      │
-│   - Sample docs      │     │    .md · .txt · .docx       │      │
-│                      │     │                             │      │
-│                      │     │    [Browse Files] [Paste]   │      │
-│                      │     │                             │      │
-│                      │     │    or try a sample:         │      │
-│                      │     │    Fiction · Academic · ...  │      │
-│                      │     │                             │      │
-│                      │     └─────────────────────────────┘      │
-│                      │                                           │
-└──────────────────────┴───────────────────────────────────────────┘
-```
+### Phase 4: Update tests
+`backend/tests/template-regression.test.js` — adapt for new template format.
 
-Once a manuscript is dropped:
-1. Preview area immediately shows BookSkeleton (loading state)
-2. Auto-compile fires with default template
-3. Sidebar populates with template/layout/settings sections
-4. Genre detection runs in background — sidebar highlights recommended template
-5. User sees their formatted book within 5-10 seconds of dropping the file
-
-**No analysis modal. No "Start designing" button. No platform selection gatekeep.**
-
-### Sidebar Sections (accordion)
-
-The left sidebar replaces FloatingHUD, EditorOverlay, and part of PortalStage:
-
-**Section 1: Manuscript** (expandable)
-- Markdown editor (textarea, same as current EditorOverlay but inline in sidebar)
-- Image upload area
-- "My Manuscripts" list (for logged-in users)
-- Word count + chapter count inline
-
-**Section 2: Template** (expandable, default open)
-- Template grid (2 columns, scrollable)
-- Genre filter tabs (All, Fiction, Nonfiction, Specialist)
-- "Rec" badge on auto-detected template
-- Heading variant toggle (Classic / Modern / Bold)
-- Active template's name + font shown at top of section
-
-**Section 3: Page & Layout** (expandable)
-- Page size grid (6 free sizes shown, expandable for more)
-- Margin preset row (7 presets)
-- Tier lock icons on gated sizes
-
-**Section 4: Settings** (expandable)
-- Compile mode toggle (Fast / Full)
-- Standard mode checkbox
-- Custom font upload (Studio tier)
-
-**Section 5: Export** (expandable)
-- Platform selector (KDP / IngramSpark)
-- Paper stock (White / Cream)
-- Pre-flight results (inline, not a separate terminal)
-- Quality warnings (inline)
-- Download button (primary red CTA)
-- Format toggle (PDF / EPUB)
-
-**Section 6: Analysis** (expandable, replaces PublishingSystems panel)
-- "Run Analysis" button
-- Compact results: typography grade, QA grade, lint issues
-- Expandable details per system
-
-### TopBar (simplified)
-
-```
-[← Back]  [Title input]  [word count]  [cloud sync]    [Compile]  [Export ↓]
-```
-
-- Remove: Edit toggle, Systems toggle, status dot (moved to status bar)
-- Keep: Title, word count, cloud sync, compile button, export button
-- Export button opens/scrolls to Export section in sidebar
-- Compile button forces manual recompile
-
-### Status Bar (new, replaces HUD dock status)
-
-Thin bar at bottom of screen:
-```
-LuaTeX · Grade: A · Build: abc123def · Ready
-```
-
-Shows engine, quality grade, build ID, and compile status. Always visible, never interactive.
-
-### Export Flow (simplified)
-
-Instead of a full-screen LaunchOverlay:
-
-1. User clicks "Export" in TopBar → sidebar scrolls to Export section
-2. Export section shows platform choice + paper stock inline
-3. Pre-flight runs automatically when Export section opens
-4. Results appear inline (green checks, amber warnings, red failures)
-5. Download button at bottom of section
-6. Quality warnings appear inline above download button
-7. Grade D still requires acknowledgment checkbox (inline, not modal)
-8. Free tier: "Download Preview (Watermarked)" with pricing link
-
-**No full-screen takeover. No contract modal. No two-column grid.**
+### Unchanged:
+- `compileEpub()` — Pandoc for EPUB (no templates involved)
+- `POST /api/convert` — Pandoc for .docx→markdown (no templates involved)
+- All frontend files
+- grid-system.js, book-engineering.js, heading-variants-typst.js, watermark-typst.js
+- typography-assurance.js, layout-sanity-checker.js, typst-error-translator.js
 
 ---
 
-## Component Changes
+## compile-worker.js: New Pipeline (pseudocode)
 
-### Files to REWRITE (significant changes):
+```javascript
+// ── STEP A: Pandoc converts Markdown → Typst body ──
+const bodyPath = path.join(tmpBase, 'body.typ');
+const pandocArgs = [
+  mdPath, fromFmt, '-t', 'typst',
+  `--top-level-division=${topLevelDiv}`,
+  `--resource-path=${tmpBase}`,
+  ...luaFilters,          // fountain.lua for cinema
+  ...(safeMode ? [] : citeprocArgs(BIB_PATH)),
+  '-o', bodyPath,
+];
+// spawn('pandoc', pandocArgs, { cwd: tmpBase })
 
-| File | Lines | Action |
-|------|-------|--------|
-| `CompileShell.tsx` | 724 → ~400 | Remove stage machine, layer cake rendering. Single layout: sidebar + preview. |
-| `FloatingHUD.tsx` | 505 → DELETE | Replace with sidebar sections. All functionality moves to sidebar. |
-| `LaunchOverlay.tsx` | 665 → DELETE | Replace with Export section in sidebar. Pre-flight + download inline. |
-| `PortalStage.tsx` | 570 → DELETE | Replace with empty state in preview area + sidebar ingest section. |
-| `TopBar.tsx` | 173 → ~120 | Simplify: remove edit/systems toggles. Keep title, compile, export. |
-| `PreviewPane.tsx` | 326 → ~200 | Simplify: remove side-by-side logic. Always full remaining width. Always visible. |
-| `PublishingSystems.tsx` | 643 → ~400 | Convert from sliding panel to sidebar section. Compact results. |
+// ── STEP B: Read template, split at marker ──
+const tplContent = await fsp.readFile(typstTemplatePath, 'utf8');
+const markerIdx = tplContent.indexOf('// %% CONTENT %%');
+const tplStyle = markerIdx >= 0 ? tplContent.slice(0, markerIdx) : tplContent;
+const tplContent = markerIdx >= 0 ? tplContent.slice(markerIdx + '// %% CONTENT %%'.length) : '';
 
-### New files:
+// ── STEP C: Assemble main.typ ──
+const bodyContent = await fsp.readFile(bodyPath, 'utf8');
+const mainTyp = [
+  // 1. Preamble
+  `#let horizontalrule = line(start: (25%,0%), end: (75%,0%))`,
+  `#let pp-title = ${typstString(safeTitle)}`,
+  `#let pp-author = ${author ? typstString(author) : 'none'}`,
+  `#let pp-date = ${date ? typstString(date) : 'none'}`,
+  `#let pp-mainfont = ${typstString(mainFont)}`,
+  // 2. Template style
+  tplStyle.trim(),
+  // 3. Grid override
+  geo,
+  // 4. Engineering
+  engineering,
+  // 5. Heading variant
+  headingVariant || '',
+  // 6. Watermark
+  needsWatermark ? watermarkPreamble : '',
+  // 7. Provenance
+  `// Build: ${buildMeta.buildId} | ${buildMeta.timestamp}`,
+  // 8. Template content (title page)
+  tplContentSection.trim(),
+  // 9. Body
+  bodyContent,
+].filter(Boolean).join('\n\n');
 
-| File | Est. Lines | Purpose |
-|------|-----------|---------|
-| `Sidebar.tsx` | ~500 | Left sidebar shell with collapsible sections |
-| `StatusBar.tsx` | ~40 | Bottom status bar (engine, grade, build ID, status) |
-| `IngestZone.tsx` | ~150 | Empty-state drop zone for the preview area (replaces PortalStage idle phase) |
-| `ExportSection.tsx` | ~300 | Export sidebar section with inline pre-flight, quality gates, download |
-| `TemplateSection.tsx` | ~200 | Template picker sidebar section (grid + genre tabs + variant toggle) |
-| `LayoutSection.tsx` | ~150 | Page size + margin sidebar section |
+await fsp.writeFile(path.join(tmpBase, 'main.typ'), mainTyp, 'utf8');
 
-### Files UNCHANGED:
+// ── STEP D: Typst compile ──
+const typstArgs = ['compile'];
+if (customFontDir) typstArgs.push('--font-path', customFontDir);
+typstArgs.push('main.typ', 'output.pdf');
+// spawn('typst', typstArgs, { cwd: tmpBase })
+```
 
-| File | Reason |
-|------|--------|
-| `useCompileQueue.ts` | Hook logic is solid — debounce, polling, quality extraction all stay |
-| `editor-types.ts` | Types are correct |
-| `editor-utils.ts` | Genre detection, error translation all stay |
-| `debug-log.ts` | Logging infrastructure stays |
-| `manuscript-store.ts` | Persistence layer stays |
-| `ImageUpload.tsx` | Move into Manuscript sidebar section, but component logic stays |
-| `ManuscriptBrowser.tsx` | Move trigger into sidebar, but modal stays |
-| `RichTextEditor.tsx` | Keep as-is, triggered from sidebar |
-
----
-
-## Implementation Phases
-
-### Phase 1: Scaffold the new layout
-1. Create `Sidebar.tsx` shell with 6 collapsible sections (empty content)
-2. Create `StatusBar.tsx`
-3. Rewrite `CompileShell.tsx` to use sidebar + preview layout (no stages)
-4. Create `IngestZone.tsx` for empty state
-5. Wire up existing state management (no logic changes, just layout)
-
-### Phase 2: Migrate sidebar content
-1. Move template picker from FloatingHUD to `TemplateSection.tsx`
-2. Move page/margin picker from FloatingHUD to `LayoutSection.tsx`
-3. Move settings from FloatingHUD to inline sidebar section
-4. Move markdown editor from EditorOverlay to Manuscript section
-5. Move image upload into Manuscript section
-
-### Phase 3: Inline export flow
-1. Create `ExportSection.tsx` with platform/paper/preflight/download
-2. Move pre-flight logic from LaunchOverlay inline
-3. Move quality gates inline (C/D warnings, D checkbox)
-4. Move download logic inline
-5. Wire TopBar "Export" button to scroll/open Export section
-
-### Phase 4: Simplify remaining components
-1. Simplify `TopBar.tsx` (remove edit/systems toggles)
-2. Simplify `PreviewPane.tsx` (remove side-by-side, always full width right of sidebar)
-3. Convert `PublishingSystems.tsx` to Analysis sidebar section
-4. Clean up: delete FloatingHUD.tsx, LaunchOverlay.tsx, PortalStage.tsx
-
-### Phase 5: Polish
-1. Responsive behavior (sidebar collapses on mobile)
-2. Keyboard shortcuts (adapt to new layout)
-3. Animations (sidebar sections, preview transitions)
-4. Test all compile/export/quality flows end-to-end
+### Helper: typstString()
+```javascript
+function typstString(s) {
+  // Escape for Typst string literal: backslash, double-quote
+  return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+}
+```
 
 ---
 
-## Key Decisions
+## Risk Assessment
 
-1. **Sidebar width**: 320px (collapsible to 0 on mobile, icon-only 48px option on desktop)
-2. **Sidebar position**: Left side (matches Vellum/Atticus pattern, reading order left-to-right)
-3. **Accordion behavior**: Multiple sections can be open simultaneously (not mutually exclusive)
-4. **Auto-compile**: Keep current 1s/1.5s debounce behavior. No change to compile logic.
-5. **Mobile**: Sidebar becomes a bottom sheet or full-screen overlay (not a three-panel layout)
-6. **Keyboard shortcuts**: Adapt — `1-6` for sidebar sections, `Space` for compile, `E` for export section
-7. **Export confirmation**: Inline in sidebar, not a modal. Grade D acknowledgment is a checkbox, not a dialog.
-8. **Analysis panel**: Moves from 380px right panel to sidebar section. Compact by default, expandable.
-
----
-
-## Risk Mitigation
-
-- **No backend changes required** — this is purely frontend UI restructuring
-- **No hook changes** — useCompileQueue, useManuscript, manuscript-store all stay
-- **No type changes** — editor-types.ts stays
-- **Incremental approach** — each phase produces a working editor
-- **Git safety** — all work on `claude/complete-migration-audit-AGs9m` branch
+| Risk | Mitigation |
+|---|---|
+| Typst #set scope | We concatenate into one file — all in same scope |
+| Pandoc body output changes | Pandoc 3.6.2 pinned in Dockerfile |
+| Template split marker fragile | Validated at compile time — error if missing |
+| Citations break | citeproc runs in Pandoc step, inlines bibliography |
+| Custom fonts | `typst compile --font-path` replaces Pandoc font handling |
+| EPUB path breaks | Unchanged — still uses Pandoc directly |
+| Two spawns instead of one | Pandoc body-only is fast (~200ms); Typst compile is the slow part |
