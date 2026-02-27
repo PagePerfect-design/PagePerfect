@@ -92,8 +92,8 @@ function preflight(opts, gridSystem) {
   const gutter = kdpGutter(estimatedPages);
 
   // Parse actual margins from grid system geometry string
-  const geoString = gridSystem.calculateMargins(pageSize, marginPreset, template);
-  const marginMatch = geoString.match(/margin=([\d.]+)/);
+  const geoString = gridSystem.calculateTypstMargins(pageSize, marginPreset, template);
+  const marginMatch = geoString.match(/margin:\s*([\d.]+)/);
   const actualMargin = marginMatch ? parseFloat(marginMatch[1]) : 1.0;
   // Convert mm to inches if needed
   const isMetric = geoString.includes('mm');

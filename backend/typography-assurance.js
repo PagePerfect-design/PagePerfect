@@ -181,8 +181,8 @@ function analyzeTypography(opts) {
   if (!h1SnapsToGrid) score -= 3;
 
   // ── Text block proportions ──
-  const geoString = gridSystem.calculateMargins(pageSize, marginPreset, template);
-  const marginMatch = geoString.match(/margin=([\d.]+)/);
+  const geoString = gridSystem.calculateTypstMargins(pageSize, marginPreset, template);
+  const marginMatch = geoString.match(/margin:\s*([\d.]+)/);
   const isMetric = geoString.includes('mm');
   if (marginMatch) {
     const margin = parseFloat(marginMatch[1]);

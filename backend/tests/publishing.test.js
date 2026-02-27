@@ -9,11 +9,11 @@ const {
 
 // Mock grid system for preflight tests
 const mockGridSystem = {
-  calculateMargins: (pageSize, marginPreset, template) => {
-    // Return a realistic geometry string based on presets
+  calculateTypstMargins: (pageSize, marginPreset, template) => {
+    // Return a realistic Typst geometry string based on presets
     const margins = { minimal: 12, compact: 15, narrow: 18, normal: 22, wide: 26, academic: 30, generous: 34 };
     const m = margins[marginPreset] || 22;
-    return `margin=${m}mm`;
+    return `#set page(width: 6in, height: 9in, margin: ${m}mm)`;
   },
 };
 

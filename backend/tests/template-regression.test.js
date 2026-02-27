@@ -330,20 +330,20 @@ describe('Grid system integration', () => {
     grid = new GridSystem();
   });
 
-  test('all margin presets produce valid geometry', () => {
+  test('all margin presets produce valid Typst geometry', () => {
     const presets = ['minimal', 'compact', 'narrow', 'normal', 'wide', 'academic', 'generous'];
     for (const preset of presets) {
-      const result = grid.calculateMargins('sixByNine', preset);
-      expect(result).toContain('margin=');
+      const result = grid.calculateTypstMargins('sixByNine', preset);
+      expect(result).toContain('margin:');
       expect(result).not.toContain('NaN');
       expect(result).not.toContain('undefined');
     }
   });
 
-  test('all default page sizes produce valid geometry', () => {
+  test('all default page sizes produce valid Typst geometry', () => {
     const sizes = ['fiveFiveByEightFive', 'sixByNine', 'a5', 'royal', 'letter', 'a4'];
     for (const size of sizes) {
-      const result = grid.calculateMargins(size, 'normal');
+      const result = grid.calculateTypstMargins(size, 'normal');
       expect(typeof result).toBe('string');
       expect(result.length).toBeGreaterThan(10);
       expect(result).not.toContain('NaN');
@@ -351,9 +351,9 @@ describe('Grid system integration', () => {
     }
   });
 
-  test('typography preamble contains line spacing', () => {
-    const latex = grid.generateLaTeXCommands();
-    expect(latex).toContain('setstretch');
+  test('Typst typography preamble contains par leading', () => {
+    const typst = grid.generateTypstCommands();
+    expect(typst).toContain('par(leading');
   });
 });
 
