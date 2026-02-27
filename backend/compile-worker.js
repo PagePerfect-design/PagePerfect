@@ -32,6 +32,7 @@ const fontAvailability = require('./font-availability');
 const publishing = require('./publishing');
 const typstErrorTranslator = require('./typst-error-translator');
 const typographyAssurance = require('./typography-assurance');
+const dropCapTypst = require('./drop-cap-typst');
 const layoutSanityChecker = require('./layout-sanity-checker');
 const textNormalizer = require('./text-normalizer');
 const watermarkTypst = require('./watermark-typst');
@@ -354,6 +355,9 @@ async function processCompileJob(job, templateRegistry) {
       const vp = headingVariantsTypst.getTypstVariantPreamble(tplKey, headingVariant);
       if (vp) typstPreamble.push(vp);
 
+      const dc = dropCapTypst.getDropCapPreamble(tplKey);
+      if (dc) typstPreamble.push(dc);
+
       if (needsWatermark) typstPreamble.push(watermarkTypst.generateTypstWatermarkPreamble());
     } catch (err) {
       let debugFiles = [];
@@ -400,7 +404,7 @@ async function processCompileJob(job, templateRegistry) {
 
     // Typst Pandoc args — NOTE: no Lua filters needed!
     // heading-vmode.lua → not needed (Typst has no titlesec bug)
-    // drop-cap.lua → TODO: implement as Typst show rule
+    // drop-cap.lua → replaced by drop-cap-typst.js (injected via header-includes)
     // table-safety.lua → not needed (Typst tables work in multi-column)
     // fountain.lua → still applied via Pandoc Lua filter (works with any output format)
     const luaFilters = [];
