@@ -53,7 +53,7 @@ export default function TopBar({
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Link
             href="/"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#111111]/40 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/70"
+            className="flex h-8 w-8 shrink-0 items-center justify-center text-[#111111]/40 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/70"
             title="Home"
           >
             <CompositorMark size={18} />
@@ -61,7 +61,7 @@ export default function TopBar({
           <div className="hidden h-4 w-px bg-[#111111]/10 sm:block" />
           <button
             onClick={onBack}
-            className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/60 sm:flex"
+            className="hidden h-8 w-8 shrink-0 items-center justify-center text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/60 sm:flex"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
           </button>
@@ -96,7 +96,7 @@ export default function TopBar({
               )}
               <button
                 onClick={onShowManuscripts}
-                className="hidden h-7 w-7 items-center justify-center rounded-full text-[#111111]/25 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/50 sm:flex"
+                className="hidden h-7 w-7 items-center justify-center text-[#111111]/25 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/50 sm:flex"
                 title="My Manuscripts"
               >
                 <FolderOpen className="h-3 w-3" />

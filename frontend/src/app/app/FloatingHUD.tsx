@@ -130,7 +130,7 @@ export default function FloatingHUD({
                 <button
                   key={g}
                   onClick={() => setGenreFilter(g)}
-                  className={`rounded-t-lg px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] transition-all ${
+                  className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] transition-all ${
                     genreFilter === g
                       ? 'bg-[#111111]/[0.06] text-[#111111]/70'
                       : 'text-[#111111]/25 hover:text-[#111111]/50'
@@ -154,7 +154,7 @@ export default function FloatingHUD({
                       onClick={() => { onTemplateChange(key); onTabChange(null) }}
                       onMouseEnter={() => setHoveredTemplate(key)}
                       onMouseLeave={() => setHoveredTemplate(null)}
-                      className={`group relative flex flex-col items-start rounded-xl px-3 py-3 text-left transition-all duration-150 ${
+                      className={`group relative flex flex-col items-start px-3 py-3 text-left transition-all duration-150 ${
                         isActive
                           ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                           : 'hover:bg-[#111111]/[0.04]'
@@ -174,7 +174,7 @@ export default function FloatingHUD({
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 4 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute -top-12 left-0 z-50 w-48 rounded-lg border border-[#111111]/10 bg-white px-3 py-2 shadow-elevated"
+                            className="absolute -top-12 left-0 z-50 w-48 border border-[#111111]/10 bg-white px-3 py-2 shadow-elevated"
                           >
                             <p className="font-body text-[10px] leading-[1.5] text-[#111111]/50">
                               {info.vibe}
@@ -196,7 +196,7 @@ export default function FloatingHUD({
                   <button
                     key={v}
                     onClick={() => onHeadingVariantChange(v)}
-                    className={`rounded-full px-3 py-1 font-mono text-[10px] transition-all ${
+                    className={`px-3 py-1 font-mono text-[10px] transition-all ${
                       headingVariant === v
                         ? 'bg-[#111111] text-white'
                         : 'text-[#111111]/35 hover:bg-[#111111]/[0.05] hover:text-[#111111]/60'
@@ -229,7 +229,7 @@ export default function FloatingHUD({
                   <button
                     key={key}
                     onClick={() => onPageSizeChange(key)}
-                    className={`rounded-lg px-3 py-2 text-center transition-all duration-150 ${
+                    className={`px-3 py-2 text-center transition-all duration-150 ${
                       isActive
                         ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                         : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
@@ -258,7 +258,7 @@ export default function FloatingHUD({
                     <button
                       key={key}
                       onClick={() => onPageSizeChange(key)}
-                      className={`relative rounded-lg px-3 py-2 text-center transition-all duration-150 ${
+                      className={`relative px-3 py-2 text-center transition-all duration-150 ${
                         isActive
                           ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                           : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
@@ -294,7 +294,7 @@ export default function FloatingHUD({
                     <button
                       key={key}
                       onClick={() => onPageSizeChange(key)}
-                      className={`relative rounded-lg px-3 py-2 text-center transition-all ${
+                      className={`relative px-3 py-2 text-center transition-all ${
                         isActive
                           ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                           : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
@@ -326,7 +326,7 @@ export default function FloatingHUD({
                   <button
                     key={key}
                     onClick={() => onMarginChange(key)}
-                    className={`shrink-0 rounded-lg px-3 py-1.5 text-center transition-all duration-150 ${
+                    className={`shrink-0 px-3 py-1.5 text-center transition-all duration-150 ${
                       isActive
                         ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                         : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
@@ -355,12 +355,12 @@ export default function FloatingHUD({
           >
             <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Compile Options</p>
 
-            <div className="mb-3 flex rounded-lg bg-[#111111]/[0.03] p-0.5">
+            <div className="mb-3 flex bg-[#111111]/[0.03] p-0.5">
               {(['fast', 'full'] as CompileMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => onCompileModeChange(mode)}
-                  className={`flex-1 rounded-md px-3 py-1.5 text-center text-[11px] font-medium transition-all duration-150 ${
+                  className={`flex-1 px-3 py-1.5 text-center text-[11px] font-medium transition-all duration-150 ${
                     compileMode === mode
                       ? 'bg-[#111111]/[0.08] text-[#111111]'
                       : 'text-[#111111]/40 hover:text-[#111111]/60'
@@ -371,12 +371,12 @@ export default function FloatingHUD({
               ))}
             </div>
 
-            <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-1 py-1.5 transition-colors hover:bg-[#111111]/[0.02]">
+            <label className="flex cursor-pointer items-center gap-2.5 px-1 py-1.5 transition-colors hover:bg-[#111111]/[0.02]">
               <input
                 type="checkbox"
                 checked={safeMode}
                 onChange={(e) => onSafeModeChange(e.target.checked)}
-                className="h-3.5 w-3.5 rounded accent-[#FF3333]"
+                className="h-3.5 w-3.5 accent-[#FF3333]"
               />
               <div>
                 <span className="text-[11px] text-[#111111]/50">Standard mode</span>
@@ -389,11 +389,11 @@ export default function FloatingHUD({
             <div className="mt-3 border-t border-[#111111]/[0.06] pt-3">
               <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">Custom Font</p>
               {!hasTier(userTier, 'studio') ? (
-                <a href="/pricing" className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[#111111]/[0.08] py-2.5 text-[11px] text-[#111111]/25 transition-all hover:border-[#111111]/15 hover:text-[#111111]/40">
+                <a href="/pricing" className="flex items-center justify-center gap-2 border border-dashed border-[#111111]/[0.08] py-2.5 text-[11px] text-[#111111]/25 transition-all hover:border-[#111111]/15 hover:text-[#111111]/40">
                   <Lock className="h-3 w-3" />Studio — <span className="underline">Upgrade</span>
                 </a>
               ) : customFont ? (
-                <div className="flex items-center gap-2 rounded-lg bg-[#111111]/[0.03] px-3 py-2">
+                <div className="flex items-center gap-2 bg-[#111111]/[0.03] px-3 py-2">
                   <span className="flex-1 truncate text-[11px] text-[#111111]/50">{customFont.originalName}</span>
                   <button
                     onClick={onFontRemove}
@@ -403,7 +403,7 @@ export default function FloatingHUD({
                   </button>
                 </div>
               ) : (
-                <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-[#111111]/[0.12] py-2.5 text-[11px] transition-all ${
+                <label className={`flex cursor-pointer items-center justify-center gap-2 border border-dashed border-[#111111]/[0.12] py-2.5 text-[11px] transition-all ${
                   fontUploading ? 'text-[#111111]/30' : 'text-[#111111]/30 hover:border-[#111111]/25 hover:text-[#111111]/50'
                 }`}>
                   {fontUploading ? (

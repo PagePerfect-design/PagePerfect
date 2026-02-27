@@ -101,7 +101,7 @@ function StatusBadge({ status }: { status: StatusIcon }) {
     case 'info':
       return <Info className="h-3 w-3 text-blue-500" />
     default:
-      return <span className="h-2 w-2 rounded-full bg-[#111111]/10" />
+      return <span className="h-2 w-2 bg-[#111111]/10" />
   }
 }
 
@@ -157,7 +157,7 @@ function StructurePanel({ data }: { data: any }) {
   return (
     <div className="space-y-3">
       {/* Section map */}
-      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#111111]/[0.04]">
         <div className="bg-white p-2.5">
           <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Front Matter</p>
           <p className="mt-1 text-[11px] font-medium text-[#111111]/60">{structure.frontMatter.length || '—'}</p>
@@ -254,7 +254,7 @@ function AssetsPanel({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-4 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-4 gap-px overflow-hidden bg-[#111111]/[0.04]">
         {[
           { label: 'Figures', value: data.stats.figureCount },
           { label: 'Tables', value: data.stats.tableCount },
@@ -288,7 +288,7 @@ function LintPanel({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#111111]/[0.04]">
         {[
           { label: 'Issues', value: data.stats.totalIssues, color: data.stats.totalIssues > 0 ? 'text-amber-500' : 'text-emerald-500' },
           { label: 'Warnings', value: data.stats.bySeverity?.warn || 0 },
@@ -324,14 +324,14 @@ function MultilingualPanel({ data }: { data: any }) {
     <div className="space-y-3">
       <div className="flex flex-wrap gap-1.5">
         {scriptAnalysis.scripts.map((s: any) => (
-          <span key={s.script} className="inline-flex items-center gap-1 rounded-full bg-[#111111]/[0.04] px-2 py-0.5 text-[10px]">
+          <span key={s.script} className="inline-flex items-center gap-1 bg-[#111111]/[0.04] px-2 py-0.5 text-[10px]">
             <span className={`h-1.5 w-1.5 rounded-full ${s.direction === 'rtl' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
             <span className="text-[#111111]/40">{s.label}</span>
             <span className="text-[#111111]/20">{s.percentage}%</span>
           </span>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#111111]/[0.04]">
         {[
           { label: 'RTL', value: scriptAnalysis.hasRTL ? 'Yes' : 'No' },
           { label: 'Mixed Dir', value: scriptAnalysis.hasMixedDirection ? 'Yes' : 'No' },
@@ -364,7 +364,7 @@ function PlatformPanel({ data }: { data: any }) {
       <div className="flex items-center gap-2">
         <Shield className={`h-4 w-4 ${data.passed ? 'text-emerald-500' : 'text-amber-500'}`} />
         <p className="text-[12px] font-medium text-[#111111]/60">{data.platform}</p>
-        <span className={`rounded-full px-2 py-0.5 text-[9px] font-medium ${data.passed ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+        <span className={`px-2 py-0.5 text-[9px] font-medium ${data.passed ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
           {data.passed ? 'PASSED' : 'ISSUES'}
         </span>
       </div>
@@ -384,7 +384,7 @@ function ProvenancePanel({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="space-y-2">
-      <div className="rounded-lg bg-[#111111]/[0.02] p-3 font-mono text-[10px] leading-[1.8]">
+      <div className="bg-[#111111]/[0.02] p-3 font-mono text-[10px] leading-[1.8]">
         <div className="flex justify-between"><span className="text-[#111111]/25">Build ID</span><span className="text-[#111111]/40">{data.buildId}</span></div>
         <div className="flex justify-between"><span className="text-[#111111]/25">Content Hash</span><span className="text-[#111111]/40">{data.contentHash}</span></div>
         <div className="flex justify-between"><span className="text-[#111111]/25">Settings Hash</span><span className="text-[#111111]/40">{data.settingsHash}</span></div>
@@ -551,7 +551,7 @@ export default function PublishingSystems({
           <button
             onClick={runAnalysis}
             disabled={status === 'loading'}
-            className="flex h-7 items-center gap-1.5 rounded-full bg-[#FF3333]/10 px-3 text-[10px] font-medium text-[#FF3333] transition-colors hover:bg-[#FF3333]/20 disabled:opacity-50"
+            className="flex h-7 items-center gap-1.5 bg-[#FF3333]/10 px-3 text-[10px] font-medium text-[#FF3333] transition-colors hover:bg-[#FF3333]/20 disabled:opacity-50"
           >
             {status === 'loading' ? <Loader2 className="h-3 w-3 animate-spin" /> : <BarChart3 className="h-3 w-3" />}
             {status === 'loading' ? 'Analyzing...' : 'Analyze'}
@@ -581,7 +581,7 @@ export default function PublishingSystems({
 
       {/* Error state */}
       {error && (
-        <div className="mx-4 mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2">
+        <div className="mx-4 mt-3 border border-red-500/20 bg-red-500/5 px-3 py-2">
           <p className="font-mono text-[10px] text-red-500">{error}</p>
         </div>
       )}
@@ -593,7 +593,7 @@ export default function PublishingSystems({
             <div key={sys.key} className="mb-1">
               <button
                 onClick={() => toggleSystem(sys.key)}
-                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-all ${
+                className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-all ${
                   expandedSystem === sys.key
                     ? 'bg-[#111111]/[0.04]'
                     : 'hover:bg-[#111111]/[0.02]'

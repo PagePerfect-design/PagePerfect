@@ -180,7 +180,7 @@ export default function PortalStage({
                     }
                   }}
                   placeholder="Paste or type your manuscript here..."
-                  className="w-full h-48 resize-none rounded-lg border border-[#111111]/10 bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/25 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
+                  className="w-full h-48 resize-none border border-[#111111]/10 bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/25 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
                   autoFocus
                 />
                 <div className="mt-3 flex items-center justify-between">
@@ -290,7 +290,7 @@ export default function PortalStage({
             <motion.div
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-8 mx-auto max-w-sm rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-left"
+              className="mt-8 mx-auto max-w-sm border border-red-500/20 bg-red-500/5 px-4 py-3 text-left"
             >
               <p className="font-mono text-[11px] text-red-600">{convertError}</p>
               <button
@@ -327,7 +327,7 @@ export default function PortalStage({
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#FF3333]/20"
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 border border-[#FF3333]/20"
               initial={{ width: 40, height: 40, opacity: 0.6 }}
               animate={{ width: 300 + i * 100, height: 300 + i * 100, opacity: 0 }}
               transition={{ duration: 1.5, delay: i * 0.3, repeat: Infinity }}
@@ -367,7 +367,7 @@ export default function PortalStage({
           {/* Header — manuscript stats */}
           <div className="border-b border-[#111111]/[0.06] px-6 py-5">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF3333]/10">
+              <div className="flex h-8 w-8 items-center justify-center bg-[#FF3333]/10">
                 <FileText className="h-4 w-4 text-[#FF3333]" />
               </div>
               <div>
