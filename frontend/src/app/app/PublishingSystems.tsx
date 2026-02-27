@@ -143,7 +143,7 @@ function CheckList({ checks }: { checks: CheckItem[] }) {
           </div>
           <div className="min-w-0">
             <span className="text-[11px] font-medium text-[#111111]/50">{check.name}</span>
-            <p className="text-[10px] leading-[1.5] text-[#111111]/35">{check.detail}</p>
+            <p className="text-[10px] leading-[1.5] text-[#111111]/55">{check.detail}</p>
           </div>
         </div>
       ))}
@@ -159,15 +159,15 @@ function StructurePanel({ data }: { data: any }) {
       {/* Section map */}
       <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#111111]/[0.04]">
         <div className="bg-white p-2.5">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Front Matter</p>
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/40">Front Matter</p>
           <p className="mt-1 text-[11px] font-medium text-[#111111]/60">{structure.frontMatter.length || '—'}</p>
         </div>
         <div className="bg-white p-2.5">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Body</p>
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/40">Body</p>
           <p className="mt-1 text-[11px] font-medium text-[#111111]/60">{structure.chapterCount} chapters</p>
         </div>
         <div className="bg-white p-2.5">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Back Matter</p>
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/40">Back Matter</p>
           <p className="mt-1 text-[11px] font-medium text-[#111111]/60">{structure.backMatter.length || '—'}</p>
         </div>
       </div>
@@ -179,7 +179,7 @@ function StructurePanel({ data }: { data: any }) {
             <div key={i} className="flex items-center gap-2 text-[10px]">
               <span className={`h-1.5 w-1.5 rounded-full ${s.matter === 'front' ? 'bg-blue-500' : s.matter === 'body' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
               <span className="text-[#111111]/60">{s.label}</span>
-              <span className="text-[#111111]/20">line {s.line}</span>
+              <span className="text-[#111111]/40">line {s.line}</span>
             </div>
           ))}
         </div>
@@ -218,7 +218,7 @@ function TypographyPanel({ data }: { data: any }) {
         <ScoreRing score={data.score} grade={data.grade} />
         <div>
           <p className="text-[12px] font-medium text-[#111111]/60">Typography Score</p>
-          <p className="text-[10px] text-[#111111]/30">{data.score}/100 — {data.checks.filter((c: any) => c.status === 'pass').length}/{data.checks.length} checks passed</p>
+          <p className="text-[10px] text-[#111111]/50">{data.score}/100 — {data.checks.filter((c: any) => c.status === 'pass').length}/{data.checks.length} checks passed</p>
         </div>
       </div>
       <CheckList checks={data.checks} />
@@ -234,15 +234,15 @@ function PrintQAPanel({ data }: { data: any }) {
         <ScoreRing score={data.score} grade={data.grade} />
         <div>
           <p className="text-[12px] font-medium text-[#111111]/60">Print Quality Score</p>
-          <p className="text-[10px] text-[#111111]/30">{data.score}/100</p>
+          <p className="text-[10px] text-[#111111]/50">{data.score}/100</p>
         </div>
       </div>
       <CheckList checks={data.checks} />
       {data.recommendations?.length > 0 && (
         <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Recommendations</p>
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/40">Recommendations</p>
           {data.recommendations.map((r: string, i: number) => (
-            <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/35">• {r}</p>
+            <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/55">• {r}</p>
           ))}
         </div>
       )}
@@ -262,7 +262,7 @@ function AssetsPanel({ data }: { data: any }) {
           { label: 'No Caption', value: data.stats.missingCaptions },
         ].map(s => (
           <div key={s.label} className="bg-white p-2">
-            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
+            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/40">{s.label}</p>
             <p className="mt-0.5 text-[12px] font-bold text-[#111111]/60">{s.value}</p>
           </div>
         ))}
@@ -272,11 +272,11 @@ function AssetsPanel({ data }: { data: any }) {
           {data.issues.slice(0, 8).map((issue: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <StatusBadge status={issue.severity as StatusIcon} />
-              <span className="text-[#111111]/35">{issue.message}</span>
+              <span className="text-[#111111]/55">{issue.message}</span>
             </div>
           ))}
           {data.issues.length > 8 && (
-            <p className="text-[9px] text-[#111111]/20">+ {data.issues.length - 8} more issues</p>
+            <p className="text-[9px] text-[#111111]/40">+ {data.issues.length - 8} more issues</p>
           )}
         </div>
       )}
@@ -295,7 +295,7 @@ function LintPanel({ data }: { data: any }) {
           { label: 'Info', value: data.stats.bySeverity?.info || 0 },
         ].map(s => (
           <div key={s.label} className="bg-white p-2">
-            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
+            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/40">{s.label}</p>
             <p className={`mt-0.5 text-[12px] font-bold ${s.color || 'text-[#111111]/60'}`}>{s.value}</p>
           </div>
         ))}
@@ -307,7 +307,7 @@ function LintPanel({ data }: { data: any }) {
               <StatusBadge status={issue.severity as StatusIcon} />
               <div>
                 <span className="text-[#111111]/60">{issue.message}</span>
-                {issue.fix && <p className="text-[#111111]/25">{issue.fix}</p>}
+                {issue.fix && <p className="text-[#111111]/50">{issue.fix}</p>}
               </div>
             </div>
           ))}
@@ -327,7 +327,7 @@ function MultilingualPanel({ data }: { data: any }) {
           <span key={s.script} className="inline-flex items-center gap-1 bg-[#111111]/[0.04] px-2 py-0.5 text-[10px]">
             <span className={`h-1.5 w-1.5 rounded-full ${s.direction === 'rtl' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
             <span className="text-[#111111]/60">{s.label}</span>
-            <span className="text-[#111111]/20">{s.percentage}%</span>
+            <span className="text-[#111111]/40">{s.percentage}%</span>
           </span>
         ))}
       </div>
@@ -338,7 +338,7 @@ function MultilingualPanel({ data }: { data: any }) {
           { label: 'Diacritics', value: scriptAnalysis.hasDiacritics ? 'Yes' : 'No' },
         ].map(s => (
           <div key={s.label} className="bg-white p-2">
-            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
+            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/40">{s.label}</p>
             <p className="mt-0.5 text-[11px] font-medium text-[#111111]/60">{s.value}</p>
           </div>
         ))}
@@ -348,7 +348,7 @@ function MultilingualPanel({ data }: { data: any }) {
           {recommendations.map((r: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <StatusBadge status={r.severity as StatusIcon} />
-              <span className="text-[#111111]/35">{r.message}</span>
+              <span className="text-[#111111]/55">{r.message}</span>
             </div>
           ))}
         </div>
@@ -372,7 +372,7 @@ function PlatformPanel({ data }: { data: any }) {
       {data.recommendations?.length > 0 && (
         <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
           {data.recommendations.map((r: string, i: number) => (
-            <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/35">• {r}</p>
+            <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/55">• {r}</p>
           ))}
         </div>
       )}
@@ -385,13 +385,13 @@ function ProvenancePanel({ data }: { data: any }) {
   return (
     <div className="space-y-2">
       <div className="bg-[#111111]/[0.02] p-3 font-mono text-[10px] leading-[1.8]">
-        <div className="flex justify-between"><span className="text-[#111111]/25">Build ID</span><span className="text-[#111111]/60">{data.buildId}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Content Hash</span><span className="text-[#111111]/60">{data.contentHash}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Settings Hash</span><span className="text-[#111111]/60">{data.settingsHash}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Template</span><span className="text-[#111111]/60">{data.config?.template}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Page Size</span><span className="text-[#111111]/60">{data.config?.pageSize}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Words</span><span className="text-[#111111]/60">{data.wordCount?.toLocaleString()}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Engine</span><span className="text-[#111111]/60">{data.system?.engine} {data.system?.version}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Build ID</span><span className="text-[#111111]/60">{data.buildId}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Content Hash</span><span className="text-[#111111]/60">{data.contentHash}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Settings Hash</span><span className="text-[#111111]/60">{data.settingsHash}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Template</span><span className="text-[#111111]/60">{data.config?.template}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Page Size</span><span className="text-[#111111]/60">{data.config?.pageSize}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Words</span><span className="text-[#111111]/60">{data.wordCount?.toLocaleString()}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Engine</span><span className="text-[#111111]/60">{data.system?.engine} {data.system?.version}</span></div>
       </div>
     </div>
   )
@@ -400,14 +400,14 @@ function ProvenancePanel({ data }: { data: any }) {
 function ExtensionsPanel({ data }: { data: any }) {
   // Show available tokens (from /api/template-tokens)
   if (!data) return (
-    <p className="text-[10px] text-[#111111]/30">Template extension tokens allow safe overrides of typography, spacing, and heading styles within the design system&apos;s constraints.</p>
+    <p className="text-[10px] text-[#111111]/50">Template extension tokens allow safe overrides of typography, spacing, and heading styles within the design system&apos;s constraints.</p>
   )
   return (
     <div className="space-y-2">
       {Object.entries(data).map(([key, schema]: [string, any]) => (
         <div key={key} className="flex items-center justify-between text-[10px]">
-          <span className="text-[#111111]/35">{schema.label}</span>
-          <span className="font-mono text-[#111111]/20">{schema.default}{schema.unit ? schema.unit : ''}</span>
+          <span className="text-[#111111]/55">{schema.label}</span>
+          <span className="font-mono text-[#111111]/40">{schema.default}{schema.unit ? schema.unit : ''}</span>
         </div>
       ))}
     </div>
@@ -496,7 +496,7 @@ export default function PublishingSystems({
   }
 
   function renderSystemContent(key: SystemKey) {
-    if (!analysis) return <p className="text-[10px] text-[#111111]/20">Run analysis to see results.</p>
+    if (!analysis) return <p className="text-[10px] text-[#111111]/40">Run analysis to see results.</p>
 
     switch (key) {
       case 'structure':    return <StructurePanel data={analysis.structure} />
@@ -556,7 +556,7 @@ export default function PublishingSystems({
             {status === 'loading' ? <Loader2 className="h-3 w-3 animate-spin" /> : <BarChart3 className="h-3 w-3" />}
             {status === 'loading' ? 'Analyzing...' : 'Analyze'}
           </button>
-          <button onClick={onClose} className="text-[#111111]/25 hover:text-[#111111]/60">
+          <button onClick={onClose} className="text-[#111111]/50 hover:text-[#111111]/60">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -569,10 +569,10 @@ export default function PublishingSystems({
             { label: 'Typo', value: analysis.summary.typographyGrade, color: analysis.summary.typographyGrade === 'A' ? 'text-emerald-500' : 'text-amber-500' },
             { label: 'QA', value: analysis.summary.printQAGrade, color: analysis.summary.printQAGrade === 'A' ? 'text-emerald-500' : 'text-amber-500' },
             { label: 'Lint', value: analysis.summary.lintIssues, color: analysis.summary.lintIssues === 0 ? 'text-emerald-500' : 'text-amber-500' },
-            { label: 'KDP', value: analysis.summary.platformPassed ? '✓' : '—', color: analysis.summary.platformPassed ? 'text-emerald-500' : 'text-[#111111]/25' },
+            { label: 'KDP', value: analysis.summary.platformPassed ? '✓' : '—', color: analysis.summary.platformPassed ? 'text-emerald-500' : 'text-[#111111]/50' },
           ].map(s => (
             <div key={s.label} className="bg-white px-2 py-2 text-center">
-              <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
+              <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/40">{s.label}</p>
               <p className={`mt-0.5 font-display text-sm font-bold ${s.color}`}>{s.value}</p>
             </div>
           ))}
@@ -599,14 +599,14 @@ export default function PublishingSystems({
                     : 'hover:bg-[#111111]/[0.02]'
                 }`}
               >
-                <span className="shrink-0 text-[#111111]/30">{sys.icon}</span>
+                <span className="shrink-0 text-[#111111]/50">{sys.icon}</span>
                 <div className="min-w-0 flex-1">
                   <span className="text-[11px] font-medium text-[#111111]/50">{sys.label}</span>
                 </div>
                 <StatusBadge status={getSystemStatus(sys.key)} />
                 {expandedSystem === sys.key
-                  ? <ChevronUp className="h-3 w-3 shrink-0 text-[#111111]/20" />
-                  : <ChevronDown className="h-3 w-3 shrink-0 text-[#111111]/20" />
+                  ? <ChevronUp className="h-3 w-3 shrink-0 text-[#111111]/40" />
+                  : <ChevronDown className="h-3 w-3 shrink-0 text-[#111111]/40" />
                 }
               </button>
 
@@ -620,11 +620,11 @@ export default function PublishingSystems({
                     className="overflow-hidden"
                   >
                     <div className="px-3 pb-3 pt-1">
-                      <p className="mb-2 text-[9px] text-[#111111]/20">{sys.description}</p>
+                      <p className="mb-2 text-[9px] text-[#111111]/40">{sys.description}</p>
                       {status === 'loading' ? (
                         <div className="flex items-center gap-2 py-3">
-                          <Loader2 className="h-3 w-3 animate-spin text-[#111111]/20" />
-                          <span className="text-[10px] text-[#111111]/20">Analyzing...</span>
+                          <Loader2 className="h-3 w-3 animate-spin text-[#111111]/40" />
+                          <span className="text-[10px] text-[#111111]/40">Analyzing...</span>
                         </div>
                       ) : (
                         renderSystemContent(sys.key)

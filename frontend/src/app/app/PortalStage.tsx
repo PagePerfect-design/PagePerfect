@@ -180,7 +180,7 @@ export default function PortalStage({
                     }
                   }}
                   placeholder="Paste or type your manuscript here..."
-                  className="w-full h-48 resize-none border border-[#111111]/15 bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/40 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
+                  className="w-full h-48 resize-none border border-[#111111]/20 bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/60 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
                   autoFocus
                 />
                 <div className="mt-3 flex items-center justify-between">
@@ -223,7 +223,7 @@ export default function PortalStage({
                 See a finished book
                 <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </button>
-              <p className="mt-3 font-mono text-[10px] text-[#111111]/30">
+              <p className="mt-3 font-mono text-[10px] text-[#111111]/50">
                 Loads a sample novel — KDP-ready in seconds
               </p>
             </motion.div>
@@ -242,17 +242,17 @@ export default function PortalStage({
               >
                 Paste text
               </button>
-              <span className="text-[#111111]/40">|</span>
+              <span className="text-[#111111]/60">|</span>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
               >
                 Browse files
               </button>
-              <span className="text-[#111111]/40">|</span>
+              <span className="text-[#111111]/60">|</span>
               {SAMPLES.map((s, i) => (
                 <span key={s.key} className="inline-flex items-center gap-1">
-                  {i > 0 && <span className="text-[#111111]/40">/</span>}
+                  {i > 0 && <span className="text-[#111111]/60">/</span>}
                   <button
                     onClick={() => onLoadSample(s.key)}
                     className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
@@ -263,7 +263,7 @@ export default function PortalStage({
               ))}
               {isLoggedIn && onOpenManuscripts && (
                 <>
-                  <span className="text-[#111111]/40">|</span>
+                  <span className="text-[#111111]/60">|</span>
                   <button
                     onClick={onOpenManuscripts}
                     className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
@@ -274,7 +274,7 @@ export default function PortalStage({
               )}
               {hasResumable && onResume && (
                 <>
-                  <span className="text-[#111111]/40">|</span>
+                  <span className="text-[#111111]/60">|</span>
                   <button
                     onClick={onResume}
                     className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#FF3333]/70 transition-colors hover:text-[#FF3333]"
@@ -363,7 +363,7 @@ export default function PortalStage({
         transition={{ duration: 0.5, ease }}
         className="w-full max-w-2xl my-auto"
       >
-        <div className="border border-[#111111]/10 bg-white shadow-lg">
+        <div className="border border-[#111111]/15 bg-white shadow-lg">
           {/* Header — manuscript stats */}
           <div className="border-b border-[#111111]/[0.06] px-6 py-5">
             <div className="flex items-center gap-3">
@@ -372,7 +372,7 @@ export default function PortalStage({
               </div>
               <div>
                 <p className="font-display text-base font-semibold text-[#111111]">Manuscript analyzed</p>
-                <p className="font-mono text-[10px] text-[#111111]/40">{analysis && wordCategory(analysis.words)}</p>
+                <p className="font-mono text-[10px] text-[#111111]/60">{analysis && wordCategory(analysis.words)}</p>
               </div>
             </div>
           </div>
@@ -386,7 +386,7 @@ export default function PortalStage({
                 { label: 'Citations', value: analysis.hasReferences ? 'Found' : '—' },
               ].map((item) => (
                 <div key={item.label} className="bg-white px-4 py-3">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/40">{item.label}</p>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/60">{item.label}</p>
                   <p className="mt-1 font-display text-lg font-bold text-[#111111]">{item.value}</p>
                 </div>
               ))}
@@ -395,7 +395,7 @@ export default function PortalStage({
 
           {/* Title */}
           <div className="border-t border-[#111111]/[0.06] px-6 py-5">
-            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">Working title</label>
+            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">Working title</label>
             <input
               id="working-title"
               type="text"
@@ -403,13 +403,13 @@ export default function PortalStage({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="My Manuscript"
               autoFocus
-              className="w-full border-b border-[#111111]/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-[#111111] placeholder:text-[#111111]/40 focus:border-[#FF3333] focus:outline-none"
+              className="w-full border-b border-[#111111]/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-[#111111] placeholder:text-[#111111]/60 focus:border-[#FF3333] focus:outline-none"
             />
           </div>
 
           {/* Template picker */}
           <div className="border-t border-[#111111]/[0.06] px-6 py-5">
-            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">
               Choose a design
               {detectedTemplate && (
                 <span className="ml-2 text-[#FF3333]/60">— recommended based on your manuscript</span>
@@ -429,7 +429,7 @@ export default function PortalStage({
                     className={`relative border p-3 text-left transition-all ${
                       isActive
                         ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                        : 'border-[#111111]/10 hover:border-[#111111]/20'
+                        : 'border-[#111111]/15 hover:border-[#111111]/20'
                     }`}
                   >
                     {isRecommended && (
@@ -445,7 +445,7 @@ export default function PortalStage({
                       }`}>
                         Chapter One
                       </p>
-                      <p className={`mt-1 text-[9px] leading-relaxed text-[#111111]/40 ${
+                      <p className={`mt-1 text-[9px] leading-relaxed text-[#111111]/60 ${
                         info.font.includes('Garamond') || info.font.includes('Baskerville') || info.font.includes('Bembo') || info.font.includes('Latin Modern')
                           ? 'font-body' : 'font-display'
                       }`}>
@@ -453,7 +453,7 @@ export default function PortalStage({
                       </p>
                     </div>
                     <span className="block font-mono text-[11px] font-semibold text-[#111111]/80">{info.name}</span>
-                    <span className="block font-mono text-[9px] text-[#111111]/40 mt-0.5">{info.subtitle}</span>
+                    <span className="block font-mono text-[9px] text-[#111111]/60 mt-0.5">{info.subtitle}</span>
                   </button>
                 )
               })}
@@ -463,7 +463,7 @@ export default function PortalStage({
             {!showAllTemplates ? (
               <button
                 onClick={() => setShowAllTemplates(true)}
-                className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
+                className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]/70"
               >
                 + Show all 15 templates
               </button>
@@ -474,7 +474,7 @@ export default function PortalStage({
                   if (!templates.length) return null
                   return (
                     <div key={genre} className="mt-3 first:mt-0">
-                      <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+                      <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">
                         {GENRE_LABELS[genre]}
                       </p>
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -488,11 +488,11 @@ export default function PortalStage({
                               className={`border p-3 text-left transition-all ${
                                 isActive
                                   ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                                  : 'border-[#111111]/10 hover:border-[#111111]/20'
+                                  : 'border-[#111111]/15 hover:border-[#111111]/20'
                               }`}
                             >
                               <span className="block font-mono text-[11px] font-semibold text-[#111111]/80">{info.name}</span>
-                              <span className="block font-mono text-[9px] text-[#111111]/40 mt-0.5">{info.subtitle}</span>
+                              <span className="block font-mono text-[9px] text-[#111111]/60 mt-0.5">{info.subtitle}</span>
                             </button>
                           )
                         })}
@@ -511,7 +511,7 @@ export default function PortalStage({
               <p className="text-[12px] font-medium text-[#111111]/70">
                 {TEMPLATE_INFO[activeTemplate].name} — {TEMPLATE_INFO[activeTemplate].vibe}
               </p>
-              <p className="mt-0.5 font-mono text-[10px] text-[#111111]/40">
+              <p className="mt-0.5 font-mono text-[10px] text-[#111111]/60">
                 Font: {TEMPLATE_INFO[activeTemplate].font} · You can change this anytime in the Style menu.
               </p>
             </div>
@@ -519,7 +519,7 @@ export default function PortalStage({
 
           {/* Platform selection */}
           <div className="border-t border-[#111111]/[0.06] px-6 py-4">
-            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">
               Where will you publish?
             </p>
             <div className="flex gap-2">
@@ -533,7 +533,7 @@ export default function PortalStage({
                   className={`flex-1 border px-3 py-2.5 text-left transition-all ${
                     selectedPlatform === p.key
                       ? 'border-[#FF3333] bg-[#FF3333]/[0.04]'
-                      : 'border-[#111111]/10 hover:border-[#111111]/20'
+                      : 'border-[#111111]/15 hover:border-[#111111]/20'
                   }`}
                 >
                   <span className={`block font-mono text-[11px] font-semibold ${
@@ -541,7 +541,7 @@ export default function PortalStage({
                   }`}>
                     {p.label}
                   </span>
-                  <span className="block font-mono text-[9px] text-[#111111]/40 mt-0.5">{p.detail}</span>
+                  <span className="block font-mono text-[9px] text-[#111111]/60 mt-0.5">{p.detail}</span>
                 </button>
               ))}
             </div>
@@ -550,7 +550,7 @@ export default function PortalStage({
           <div className="flex items-center justify-between border-t border-[#111111]/[0.06] px-6 py-4">
             <button
               onClick={() => { setText(''); setAnalysis(null); setPhase('idle'); setSelectedPlatform(null); setSelectedTemplate(null); setShowAllTemplates(false) }}
-              className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
+              className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]/70"
             >
               Start over
             </button>
