@@ -197,11 +197,11 @@ function preflight(opts, gridSystem) {
   }
 
   // ── Check 5: Font embedding ──
-  // LuaLaTeX with fontspec always embeds fonts — this is a guaranteed pass
+  // Typst always embeds fonts — this is a guaranteed pass
   checks.push({
     name: 'Font embedding',
     status: 'pass',
-    detail: 'LuaLaTeX + fontspec — all fonts embedded automatically',
+    detail: 'Typst — all fonts embedded automatically',
   });
 
   // ── Check 6: PDF format ──
@@ -216,7 +216,7 @@ function preflight(opts, gridSystem) {
     checks.push({
       name: 'PDF format',
       status: 'pass',
-      detail: 'Standard PDF (LuaLaTeX output)',
+      detail: 'Standard PDF (Typst output)',
     });
   }
 

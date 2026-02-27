@@ -37,7 +37,7 @@ const FONT_ALIASES = {
 // ================================================================
 
 /**
- * Each entry maps a font name (as LuaLaTeX sees it) to:
+ * Each entry maps a font name (as Typst/fontconfig sees it) to:
  *   - source: which TeX Live / system package provides it
  *   - usedBy: which templates reference it
  *   - fallbacks: ordered list of substitutes (best match first)
@@ -248,7 +248,7 @@ let _cacheTimestamp = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Probe all fonts available to fontconfig/LuaLaTeX.
+ * Probe all fonts available to fontconfig/Typst.
  * Primary: `fc-list` for fontconfig-visible fonts.
  * Secondary: `luaotfload-tool` database for TeX-path-only fonts.
  * Results are cached for CACHE_TTL_MS.
@@ -286,7 +286,7 @@ function probeInstalledFonts(forceRefresh = false) {
   }
 
   // ── Secondary: luaotfload font names database ──
-  // luaotfload-tool --list=* dumps ALL fonts known to LuaLaTeX,
+  // luaotfload-tool --list=* dumps ALL fonts known to TeX (legacy probe),
   // including TeX-path fonts that fontconfig may not see.
   try {
     const raw = execSync('luaotfload-tool --list="*" --fields=familyname 2>/dev/null', {
@@ -429,12 +429,12 @@ function resolveFont(fontName) {
     }
   }
 
-  // Last resort — return the original and let LuaLaTeX try (it may find it via kpsewhich)
+  // Last resort — return the original and let Typst try (it uses fontconfig)
   return {
     resolved: fontName,
     original: fontName,
     isFallback: false,
-    warning: `Font "${fontName}" not found by fontconfig. LuaLaTeX may still locate it via TeX paths.`,
+    warning: `Font "${fontName}" not found by fontconfig. Typst may still locate it via system paths.`,
   };
 }
 

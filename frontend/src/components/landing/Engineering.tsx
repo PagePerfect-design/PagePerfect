@@ -29,7 +29,7 @@ const CAPABILITIES = [
   {
     category: 'Engine',
     items: [
-      'LuaLaTeX — the same engine used by academic publishers',
+      'Typst — millisecond compilation, professional output',
       'Pandoc Markdown conversion with citeproc',
       'BibTeX/CSL citation and bibliography processing',
       'DOCX-to-Markdown conversion via Pandoc',
@@ -38,7 +38,7 @@ const CAPABILITIES = [
 ]
 
 const SPECS = [
-  { label: 'Engine', value: 'LuaLaTeX (TeX Live)' },
+  { label: 'Engine', value: 'Typst' },
   { label: 'Converter', value: 'Pandoc 3.x' },
   { label: 'Post-proc', value: 'Ghostscript 10.x' },
   { label: 'Platforms', value: 'KDP / IngramSpark / Lulu / Offset' },

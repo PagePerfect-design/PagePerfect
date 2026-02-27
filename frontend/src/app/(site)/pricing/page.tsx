@@ -55,7 +55,7 @@ const TIERS = [
 const COMPARISON: { feature: string; values: [string, string, string] }[] = [
   { feature: 'PDF output',              values: ['Watermarked',  '1 manuscript',    'Unlimited'] },
   { feature: 'Page sizes',              values: ['6 standard',   'All 19',          'All 19'] },
-  { feature: 'Typesetting engine',       values: ['LuaLaTeX',      'LuaLaTeX',        'LuaLaTeX'] },
+  { feature: 'Typesetting engine',       values: ['Typst',          'Typst',            'Typst'] },
   { feature: 'Amazon KDP formats',      values: ['\u2014',       'Included',        'Included'] },
   { feature: 'Citations & bibliography', values: ['\u2014',       'Included',        'Included'] },
   { feature: 'PDF/X-1a compliance',     values: ['\u2014',       'Included',        'Included'] },
@@ -70,7 +70,7 @@ const TIER_NAMES = ['Drafter', 'Publisher', 'Studio'] as const
 const FAQ = [
   {
     q: 'Can I use the free tier for real books?',
-    a: 'The free tier gives you unlimited manuscripts, all 15 templates, the same LuaLaTeX engine as paid tiers, and real-time preview. Exported PDFs include a watermark and page sizes are limited to 6 standard options. Design your entire book for free, then pay once to export without the watermark.',
+    a: 'The free tier gives you unlimited manuscripts, all 15 templates, the same Typst engine as paid tiers, and real-time preview. Exported PDFs include a watermark and page sizes are limited to 6 standard options. Design your entire book for free, then pay once to export without the watermark.',
   },
   {
     q: 'What happens after I pay for one manuscript?',

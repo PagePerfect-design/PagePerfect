@@ -147,7 +147,7 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
         {debug?.latexLog && (
           <details className="mt-2">
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
-              Full LaTeX log
+              Full engine log
             </summary>
             <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
               {debug.latexLog}
@@ -157,7 +157,7 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
         {debug?.texSource && (
           <details className="mt-2">
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
-              Generated LaTeX source
+              Generated Typst source
             </summary>
             <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
               {debug.texSource}

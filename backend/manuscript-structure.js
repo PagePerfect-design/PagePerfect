@@ -3,7 +3,7 @@
  *
  * Standardises front matter, body, and back matter with conventions
  * and auto-generation. Defines "what goes where" in Markdown and
- * produces predictable outputs in LuaLaTeX.
+ * produces predictable outputs in Typst.
  *
  * Book architecture follows Chicago Manual of Style ordering:
  *   Front Matter → Body → Back Matter

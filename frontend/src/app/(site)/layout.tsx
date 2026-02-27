@@ -48,12 +48,12 @@ function Footer() {
               <span className="font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">PagePerfect</span>
             </div>
             <p className="mt-3 max-w-xs font-body text-sm leading-relaxed text-[#555555]">
-              Professional typesetting in your browser. Built on LuaLaTeX. Inspired by M&uuml;ller-Brockmann.
+              Professional typesetting in your browser. Built on Typst. Inspired by M&uuml;ller-Brockmann.
             </p>
             {/* Colophon — desktop only, tucked under brand */}
             <div className="mt-6 hidden space-y-1 font-mono text-[10px] text-[#111111]/40 md:block">
               <p>Inter Tight / Source Serif 4 / IBM Plex Mono</p>
-              <p>LuaLaTeX + Pandoc</p>
+              <p>Typst</p>
               <p>EST. 2024</p>
             </div>
           </div>

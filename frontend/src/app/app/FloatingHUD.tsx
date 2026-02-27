@@ -489,7 +489,7 @@ export default function FloatingHUD({
             </div>
           </>
         )}
-        {/* Engine indicator — shows typst/lualatex after successful compile */}
+        {/* Engine indicator — shows typst after successful compile */}
         {status === 'success' && quality?.engine && (
           <>
             <div className="mx-0.5 h-4 w-px bg-[#111111]/[0.08]" />
