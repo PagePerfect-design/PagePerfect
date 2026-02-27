@@ -224,6 +224,7 @@ export function useCompileQueue({
         try {
           const statusResp = await fetch(`/api/compile/status/${jobId}`, {
             signal: controller.signal,
+            cache: 'no-store',
           })
           if (gen !== compileGenRef.current) return
 
@@ -308,6 +309,7 @@ export function useCompileQueue({
             const pdfResp = await fetch(`/api/compile/result/${jobId}`, {
               headers: resultHeaders,
               signal: controller.signal,
+              cache: 'no-store',
             })
             if (gen !== compileGenRef.current) return
 

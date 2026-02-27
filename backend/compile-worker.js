@@ -32,6 +32,7 @@ const fontAvailability = require('./font-availability');
 const publishing = require('./publishing');
 const typstErrorTranslator = require('./typst-error-translator');
 const typographyAssurance = require('./typography-assurance');
+const dropCapTypst = require('./drop-cap-typst');
 const layoutSanityChecker = require('./layout-sanity-checker');
 const textNormalizer = require('./text-normalizer');
 const watermarkTypst = require('./watermark-typst');
@@ -88,6 +89,25 @@ function buildDebugMeta(job, opts = {}) {
     workerPid: process.pid,
     containerId: os.hostname(),
     timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Build a consistent failure result. Guarantees every failure includes
+ * errors, warnings, debug, debugMeta, and detail — even if some are empty.
+ * This prevents null fields from reaching the status endpoint / frontend.
+ */
+function buildFailureResult(opts) {
+  return {
+    success: false,
+    error: opts.error || 'compile_failed',
+    message: opts.message || 'Compilation failed.',
+    errors: opts.errors || [],
+    warnings: opts.warnings || [],
+    detail: opts.detail || null,
+    debug: opts.debug || { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: null },
+    debugMeta: opts.debugMeta || null,
+    ...(opts.extra || {}),
   };
 }
 
@@ -194,6 +214,22 @@ function typstString(s) {
  * @returns {object} Result metadata (PDF stays on disk, not in Redis)
  */
 async function processCompileJob(job, templateRegistry) {
+  // TOP-LEVEL SAFETY NET: If ANYTHING throws unexpectedly, we still return
+  // a complete failure result instead of leaving BullMQ with no return value
+  // (which causes debugMeta: null, errors: null in the status endpoint).
+  try {
+    return await _processCompileJobInner(job, templateRegistry);
+  } catch (err) {
+    log.error({ jobId: job?.id, err: err.message, stack: err.stack }, 'processCompileJob: unhandled exception — returning safe failure');
+    return buildFailureResult({
+      error: 'internal_error',
+      message: `Internal compile error: ${err.message}`,
+      debugMeta: buildDebugMeta(job),
+    });
+  }
+}
+
+async function _processCompileJobInner(job, templateRegistry) {
   const {
     manuscriptPath, template, title, pageSize, marginPreset,
     safeMode, compileMode, outputFormat, customFonts,
@@ -674,21 +710,36 @@ function compileEpub(tmpBase, mdPath, safeTitle, safeMode) {
   return new Promise((resolve) => {
     let proc;
     try { proc = spawn('pandoc', args, { cwd: tmpBase, env: SAFE_SPAWN_ENV }); }
-    catch (e) { try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {} resolve({ success: false, error: 'spawn_failed', message: String(e) }); return; }
+    catch (e) {
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+      resolve(buildFailureResult({ error: 'spawn_failed', message: `EPUB spawn failed: ${e.message}` }));
+      return;
+    }
     let stderr = '';
     let stderrBytes = 0;
     proc.stderr.on('data', (d) => { if (stderrBytes < MAX_STDERR_BYTES) { stderr += d.toString(); stderrBytes += d.length; } });
-    proc.on('error', () => { try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {} resolve({ success: false, error: 'spawn_failed' }); });
+    proc.on('error', () => {
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+      resolve(buildFailureResult({ error: 'spawn_failed', message: 'EPUB conversion process error.' }));
+    });
     let timedOut = false;
     const kill = setTimeout(() => { timedOut = true; try { proc.kill('SIGKILL'); } catch {} }, COMPILE_TIMEOUT_MS);
     proc.on('close', (code) => {
       clearTimeout(kill);
-      if (timedOut) { try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {} resolve({ success: false, error: 'compile_timeout' }); return; }
+      if (timedOut) {
+        try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+        resolve(buildFailureResult({ error: 'compile_timeout', message: 'EPUB conversion timed out.' }));
+        return;
+      }
       if (code === 0 && fs.existsSync(epubPath)) {
         resolve({ success: true, pdfPath: epubPath, tmpBase, elapsed: 0, outputFormat: 'EPUB3', isDownload: true });
       } else {
         try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-        resolve({ success: false, error: 'epub_failed', detail: sanitizeStderr(stderr.split('\n').slice(-15).join('\n')) });
+        resolve(buildFailureResult({
+          error: 'epub_failed',
+          message: 'EPUB conversion failed.',
+          detail: sanitizeStderr(stderr.split('\n').slice(-80).join('\n')),
+        }));
       }
     });
   });
