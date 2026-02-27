@@ -3,7 +3,7 @@
 // ETbb (Bembo-like) body, true footnotes, deep indents, restrained hierarchy
 // Target: Dissertations, monographs, history, theology, humanities
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── PAGE GEOMETRY (injected by grid-system via header-includes) ────────
 // Default page setup — overridden by header-includes from compile pipeline
@@ -25,7 +25,7 @@
       ])
     } else {
       // Even pages: book title (small caps) left-aligned
-      align(left, smallcaps[$if(title)$$title$$endif$])
+      align(left, smallcaps[#pp-title])
     }
   },
   footer: context {
@@ -37,7 +37,7 @@
 // ── TYPOGRAPHY ─────────────────────────────────────────────────
 // Body: ETbb (Bembo-like) — the "Scholar's Serif"
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$ETbb$endif$",
+  font: pp-mainfont,
   size: 11pt,
   ligatures: true,
   kerning: true,
@@ -117,38 +117,21 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 10pt)
 
-// ── Pandoc compatibility ─────────────────────────────────────
-// Pandoc emits #horizontalrule for Markdown "---" thematic breaks
-#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+// %% CONTENT %%
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
-
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 // Title page
 #page(header: none, footer: none)[
   #align(center + horizon)[
-    #text(size: 20pt, weight: "bold")[$title$]
-    $if(author)$
+    #text(size: 20pt, weight: "bold")[#pp-title]
+    #if pp-author != none [
     #v(20pt)
-    #text(size: 14pt)[$author$]
-    $endif$
-    $if(date)$
+    #text(size: 14pt)[#pp-author]
+    ]
+    #if pp-date != none [
     #v(10pt)
-    #text(size: 12pt)[$date$]
-    $endif$
+    #text(size: 12pt)[#pp-date]
+    ]
   ]
 ]
-$endif$
-
-$body$
-
-$if(bibliography)$
-#pagebreak()
-#heading(level: 2, numbering: none)[Bibliography]
-$bibliography$
-$endif$
+]

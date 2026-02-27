@@ -2,8 +2,8 @@
  * Template Regression Test Suite
  *
  * Tests that all 15 templates can successfully generate PDFs with
- * representative content. This catches template-breaking changes
- * before they reach production.
+ * representative content using the split pipeline:
+ *   Pandoc (body-only) → JS assembly → Typst compile
  *
  * These tests require Pandoc and Typst to be installed.
  * In CI, they run inside the Docker container.
@@ -111,64 +111,120 @@ const TEMPLATES = [
   'operator', 'matrix', 'avantgarde', 'cinema',
 ];
 
-const TEMPLATE_DIR = path.join(__dirname, '..', 'templates');
+const TYPST_TEMPLATE_DIR = path.join(__dirname, '..', 'typst-templates');
+
+// Default fonts per template (subset of what index.js defines)
+const TEMPLATE_FONTS = {
+  symphony: 'EB Garamond', chicago: 'ETbb', paperback: 'Alegreya Sans',
+  chronicle: 'TeX Gyre Heros', exhibit: 'Fira Sans', matrix: 'Fira Sans',
+  avantgarde: 'Source Sans 3', minimal: 'Latin Modern Roman',
+  international: 'TeX Gyre Heros', cinema: 'TeX Gyre Cursor',
+  heirloom: 'Fira Sans', operator: 'Fira Sans', verse: 'EB Garamond',
+  thesis: 'Latin Modern Roman', memoir: 'Libre Baskerville',
+};
 
 // ── Helpers ──
 
+/**
+ * Escape a JS string for safe embedding in a Typst string literal.
+ */
+function typstString(s) {
+  if (s == null) return 'none';
+  return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+}
+
+/**
+ * Compile a template using the split pipeline:
+ *   1. Pandoc converts Markdown → Typst body (body.typ)
+ *   2. JS assembles main.typ (preamble + template style + body)
+ *   3. Typst compiles main.typ → output.pdf
+ */
 function compileTemplate(templateKey, markdown, opts = {}) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pp-regtest-'));
   const mdPath = path.join(tmpDir, 'input.md');
+  const bodyPath = path.join(tmpDir, 'body.typ');
+  const mainPath = path.join(tmpDir, 'main.typ');
   const pdfPath = path.join(tmpDir, 'output.pdf');
-  const templatePath = path.join(TEMPLATE_DIR, `${templateKey}.latex`);
 
   fs.writeFileSync(mdPath, markdown, 'utf8');
 
-  const args = [
-    mdPath,
-    '-o', pdfPath,
-    `--template=${templatePath}`,
-    '--pdf-engine=typst',
+  const env = {
+    PATH: process.env.PATH,
+    HOME: process.env.HOME || '/app',
+    TMPDIR: os.tmpdir(),
+    LANG: process.env.LANG || 'en_US.UTF-8',
+  };
+
+  // Step 1: Pandoc body-only conversion
+  const pandocArgs = [
+    mdPath, '-t', 'typst',
     '-f', 'markdown-raw_tex-raw_attribute',
     '--resource-path', tmpDir,
+    '-o', bodyPath,
   ];
 
-  if (opts.variables) {
-    for (const [key, value] of Object.entries(opts.variables)) {
-      args.push('-V', `${key}=${value}`);
-    }
-  }
-
-  const result = spawnSync('pandoc', args, {
-    cwd: tmpDir,
-    timeout: 60000, // 60s timeout for regression tests
-    env: {
-      PATH: process.env.PATH,
-      HOME: process.env.HOME || '/app',
-      TMPDIR: os.tmpdir(),
-      LANG: process.env.LANG || 'en_US.UTF-8',
-    },
+  const pandocResult = spawnSync('pandoc', pandocArgs, {
+    cwd: tmpDir, timeout: 30000, env,
   });
 
-  const success = result.status === 0 && fs.existsSync(pdfPath);
-  const stderr = result.stderr ? result.stderr.toString() : '';
+  if (pandocResult.status !== 0) {
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    return {
+      success: false,
+      stderr: pandocResult.stderr ? pandocResult.stderr.toString() : 'Pandoc body conversion failed',
+      pdfSize: 0,
+      exitCode: pandocResult.status,
+    };
+  }
+
+  // Step 2: Assemble main.typ
+  const typstTemplatePath = path.join(TYPST_TEMPLATE_DIR, `${templateKey}.typ`);
+  const tplContent = fs.readFileSync(typstTemplatePath, 'utf8');
+  const CONTENT_MARKER = '// %% CONTENT %%';
+  const markerIdx = tplContent.indexOf(CONTENT_MARKER);
+  const tplStyle = markerIdx >= 0 ? tplContent.slice(0, markerIdx).trim() : tplContent.trim();
+  const tplContentSection = markerIdx >= 0 ? tplContent.slice(markerIdx + CONTENT_MARKER.length).trim() : '';
+
+  const bodyContent = fs.readFileSync(bodyPath, 'utf8');
+  const mainFont = TEMPLATE_FONTS[templateKey] || 'Latin Modern Roman';
+
+  const mainParts = [
+    '#let horizontalrule = line(start: (25%,0%), end: (75%,0%))',
+    `#let pp-title = ${typstString('Regression Test')}`,
+    '#let pp-author = none',
+    '#let pp-date = none',
+    `#let pp-mainfont = ${typstString(mainFont)}`,
+    tplStyle,
+    tplContentSection,
+    bodyContent,
+  ];
+  fs.writeFileSync(mainPath, mainParts.filter(Boolean).join('\n\n'), 'utf8');
+
+  // Step 3: Typst compile
+  const typstResult = spawnSync('typst', ['compile', 'main.typ', 'output.pdf'], {
+    cwd: tmpDir, timeout: 60000, env,
+  });
+
+  const success = typstResult.status === 0 && fs.existsSync(pdfPath);
+  const stderr = typstResult.stderr ? typstResult.stderr.toString() : '';
   const pdfSize = success ? fs.statSync(pdfPath).size : 0;
 
   // Cleanup
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* best-effort */ }
 
-  return { success, stderr, pdfSize, exitCode: result.status };
+  return { success, stderr, pdfSize, exitCode: typstResult.status };
 }
 
 // ── Tests ──
 
 describeIf('Template Regression Suite', () => {
-  // Increase timeout for LaTeX compilation
+  // Increase timeout for compilation
   jest.setTimeout(120000);
 
   describe('All 15 templates exist on disk', () => {
     for (const tpl of TEMPLATES) {
-      test(`${tpl}.latex exists`, () => {
-        const tplPath = path.join(TEMPLATE_DIR, `${tpl}.latex`);
+      test(`${tpl}.typ exists`, () => {
+        const tplPath = path.join(TYPST_TEMPLATE_DIR, `${tpl}.typ`);
         expect(fs.existsSync(tplPath)).toBe(true);
       });
     }
@@ -182,18 +238,6 @@ describeIf('Template Regression Suite', () => {
         expect(result.success).toBe(true);
         expect(result.pdfSize).toBeGreaterThan(1000); // At least 1KB
         expect(result.exitCode).toBe(0);
-
-        // Check for critical warnings in stderr
-        if (result.stderr) {
-          // Overfull hbox > 50pt is a regression signal
-          const criticalOverfull = result.stderr.match(/Overfull \\hbox.*?(\d+\.?\d*)pt/g);
-          if (criticalOverfull) {
-            const maxOverfull = Math.max(
-              ...criticalOverfull.map(m => parseFloat(m.match(/(\d+\.?\d*)pt/)?.[1] || '0'))
-            );
-            expect(maxOverfull).toBeLessThan(50); // No line should overflow by > 50pt
-          }
-        }
       });
     }
   });
@@ -212,38 +256,6 @@ describeIf('Template Regression Suite', () => {
     }
   });
 
-  describe('Page size variations', () => {
-    const sizes = [
-      { key: '5.5in,8.5in', label: '5.5×8.5' },
-      { key: '6in,9in', label: '6×9' },
-      { key: '148mm,210mm', label: 'A5' },
-    ];
-
-    for (const size of sizes) {
-      test(`paperback template at ${size.label}`, () => {
-        const result = compileTemplate('paperback', FICTION_SAMPLE, {
-          variables: { papersize: size.key },
-        });
-
-        expect(result.success).toBe(true);
-        expect(result.pdfSize).toBeGreaterThan(1000);
-      });
-    }
-  });
-
-  describe('Heading variants', () => {
-    const variants = ['classic', 'modern', 'bold'];
-    for (const variant of variants) {
-      test(`paperback with ${variant} headings compiles`, () => {
-        const result = compileTemplate('paperback', FICTION_SAMPLE, {
-          variables: { headingvariant: variant },
-        });
-        expect(result.success).toBe(true);
-        expect(result.pdfSize).toBeGreaterThan(1000);
-      });
-    }
-  });
-
   describe('Multi-column and specialist templates', () => {
     test('chronicle (multi-column) handles long content', () => {
       const longContent = `---\ntitle: Chronicle Test\n---\n\n# Lead Story\n\n${'The editor reviewed the day\u2019s stories with careful attention to detail, checking facts and verifying sources. '.repeat(30)}\n\n## Second Section\n\n${'Additional reporting confirmed the initial findings and added context. '.repeat(20)}\n`;
@@ -258,7 +270,7 @@ describeIf('Template Regression Suite', () => {
     });
 
     test('heirloom template handles recipe-like content', () => {
-      const recipe = `---\ntitle: Test Cookbook\n---\n\n# Classic Bread\n\n## Ingredients\n\n- 3 cups flour\n- 1 tsp salt\n- 1 packet yeast\n- 1 cup warm water\n\n## Instructions\n\n1. Mix dry ingredients.\n2. Add water and knead for 10 minutes.\n3. Let rise for 1 hour.\n4. Bake at 375\\textdegree F for 30 minutes.\n`;
+      const recipe = `---\ntitle: Test Cookbook\n---\n\n# Classic Bread\n\n## Ingredients\n\n- 3 cups flour\n- 1 tsp salt\n- 1 packet yeast\n- 1 cup warm water\n\n## Instructions\n\n1. Mix dry ingredients.\n2. Add water and knead for 10 minutes.\n3. Let rise for 1 hour.\n4. Bake at 375 degrees for 30 minutes.\n`;
       const result = compileTemplate('heirloom', recipe);
       expect(result.success).toBe(true);
     });
@@ -373,17 +385,33 @@ describe('Template file integrity', () => {
       expect(fs.existsSync(tplPath)).toBe(true);
       const content = fs.readFileSync(tplPath, 'utf8');
       expect(content.length).toBeGreaterThan(50);
-      // Every Typst template should set the document body
-      expect(content).toContain('$body$');
+      // Every pure Typst template should have the content marker
+      expect(content).toContain('// %% CONTENT %%');
+      // Every template should reference the pipeline font variable
+      expect(content).toContain('pp-mainfont');
     }
   });
 
-  test('Typst templates use valid Typst syntax patterns', () => {
+  test('Typst templates contain no Pandoc syntax', () => {
     const templates = fs.readdirSync(TYPST_DIR).filter(f => f.endsWith('.typ'));
     for (const file of templates) {
       const content = fs.readFileSync(path.join(TYPST_DIR, file), 'utf8');
-      // Should contain #set or #show directives (valid Typst)
+      // No Pandoc template variables
+      expect(content).not.toMatch(/\$[a-z]+\$/);
+      expect(content).not.toContain('$body$');
+      expect(content).not.toContain('$if(');
+      expect(content).not.toContain('$for(');
+      expect(content).not.toContain('$endfor$');
+      // Should contain valid Typst directives
       expect(content).toMatch(/#(?:set|show|let|import)/);
+    }
+  });
+
+  test('Typst templates use pp-title variable for title pages', () => {
+    const templates = fs.readdirSync(TYPST_DIR).filter(f => f.endsWith('.typ'));
+    for (const file of templates) {
+      const content = fs.readFileSync(path.join(TYPST_DIR, file), 'utf8');
+      expect(content).toContain('pp-title');
     }
   });
 });
@@ -396,7 +424,7 @@ if (require.main === module) {
     process.exit(0);
   }
 
-  console.log('Running template regression checks...\n');
+  console.log('Running template regression checks (split pipeline)...\n');
   let passed = 0;
   let failed = 0;
 

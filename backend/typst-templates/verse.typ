@@ -3,7 +3,7 @@
 // EB Garamond body, centered titles, no paragraph indent, generous leading
 // Target: Poetry collections, verse drama, lyric anthologies, song books
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── COLORS ────────────────────────────────────────────────────
 #let titlegrey = luma(102) // gray 40%
@@ -19,7 +19,7 @@
 
 // ── TYPOGRAPHY — Classical Serif for Verse ───────────────────
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$EB Garamond$endif$",
+  font: pp-mainfont,
   size: 11pt,
   ligatures: true,
   kerning: true,
@@ -87,40 +87,23 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 10pt)
 
-// ── Pandoc compatibility ─────────────────────────────────────
-// Pandoc emits #horizontalrule for Markdown "---" thematic breaks
-#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+// %% CONTENT %%
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
-
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 // Title page — centered, delicate, poetic
 #page(header: none, footer: none)[
   #align(center + horizon)[
-    #text(size: 24pt, style: "italic")[$title$]
+    #text(size: 24pt, style: "italic")[#pp-title]
     #v(8pt)
     #line(length: 1.5cm, stroke: 0.3pt)
-    $if(author)$
+    #if pp-author != none [
     #v(12pt)
-    #text(size: 12pt)[#smallcaps[$author$]]
-    $endif$
-    $if(date)$
+    #text(size: 12pt)[#smallcaps[#pp-author]]
+    ]
+    #if pp-date != none [
     #v(8pt)
-    #text(size: 11pt, fill: titlegrey)[$date$]
-    $endif$
+    #text(size: 11pt, fill: titlegrey)[#pp-date]
+    ]
   ]
 ]
-$endif$
-
-$body$
-
-$if(bibliography)$
-#pagebreak()
-#heading(level: 2, numbering: none)[Notes]
-$bibliography$
-$endif$
+]

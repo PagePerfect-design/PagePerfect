@@ -3,7 +3,7 @@
 // Fira Sans body with tabular figures, structured hierarchy, executive clarity
 // Target: Annual reports, white papers, consulting decks, business docs
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── COLORS ────────────────────────────────────────────────────
 #let corpblue = rgb("191970")   // MidnightBlue
@@ -18,7 +18,7 @@
     set text(size: 8pt, font: "Fira Sans")
     grid(
       columns: (1fr, 1fr),
-      align(left, text(fill: rulegrey)[$if(title)$$title$$endif$]),
+      align(left, text(fill: rulegrey)[#pp-title]),
       align(right)[#counter(page).display()],
     )
     v(2pt)
@@ -29,7 +29,7 @@
 
 // ── TYPOGRAPHY — Fintech Precision ───────────────────────────
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$Fira Sans$endif$",
+  font: pp-mainfont,
   size: 10pt,
   ligatures: true,
   kerning: true,
@@ -95,40 +95,23 @@
 // ── TABLES — Professional ────────────────────────────────────
 #show table: set text(size: 9pt)
 
-// ── Pandoc compatibility ─────────────────────────────────────
-// Pandoc emits #horizontalrule for Markdown "---" thematic breaks
-#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+// %% CONTENT %%
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
-
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 #line(length: 100%, stroke: 0.5pt + rulegrey)
 #v(8pt)
 #align(left)[
-  #text(size: 28pt, weight: "bold")[$title$]
-  $if(author)$
+  #text(size: 28pt, weight: "bold")[#pp-title]
+  #if pp-author != none [
   #v(8pt)
-  #text(size: 11pt, fill: rulegrey)[$author$]
-  $endif$
-  $if(date)$
+  #text(size: 11pt, fill: rulegrey)[#pp-author]
+  ]
+  #if pp-date != none [
   #v(4pt)
-  #text(size: 9pt, fill: rulegrey)[#upper(tracking(3pt)[$date$])]
-  $endif$
+  #text(size: 9pt, fill: rulegrey)[#upper(tracking(3pt)[#pp-date])]
+  ]
 ]
 #v(4pt)
 #line(length: 100%, stroke: 0.5pt + rulegrey)
 #v(12pt)
-$endif$
-
-$body$
-
-$if(bibliography)$
-#pagebreak()
-#heading(level: 1, numbering: none)[References]
-$bibliography$
-$endif$
+]

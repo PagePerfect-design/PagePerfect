@@ -602,41 +602,57 @@ module.exports = function compileRoutes(ctx) {
 
     const templateType = tpl.gridType || 'academic';
     const effectiveMd = safeMode ? stripCitations(manuscriptText) : manuscriptText;
-    const isFast = compileMode === 'fast';
 
     const fontResolution = fontAvailability.resolveFont(tpl.mainfont);
     const effectiveMainfont = fontResolution.resolved;
-    const sansResolution = tpl.sansfont ? fontAvailability.resolveFont(tpl.sansfont) : null;
-    const monoResolution = tpl.monofont ? fontAvailability.resolveFont(tpl.monofont) : null;
 
-    let templateContent = await fsp.readFile(tpl.templatePath, 'utf8'); // Typst template
-
-    const fontReplacements = [
-      { original: tpl.mainfont, resolved: effectiveMainfont },
-      ...(sansResolution ? [{ original: tpl.sansfont, resolved: sansResolution.resolved }] : []),
-      ...(monoResolution ? [{ original: tpl.monofont, resolved: monoResolution.resolved }] : []),
-    ];
-    for (const { original, resolved } of fontReplacements) {
-      if (original !== resolved) {
-        const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        templateContent = templateContent.replace(new RegExp(`(\\\\set(?:main|sans|mono)font\\{)${escaped}(\\})`, 'g'), `$1${resolved}$2`);
-      }
-    }
-
-    // Assemble Typst preamble for batch compile
-    const preambleParts = [];
+    // Read the pure Typst template and split at %% CONTENT %% marker
+    const typstTemplatePath = path.resolve(__dirname, '..', 'typst-templates', `${tplKey}.typ`);
+    let tplContent;
     try {
-      preambleParts.push(bookEngineering.generateTypstEngineeringPreamble(templateType));
-      const headingVariantsTypst = require('../heading-variants-typst');
-      const vp = headingVariantsTypst.getTypstVariantPreamble(tplKey, batchVariant);
-      if (vp) preambleParts.push(vp);
+      tplContent = await fsp.readFile(typstTemplatePath, 'utf8');
+    } catch {
+      return res.status(500).json({ error: 'template_not_found', message: `Typst template "${tplKey}" not found.` });
+    }
+    const CONTENT_MARKER = '// %% CONTENT %%';
+    const markerIdx = tplContent.indexOf(CONTENT_MARKER);
+    if (markerIdx < 0) {
+      return res.status(500).json({ error: 'template_marker_missing', message: `Template "${tplKey}" missing %% CONTENT %% marker.` });
+    }
+    const tplStyle = tplContent.slice(0, markerIdx).trim();
+    const tplContentSection = tplContent.slice(markerIdx + CONTENT_MARKER.length).trim();
+
+    // Assemble shared preamble parts
+    const headingVariantsTypst = require('../heading-variants-typst');
+    const latexSanitizer = require('../latex-sanitizer');
+    const safeTitle = latexSanitizer.sanitizeTitle(title);
+    const typstStr = (s) => s == null ? 'none' : '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+
+    let engineeringPreamble = '';
+    let variantPreamble = '';
+    try {
+      engineeringPreamble = bookEngineering.generateTypstEngineeringPreamble(templateType);
+      variantPreamble = headingVariantsTypst.getTypstVariantPreamble(tplKey, batchVariant) || '';
     } catch { return res.status(500).json({ error: 'preamble_error', message: 'Failed to assemble compile preamble.' }); }
-    const preambleStr = preambleParts.join('\n\n');
+
+    const tplClass = headingVariants.TEMPLATE_CLASS[tplKey] || 'article';
+    const topLevelDiv = tplClass === 'book' ? 'chapter' : 'section';
 
     log.info({ module: 'batch', sizeCount: validSizes.length, template: tplKey, variant: batchVariant }, 'Starting batch compile');
 
     const pdfs = [];
     const errors = [];
+
+    const batchLocale = process.env.PP_SPAWN_LOCALE !== undefined ? process.env.PP_SPAWN_LOCALE : 'C.UTF-8';
+    const BATCH_SPAWN_ENV = {
+      PATH: process.env.PATH,
+      HOME: process.env.HOME || '/app',
+      TMPDIR: os.tmpdir(),
+      LANG: batchLocale,
+      LC_ALL: batchLocale,
+      LC_CTYPE: batchLocale,
+      SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
+    };
 
     for (const size of validSizes) {
       if (!ALL_MARGINS.has(marginPreset)) marginPreset = 'normal';
@@ -645,36 +661,57 @@ module.exports = function compileRoutes(ctx) {
 
       try {
         const mdPath = path.join(tmpBase, 'input.md');
+        const bodyPath = path.join(tmpBase, 'body.typ');
+        const mainPath = path.join(tmpBase, 'main.typ');
         const pdfPath = path.join(tmpBase, 'output.pdf');
         await fsp.writeFile(mdPath, effectiveMd, 'utf8');
-        const tplPath = path.join(tmpBase, 'template.typ');
-        await fsp.writeFile(tplPath, templateContent, 'utf8');
-        const headerPath = path.join(tmpBase, 'header-includes.typ');
-        // horizontalrule: Pandoc emits #horizontalrule for '---' thematic breaks
-        await fsp.writeFile(headerPath, `#let horizontalrule = line(start: (25%,0%), end: (75%,0%))\n\n${geo}\n\n${preambleStr}`, 'utf8');
 
-        const tplClass = headingVariants.TEMPLATE_CLASS[tplKey] || 'article';
-        const topLevelDiv = tplClass === 'book' ? 'chapter' : 'section';
-
+        // Step A: Pandoc body-only conversion
         const batchFromFormat = safeMode ? '--from=markdown-raw_tex-raw_attribute' : PANDOC_HAS_CITEPROC ? '--from=markdown+citations-raw_tex-raw_attribute' : '--from=markdown-raw_tex-raw_attribute';
-        const args = [mdPath, batchFromFormat, '--pdf-engine=typst', `--top-level-division=${topLevelDiv}`, `--resource-path=${tmpBase}`, '-M', `title=${title}`, `--template=${tplPath}`, '-H', headerPath, '-V', `mainfont=${effectiveMainfont}`, '-o', pdfPath];
-        if (!safeMode) args.push(...citeprocArgs(BIB_PATH));
+        const pandocArgs = [mdPath, batchFromFormat, '-t', 'typst', `--top-level-division=${topLevelDiv}`, `--resource-path=${tmpBase}`, '-o', bodyPath];
+        if (!safeMode) pandocArgs.push(...citeprocArgs(BIB_PATH));
 
-        const batchLocale = process.env.PP_SPAWN_LOCALE !== undefined ? process.env.PP_SPAWN_LOCALE : 'C.UTF-8';
-        const BATCH_SPAWN_ENV = {
-          PATH: process.env.PATH,
-          HOME: process.env.HOME || '/app',
-          TMPDIR: os.tmpdir(),
-          LANG: batchLocale,
-          LC_ALL: batchLocale,
-          LC_CTYPE: batchLocale,
-          SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
-        };
-        const compileResult = await new Promise((resolve) => {
-          const proc = spawn('pandoc', args, { cwd: tmpBase, env: BATCH_SPAWN_ENV });
+        const pandocResult = await new Promise((resolve) => {
+          const proc = spawn('pandoc', pandocArgs, { cwd: tmpBase, env: BATCH_SPAWN_ENV });
           let stderr = '';
           proc.stderr.on('data', (d) => { stderr += d.toString(); });
-          proc.on('error', () => resolve({ success: false, error: 'Pandoc spawn failed' }));
+          proc.on('error', () => resolve({ ok: false, error: 'Pandoc spawn failed' }));
+          const kill = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} resolve({ ok: false, error: 'Timeout' }); }, COMPILE_TIMEOUT_MS);
+          proc.on('close', (code) => {
+            clearTimeout(kill);
+            code === 0 ? resolve({ ok: true }) : resolve({ ok: false, error: sanitizeStderr(stderr.split('\n').slice(-5).join('\n')) });
+          });
+        });
+
+        if (!pandocResult.ok) {
+          errors.push({ pageSize: size, error: pandocResult.error || 'Pandoc conversion failed' });
+          try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+          continue;
+        }
+
+        // Step B: Assemble main.typ
+        const bodyContent = await fsp.readFile(bodyPath, 'utf8');
+        const mainParts = [
+          '#let horizontalrule = line(start: (25%,0%), end: (75%,0%))',
+          `#let pp-title = ${typstStr(safeTitle)}`,
+          '#let pp-author = none',
+          '#let pp-date = none',
+          `#let pp-mainfont = ${typstStr(effectiveMainfont)}`,
+          tplStyle,
+          geo,
+          engineeringPreamble,
+          variantPreamble,
+          tplContentSection,
+          bodyContent,
+        ];
+        await fsp.writeFile(mainPath, mainParts.filter(Boolean).join('\n\n'), 'utf8');
+
+        // Step C: Typst compile
+        const compileResult = await new Promise((resolve) => {
+          const proc = spawn('typst', ['compile', 'main.typ', 'output.pdf'], { cwd: tmpBase, env: BATCH_SPAWN_ENV });
+          let stderr = '';
+          proc.stderr.on('data', (d) => { stderr += d.toString(); });
+          proc.on('error', () => resolve({ success: false, error: 'Typst spawn failed' }));
           const kill = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} resolve({ success: false, error: 'Timeout' }); }, COMPILE_TIMEOUT_MS);
           proc.on('close', (code) => {
             clearTimeout(kill);

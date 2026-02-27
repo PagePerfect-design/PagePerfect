@@ -3,7 +3,7 @@
 // TeX Gyre Heros (Helvetica), asymmetric layout, section rules
 // Target: Design portfolios, architecture proposals, brand guidelines, manifestos
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── COLORS ────────────────────────────────────────────────────
 #let rulegrey = luma(77) // gray 30%
@@ -17,7 +17,7 @@
     set text(size: 7pt, font: "TeX Gyre Heros")
     grid(
       columns: (1fr, 1fr),
-      align(left, upper(tracking(5pt, text(size: 7pt)[$if(title)$$title$$endif$]))),
+      align(left, upper(tracking(5pt, text(size: 7pt)[#pp-title]))),
       align(right)[#counter(page).display()],
     )
   },
@@ -28,7 +28,7 @@
 // TeX Gyre Heros: hierarchy ONLY by size and weight
 // Rule: No italics — Müller-Brockmann viewed them as "emotional corruption"
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$TeX Gyre Heros$endif$",
+  font: pp-mainfont,
   size: 9pt,
   ligatures: true,
   kerning: true,
@@ -89,41 +89,22 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 8pt)
 
-// ── Pandoc compatibility ─────────────────────────────────────
-// Pandoc emits #horizontalrule for Markdown "---" thematic breaks
-#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+// %% CONTENT %%
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
-
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 #v(24pt)
 #align(left)[
-  #text(size: 32pt, weight: "bold")[$title$]
-  $if(author)$
+  #text(size: 32pt, weight: "bold")[#pp-title]
+  #if pp-author != none [
   #v(8pt)
-  #text(size: 9pt)[$author$]
-  $endif$
-  $if(date)$
+  #text(size: 9pt)[#pp-author]
+  ]
+  #if pp-date != none [
   #v(4pt)
-  #text(size: 7pt)[#upper(tracking(5pt)[$date$])]
-  $endif$
+  #text(size: 7pt)[#upper(tracking(5pt)[#pp-date])]
+  ]
 ]
 #v(4pt)
 #line(length: 100%, stroke: 0.5pt)
 #v(16pt)
-$endif$
-
-$body$
-
-$if(bibliography)$
-#v(16pt)
-#line(length: 100%, stroke: 0.5pt)
-#v(8pt)
-#heading(level: 1, numbering: none)[references]
-$bibliography$
-$endif$
+]

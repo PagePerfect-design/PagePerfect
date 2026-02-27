@@ -3,7 +3,7 @@
 // TeX Gyre Heros (Helvetica) body, heavy rules, lede blocks, ragged right
 // Target: Non-fiction, journalism, technical manuals, reports
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── COLORS ────────────────────────────────────────────────────
 #let rulegrey = luma(89)  // gray 35%
@@ -18,7 +18,7 @@
     set text(size: 8pt, font: "TeX Gyre Heros")
     grid(
       columns: (1fr, 1fr),
-      align(left, upper(tracking(3pt, text(size: 7pt)[$if(title)$$title$$endif$]))),
+      align(left, upper(tracking(3pt, text(size: 7pt)[#pp-title]))),
       align(right)[#counter(page).display()],
     )
     v(2pt)
@@ -29,7 +29,7 @@
 
 // ── TYPOGRAPHY — Swiss International Style ───────────────────
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$TeX Gyre Heros$endif$",
+  font: pp-mainfont,
   size: 11pt,
   ligatures: true,
   kerning: true,
@@ -94,42 +94,23 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 10pt)
 
-// ── Pandoc compatibility ─────────────────────────────────────
-// Pandoc emits #horizontalrule for Markdown "---" thematic breaks
-#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+// %% CONTENT %%
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
-
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 #line(length: 100%, stroke: 4pt)
 #v(8pt)
 #align(left)[
-  #text(size: 36pt, weight: "bold")[$title$]
-  $if(author)$
+  #text(size: 36pt, weight: "bold")[#pp-title]
+  #if pp-author != none [
   #v(6pt)
-  #text(size: 14pt, fill: rulegrey)[$author$]
-  $endif$
-  $if(date)$
+  #text(size: 14pt, fill: rulegrey)[#pp-author]
+  ]
+  #if pp-date != none [
   #v(2pt)
-  #text(size: 9pt, fill: numgrey)[#upper(tracking(3pt)[$date$])]
-  $endif$
+  #text(size: 9pt, fill: numgrey)[#upper(tracking(3pt)[#pp-date])]
+  ]
 ]
 #v(4pt)
 #line(length: 100%, stroke: 1pt)
 #v(12pt)
-$endif$
-
-$body$
-
-$if(bibliography)$
-#v(20pt)
-#line(length: 100%, stroke: 2pt)
-#v(8pt)
-#heading(level: 1, numbering: none)[References]
-$bibliography$
-$endif$
+]

@@ -3,7 +3,7 @@
 // Fira Sans body + TeX Gyre Adventor display, extreme whitespace, matte ink
 // Target: Photography books, portfolios, modern poetry, art catalogs
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── COLORS ────────────────────────────────────────────────────
 #let ghostgrey = luma(204)  // gray 80%
@@ -26,7 +26,7 @@
 
 // ── TYPOGRAPHY — Museum Geometric Humanist ───────────────────
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$Fira Sans$endif$",
+  font: pp-mainfont,
   size: 10pt,
   ligatures: true,
   kerning: true,
@@ -91,41 +91,24 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 9pt)
 
-// ── Pandoc compatibility ─────────────────────────────────────
-// Pandoc emits #horizontalrule for Markdown "---" thematic breaks
-#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+// %% CONTENT %%
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
-
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 // Title page — White Cube: extreme whitespace, light weight, left-aligned
 #page(header: none, footer: none)[
   #v(1fr)
   #v(72pt)
   #align(left)[
-    #text(size: 36pt, weight: "light", font: "TeX Gyre Adventor")[$title$]
-    $if(author)$
+    #text(size: 36pt, weight: "light", font: "TeX Gyre Adventor")[#pp-title]
+    #if pp-author != none [
     #v(24pt)
-    #text(size: 10pt, fill: captiongrey)[#upper(tracking(12pt)[$author$])]
-    $endif$
-    $if(date)$
+    #text(size: 10pt, fill: captiongrey)[#upper(tracking(12pt)[#pp-author])]
+    ]
+    #if pp-date != none [
     #v(6pt)
-    #text(size: 9pt, fill: ghostgrey)[$date$]
-    $endif$
+    #text(size: 9pt, fill: ghostgrey)[#pp-date]
+    ]
   ]
   #v(1fr)
 ]
-$endif$
-
-$body$
-
-$if(bibliography)$
-#pagebreak()
-#heading(level: 1, numbering: none)[Bibliography]
-$bibliography$
-$endif$
+]
