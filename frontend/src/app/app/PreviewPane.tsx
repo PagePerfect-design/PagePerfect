@@ -14,7 +14,7 @@ function BookSkeleton() {
   return (
     <div className="flex h-full w-full items-center justify-center bg-white">
       <div className="relative h-[520px] w-[380px]">
-        <div className="absolute inset-0 rounded bg-[#111111]/[0.02] border border-[#111111]/[0.06]" />
+        <div className="absolute inset-0 bg-[#111111]/[0.02] border border-[#111111]/[0.06]" />
         <motion.div
           className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF3333]/40 to-transparent"
           initial={{ top: '10%' }}
@@ -22,11 +22,11 @@ function BookSkeleton() {
           transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
         />
         <div className="absolute inset-x-[15%] top-[12%] space-y-3">
-          <div className="h-4 w-3/5 rounded-sm bg-[#111111]/[0.06]" />
-          <div className="h-2 w-4/5 rounded-sm bg-[#111111]/[0.04]" />
+          <div className="h-4 w-3/5 bg-[#111111]/[0.06]" />
+          <div className="h-2 w-4/5 bg-[#111111]/[0.04]" />
           <div className="mt-6 space-y-2">
             {Array.from({ length: 14 }).map((_, i) => (
-              <div key={i} className="h-1.5 rounded-sm bg-[#111111]/[0.04]" style={{ width: `${70 + Math.sin(i * 1.3) * 20}%` }} />
+              <div key={i} className="h-1.5 bg-[#111111]/[0.04]" style={{ width: `${70 + Math.sin(i * 1.3) * 20}%` }} />
             ))}
           </div>
         </div>
@@ -116,7 +116,7 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
   return (
     <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3] p-4 sm:p-8">
       <div className="w-full max-w-[420px]">
-        <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-full border ${isExpired ? 'border-amber-500/20 bg-amber-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
+        <div className={`mb-4 flex h-10 w-10 items-center justify-center border ${isExpired ? 'border-amber-500/20 bg-amber-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
           {isExpired
             ? <RotateCcw className="h-4 w-4 text-amber-500/60" />
             : <AlertTriangle className="h-4 w-4 text-red-500/60" />}
@@ -147,7 +147,7 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
         {debug?.latexLog && (
           <details className="mt-2">
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
-              Full LaTeX log
+              Full engine log
             </summary>
             <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
               {debug.latexLog}
@@ -157,7 +157,7 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
         {debug?.texSource && (
           <details className="mt-2">
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/30 transition-colors hover:text-[#111111]/60">
-              Generated LaTeX source
+              Generated Typst source
             </summary>
             <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
               {debug.texSource}
@@ -228,8 +228,8 @@ export default function PreviewPane({
   sideBySide?: boolean
 }) {
   return (
-    <div className={`absolute inset-0 flex items-center justify-center px-4 pb-24 pt-16 sm:px-0 ${sideBySide ? 'sm:left-1/2' : ''}`}>
-      <div className="relative flex h-full max-h-[680px] w-full max-w-[calc(100vw-2rem)] items-center justify-center sm:max-w-[520px]">
+    <div className={`absolute inset-0 flex items-center justify-center px-4 pb-10 pt-4 sm:px-8 ${sideBySide ? 'sm:left-1/2' : ''}`}>
+      <div className="relative flex h-full max-h-[780px] w-full max-w-[calc(100vw-2rem)] items-center justify-center sm:max-w-[560px]">
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.92 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}

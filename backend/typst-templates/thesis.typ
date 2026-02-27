@@ -3,7 +3,7 @@
 // Latin Modern Roman body, numbered sections, declaration-ready structure
 // Target: PhD/Masters theses, dissertations, capstone projects
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── PAGE GEOMETRY ─────────────────────────────────────────────
 #set page(
@@ -18,7 +18,7 @@
 
 // ── TYPOGRAPHY — Institutional Standard ──────────────────────
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$Latin Modern Roman$endif$",
+  font: pp-mainfont,
   size: 12pt,
   ligatures: true,
   kerning: true,
@@ -96,35 +96,22 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 10pt)
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
+// %% CONTENT %%
 
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 #align(center)[
   #v(1in)
-  #text(size: 18pt, weight: "bold")[$title$]
-  $if(author)$
+  #text(size: 18pt, weight: "bold")[#pp-title]
+  #if pp-author != none [
   #v(24pt)
-  #text(size: 14pt)[$author$]
-  $endif$
-  $if(date)$
+  #text(size: 14pt)[#pp-author]
+  ]
+  #if pp-date != none [
   #v(12pt)
-  #text(size: 12pt)[$date$]
-  $endif$
+  #text(size: 12pt)[#pp-date]
+  ]
   #v(24pt)
   #line(length: 3cm, stroke: 0.4pt)
 ]
 #v(36pt)
-$endif$
-
-$body$
-
-$if(bibliography)$
-#pagebreak()
-#heading(numbering: none)[References]
-$bibliography$
-$endif$
+]

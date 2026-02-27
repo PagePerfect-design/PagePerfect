@@ -3,7 +3,7 @@
 // Source Sans 3 body + bold display, rotated elements, radical asymmetry
 // Target: Zines, manifestos, lookbooks, art-school publications
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── COLORS ────────────────────────────────────────────────────
 #let ghostnum = luma(230) // gray 90%
@@ -21,7 +21,7 @@
 
 // ── TYPOGRAPHY — Art School Tension ──────────────────────────
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$Source Sans 3$endif$",
+  font: pp-mainfont,
   size: 11pt,
   ligatures: true,
   kerning: true,
@@ -90,38 +90,25 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 9pt)
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
+// %% CONTENT %%
 
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 // Title page — Brutalist manifesto
 #page(header: none, footer: none)[
   #v(72pt)
   #align(left)[
-    #text(size: 48pt, weight: "bold")[#upper[$title$]]
+    #text(size: 48pt, weight: "bold")[#upper[#pp-title]]
     #v(4pt)
     #line(length: 3cm, stroke: 4pt)
-    $if(author)$
+    #if pp-author != none [
     #v(16pt)
-    #text(size: 14pt, font: "DejaVu Sans")[$author$]
-    $endif$
-    $if(date)$
+    #text(size: 14pt, font: "DejaVu Sans")[#pp-author]
+    ]
+    #if pp-date != none [
     #v(6pt)
-    #text(size: 10pt, font: "DejaVu Sans")[#upper[$date$]]
-    $endif$
+    #text(size: 10pt, font: "DejaVu Sans")[#upper[#pp-date]]
+    ]
   ]
   #v(1fr)
 ]
-$endif$
-
-$body$
-
-$if(bibliography)$
-#pagebreak()
-#heading(level: 1, numbering: none)[References]
-$bibliography$
-$endif$
+]

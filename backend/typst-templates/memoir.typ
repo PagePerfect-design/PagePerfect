@@ -3,7 +3,7 @@
 // Libre Baskerville body, decorative scene breaks, warm amber accents
 // Target: Memoir, autobiography, personal essays, travel writing
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── COLORS ────────────────────────────────────────────────────
 #let memoiramber = rgb("8B6914")
@@ -27,7 +27,7 @@
       ])
     } else {
       // Even pages: book title (italic) left-aligned
-      align(left, emph[$if(title)$$title$$endif$])
+      align(left, emph[#pp-title])
     }
   },
   footer: context {
@@ -37,7 +37,7 @@
 
 // ── TYPOGRAPHY — Warm Literary Serif ─────────────────────────
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$Libre Baskerville$endif$",
+  font: pp-mainfont,
   size: 11pt,
   ligatures: true,
   kerning: true,
@@ -110,36 +110,23 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 10pt)
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
+// %% CONTENT %%
 
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 // Title page — warm, centered, intimate
 #page(header: none, footer: none)[
   #align(center + horizon)[
-    #text(size: 28pt, style: "italic", fill: memoiramber)[$title$]
+    #text(size: 28pt, style: "italic", fill: memoiramber)[#pp-title]
     #v(10pt)
     #line(length: 1.5cm, stroke: 0.3pt)
-    $if(author)$
+    #if pp-author != none [
     #v(14pt)
-    #text(size: 14pt)[$author$]
-    $endif$
-    $if(date)$
+    #text(size: 14pt)[#pp-author]
+    ]
+    #if pp-date != none [
     #v(8pt)
-    #text(size: 12pt, fill: chapgrey)[$date$]
-    $endif$
+    #text(size: 12pt, fill: chapgrey)[#pp-date]
+    ]
   ]
 ]
-$endif$
-
-$body$
-
-$if(bibliography)$
-#pagebreak()
-#heading(level: 2, numbering: none)[Bibliography]
-$bibliography$
-$endif$
+]

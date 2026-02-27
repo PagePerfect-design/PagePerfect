@@ -25,7 +25,7 @@ module.exports = function healthRoutes(ctx) {
       service: 'pageperfect-backend',
       timestamp: new Date().toISOString(),
       version: '3.1',
-      pdfEngines: ['typst', 'lualatex'],
+      pdfEngines: ['typst'],
       redis: ctx.redis ? (redisOk ? 'connected' : 'down') : 'not_configured',
     });
   });
@@ -61,19 +61,12 @@ module.exports = function healthRoutes(ctx) {
       checks.pandoc = m ? `ok (${m[1]})` : 'ok';
     } catch { checks.pandoc = 'missing'; ready = false; }
 
-    // LuaLaTeX — version detection
-    try {
-      const lv = execSync('lualatex --version 2>/dev/null | head -1', { encoding: 'utf8', timeout: 3000 });
-      const m = lv.match(/Version\s+([^\s(]+)/i) || lv.match(/([\d.]+)/);
-      checks.lualatex = m ? `ok (${m[1]})` : 'ok';
-    } catch { checks.lualatex = 'missing'; ready = false; }
-
-    // Typst — version detection (modern engine, preferred when available)
+    // Typst — primary PDF engine
     try {
       const tv = execSync('typst --version 2>/dev/null', { encoding: 'utf8', timeout: 3000 });
       const m = tv.match(/typst\s+([\d.]+)/i) || tv.match(/([\d.]+)/);
       checks.typst = m ? `ok (${m[1]})` : 'ok';
-    } catch { checks.typst = 'not_installed'; /* Typst is optional — LuaLaTeX is fallback */ }
+    } catch { checks.typst = 'missing'; ready = false; }
 
     // Locale — verify the configured locale exists
     try {
@@ -123,7 +116,7 @@ module.exports = function healthRoutes(ctx) {
       pageSizes,
       marginPresets,
       compileModes,
-      pdfEngines: ['typst', 'lualatex'],
+      pdfEngines: ['typst'],
       defaultEngine: 'typst',
       safeModeAvailable: true,
       auth: ctx.isPocketBaseConfigured,

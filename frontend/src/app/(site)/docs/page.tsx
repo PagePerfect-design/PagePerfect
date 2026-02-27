@@ -94,10 +94,10 @@ const TEMPLATE_DOCS = [
     name: 'Minimal',
     subtitle: 'The Source Code',
     category: 'Basic',
-    description: 'Radical compatibility. Zero external dependencies — no fontspec, no custom fonts. Compiles on pdflatex, xelatex, and lualatex. Latin Modern: the Knuthian Ideal perfected.',
+    description: 'Radical compatibility. Zero external dependencies — no custom fonts required. Latin Modern: the Knuthian Ideal perfected.',
     fonts: { primary: 'Latin Modern', secondary: null, mono: null },
     geometry: { baseSize: '12pt', leading: '1.5', indent: '0pt', parskip: '6pt' },
-    features: ['No fontspec — works on any TeX installation', 'Latin Modern (Computer Modern perfected)', 'Standard \\maketitle page', 'Plain page style with centered page numbers', '1.5 line spacing for drafts', 'Maximum portability across systems'],
+    features: ['Zero dependencies — maximum portability', 'Latin Modern (Computer Modern perfected)', 'Standard title page', 'Plain page style with centered page numbers', '1.5 line spacing for drafts', 'Maximum portability across systems'],
     bestFor: 'Drafts, submissions, BasicTeX users, maximum compatibility scenarios',
   },
   {
@@ -152,7 +152,7 @@ const TEMPLATE_DOCS = [
     description: 'EB Garamond at generous leading with centered italic chapter titles and thin ornamental rules. The verse environment preserves line breaks exactly as written — essential for poetry.',
     fonts: { primary: 'EB Garamond', secondary: 'TeX Gyre Heros', mono: 'DejaVu Sans Mono' },
     geometry: { baseSize: '11pt', leading: '1.4', indent: '0pt', parskip: '0pt' },
-    features: ['LaTeX verse environment for preserved line breaks', 'Centered italic chapter titles with ornamental rule', 'Deep violet (#4B0082) accent palette', 'Generous leading (1.4) for breathing room', 'Decorative scene breaks (fleuron)', 'No paragraph indent — stanza spacing instead'],
+    features: ['Verse layout for preserved line breaks', 'Centered italic chapter titles with ornamental rule', 'Deep violet (#4B0082) accent palette', 'Generous leading (1.4) for breathing room', 'Decorative scene breaks (fleuron)', 'No paragraph indent — stanza spacing instead'],
     bestFor: 'Poetry collections, verse drama, song lyrics, chapbooks',
   },
   {
@@ -262,7 +262,7 @@ export default function DocsPage() {
               Navigating PagePerfect
             </h1>
             <p className="font-body text-lg leading-8 text-[#3a3a3a] mb-8 max-w-xl">
-              PagePerfect converts Markdown manuscripts into professionally typeset PDFs using LuaLaTeX.
+              PagePerfect converts Markdown manuscripts into professionally typeset PDFs using Typst.
               This section orients you to the platform&apos;s key areas before you dive into the technical reference below.
             </p>
           </section>
@@ -348,7 +348,7 @@ export default function DocsPage() {
             <p className="font-body text-lg leading-8 text-[#3a3a3a] mb-8 max-w-xl">
               The system is designed for immediate compilation. Do not format your text.
               Paste your raw manuscript into the Editor, select a typographic system,
-              and let LuaLaTeX handle the typesetting.
+              and let the engine handle the typesetting.
             </p>
 
             <div className="space-y-4">
@@ -977,7 +977,7 @@ export default function DocsPage() {
             </div>
             <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-2">
               IngramSpark requires PDF/X-1a:2001 compliance — CMYK color space, all fonts embedded, no transparency, PDF 1.3.
-              PagePerfect converts LuaLaTeX output to PDF/X-1a via Ghostscript post-processing with US Web Coated (SWOP) v2 output intent.
+              PagePerfect converts Typst output to PDF/X-1a via Ghostscript post-processing with US Web Coated (SWOP) v2 output intent.
             </p>
             <Admonition type="info" label="Note">
               Select &quot;IngramSpark&quot; as your platform in the Press stage, then click &quot;Export PDF/X-1a&quot; to generate a compliant file.
@@ -1070,7 +1070,7 @@ export default function DocsPage() {
             <div className="mb-8">
               <h3 className="font-display text-base font-bold tracking-tight text-[#1a1a1a] mb-4">Error Reference</h3>
               <p className="font-body text-sm leading-7 text-[#3a3a3a] mb-4">
-                The editor translates raw LaTeX and Pandoc errors into plain English and suggests fixes.
+                The editor translates raw engine errors into plain English and suggests fixes.
                 Below is the complete reference grouped by category.
               </p>
 
@@ -1113,7 +1113,7 @@ export default function DocsPage() {
                   {[
                     ['Undefined control sequence', 'Stray backslash or unknown command', 'Remove backslashes from prose text'],
                     ['Runaway argument', 'Unmatched bracket or brace', 'Check for missing } or ]'],
-                    ['Emergency stop', 'Critical LaTeX failure', 'Simplify your manuscript and retry'],
+                    ['Emergency stop', 'Critical engine failure', 'Simplify your manuscript and retry'],
                     ['Too many unprocessed floats', 'Too many images without text between them', 'Add more text between figures'],
                   ].map(([err, cause, fix]) => (
                     <tr key={err}>
@@ -1164,7 +1164,7 @@ export default function DocsPage() {
                 <tbody>
                   {[
                     ['Font not found / not available', 'Required font not on the server', 'Try a different template'],
-                    ['luaotfload cannot load', 'Font file failed to load', 'Try a different template'],
+                    ['Unknown font family', 'Font not available on server', 'Try a different template'],
                     ['Missing character U+XXXX', 'Character not in current font', 'May appear as blank — try a Unicode-rich template'],
                   ].map(([err, cause, fix]) => (
                     <tr key={err}>
@@ -1213,8 +1213,8 @@ export default function DocsPage() {
                 </thead>
                 <tbody>
                   {[
-                    ['Compilation timed out', 'LuaLaTeX exceeded 45s', 'Use Fast compile mode or split into smaller sections'],
-                    ['TeX capacity exceeded', 'Too many images or complex tables', 'Reduce image count or simplify tables'],
+                    ['Compilation timed out', 'Engine exceeded 45s limit', 'Use Fast compile mode or split into smaller sections'],
+                    ['Layout did not converge', 'Too many images or complex tables', 'Reduce image count or simplify tables'],
                     ['queue_full', 'Server at capacity', 'Wait a moment and try again'],
                     ['tier_required', 'Feature requires paid plan', 'Upgrade to Publisher or Studio'],
                     ['Preview expired', 'Cached PDF cleared (server restart or TTL)', 'Hit Recompile to refresh'],
@@ -1275,7 +1275,7 @@ export default function DocsPage() {
                       ['Page count', '24\u2013828 pages', 'Adjust manuscript length or word count'],
                       ['Inside margin (gutter)', '\u22650.375\u2033 for \u2264150pp, \u22650.5\u2033 for 151\u2013300pp, \u22650.625\u2033 for 301\u2013500pp, \u22650.75\u2033 for 501+', 'Increase margin preset (Normal or wider)'],
                       ['Trim size', '5\u00d78\u2033 through 8.5\u00d711\u2033 only', 'Select a KDP-specific page size in the editor'],
-                      ['Font embedding', 'All fonts fully embedded', 'Handled automatically by LuaLaTeX'],
+                      ['Font embedding', 'All fonts fully embedded', 'Handled automatically by Typst'],
                       ['PDF format', 'Standard PDF accepted', 'No PDF/X conversion needed for KDP'],
                     ].map(([check, req, fix]) => (
                       <tr key={check}>
@@ -1382,7 +1382,7 @@ export default function DocsPage() {
             {/* Colophon */}
             <div className="mt-16 border-t border-[#e5e5e0] pt-6">
               <p className="font-mono text-[10px] text-[#888]">
-                PagePerfect Documentation &middot; Built on LuaLaTeX + Pandoc &middot; Typography is the foundation of graphic design.
+                PagePerfect Documentation &middot; Built on Typst &middot; Typography is the foundation of graphic design.
               </p>
             </div>
           </section>

@@ -483,7 +483,7 @@ if (redis) {
 
 // ── Locale runtime assertion ──
 // Verify the configured locale exists in the OS. A missing locale will cause
-// LuaLaTeX's luaotfload to fail with "Unable to read environment locale".
+// fontconfig to fail with locale errors that break font resolution.
 // This catches base image changes that could silently reintroduce the bug.
 try {
   const localeList = execSync('locale -a 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
@@ -494,7 +494,7 @@ try {
   if (localeFound) {
     log.info({ module: 'startup', locale: process.env.LANG || 'C.UTF-8' }, 'Locale verified');
   } else {
-    log.fatal({ module: 'startup', locale: process.env.LANG || 'C.UTF-8', available: available.filter(l => l).slice(0, 20) }, 'CONFIGURED LOCALE NOT FOUND — LuaLaTeX will fail. Set LANG to an available locale (e.g. C.UTF-8).');
+    log.fatal({ module: 'startup', locale: process.env.LANG || 'C.UTF-8', available: available.filter(l => l).slice(0, 20) }, 'CONFIGURED LOCALE NOT FOUND — fontconfig may fail. Set LANG to an available locale (e.g. C.UTF-8).');
   }
 } catch (err) {
   log.warn({ module: 'startup', err: err.message }, 'Locale check skipped (locale command not available)');
@@ -668,7 +668,7 @@ const DESIGN_TEMPLATES = {
   exhibit: { name: 'Exhibit', description: 'White Cube gallery — Fira Sans, extreme whitespace, ghost-number chapter openings.', category: 'Trade', templatePath: path.resolve(__dirname, 'typst-templates/exhibit.typ'), mainfont: 'Fira Sans', sansfont: 'TeX Gyre Adventor', monofont: 'Fira Mono', gridType: 'trade', characteristics: ['Fira Sans + TeX Gyre Adventor', '80pt ghost chapter numbers', 'Ragged right', 'Generous whitespace'] },
   matrix: { name: 'Matrix', description: 'Swiss corporate annual report — Fira Sans with lining figures, MidnightBlue accents, booktabs.', category: 'Business', templatePath: path.resolve(__dirname, 'typst-templates/matrix.typ'), mainfont: 'Fira Sans', sansfont: null, monofont: 'Fira Mono', gridType: 'corporate', characteristics: ['Fira Sans (lining figures)', 'Corporate blue palette', 'Executive summary blocks', 'booktabs tables'] },
   avantgarde: { name: 'Avant-Garde', description: 'Deconstructed manifesto — Source Sans 3, 120pt ghost numbers, brutalist blockquotes.', category: 'Creative', templatePath: path.resolve(__dirname, 'typst-templates/avantgarde.typ'), mainfont: 'Source Sans 3', sansfont: 'DejaVu Sans', monofont: 'TeX Gyre Cursor', gridType: 'creative', characteristics: ['Source Sans 3', '120pt ghost chapter numbers', 'Brutalist blockquotes', 'Ragged right'] },
-  minimal: { name: 'Minimal', description: 'Radical compatibility — compiles anywhere, zero extra dependencies. Latin Modern on pdflatex.', category: 'Basic', templatePath: path.resolve(__dirname, 'typst-templates/minimal.typ'), mainfont: 'Latin Modern Roman', sansfont: null, monofont: null, gridType: 'basic', characteristics: ['Zero dependencies', 'pdflatex compatible', 'Latin Modern', 'Maximum portability'] },
+  minimal: { name: 'Minimal', description: 'Radical compatibility — compiles anywhere, zero extra dependencies. Latin Modern, maximum portability.', category: 'Basic', templatePath: path.resolve(__dirname, 'typst-templates/minimal.typ'), mainfont: 'Latin Modern Roman', sansfont: null, monofont: null, gridType: 'basic', characteristics: ['Zero dependencies', 'Minimal dependencies', 'Latin Modern', 'Maximum portability'] },
   international: { name: 'International', description: 'Müller-Brockmann Swiss Standard — one font, no italics, visible structure, modular grid.', category: 'Design', templatePath: path.resolve(__dirname, 'typst-templates/international.typ'), mainfont: 'TeX Gyre Heros', sansfont: 'TeX Gyre Heros', monofont: 'TeX Gyre Cursor', gridType: 'editorial', characteristics: ['TeX Gyre Heros only', 'No italics', 'Flush left / ragged right', 'Rule-separated sections'] },
   cinema: { name: 'Cinema', description: 'Hollywood Standard screenplay — Courier 12pt, strict margins, 1 page = 1 minute rule.', category: 'Screenplay', templatePath: path.resolve(__dirname, 'typst-templates/cinema.typ'), mainfont: 'TeX Gyre Cursor', sansfont: null, monofont: 'TeX Gyre Cursor', gridType: 'basic', characteristics: ['TeX Gyre Cursor (Courier)', 'Industry-standard margins', 'Single-spaced', 'Dialogue blocks'] },
   heirloom: { name: 'Heirloom', description: 'Modern gastronomy cookbook — recipe cards, ingredient blocks, warm saddlebrown palette.', category: 'Cookbook', templatePath: path.resolve(__dirname, 'typst-templates/heirloom.typ'), mainfont: 'Fira Sans', sansfont: 'DejaVu Serif', monofont: 'Fira Mono', gridType: 'trade', characteristics: ['Fira Sans + DejaVu Serif headers', 'Ingredient colorboxes', 'Bold numbered steps', 'Warm earth tones'] },

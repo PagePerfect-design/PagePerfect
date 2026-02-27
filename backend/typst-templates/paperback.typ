@@ -3,7 +3,7 @@
 // Alegreya Sans (humanist) body + cinematic chapter drops
 // Target: Thrillers, modern romance, fiction, page-turners
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── COLORS ────────────────────────────────────────────────────
 #let chapnum-grey = luma(217) // gray 85%
@@ -26,7 +26,7 @@
       ])
     } else {
       // Even pages: book title (small caps) left-aligned
-      align(left, smallcaps[$if(title)$$title$$endif$])
+      align(left, smallcaps[#pp-title])
     }
   },
   footer: context {
@@ -37,7 +37,7 @@
 
 // ── TYPOGRAPHY — Humanist Sans for Fiction ────────────────────
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$Alegreya Sans$endif$",
+  font: pp-mainfont,
   size: 11pt,
   ligatures: true,
   kerning: true,
@@ -111,30 +111,17 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 10pt)
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
+// %% CONTENT %%
 
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 // Title page — cinematic, right-aligned
 #page(header: none, footer: none)[
   #align(right + horizon)[
-    #text(size: 32pt, weight: "bold")[$title$]
-    $if(author)$
+    #text(size: 32pt, weight: "bold")[#pp-title]
+    #if pp-author != none [
     #v(16pt)
-    #text(size: 14pt)[$author$]
-    $endif$
+    #text(size: 14pt)[#pp-author]
+    ]
   ]
 ]
-$endif$
-
-$body$
-
-$if(bibliography)$
-#pagebreak()
-#heading(level: 2, numbering: none)[Bibliography]
-$bibliography$
-$endif$
+]

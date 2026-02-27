@@ -192,6 +192,19 @@ async function verifyUserTierById(userId) {
 }
 
 // ================================================================
+// Helpers
+// ================================================================
+
+/**
+ * Escape a JS string for safe embedding in a Typst string literal.
+ * Returns a quoted Typst string: "some text"
+ */
+function typstString(s) {
+  if (s == null) return 'none';
+  return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+}
+
+// ================================================================
 // Core processor — called by BullMQ Worker for each job
 // ================================================================
 
@@ -363,246 +376,321 @@ async function _processCompileJobInner(job, templateRegistry) {
   if (sansRes?.warning) warnings.push(sansRes.warning);
   if (monoRes?.warning) warnings.push(monoRes.warning);
 
-  // ── Typst compilation ──
-  let typstTpl = await fsp.readFile(typstTemplatePath, 'utf8');
-    await fsp.writeFile(path.join(tmpBase, 'template.typ'), typstTpl, 'utf8');
+  // ══════════════════════════════════════════════════════════════
+  // SPLIT PIPELINE: Pandoc body-only → JS assembly → Typst compile
+  // ══════════════════════════════════════════════════════════════
 
-    // Assemble Typst preamble (header-includes)
-    // Pandoc emits #horizontalrule for markdown '---' thematic breaks;
-    // the default Pandoc template defines it, but custom templates don't.
-    const typstPreamble = [
-      '#let horizontalrule = line(start: (25%,0%), end: (75%,0%))',
-      geo,
-    ];
-    let buildMeta;
-    try {
-      typstPreamble.push(bookEngineering.generateTypstEngineeringPreamble(templateType));
-
-      buildMeta = provenance.generateBuildMetadata({
-        manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
-        outputFormat: wantPdfX ? 'pdfx1a' : 'pdf',
-        headingVariant, needsWatermark, customFonts: customFonts || null,
-      });
-      // Provenance as Typst comment
-      typstPreamble.push(`// Build: ${buildMeta.buildId} | ${buildMeta.timestamp}`);
-
-      const vp = headingVariantsTypst.getTypstVariantPreamble(tplKey, headingVariant);
-      if (vp) typstPreamble.push(vp);
-
-      const dc = dropCapTypst.getDropCapPreamble(tplKey);
-      if (dc) typstPreamble.push(dc);
-
-      if (needsWatermark) typstPreamble.push(watermarkTypst.generateTypstWatermarkPreamble());
-    } catch (err) {
-      let debugFiles = [];
-      try { debugFiles = fs.readdirSync(tmpBase); } catch {}
+  // Pre-flight: disk space check
+  try {
+    const tmpStats = await fsp.statfs(tmpBase);
+    const freeBytes = tmpStats.bavail * tmpStats.bsize;
+    const freeMB = Math.round(freeBytes / (1024 * 1024));
+    if (freeBytes < 50 * 1024 * 1024) {
+      log.warn({ jobId: job.id, freeMB }, 'Insufficient disk space for compilation');
       try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
       return {
-        success: false, error: 'preamble_error', message: String(err), warnings,
-        debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: debugFiles, captureError: null },
+        success: false, error: 'disk_full',
+        message: `Insufficient disk space (${freeMB} MB free).`,
+        warnings,
         debugMeta: buildDebugMeta(job, { engine: 'typst' }),
       };
     }
+  } catch {}
 
-    await fsp.writeFile(path.join(tmpBase, 'header-includes.typ'), typstPreamble.join('\n\n'), 'utf8');
+  // ── STEP A: Pandoc converts Markdown → Typst body ──────────
+  const bodyPath = path.join(tmpBase, 'body.typ');
+  const hardBreaks = tplKey === 'verse' ? '+hard_line_breaks' : '';
+  const disableMath = !textNormalizer.MATH_TEMPLATES.has(tplKey) ? '-tex_math_dollars' : '';
+  const fencedDivs = tplKey === 'cinema' ? '+fenced_divs' : '';
+  const fromFmt = safeMode
+    ? `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
+    : PANDOC_HAS_CITEPROC
+      ? `--from=markdown+citations${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
+      : `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`;
 
-    // Pre-flight: disk space check
-    try {
-      const tmpStats = await fsp.statfs(tmpBase);
-      const freeBytes = tmpStats.bavail * tmpStats.bsize;
-      const freeMB = Math.round(freeBytes / (1024 * 1024));
-      if (freeBytes < 50 * 1024 * 1024) {
-        log.warn({ jobId: job.id, freeMB }, 'Insufficient disk space for compilation');
-        try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-        return {
-          success: false, error: 'disk_full',
-          message: `Insufficient disk space (${freeMB} MB free).`,
-          warnings,
-          debugMeta: buildDebugMeta(job, { engine: 'typst' }),
-        };
-      }
-    } catch {}
+  const tplClass = headingVariants.TEMPLATE_CLASS[tplKey] || 'article';
+  const topLevelDiv = tplClass === 'book' ? 'chapter' : 'section';
 
-    // Pandoc format flags (same logic as LuaLaTeX path)
-    const hardBreaks = tplKey === 'verse' ? '+hard_line_breaks' : '';
-    const disableMath = !textNormalizer.MATH_TEMPLATES.has(tplKey) ? '-tex_math_dollars' : '';
-    const fencedDivs = tplKey === 'cinema' ? '+fenced_divs' : '';
-    const fromFmt = safeMode
-      ? `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
-      : PANDOC_HAS_CITEPROC
-        ? `--from=markdown+citations${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
-        : `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`;
+  const luaFilters = [];
+  const filtersDir = path.join(__dirname, 'filters');
+  if (tplKey === 'cinema') {
+    luaFilters.push('--lua-filter', path.join(filtersDir, 'fountain.lua'));
+  }
 
-    const tplClass = headingVariants.TEMPLATE_CLASS[tplKey] || 'article';
-    const topLevelDiv = tplClass === 'book' ? 'chapter' : 'section';
+  // Pandoc body-only: no --template, no --pdf-engine, no -H, no -V
+  const pandocArgs = [
+    mdPath, fromFmt, '-t', 'typst',
+    `--top-level-division=${topLevelDiv}`,
+    `--resource-path=${tmpBase}`,
+    ...luaFilters,
+    ...(safeMode ? [] : citeprocArgs(BIB_PATH)),
+    '-o', bodyPath,
+  ];
 
-    // Typst Pandoc args — NOTE: no Lua filters needed!
-    // heading-vmode.lua → not needed (Typst has no titlesec bug)
-    // drop-cap.lua → replaced by drop-cap-typst.js (injected via header-includes)
-    // table-safety.lua → not needed (Typst tables work in multi-column)
-    // fountain.lua → still applied via Pandoc Lua filter (works with any output format)
-    const luaFilters = [];
-    const filtersDir = path.join(__dirname, 'filters');
-    if (tplKey === 'cinema') {
-      luaFilters.push('--lua-filter', path.join(filtersDir, 'fountain.lua'));
-    }
-
-    // Extract author/date from job data for title page rendering
-    const authorMeta = job.data.author ? ['-M', `author=${latexSanitizer.sanitizeTitle(job.data.author, 200)}`] : [];
-    const dateMeta = job.data.date ? ['-M', `date=${latexSanitizer.sanitizeTitle(job.data.date, 100)}`] : [];
-
-    const typstArgs = [
-      mdPath, fromFmt, '--pdf-engine=typst',
-      `--top-level-division=${topLevelDiv}`,
-      `--resource-path=${tmpBase}`,
-      '-M', `title=${safeTitle}`,
-      ...authorMeta,
-      ...dateMeta,
-      `--template=${path.join(tmpBase, 'template.typ')}`,
-      '-H', path.join(tmpBase, 'header-includes.typ'),
-      '-V', `mainfont=${mainFont}`,
-      ...luaFilters,
-      '-o', pdfPath,
-      ...(safeMode ? [] : citeprocArgs(BIB_PATH)),
-    ];
-
-    const startTs = Date.now();
-    const result = await new Promise((resolve) => {
-      let proc;
-      try { proc = spawn('pandoc', typstArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV }); }
-      catch (e) { resolve({ ok: false, error: 'spawn_failed', message: String(e) }); return; }
-
-      let stderr = '';
-      let stderrBytes = 0;
-      proc.stderr.on('data', (d) => { if (stderrBytes < MAX_STDERR_BYTES) { stderr += d.toString(); stderrBytes += d.length; } });
-      proc.on('error', (e) => resolve({ ok: false, error: 'spawn_failed', message: String(e) }));
-
-      let timedOut = false;
-      const kill = setTimeout(() => { timedOut = true; try { proc.kill('SIGKILL'); } catch {} }, COMPILE_TIMEOUT_MS);
-
-      proc.on('close', (code) => {
-        clearTimeout(kill);
-        if (timedOut) { resolve({ ok: false, error: 'compile_timeout', stderr }); return; }
-        if (code === 0 && fs.existsSync(pdfPath)) {
-          resolve({ ok: true, stderr, elapsed: Date.now() - startTs });
-        } else {
-          resolve({ ok: false, error: 'compile_failed', stderr });
-        }
-      });
+  const pandocResult = await new Promise((resolve) => {
+    let proc;
+    try { proc = spawn('pandoc', pandocArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV }); }
+    catch (e) { resolve({ ok: false, error: 'spawn_failed', message: String(e) }); return; }
+    let stderr = '';
+    let stderrBytes = 0;
+    proc.stderr.on('data', (d) => { if (stderrBytes < MAX_STDERR_BYTES) { stderr += d.toString(); stderrBytes += d.length; } });
+    proc.on('error', (e) => resolve({ ok: false, error: 'spawn_failed', message: String(e) }));
+    let timedOut = false;
+    const kill = setTimeout(() => { timedOut = true; try { proc.kill('SIGKILL'); } catch {} }, COMPILE_TIMEOUT_MS);
+    proc.on('close', (code) => {
+      clearTimeout(kill);
+      if (timedOut) { resolve({ ok: false, error: 'pandoc_timeout', stderr }); return; }
+      if (code === 0) { resolve({ ok: true, stderr }); }
+      else { resolve({ ok: false, error: 'pandoc_failed', stderr }); }
     });
+  });
 
-    if (!result.ok) {
-      // Debug capture for Typst failures
-      let debugFiles = [];
-      let debugCaptureError = null;
-      try { debugFiles = fs.readdirSync(tmpBase); } catch {}
+  if (!pandocResult.ok) {
+    let debugFiles = [];
+    try { debugFiles = fs.readdirSync(tmpBase); } catch {}
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+    return {
+      success: false, error: pandocResult.error || 'pandoc_failed',
+      message: sanitizeStderr((pandocResult.stderr || '').split('\n').slice(-10).join('\n')) || 'Pandoc markdown-to-typst conversion failed.',
+      warnings,
+      debug: { filesInDir: debugFiles },
+      debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+    };
+  }
 
-      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+  // ── STEP B: Read template, split at %% CONTENT %% ──────────
+  let tplContent;
+  try {
+    tplContent = await fsp.readFile(typstTemplatePath, 'utf8');
+  } catch (err) {
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+    return {
+      success: false, error: 'template_read_error', message: String(err), warnings,
+      debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+    };
+  }
 
-      let structuredErrors = [];
-      let fallbackMessage = 'Compilation failed.';
-      let detail = null;
-      const stderr = result.stderr || '';
-      try {
-        const translated = typstErrorTranslator.translateCompileFailure(
-          stderr, { safeMode, errorCode: result.error }
-        );
-        structuredErrors = translated.errors;
-        fallbackMessage = translated.fallbackMessage;
-      } catch (translErr) {
-        log.error({ jobId: job.id, err: translErr.message }, 'typstErrorTranslator threw');
-        fallbackMessage = stderr.split('\n').filter(l => l.trim()).slice(-5).join(' ') || 'Compilation failed.';
+  const CONTENT_MARKER = '// %% CONTENT %%';
+  const markerIdx = tplContent.indexOf(CONTENT_MARKER);
+  if (markerIdx < 0) {
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+    return {
+      success: false, error: 'template_marker_missing',
+      message: `Template "${tplKey}" missing %% CONTENT %% marker.`, warnings,
+      debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+    };
+  }
+  const tplStyle = tplContent.slice(0, markerIdx).trim();
+  const tplContentSection = tplContent.slice(markerIdx + CONTENT_MARKER.length).trim();
+
+  // ── STEP C: Assemble main.typ ──────────────────────────────
+  let buildMeta;
+  const mainParts = [];
+  try {
+    // 1. Preamble: Pandoc compatibility + pipeline variables
+    mainParts.push(
+      '// PagePerfect compiled document — assembled by compile-worker.js',
+      '// Pandoc emits #horizontalrule for Markdown "---" thematic breaks',
+      '#let horizontalrule = line(start: (25%,0%), end: (75%,0%))',
+      `#let pp-title = ${typstString(safeTitle)}`,
+      `#let pp-author = ${job.data.author ? typstString(latexSanitizer.sanitizeTitle(job.data.author, 200)) : 'none'}`,
+      `#let pp-date = ${job.data.date ? typstString(latexSanitizer.sanitizeTitle(job.data.date, 100)) : 'none'}`,
+      `#let pp-mainfont = ${typstString(mainFont)}`,
+    );
+
+    // 2. Template style rules (before %% CONTENT %%)
+    mainParts.push(tplStyle);
+
+    // 3. Grid override (overrides template's default margins)
+    mainParts.push(geo);
+
+    // 4. Engineering policies
+    mainParts.push(bookEngineering.generateTypstEngineeringPreamble(templateType));
+
+    // 5. Heading variant override (if not 'classic')
+    const vp = headingVariantsTypst.getTypstVariantPreamble(tplKey, headingVariant);
+    if (vp) mainParts.push(vp);
+
+    // 6. Watermark (free tier only)
+    if (needsWatermark) mainParts.push(watermarkTypst.generateTypstWatermarkPreamble());
+
+    // 7. Build provenance
+    buildMeta = provenance.generateBuildMetadata({
+      manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
+      outputFormat: wantPdfX ? 'pdfx1a' : 'pdf',
+      headingVariant, needsWatermark, customFonts: customFonts || null,
+    });
+    mainParts.push(`// Build: ${buildMeta.buildId} | ${buildMeta.timestamp}`);
+
+    // 8. Template content (title page — after %% CONTENT %%)
+    if (tplContentSection) mainParts.push(tplContentSection);
+
+    // 9. Body (from Pandoc conversion)
+    const bodyContent = await fsp.readFile(bodyPath, 'utf8');
+    mainParts.push(bodyContent);
+  } catch (err) {
+    let debugFiles = [];
+    try { debugFiles = fs.readdirSync(tmpBase); } catch {}
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+    return {
+      success: false, error: 'assembly_error', message: String(err), warnings,
+      debug: { filesInDir: debugFiles, captureError: null },
+      debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+    };
+  }
+
+  const mainTyp = mainParts.filter(Boolean).join('\n\n');
+  const mainPath = path.join(tmpBase, 'main.typ');
+  await fsp.writeFile(mainPath, mainTyp, 'utf8');
+
+  // ── STEP D: Typst compile ─────────────────────────────────
+  const typstArgs = ['compile'];
+
+  // Custom font path for uploaded fonts
+  const customFontDir = job.data.customFontDir;
+  if (customFontDir && fs.existsSync(customFontDir)) {
+    typstArgs.push('--font-path', customFontDir);
+  }
+
+  typstArgs.push('main.typ', 'output.pdf');
+
+  const startTs = Date.now();
+  const result = await new Promise((resolve) => {
+    let proc;
+    try { proc = spawn('typst', typstArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV }); }
+    catch (e) { resolve({ ok: false, error: 'spawn_failed', message: String(e) }); return; }
+
+    let stderr = '';
+    let stderrBytes = 0;
+    proc.stderr.on('data', (d) => { if (stderrBytes < MAX_STDERR_BYTES) { stderr += d.toString(); stderrBytes += d.length; } });
+    proc.on('error', (e) => resolve({ ok: false, error: 'spawn_failed', message: String(e) }));
+
+    let timedOut = false;
+    const kill = setTimeout(() => { timedOut = true; try { proc.kill('SIGKILL'); } catch {} }, COMPILE_TIMEOUT_MS);
+
+    proc.on('close', (code) => {
+      clearTimeout(kill);
+      if (timedOut) { resolve({ ok: false, error: 'compile_timeout', stderr }); return; }
+      if (code === 0 && fs.existsSync(pdfPath)) {
+        resolve({ ok: true, stderr, elapsed: Date.now() - startTs });
+      } else {
+        resolve({ ok: false, error: 'compile_failed', stderr });
       }
-      try { detail = sanitizeStderr(stderr.split('\n').slice(-80).join('\n')); } catch {}
+    });
+  });
 
-      return {
-        success: false, error: result.error || 'compile_failed',
-        message: fallbackMessage, warnings,
-        errors: structuredErrors,
-        detail,
-        debug: { filesInDir: debugFiles, captureError: debugCaptureError },
-        debugMeta: buildDebugMeta(job, { engine: 'typst' }),
-      };
-    }
+  if (!result.ok) {
+    // Debug capture for Typst failures
+    let debugFiles = [];
+    let debugCaptureError = null;
+    try { debugFiles = fs.readdirSync(tmpBase); } catch {}
 
-    // Success! PDF/X-1a conversion if needed (same Ghostscript pipeline)
-    let finalPdfPath = pdfPath;
-    let finalFormat = 'PDF';
-    if (wantPdfX) {
-      const pdfxPath = path.join(tmpBase, 'output-pdfx1a.pdf');
-      const conv = await publishing.convertToPdfX1a(pdfPath, pdfxPath, safeTitle);
-      if (!conv.success) {
-        try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-        return {
-          success: false, error: 'pdfx_conversion_failed', message: conv.error, warnings,
-          debugMeta: buildDebugMeta(job, { engine: 'typst' }),
-        };
-      }
-      finalPdfPath = pdfxPath;
-      finalFormat = 'PDF/X-1a:2001';
-    }
+    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
 
-    const compileLog = bookEngineering.analyzeTypstCompileLog(result.stderr);
-    const translatedErrors = typstErrorTranslator.translateStderr(result.stderr);
-    const layoutReport = layoutSanityChecker.analyzeTypstLayout(result.stderr, { template: tplKey });
-
-    let typographyReport = null;
+    let structuredErrors = [];
+    let fallbackMessage = 'Compilation failed.';
+    let detail = null;
+    const stderr = result.stderr || '';
     try {
-      const preAnalysis = typographyAssurance.analyzeTypography({
-        template: tplKey, pageSize, marginPreset, extensions,
-      });
-      typographyReport = typographyAssurance.generateTypographicReport(preAnalysis, compileLog);
-    } catch (err) {
-      log.warn({ err: err.message }, 'Typography report generation failed');
+      const translated = typstErrorTranslator.translateCompileFailure(
+        stderr, { safeMode, errorCode: result.error }
+      );
+      structuredErrors = translated.errors;
+      fallbackMessage = translated.fallbackMessage;
+    } catch (translErr) {
+      log.error({ jobId: job.id, err: translErr.message }, 'typstErrorTranslator threw');
+      fallbackMessage = stderr.split('\n').filter(l => l.trim()).slice(-5).join(' ') || 'Compilation failed.';
     }
-
-    const contentHash = require('crypto').createHash('sha256').update(manuscriptText).digest('hex').substring(0, 16);
-
-    log.info({ jobId: job.id, engine: 'typst', elapsed: result.elapsed, template: tplKey }, 'Typst compile SUCCESS');
-
-    // Create export snapshot for provenance audit trail (same as LuaLaTeX path)
-    let exportSnapshot = null;
-    if (buildMeta) {
-      try {
-        exportSnapshot = provenance.createExportSnapshot(buildMeta, {
-          success: true,
-          compileTimeMs: result.elapsed,
-          preflightPassed: null,
-          lintIssueCount: compileLog.overfullBoxes.length + compileLog.underfullBoxes.length,
-        });
-      } catch (err) {
-        log.warn({ err: err.message }, 'Typst export snapshot creation failed');
-      }
-    }
+    try { detail = sanitizeStderr(stderr.split('\n').slice(-80).join('\n')); } catch {}
 
     return {
-      success: true,
-      pdfPath: finalPdfPath,
-      tmpBase,
-      elapsed: result.elapsed,
-      engine: 'typst',
-      buildId: buildMeta?.buildId || `typst-${Date.now()}`,
-      contentHash,
-      pageSize, marginPreset,
-      outputFormat: finalFormat,
-      needsWatermark,
-      fontFallback: fontRes.isFallback ? `${fontRes.original} -> ${fontRes.resolved}` : null,
-      compileLog: { overfull: compileLog.overfullBoxes.length, underfull: compileLog.underfullBoxes.length },
-      translatedErrors: translatedErrors.summary.total > 0 ? translatedErrors : null,
-      typographyReport: typographyReport ? {
-        score: typographyReport.score,
-        grade: typographyReport.grade,
-        compileStats: typographyReport.compileStats || null,
-      } : null,
-      layoutReport: layoutReport.issues.length > 0 ? { grade: layoutReport.grade, issues: layoutReport.issues.length, summary: layoutReport.summary } : null,
-      warnings,
-      exportSnapshot,
+      success: false, error: result.error || 'compile_failed',
+      message: fallbackMessage, warnings,
+      errors: structuredErrors,
+      detail,
+      debug: { filesInDir: debugFiles, captureError: debugCaptureError },
       debugMeta: buildDebugMeta(job, { engine: 'typst' }),
-      userId, userTier,
-      isDownload,
-      template: tplKey,
-      title: safeTitle,
     };
+  }
+
+  // Success! PDF/X-1a conversion if needed (same Ghostscript pipeline)
+  let finalPdfPath = pdfPath;
+  let finalFormat = 'PDF';
+  if (wantPdfX) {
+    const pdfxPath = path.join(tmpBase, 'output-pdfx1a.pdf');
+    const conv = await publishing.convertToPdfX1a(pdfPath, pdfxPath, safeTitle);
+    if (!conv.success) {
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+      return {
+        success: false, error: 'pdfx_conversion_failed', message: conv.error, warnings,
+        debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+      };
+    }
+    finalPdfPath = pdfxPath;
+    finalFormat = 'PDF/X-1a:2001';
+  }
+
+  const compileLog = bookEngineering.analyzeTypstCompileLog(result.stderr);
+  const translatedErrors = typstErrorTranslator.translateStderr(result.stderr);
+  const layoutReport = layoutSanityChecker.analyzeTypstLayout(result.stderr, { template: tplKey });
+
+  let typographyReport = null;
+  try {
+    const preAnalysis = typographyAssurance.analyzeTypography({
+      template: tplKey, pageSize, marginPreset, extensions,
+    });
+    typographyReport = typographyAssurance.generateTypographicReport(preAnalysis, compileLog);
+  } catch (err) {
+    log.warn({ err: err.message }, 'Typography report generation failed');
+  }
+
+  const contentHash = require('crypto').createHash('sha256').update(manuscriptText).digest('hex').substring(0, 16);
+
+  log.info({ jobId: job.id, engine: 'typst', elapsed: result.elapsed, template: tplKey }, 'Typst compile SUCCESS');
+
+  // Create export snapshot for provenance audit trail
+  let exportSnapshot = null;
+  if (buildMeta) {
+    try {
+      exportSnapshot = provenance.createExportSnapshot(buildMeta, {
+        success: true,
+        compileTimeMs: result.elapsed,
+        preflightPassed: null,
+        lintIssueCount: compileLog.overfullBoxes.length + compileLog.underfullBoxes.length,
+      });
+    } catch (err) {
+      log.warn({ err: err.message }, 'Typst export snapshot creation failed');
+    }
+  }
+
+  return {
+    success: true,
+    pdfPath: finalPdfPath,
+    tmpBase,
+    elapsed: result.elapsed,
+    engine: 'typst',
+    buildId: buildMeta?.buildId || `typst-${Date.now()}`,
+    contentHash,
+    pageSize, marginPreset,
+    outputFormat: finalFormat,
+    needsWatermark,
+    fontFallback: fontRes.isFallback ? `${fontRes.original} -> ${fontRes.resolved}` : null,
+    compileLog: { overfull: compileLog.overfullBoxes.length, underfull: compileLog.underfullBoxes.length },
+    translatedErrors: translatedErrors.summary.total > 0 ? translatedErrors : null,
+    typographyReport: typographyReport ? {
+      score: typographyReport.score,
+      grade: typographyReport.grade,
+      compileStats: typographyReport.compileStats || null,
+    } : null,
+    layoutReport: layoutReport.issues.length > 0 ? { grade: layoutReport.grade, issues: layoutReport.issues.length, summary: layoutReport.summary } : null,
+    warnings,
+    exportSnapshot,
+    debugMeta: buildDebugMeta(job, { engine: 'typst' }),
+    userId, userTier,
+    isDownload,
+    template: tplKey,
+    title: safeTitle,
+  };
 
 }
 

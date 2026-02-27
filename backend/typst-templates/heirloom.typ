@@ -3,7 +3,7 @@
 // DejaVu Serif headers + Fira Sans body, asymmetric recipe layout
 // Target: Chefs, food bloggers, family recipe collections
 //
-// This is a Pandoc template — variables like $title$, $body$ use Pandoc syntax.
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
 
 // ── COLORS ────────────────────────────────────────────────────
 #let recipetitle = rgb("8B4513")  // saddlebrown
@@ -19,7 +19,7 @@
     set text(size: 8pt, font: "Fira Sans")
     grid(
       columns: (1fr, 1fr),
-      align(left, text(fill: rulegrey)[$if(title)$$title$$endif$]),
+      align(left, text(fill: rulegrey)[#pp-title]),
       align(right)[#counter(page).display()],
     )
   },
@@ -29,7 +29,7 @@
 // ── TYPOGRAPHY — Kitchen-Robust ──────────────────────────────
 // Fira Sans for body (clean, readable at small sizes)
 #set text(
-  font: "$if(mainfont)$$mainfont$$else$Fira Sans$endif$",
+  font: pp-mainfont,
   size: 11pt,
   ligatures: true,
   kerning: true,
@@ -98,35 +98,22 @@
 // ── TABLES ────────────────────────────────────────────────────
 #show table: set text(size: 9pt)
 
-// ── Header includes (injected by compile pipeline) ───────────
-$for(header-includes)$
-$header-includes$
-$endfor$
+// %% CONTENT %%
 
-// ── DOCUMENT ──────────────────────────────────────────────────
-
-$if(title)$
+#if pp-title != none [
 #align(center)[
   #v(24pt)
-  #text(size: 28pt, weight: "bold", fill: recipetitle, font: "DejaVu Serif")[$title$]
+  #text(size: 28pt, weight: "bold", fill: recipetitle, font: "DejaVu Serif")[#pp-title]
   #v(4pt)
   #line(length: 2cm, stroke: 0.5pt + rulegrey)
-  $if(author)$
+  #if pp-author != none [
   #v(8pt)
-  #text(size: 12pt)[$author$]
-  $endif$
-  $if(date)$
+  #text(size: 12pt)[#pp-author]
+  ]
+  #if pp-date != none [
   #v(4pt)
-  #text(size: 10pt, fill: rulegrey)[$date$]
-  $endif$
+  #text(size: 10pt, fill: rulegrey)[#pp-date]
+  ]
 ]
 #v(16pt)
-$endif$
-
-$body$
-
-$if(bibliography)$
-#pagebreak()
-#heading(level: 1, numbering: none)[Sources]
-$bibliography$
-$endif$
+]

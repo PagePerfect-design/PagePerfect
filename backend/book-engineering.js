@@ -98,7 +98,7 @@ const ENGINEERING_POLICIES = {
     floatPlacement: 'htbp',
     footnoteRule: '1in',
     raggedBottom: false,
-    microtype: false,          // pdflatex compatibility
+    microtype: false,          // Typst handles microtypography natively
     csquotes: false,
   },
 };

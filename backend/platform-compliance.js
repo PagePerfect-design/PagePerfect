@@ -247,7 +247,7 @@ function validatePlatform(opts, gridSystem) {
     checks.push({
       name: 'Font embedding',
       status: 'pass',
-      detail: 'LuaLaTeX + fontspec — all fonts embedded automatically.',
+      detail: 'Typst — all fonts embedded automatically.',
     });
   }
 
