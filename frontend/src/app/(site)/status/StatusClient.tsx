@@ -34,7 +34,7 @@ type ReadinessChecks = {
   redis?: string
   pocketbase?: string
   pandoc?: string
-  lualatex?: string
+  typst?: string
   disk?: string
 }
 
@@ -261,7 +261,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
                 )}
               </div>
               <p className="mt-1 ml-5 font-body text-sm text-[#555555]">
-                {details.pdfEngine === 'lualatex' ? 'LuaLaTeX' : 'XeLaTeX'} fonts required by the{' '}
+                Typst fonts required by the{' '}
                 {details.templates?.length || 15} design templates.
               </p>
 

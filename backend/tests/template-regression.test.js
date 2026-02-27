@@ -127,7 +127,7 @@ function compileTemplate(templateKey, markdown, opts = {}) {
     mdPath,
     '-o', pdfPath,
     `--template=${templatePath}`,
-    '--pdf-engine=lualatex',
+    '--pdf-engine=typst',
     '-f', 'markdown-raw_tex-raw_attribute',
     '--resource-path', tmpDir,
   ];
@@ -320,7 +320,7 @@ Percent: 100% complete
   });
 });
 
-// ── Grid system tests (always run — no pandoc/lualatex needed) ──
+// ── Grid system tests (always run — no pandoc/typst needed) ──
 
 describe('Grid system integration', () => {
   const GridSystem = require('../grid-system');

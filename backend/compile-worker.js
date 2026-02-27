@@ -385,7 +385,7 @@ async function processCompileJob(job, templateRegistry) {
       }
     } catch {}
 
-    // Pandoc format flags (same logic as LuaLaTeX path)
+    // Pandoc format flags
     const hardBreaks = tplKey === 'verse' ? '+hard_line_breaks' : '';
     const disableMath = !textNormalizer.MATH_TEMPLATES.has(tplKey) ? '-tex_math_dollars' : '';
     const fencedDivs = tplKey === 'cinema' ? '+fenced_divs' : '';
@@ -522,7 +522,7 @@ async function processCompileJob(job, templateRegistry) {
 
     log.info({ jobId: job.id, engine: 'typst', elapsed: result.elapsed, template: tplKey }, 'Typst compile SUCCESS');
 
-    // Create export snapshot for provenance audit trail (same as LuaLaTeX path)
+    // Create export snapshot for provenance audit trail
     let exportSnapshot = null;
     if (buildMeta) {
       try {

@@ -480,7 +480,7 @@ if (redis) {
 
 // ── Locale runtime assertion ──
 // Verify the configured locale exists in the OS. A missing locale will cause
-// LuaLaTeX's luaotfload to fail with "Unable to read environment locale".
+// fontconfig to fail with locale errors that break font resolution.
 // This catches base image changes that could silently reintroduce the bug.
 try {
   const localeList = execSync('locale -a 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
@@ -491,7 +491,7 @@ try {
   if (localeFound) {
     log.info({ module: 'startup', locale: process.env.LANG || 'C.UTF-8' }, 'Locale verified');
   } else {
-    log.fatal({ module: 'startup', locale: process.env.LANG || 'C.UTF-8', available: available.filter(l => l).slice(0, 20) }, 'CONFIGURED LOCALE NOT FOUND — LuaLaTeX will fail. Set LANG to an available locale (e.g. C.UTF-8).');
+    log.fatal({ module: 'startup', locale: process.env.LANG || 'C.UTF-8', available: available.filter(l => l).slice(0, 20) }, 'CONFIGURED LOCALE NOT FOUND — fontconfig may fail. Set LANG to an available locale (e.g. C.UTF-8).');
   }
 } catch (err) {
   log.warn({ module: 'startup', err: err.message }, 'Locale check skipped (locale command not available)');

@@ -85,7 +85,7 @@ export default function TermsPage() {
               <>
                 <strong>01. Service Description.</strong> PagePerfect is a browser-based document
                 typesetting service that converts user-provided Markdown, plain text, or .docx
-                manuscripts into professionally typeset PDF documents using the LuaLaTeX engine.
+                manuscripts into professionally typeset PDF documents using the Typst engine.
                 eazyaccess ltd acts solely as a technology provider and does not function as a
                 publisher, distributor, or rights holder. All intellectual property rights in
                 user-submitted content remain exclusively with the user. eazyaccess ltd claims
@@ -111,7 +111,7 @@ export default function TermsPage() {
                 Users may freely reproduce, distribute, sell, or sublicense their generated PDFs
                 without restriction, royalty, or attribution to eazyaccess ltd. The Drafter (free)
                 tier applies a visible watermark to output files; Publisher and Studio tiers produce
-                unwatermarked output. Template designs and LaTeX source code remain the intellectual
+                unwatermarked output. Template designs and source code remain the intellectual
                 property of eazyaccess ltd but are licensed to users implicitly through the
                 generated PDF output.
               </>
@@ -201,7 +201,7 @@ export default function TermsPage() {
                 eazyaccess ltd&rsquo;s total liability for any claim arising from use of the service
                 shall not exceed the total fees paid by the user in the 12 months preceding the
                 claim. eazyaccess ltd is not liable for: compilation errors caused by user-provided
-                LaTeX commands, font rendering differences across viewing software, or
+                formatting commands, font rendering differences across viewing software, or
                 print-on-demand production issues outside our compilation pipeline. eazyaccess ltd
                 shall not be liable for indirect, incidental, consequential, or punitive damages.
               </>
