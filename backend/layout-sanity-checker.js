@@ -2,16 +2,14 @@
  * layout-sanity-checker.js — Post-compilation layout quality analysis
  *
  * Detects typography issues that survive compilation:
- *   - Widows (last line of paragraph alone at top of page)
- *   - Orphans (first line of paragraph alone at bottom of page)
- *   - Short final lines (runts)
  *   - Overfull content (text extending past margins)
- *   - Underfull pages (pages with excessive whitespace)
+ *   - Font/glyph warnings
+ *   - Image errors
+ *   - Reference warnings
  *
- * Works with BOTH Typst and LuaLaTeX compilation output.
+ * Works with Typst compilation output (Typst is the sole PDF engine).
  *
  * Typst approach: Parse Typst's stderr warnings for layout issues.
- * LuaLaTeX approach: Parse .log file for badness/overfull/underfull messages.
  *
  * For PDF-level analysis (future): Use a PDF parser to detect very short
  * last-lines-on-page via text extraction + bounding box analysis.
@@ -124,8 +122,6 @@ function analyzeTypstLayout(stderr, options = {}) {
 
   return { issues, grade, summary };
 }
-
-// LuaLaTeX layout analysis removed — Typst is the sole PDF engine.
 
 /**
  * Extract line number from a Typst error/warning line.

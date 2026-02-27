@@ -565,6 +565,7 @@ async function processCompileJob(job, templateRegistry) {
       template: tplKey,
       title: safeTitle,
     };
+
 }
 
 // LuaLaTeX engine removed — Typst is the sole PDF engine.
