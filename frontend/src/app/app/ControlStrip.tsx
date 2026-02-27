@@ -44,10 +44,10 @@ function Section({
   accentColor?: string
 }) {
   return (
-    <div className="border-b border-[#111111]/[0.06]">
+    <div className="border-b border-[#e5e5e0]">
       <button
         onClick={onToggle}
-        className="flex w-full items-baseline gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-[#111111]/[0.02]"
+        className="flex w-full items-baseline gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-[#f5f5f0]"
       >
         <span className="font-mono text-[10px] font-bold text-[#111111]/50">{number}</span>
         <div className="flex-1 min-w-0">
@@ -191,7 +191,7 @@ export default function ControlStrip({
     : TEMPLATE_KEYS.filter(k => TEMPLATE_INFO[k].genre === genreFilter)
 
   return (
-    <div className="flex h-full w-[280px] shrink-0 flex-col overflow-y-auto border-r border-[#111111]/[0.08] bg-[#FDFCF8]">
+    <div className="flex h-full w-[280px] shrink-0 flex-col overflow-y-auto border-r border-[#e5e5e0] bg-[#FDFCF8]">
       {/* ── 01 MANUSCRIPT ─────────────────────────────────── */}
       <Section
         number="01"
@@ -202,14 +202,14 @@ export default function ControlStrip({
       >
         <div className="space-y-3">
           {/* Editor mode toggle */}
-          <div className="flex gap-1 border border-[#111111]/[0.06] p-0.5">
+          <div className="flex gap-1 border border-[#e5e5e0] p-0.5">
             {(['richtext', 'markdown'] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setEditorMode(mode)}
                 className={`flex-1 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-all duration-150 ${
                   editorMode === mode
-                    ? 'bg-[#111111]/[0.06] text-[#111111]/70'
+                    ? 'bg-[#f5f5f0] text-[#111111]/70'
                     : 'text-[#111111]/50 hover:text-[#111111]/70'
                 }`}
               >
@@ -224,7 +224,7 @@ export default function ControlStrip({
                 ref={textareaRef}
                 value={manuscript}
                 onChange={(e) => onManuscriptChange(e.target.value)}
-                className="h-48 w-full resize-y border border-[#111111]/[0.06] bg-white p-3 font-mono text-[11px] leading-[1.8] text-[#111111]/70 caret-[#FF3333] focus:border-[#FF3333]/30 focus:outline-none"
+                className="h-48 w-full resize-y border border-[#e5e5e0] bg-white p-3 font-mono text-[11px] leading-[1.8] text-[#111111]/70 caret-[#FF3333] focus:border-[#FF3333]/30 focus:outline-none"
                 placeholder="# Chapter One&#10;&#10;Write here..."
               />
               <ImageUpload
@@ -234,7 +234,7 @@ export default function ControlStrip({
               />
             </>
           ) : (
-            <div className="h-64 overflow-hidden border border-[#111111]/[0.06]">
+            <div className="h-64 overflow-hidden border border-[#e5e5e0]">
               <RichTextEditor
                 markdown={manuscript}
                 onChange={onManuscriptChange}
@@ -261,7 +261,7 @@ export default function ControlStrip({
               onClick={() => setGenreFilter(g)}
               className={`px-2 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-all duration-150 ${
                 genreFilter === g
-                  ? 'bg-[#111111]/[0.06] text-[#111111]/70'
+                  ? 'bg-[#f5f5f0] text-[#111111]/70'
                   : 'text-[#111111]/50 hover:text-[#111111]/70'
               }`}
             >
@@ -282,7 +282,7 @@ export default function ControlStrip({
                 className={`border p-2.5 text-left transition-all duration-150 ${
                   isActive
                     ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                    : 'border-[#111111]/[0.06] hover:border-[#111111]/20'
+                    : 'border-[#e5e5e0] hover:border-[#111111]/20'
                 }`}
               >
                 {/* Type specimen */}
@@ -301,7 +301,7 @@ export default function ControlStrip({
         </div>
 
         {/* Heading variant */}
-        <div className="mt-3 flex items-center justify-between border-t border-[#111111]/[0.06] pt-3">
+        <div className="mt-3 flex items-center justify-between border-t border-[#e5e5e0] pt-3">
           <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Headings</span>
           <div className="flex gap-1">
             {(['classic', 'modern', 'bold'] as HeadingVariant[]).map((v) => (
@@ -311,7 +311,7 @@ export default function ControlStrip({
                 className={`px-2.5 py-1 font-mono text-[9px] transition-all duration-150 ${
                   headingVariant === v
                     ? 'bg-[#111111] text-white'
-                    : 'text-[#111111]/50 hover:bg-[#111111]/[0.04] hover:text-[#111111]/70'
+                    : 'text-[#111111]/50 hover:bg-[#f5f5f0] hover:text-[#111111]/70'
                 }`}
               >
                 {HEADING_VARIANT_INFO[v].label}
@@ -342,7 +342,7 @@ export default function ControlStrip({
                 className={`border py-2 text-center transition-all duration-150 ${
                   isActive
                     ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                    : 'border-[#111111]/[0.06] hover:border-[#111111]/20'
+                    : 'border-[#e5e5e0] hover:border-[#111111]/20'
                 }`}
               >
                 <span className={`block text-[10px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
@@ -371,7 +371,7 @@ export default function ControlStrip({
                   className={`relative border py-2 text-center transition-all duration-150 ${
                     isActive
                       ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                      : 'border-[#111111]/[0.06] hover:border-[#111111]/20'
+                      : 'border-[#e5e5e0] hover:border-[#111111]/20'
                   } ${locked ? 'opacity-60' : ''}`}
                 >
                   <span className={`block text-[10px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
@@ -406,7 +406,7 @@ export default function ControlStrip({
                   className={`relative border py-2 text-center transition-all duration-150 ${
                     isActive
                       ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                      : 'border-[#111111]/[0.06] hover:border-[#111111]/20'
+                      : 'border-[#e5e5e0] hover:border-[#111111]/20'
                   } ${locked ? 'opacity-60' : ''}`}
                 >
                   <span className={`block text-[10px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
@@ -432,7 +432,7 @@ export default function ControlStrip({
                 className={`border px-2.5 py-1.5 transition-all duration-150 ${
                   isActive
                     ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                    : 'border-[#111111]/[0.06] hover:border-[#111111]/20'
+                    : 'border-[#e5e5e0] hover:border-[#111111]/20'
                 }`}
                 title={info.desc}
               >
@@ -455,14 +455,14 @@ export default function ControlStrip({
       >
         {/* Compile mode */}
         <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Compile Mode</p>
-        <div className="flex border border-[#111111]/[0.06] p-0.5">
+        <div className="flex border border-[#e5e5e0] p-0.5">
           {(['fast', 'full'] as CompileMode[]).map((mode) => (
             <button
               key={mode}
               onClick={() => onCompileModeChange(mode)}
               className={`flex-1 py-1.5 text-center font-mono text-[10px] transition-all duration-150 ${
                 compileMode === mode
-                  ? 'bg-[#111111]/[0.06] text-[#111111]/70'
+                  ? 'bg-[#f5f5f0] text-[#111111]/70'
                   : 'text-[#111111]/50 hover:text-[#111111]/70'
               }`}
             >
@@ -488,21 +488,21 @@ export default function ControlStrip({
         </label>
 
         {/* Custom font */}
-        <div className="mt-4 border-t border-[#111111]/[0.06] pt-3">
+        <div className="mt-4 border-t border-[#e5e5e0] pt-3">
           <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Custom Font</p>
           {!hasTier(userTier, 'studio') ? (
-            <a href="/pricing" className="flex items-center justify-center gap-2 border border-dashed border-[#111111]/[0.08] py-2 font-mono text-[10px] text-[#111111]/50 transition-all hover:border-[#111111]/20 hover:text-[#111111]/80">
+            <a href="/pricing" className="flex items-center justify-center gap-2 border border-dashed border-[#e5e5e0] py-2 font-mono text-[10px] text-[#111111]/50 transition-all hover:border-[#111111]/20 hover:text-[#111111]/80">
               <Lock className="h-3 w-3" />Studio — <span className="underline">Upgrade</span>
             </a>
           ) : customFont ? (
-            <div className="flex items-center gap-2 bg-[#111111]/[0.03] px-3 py-2">
+            <div className="flex items-center gap-2 bg-[#f5f5f0] px-3 py-2">
               <span className="flex-1 truncate font-mono text-[10px] text-[#111111]/50">{customFont.originalName}</span>
               <button onClick={onFontRemove} className="text-[#111111]/50 hover:text-red-500/60">
                 <X className="h-3 w-3" />
               </button>
             </div>
           ) : (
-            <label className={`flex cursor-pointer items-center justify-center gap-2 border border-dashed border-[#111111]/[0.08] py-2 font-mono text-[10px] transition-all ${
+            <label className={`flex cursor-pointer items-center justify-center gap-2 border border-dashed border-[#e5e5e0] py-2 font-mono text-[10px] transition-all ${
               fontUploading ? 'text-[#111111]/50' : 'text-[#111111]/50 hover:border-[#111111]/20 hover:text-[#111111]/70'
             }`}>
               {fontUploading ? (
@@ -727,10 +727,10 @@ function ExportSection({
   }
 
   return (
-    <div className="border-b border-[#111111]/[0.06]">
+    <div className="border-b border-[#e5e5e0]">
       <button
         onClick={onToggle}
-        className="flex w-full items-baseline gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-[#111111]/[0.02]"
+        className="flex w-full items-baseline gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-[#f5f5f0]"
       >
         <span className="font-mono text-[10px] font-bold text-[#111111]/50">{number}</span>
         <div className="flex-1 min-w-0">
@@ -753,7 +753,7 @@ function ExportSection({
               <button
                 onClick={() => { setPlatform('kdp'); lastPreflightRef.current = ''; runPreflight() }}
                 className={`flex-1 border py-2 font-mono text-[10px] transition-all duration-150 ${
-                  platform === 'kdp' ? 'border-[#111111] bg-[#111111] text-white' : 'border-[#111111]/[0.08] text-[#111111]/60 hover:border-[#111111]/20'
+                  platform === 'kdp' ? 'border-[#111111] bg-[#111111] text-white' : 'border-[#e5e5e0] text-[#111111]/60 hover:border-[#111111]/20'
                 }`}
               >
                 Amazon KDP
@@ -761,7 +761,7 @@ function ExportSection({
               <button
                 onClick={() => { if (hasTier(userTier, 'publisher')) { setPlatform('ingram'); lastPreflightRef.current = ''; runPreflight() } }}
                 className={`flex-1 border py-2 font-mono text-[10px] transition-all duration-150 ${
-                  platform === 'ingram' ? 'border-[#FF3333] bg-[#FF3333] text-white' : 'border-[#111111]/[0.08] text-[#111111]/60 hover:border-[#111111]/20'
+                  platform === 'ingram' ? 'border-[#FF3333] bg-[#FF3333] text-white' : 'border-[#e5e5e0] text-[#111111]/60 hover:border-[#111111]/20'
                 } ${!hasTier(userTier, 'publisher') ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
                 IngramSpark {!hasTier(userTier, 'publisher') && <Lock className="ml-1 inline h-2 w-2" />}
@@ -778,7 +778,7 @@ function ExportSection({
                 className={`flex-1 border py-1.5 font-mono text-[10px] capitalize transition-all duration-150 ${
                   paper === p
                     ? (p === 'cream' ? 'border-[#c5b370] bg-[#f5f0d0] text-[#111111]' : 'border-[#111111] bg-[#111111] text-white')
-                    : 'border-[#111111]/[0.08] text-[#111111]/60 hover:border-[#111111]/20'
+                    : 'border-[#e5e5e0] text-[#111111]/60 hover:border-[#111111]/20'
                 }`}
               >
                 {p}
@@ -787,8 +787,8 @@ function ExportSection({
           </div>
 
           {/* Pre-flight results */}
-          <div className="border border-[#111111]/[0.06]">
-            <div className="flex items-center gap-2 border-b border-[#111111]/[0.06] bg-[#111111]/[0.02] px-3 py-1.5">
+          <div className="border border-[#e5e5e0]">
+            <div className="flex items-center gap-2 border-b border-[#e5e5e0] bg-[#f5f5f0] px-3 py-1.5">
               <div className={`h-1.5 w-1.5 rounded-full ${
                 checking ? 'bg-amber-500 animate-pulse'
                 : fetchError || hasFailure ? 'bg-red-500'
@@ -827,7 +827,7 @@ function ExportSection({
 
             {/* Stats */}
             {!checking && preflight && (
-              <div className="grid grid-cols-3 gap-px border-t border-[#111111]/[0.06] bg-[#111111]/[0.03]">
+              <div className="grid grid-cols-3 gap-px border-t border-[#e5e5e0] bg-[#f5f5f0]">
                 <div className="bg-[#FDFCF8] p-2 text-center">
                   <p className="font-mono text-[7px] uppercase tracking-wider text-[#111111]/50">Pages</p>
                   <p className="font-mono text-[11px] font-bold text-[#111111]">~{preflight.stats.estimatedPages}</p>
@@ -873,14 +873,14 @@ function ExportSection({
           )}
 
           {/* Format toggle */}
-          <div className="flex border border-[#111111]/[0.06] p-0.5">
+          <div className="flex border border-[#e5e5e0] p-0.5">
             {(['pdf', 'epub'] as ExportFormat[]).map((fmt) => (
               <button
                 key={fmt}
                 onClick={() => setExportFormat(fmt)}
                 className={`flex-1 py-1.5 text-center font-mono text-[10px] uppercase transition-all duration-150 ${
                   exportFormat === fmt
-                    ? 'bg-[#111111]/[0.06] text-[#111111]/70'
+                    ? 'bg-[#f5f5f0] text-[#111111]/70'
                     : 'text-[#111111]/50 hover:text-[#111111]/70'
                 }`}
               >
@@ -912,7 +912,7 @@ function ExportSection({
           ) : !hasTier(userTier, 'studio') ? (
             <a
               href="/pricing"
-              className="flex h-10 w-full items-center justify-center gap-2 border border-[#111111]/[0.08] font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50"
+              className="flex h-10 w-full items-center justify-center gap-2 border border-[#e5e5e0] font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50"
             >
               <Lock className="h-3 w-3" />EPUB — Studio Only
             </a>
@@ -931,12 +931,12 @@ function ExportSection({
             <button
               onClick={handleBatchExport}
               disabled={batchLoading || !pdfUrl}
-              className="flex h-8 w-full items-center justify-center gap-2 border border-[#111111]/[0.06] font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all hover:border-[#111111]/20 hover:text-[#111111]/70 disabled:opacity-30"
+              className="flex h-8 w-full items-center justify-center gap-2 border border-[#e5e5e0] font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all hover:border-[#111111]/20 hover:text-[#111111]/70 disabled:opacity-30"
             >
               {batchLoading ? <><Loader2 className="h-3 w-3 animate-spin" />Exporting...</> : <><Package className="h-3 w-3" />Batch — All Sizes</>}
             </button>
           ) : (
-            <a href="/pricing" className="flex h-8 w-full items-center justify-center gap-2 border border-[#111111]/[0.06] font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/60">
+            <a href="/pricing" className="flex h-8 w-full items-center justify-center gap-2 border border-[#e5e5e0] font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/60">
               <Lock className="h-2.5 w-2.5" />Batch — Studio
             </a>
           )}

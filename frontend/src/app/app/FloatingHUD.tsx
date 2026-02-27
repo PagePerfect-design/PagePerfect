@@ -125,7 +125,7 @@ export default function FloatingHUD({
             className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/15 bg-white shadow-elevated backdrop-blur-xl sm:w-[520px]"
           >
             {/* Genre tabs */}
-            <div className="flex gap-0.5 overflow-x-auto border-b border-[#111111]/[0.06] px-3 pt-2">
+            <div className="flex gap-0.5 overflow-x-auto border-b border-[#e5e5e0] px-3 pt-2">
               {(['all', ...GENRE_ORDER] as Genre[]).map((g) => (
                 <button
                   key={g}
@@ -189,7 +189,7 @@ export default function FloatingHUD({
             </div>
 
             {/* Heading variant toggle */}
-            <div className="flex items-center justify-between border-t border-[#111111]/[0.06] px-4 py-2.5">
+            <div className="flex items-center justify-between border-t border-[#e5e5e0] px-4 py-2.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50">Headings</span>
               <div className="flex gap-1">
                 {(['classic', 'modern', 'bold'] as HeadingVariant[]).map((v) => (
@@ -386,10 +386,10 @@ export default function FloatingHUD({
               </div>
             </label>
 
-            <div className="mt-3 border-t border-[#111111]/[0.06] pt-3">
+            <div className="mt-3 border-t border-[#e5e5e0] pt-3">
               <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">Custom Font</p>
               {!hasTier(userTier, 'studio') ? (
-                <a href="/pricing" className="flex items-center justify-center gap-2 border border-dashed border-[#111111]/[0.08] py-2.5 text-[11px] text-[#111111]/50 transition-all hover:border-[#111111]/20 hover:text-[#111111]/60">
+                <a href="/pricing" className="flex items-center justify-center gap-2 border border-dashed border-[#e5e5e0] py-2.5 text-[11px] text-[#111111]/50 transition-all hover:border-[#111111]/20 hover:text-[#111111]/60">
                   <Lock className="h-3 w-3" />Studio — <span className="underline">Upgrade</span>
                 </a>
               ) : customFont ? (

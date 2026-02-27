@@ -28,7 +28,7 @@ import { cleanFromWord, analyzeManuscript } from './editor-utils'
 
 import ControlStrip from './ControlStrip'
 import StatusBar from './StatusBar'
-import IngestZone from './IngestZone'
+import PortalStage from './PortalStage'
 import PreviewPane from './PreviewPane'
 import ManuscriptBrowser from './ManuscriptBrowser'
 import { useCompileQueue } from './useCompileQueue'
@@ -279,6 +279,12 @@ export default function CompileShell() {
     setShowManuscripts(false)
   }
 
+  function handlePortalAccept(text: string, inTitle: string, detectedTemplate?: TemplateKey) {
+    setManuscript(text)
+    if (inTitle) setTitle(inTitle)
+    if (detectedTemplate) setTemplate(detectedTemplate)
+  }
+
   function handleDownload(exportPlatform?: Platform) {
     compile(true, exportPlatform)
   }
@@ -333,7 +339,7 @@ export default function CompileShell() {
   return (
     <div className="fixed inset-0 flex flex-col bg-[#FDFCF8]">
       {/* ── TopBar ────────────────────────────────────────── */}
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#111111]/[0.08] px-4">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#e5e5e0] px-4">
         {/* Left: home + title */}
         <div className="flex items-center gap-3">
           <Link
@@ -343,14 +349,14 @@ export default function CompileShell() {
           >
             <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
-          <div className="h-4 w-px bg-[#111111]/[0.08]" />
+          <div className="h-4 w-px bg-[#e5e5e0]" />
           {hasManuscript ? (
             <>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="max-w-[200px] bg-transparent font-display text-sm font-semibold text-[#111111]/70 placeholder:text-[#111111]/40 focus:text-[#111111] focus:outline-none"
+                className="max-w-[200px] bg-transparent font-display text-sm font-semibold text-[#111111]/70 placeholder:text-[#111111]/50 focus:text-[#111111] focus:outline-none"
                 placeholder="Untitled"
               />
               <span className="hidden font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/50 sm:inline">
@@ -359,7 +365,7 @@ export default function CompileShell() {
               {/* Cloud sync */}
               {!!user && (
                 <>
-                  <div className="h-3 w-px bg-[#111111]/[0.08]" />
+                  <div className="h-3 w-px bg-[#e5e5e0]" />
                   {manuscriptSaving ? (
                     <Loader2 className="h-2.5 w-2.5 animate-spin text-[#111111]/50" />
                   ) : manuscriptSaveError ? (
@@ -398,7 +404,7 @@ export default function CompileShell() {
 
           {hasManuscript && (
             <>
-              <div className="h-3 w-px bg-[#111111]/[0.08]" />
+              <div className="h-3 w-px bg-[#e5e5e0]" />
               {/* Compile button */}
               <button
                 onClick={() => compile(false)}
@@ -481,13 +487,13 @@ export default function CompileShell() {
         </div>
       ) : (
         /* ── Ingestion gate: full-screen when no manuscript ── */
-        <div className="flex-1 overflow-hidden">
-          <IngestZone
-            onFileAccepted={handleFileAccepted}
-            onLoadSample={handleLoadSample}
-            onPaste={handleTextAccepted}
-          />
-        </div>
+        <PortalStage
+          onAccept={handlePortalAccept}
+          onLoadSample={handleLoadSample}
+          onOpenManuscripts={user ? handleOpenManuscripts : undefined}
+          isLoggedIn={!!user}
+          onPlatformSelect={setTargetPlatform}
+        />
       )}
 
       {/* ── Status bar ────────────────────────────────────── */}

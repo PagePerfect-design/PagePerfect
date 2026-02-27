@@ -47,7 +47,7 @@ export default function ManuscriptBrowser({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-5 py-3">
+        <div className="flex items-center justify-between border-b border-[#e5e5e0] px-5 py-3">
           <div className="flex items-center gap-2">
             <FolderOpen className="h-3.5 w-3.5 text-[#111111]/50" />
             <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/50">
@@ -89,7 +89,7 @@ export default function ManuscriptBrowser({
               return (
                 <div
                   key={m.id}
-                  className={`group flex items-center justify-between border-b border-[#111111]/[0.04] px-5 py-3 transition-colors ${
+                  className={`group flex items-center justify-between border-b border-[#e5e5e0] px-5 py-3 transition-colors ${
                     isCurrent ? 'bg-[#FF3333]/[0.04]' : 'hover:bg-[#111111]/[0.02]'
                   }`}
                 >
