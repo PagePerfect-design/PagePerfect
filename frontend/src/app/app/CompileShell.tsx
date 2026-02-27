@@ -377,6 +377,15 @@ export default function CompileShell() {
 
         {/* Right: actions */}
         <div className="flex items-center gap-2">
+          {/* New manuscript — available to all users when a manuscript is loaded */}
+          {hasManuscript && (
+            <button
+              onClick={handleNewManuscript}
+              className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/30 transition-colors duration-200 hover:text-[#111111]/60"
+            >
+              New
+            </button>
+          )}
           {/* My manuscripts */}
           {!!user && (
             <button
@@ -413,10 +422,10 @@ export default function CompileShell() {
         </div>
       </div>
 
-      {/* ── Main workspace: ControlStrip + Preview ──────── */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: Control strip (only when manuscript loaded) */}
-        {hasManuscript && (
+      {/* ── Main workspace ─────────────────────────────── */}
+      {hasManuscript ? (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left: Control strip */}
           <ControlStrip
             manuscript={manuscript}
             onManuscriptChange={setManuscript}
@@ -454,11 +463,9 @@ export default function CompileShell() {
             onDownload={handleDownload}
             targetPlatform={targetPlatform}
           />
-        )}
 
-        {/* Right: Preview area (always visible) */}
-        <div className="relative flex-1">
-          {hasManuscript ? (
+          {/* Right: Preview */}
+          <div className="relative flex-1">
             <PreviewPane
               pdfUrl={pdfUrl}
               loading={loading}
@@ -470,15 +477,18 @@ export default function CompileShell() {
               onRetry={() => compile(false)}
               sideBySide={false}
             />
-          ) : (
-            <IngestZone
-              onFileAccepted={handleFileAccepted}
-              onLoadSample={handleLoadSample}
-              onPaste={handleTextAccepted}
-            />
-          )}
+          </div>
         </div>
-      </div>
+      ) : (
+        /* ── Ingestion gate: full-screen when no manuscript ── */
+        <div className="flex-1 overflow-hidden">
+          <IngestZone
+            onFileAccepted={handleFileAccepted}
+            onLoadSample={handleLoadSample}
+            onPaste={handleTextAccepted}
+          />
+        </div>
+      )}
 
       {/* ── Status bar ────────────────────────────────────── */}
       {hasManuscript && (
