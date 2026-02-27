@@ -1,216 +1,271 @@
-# PagePerfect — Execution Plan
+# PagePerfect Editor UX/UI Redesign Plan
 
-> Branch: `claude/pageperfect-assessment-C7dtI`
-> Created: 2026-02-22
-> Status: IN PROGRESS
+## Executive Summary
 
----
-
-## Track A — Critical Bugs (Revenue & Data Integrity)
-
-### A1. Fix manuscript duplication across sessions
-- **Problem:** `useManuscript` hook stores `manuscriptId` in React state, which resets to `null` on every page reload. Every new browser session creates a NEW PocketBase record instead of updating the existing one. Logged-in users accumulate orphaned duplicate manuscripts.
-- **Root cause:** `manuscriptId` is never persisted to localStorage or restored on mount.
-- **Fix:**
-  - [x] In `use-manuscript.ts`: persist `manuscriptId` to localStorage on create/update
-  - [x] In `use-manuscript.ts`: restore `manuscriptId` from localStorage on mount (when userId matches)
-  - [x] In `use-manuscript.ts`: make `loadManuscript` return the full record data so CompileShell can populate editor state
-  - [x] Added `newManuscript()` action to clear manuscriptId and start fresh
-  - [x] Exported `ManuscriptState`, `ManuscriptListItem`, `LoadedManuscript` types
-- **Files:** `frontend/src/lib/use-manuscript.ts`
-- **Signed off:** [x] 2026-02-22
-
-### A2. Wire up full manuscript persistence in CompileShell
-- **Problem:** CompileShell only destructures `saveManuscript` and `saving` from `useManuscript`. The `loadManuscript`, `listManuscripts`, `deleteManuscript`, `manuscriptId`, and `saveError` returns are completely ignored. Users can save but never retrieve past work.
-- **Fix:**
-  - [x] Destructure all returns from `useManuscript` in CompileShell
-  - [x] Cloud sync indicator in TopBar (Cloud / CloudOff / Loader2 icons)
-  - [x] Surface `saveError` via CloudOff icon with title tooltip
-  - [x] FolderOpen button in TopBar to open manuscript browser
-- **Files:** `frontend/src/app/app/CompileShell.tsx`
-- **Signed off:** [x] 2026-02-22
-
-### A3. Build manuscript browse/load/delete UI
-- **Problem:** No way for logged-in users to browse, load, or delete saved manuscripts from PocketBase. The hook has full CRUD but zero UI.
-- **Fix:**
-  - [x] ManuscriptBrowser component — modal panel with list, load, delete
-  - [x] List shows title + last-updated date, highlights current manuscript
-  - [x] Delete with inline confirmation (Confirm/Cancel)
-  - [x] "New" button to clear editor and start fresh
-  - [x] Available from both PortalStage ("My manuscripts" link) and design stage (TopBar FolderOpen icon)
-  - [x] PortalStage also shows "Resume editing" link when localStorage has content
-  - [x] Only visible when user is logged in
-- **Files:** `frontend/src/app/app/CompileShell.tsx`
-- **Signed off:** [x] 2026-02-22
-
-### A4. Clean up dead `single` tier from frontend types
-- **Problem:** `database.types.ts` defines `Tier = 'drafter' | 'single' | 'publisher' | 'studio'` but PocketBase schema only has `drafter | publisher | studio`. The `single` concept is only Stripe payment metadata (increments `pdf_credits`), never a PocketBase tier value.
-- **Fix:**
-  - [x] Removed `single` from `Tier` type in `database.types.ts`
-  - [x] Removed `single` from `TIER_LEVEL` in `CompileShell.tsx`
-  - [x] Renumbered to match backend: `{ anonymous: 0, drafter: 1, publisher: 2, studio: 3 }`
-- **Files:** `frontend/src/lib/database.types.ts`, `frontend/src/app/app/CompileShell.tsx`
-- **Signed off:** [x] 2026-02-22
-
-### A5. Automated Preflight Gate (Acceptance Contract)
-- **Problem:** Users could spend credits or $19.99 without formal acceptance of preflight results. No quality guarantee was surfaced before payment consumption.
-- **Fix:**
-  - [x] Two-step download flow for paid users (publisher/studio/credit holders):
-    1. "Review Preflight & Download" button triggers contract display
-    2. Acceptance Contract shows: platform compliance statement, all check results, page/trim/spine stats
-    3. Checkbox: "I accept this preflight report and authorize the export"
-    4. Green "Download — Contract Accepted" button only enabled after acceptance
-  - [x] Free/watermarked downloads bypass the contract (no credit consumption)
-  - [x] Contract resets when preflight settings change
-- **Files:** `frontend/src/app/app/CompileShell.tsx` (LaunchOverlay)
-- **Signed off:** [x] 2026-02-22
+Replace the current 3-stage gauntlet (Portal → Design → Launch) with a **single-screen workspace** where the book is always visible. Inspired by Vellum/Atticus's proven three-panel pattern and Apple's progressive disclosure, but adapted to PagePerfect's compile-based workflow.
 
 ---
 
-## Track B — Mobile Optimisation (from plan.md)
+## Current Problems (from research + code audit)
 
-### B1. Navigation hamburger menu (Critical)
-- **Problem:** No mobile nav. All links overflow horizontally on phones.
-- **Fix:**
-  - [x] Created `MobileNav.tsx` client component with hamburger icon
-  - [x] Desktop nav hidden on mobile (`hidden md:flex`)
-  - [x] Mobile: full-screen overlay with stacked links, 48px touch targets
-  - [x] "Open Editor" as full-width red CTA at bottom
-  - [x] Active route highlighting
-- **Files:** `frontend/src/app/(site)/layout.tsx`, `frontend/src/components/MobileNav.tsx`
-- **Signed off:** [x] 2026-02-22
-
-### B2. Pricing table mobile layout (Critical)
-- **Problem:** `min-w-[640px]` forces horizontal scroll on phones.
-- **Fix:**
-  - [x] Desktop (md+): current Swiss-style table grid unchanged
-  - [x] Mobile: stacked card layout, one tier per card
-  - [x] Responsive tier number sizing (3rem → 4rem → 5rem)
-  - [x] Price column: removed left border on mobile
-- **Files:** `frontend/src/app/(site)/pricing/page.tsx`
-- **Signed off:** [x] 2026-02-22
-
-### B3. Editor mobile gate (Critical)
-- **Problem:** Editor is desktop-only — PDF preview, dock toolbar, split-pane all break on mobile.
-- **Fix:**
-  - [x] Detect viewport < 768px on mount
-  - [x] Show full-screen "Desktop Required" message with PagePerfect mark
-  - [x] "Back to Home" link + "Continue anyway" dismiss option
-  - [x] Dark theme to match editor aesthetic
-- **Files:** `frontend/src/app/app/CompileShell.tsx`
-- **Signed off:** [x] 2026-02-22
-
-### B4. Touch targets (High)
-- [x] Footer links: 44px min tap zones via `min-h-[44px]` + `inline-flex items-center`
-- [x] Pricing CTA buttons: increased to `h-11` (44px)
-- [x] Journal CTA buttons: 44px height with `h-11`, stacked on mobile
-- **Files:** `(site)/layout.tsx`, `pricing/page.tsx`, `journal/page.tsx`
-- **Signed off:** [x] 2026-02-22
-
-### B5. Journal & Docs mobile sidebar (High)
-- [x] Journal: horizontal scrollable category chips on mobile with `scrollbar-hide`
-- [x] Docs: collapsible "Sections" button on mobile via `DocsMobileNav.tsx`
-- [x] Docs mobile nav: 44px link targets, grouped sections, auto-close on navigate
-- **Files:** `journal/page.tsx`, `docs/page.tsx`, `docs/DocsNav.tsx`, `docs/DocsMobileNav.tsx`
-- **Signed off:** [x] 2026-02-22
-
-### B6. Typography & spacing polish (Medium)
-- [x] Responsive font sizing for pricing tier numbers (3rem/4rem/5rem breakpoints)
-- [x] Docs content padding: `px-6 py-8` on mobile, increasing at md/lg breakpoints
-- [x] Docs template card padding: `1.25rem` mobile → `1.5rem 2rem` desktop
-- **Files:** `pricing/page.tsx`, `docs/page.tsx`, `globals.css`
-- **Signed off:** [x] 2026-02-22
-
-### B7. Global mobile CSS utilities (Medium)
-- [x] `:active` states for touch feedback (opacity 0.7 on `hover: none` devices)
-- [x] `.scrollbar-hide` utility for horizontal scroll containers
-- [x] Skip-link mobile accessibility (repositioned, larger tap zone)
-- **Files:** `globals.css`
-- **Signed off:** [x] 2026-02-22
+1. **Three stages force a linear funnel** — users must "complete" Portal before seeing Design, and can't export without switching to Launch. Both Vellum and Atticus have zero stage transitions.
+2. **FloatingHUD dock uses novel interaction patterns** — fan menus popping UP from a bottom dock are unfamiliar. Users must discover them.
+3. **Six overlay surfaces compete** — EditorOverlay, PublishingSystems, FloatingHUD fans, ShortcutLegend, ManuscriptBrowser, LaunchOverlay all have independent z-index, animations, and dismiss behaviors.
+4. **Preview gets crowded out** — with editor (50%) + systems panel (380px), the PDF preview shrinks to unusable widths.
+5. **Portal demands analysis before the user cares** — genre detection, template recommendation, platform selection all happen before the user has seen a single formatted page.
+6. **Export is a full-screen takeover** — 665-line LaunchOverlay with two-column grid, pre-flight terminal, quality gates, and contract acceptance is intimidating.
 
 ---
 
-## Track C — CI & Infrastructure (from assessment)
+## Design Principles
 
-### C1. Add `tsc --noEmit` to frontend CI
-- **Problem:** Turbopack build skips type-checking. TS errors ship silently.
-- [x] Added `npx tsc --noEmit` step before `npm run build` in `.github/workflows/ci.yml`
-- **Signed off:** [x] 2026-02-22
-
-### C2. Add `.dockerignore`
-- **Problem:** `COPY . .` pulls in node_modules, tests, .env files.
-- [x] Created `backend/.dockerignore` excluding node_modules, tests, .env, *.pdf, *.md
-- **Signed off:** [x] 2026-02-22
-
-### C3. Switch Dockerfile to `npm ci`
-- [x] Changed `npm install --omit=dev` to `npm ci --omit=dev` for reproducible builds
-- **Signed off:** [x] 2026-02-22
-
-### C4. Lulu webhook TODO
-- **Problem:** `index.js:1033` — Lulu webhook events are acknowledged but status is not persisted.
-- [ ] Write order status to PocketBase or log it persistently
-- **Signed off:** [ ]
+1. **The book is always visible.** The PDF preview is the anchor. Nothing covers it completely.
+2. **Progressive disclosure.** Start simple: drop your manuscript, see a book. Reveal controls as the user explores.
+3. **Familiar patterns only.** Sidebar for tools, toolbar for actions, inline panels. No custom interaction patterns (no fan menus, no floating docks).
+4. **One screen, zero stage transitions.** Portal is an empty state. Design is the workspace. Export is a sidebar action — not a new page.
+5. **Speed over ceremony.** Auto-compile on every change. Skip the analysis spinner. Show the book within seconds.
 
 ---
 
-## Track D — Deferred (Separate PRs)
+## New Architecture: Single-Screen Workspace
 
-> These items are deferred from the current pass. Each involves a distinct domain
-> (legal, infrastructure, documentation) and is better handled as a focused PR.
+### Layout
 
-### D1. Privacy policy incognito mode toggle (Day 9)
-- **Scope:** Policy/legal text changes
-- **Problem:** Users have no in-app control over session-scoped manuscript storage. The privacy policy describes session storage accurately (Clause 01), but there is no mechanism for users to opt into a stricter "incognito" mode that skips PocketBase persistence entirely and uses only client-side IndexedDB.
-- **Proposed work:**
-  - [ ] Add "Incognito mode" toggle to editor settings (persisted in localStorage, not PocketBase)
-  - [ ] When enabled: skip all PocketBase `manuscripts` writes, rely solely on IndexedDB
-  - [ ] Update privacy policy Clause 01 to document incognito mode behavior
-  - [ ] Add tooltip/help text explaining what incognito mode does and doesn't protect
-- **Why deferred:** Requires legal review of privacy policy language. Policy text changes should not ship alongside code changes without review.
-- **Signed off:** [ ]
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ TopBar: [← Back]  Title  [word count]  [cloud]   [Compile] [Export] │
+├──────────────────────┬───────────────────────────────────────────┤
+│                      │                                           │
+│   Left Sidebar       │          PDF Preview                      │
+│   (collapsible)      │          (always centered)                │
+│                      │                                           │
+│   ┌──────────────┐   │                                           │
+│   │ Ingest Zone  │   │        ┌─────────────────────────┐        │
+│   │ (empty state)│   │        │                         │        │
+│   └──────────────┘   │        │                         │        │
+│                      │        │    Your Book            │        │
+│   ┌──────────────┐   │        │                         │        │
+│   │ Template     │   │        │                         │        │
+│   │ Picker       │   │        │                         │        │
+│   └──────────────┘   │        │                         │        │
+│                      │        │                         │        │
+│   ┌──────────────┐   │        └─────────────────────────┘        │
+│   │ Page & Layout│   │                                           │
+│   └──────────────┘   │          [Quality Badge]                  │
+│                      │          [Status: Ready / Typesetting]    │
+│   ┌──────────────┐   │                                           │
+│   │ Settings     │   │                                           │
+│   └──────────────┘   │                                           │
+│                      │                                           │
+├──────────────────────┴───────────────────────────────────────────┤
+│ Status bar: engine · grade · build-id                            │
+└──────────────────────────────────────────────────────────────────┘
+```
 
-### D2. gVisor worker sandboxing (Day 10)
-- **Scope:** Infrastructure-level container security
-- **Problem:** The compile worker runs Pandoc/LuaLaTeX inside Docker with defense-in-depth (non-root user, isolated temp dirs, `-raw_tex` disabled, 14-pattern injection detection, `--cap-drop=ALL`, `--read-only` root filesystem). However, the container still uses the default Docker runtime (`runc`). gVisor (`runsc`) would add a user-space kernel layer that intercepts syscalls, providing stronger isolation against container escapes.
-- **Proposed work:**
-  - [ ] Install gVisor (`runsc`) on the Coolify/Digital Ocean host
-  - [ ] Configure Docker daemon to use `runsc` as the runtime for compile worker containers
-  - [ ] Verify LuaLaTeX, Pandoc, and Ghostscript function correctly under gVisor (some syscalls may need allowlisting)
-  - [ ] Update `docker:run` script in `package.json` to use `--runtime=runsc`
-  - [ ] Benchmark compile times under gVisor vs `runc` to quantify overhead
-  - [ ] Update CLAUDE.md "Security Architecture" section to document gVisor layer
-- **Why deferred:** Infrastructure-level change that requires host-level package installation, runtime configuration, and performance validation. Cannot be tested without access to the production/staging host. Risk of breaking compiles if LuaLaTeX syscalls are blocked.
-- **Signed off:** [ ]
+### Empty State (replaces Portal)
 
-### D3. Final audit & security whitepaper (Day 14)
-- **Scope:** Documentation
-- **Problem:** The security architecture is documented across CLAUDE.md (Known Gaps section), TRANSFORMATION_COUNCIL.md (Security Engineer persona), and inline code comments. There is no single, auditable document that catalogs all security controls, their status, and residual risks.
-- **Proposed work:**
-  - [ ] Conduct final security audit of compile pipeline (input → sanitize → spawn → output)
-  - [ ] Document all 6 defense layers: input sanitization, Pandoc flags, process isolation, Docker hardening, network/API security, auth verification
-  - [ ] Catalog residual risks with severity ratings (seccomp profile, `--network none`, gVisor status)
-  - [ ] Produce `SECURITY.md` whitepaper at repo root with: threat model, control inventory, test evidence, known gaps, and remediation timeline
-  - [ ] Cross-reference with OWASP and CWE identifiers where applicable
-- **Why deferred:** Documentation-only deliverable that should reflect the final state of all security controls, including D1 and D2 if completed. Writing it now would require immediate revision.
-- **Signed off:** [ ]
+When no manuscript is loaded, the preview area shows a large ingest zone:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ TopBar: [← Home]                                    [Help]       │
+├──────────────────────┬───────────────────────────────────────────┤
+│                      │                                           │
+│   Sidebar shows:     │     ┌─────────────────────────────┐      │
+│   - "Getting Started"│     │                             │      │
+│   - Template browser │     │    Drop your manuscript     │      │
+│   - Sample docs      │     │    .md · .txt · .docx       │      │
+│                      │     │                             │      │
+│                      │     │    [Browse Files] [Paste]   │      │
+│                      │     │                             │      │
+│                      │     │    or try a sample:         │      │
+│                      │     │    Fiction · Academic · ...  │      │
+│                      │     │                             │      │
+│                      │     └─────────────────────────────┘      │
+│                      │                                           │
+└──────────────────────┴───────────────────────────────────────────┘
+```
+
+Once a manuscript is dropped:
+1. Preview area immediately shows BookSkeleton (loading state)
+2. Auto-compile fires with default template
+3. Sidebar populates with template/layout/settings sections
+4. Genre detection runs in background — sidebar highlights recommended template
+5. User sees their formatted book within 5-10 seconds of dropping the file
+
+**No analysis modal. No "Start designing" button. No platform selection gatekeep.**
+
+### Sidebar Sections (accordion)
+
+The left sidebar replaces FloatingHUD, EditorOverlay, and part of PortalStage:
+
+**Section 1: Manuscript** (expandable)
+- Markdown editor (textarea, same as current EditorOverlay but inline in sidebar)
+- Image upload area
+- "My Manuscripts" list (for logged-in users)
+- Word count + chapter count inline
+
+**Section 2: Template** (expandable, default open)
+- Template grid (2 columns, scrollable)
+- Genre filter tabs (All, Fiction, Nonfiction, Specialist)
+- "Rec" badge on auto-detected template
+- Heading variant toggle (Classic / Modern / Bold)
+- Active template's name + font shown at top of section
+
+**Section 3: Page & Layout** (expandable)
+- Page size grid (6 free sizes shown, expandable for more)
+- Margin preset row (7 presets)
+- Tier lock icons on gated sizes
+
+**Section 4: Settings** (expandable)
+- Compile mode toggle (Fast / Full)
+- Standard mode checkbox
+- Custom font upload (Studio tier)
+
+**Section 5: Export** (expandable)
+- Platform selector (KDP / IngramSpark)
+- Paper stock (White / Cream)
+- Pre-flight results (inline, not a separate terminal)
+- Quality warnings (inline)
+- Download button (primary red CTA)
+- Format toggle (PDF / EPUB)
+
+**Section 6: Analysis** (expandable, replaces PublishingSystems panel)
+- "Run Analysis" button
+- Compact results: typography grade, QA grade, lint issues
+- Expandable details per system
+
+### TopBar (simplified)
+
+```
+[← Back]  [Title input]  [word count]  [cloud sync]    [Compile]  [Export ↓]
+```
+
+- Remove: Edit toggle, Systems toggle, status dot (moved to status bar)
+- Keep: Title, word count, cloud sync, compile button, export button
+- Export button opens/scrolls to Export section in sidebar
+- Compile button forces manual recompile
+
+### Status Bar (new, replaces HUD dock status)
+
+Thin bar at bottom of screen:
+```
+LuaTeX · Grade: A · Build: abc123def · Ready
+```
+
+Shows engine, quality grade, build ID, and compile status. Always visible, never interactive.
+
+### Export Flow (simplified)
+
+Instead of a full-screen LaunchOverlay:
+
+1. User clicks "Export" in TopBar → sidebar scrolls to Export section
+2. Export section shows platform choice + paper stock inline
+3. Pre-flight runs automatically when Export section opens
+4. Results appear inline (green checks, amber warnings, red failures)
+5. Download button at bottom of section
+6. Quality warnings appear inline above download button
+7. Grade D still requires acknowledgment checkbox (inline, not modal)
+8. Free tier: "Download Preview (Watermarked)" with pricing link
+
+**No full-screen takeover. No contract modal. No two-column grid.**
 
 ---
 
-## Execution Order
+## Component Changes
 
-| Priority | Task | Track | Status |
-|----------|------|-------|--------|
-| 1 | A1 — Manuscript session persistence | Bug | DONE |
-| 2 | A4 — Clean up `single` tier | Bug | DONE |
-| 3 | A2 — Wire up manuscript hook in CompileShell | Bug | DONE |
-| 4 | A3 — Manuscript browse UI | Feature | DONE |
-| 5 | A5 — Preflight Acceptance Contract | Feature | DONE |
-| 6 | B1 — Mobile nav | Mobile | DONE |
-| 7 | B3 — Editor mobile gate | Mobile | DONE |
-| 8 | B2 — Pricing mobile | Mobile | DONE |
-| 9 | B4–B7 — Touch/sidebar/polish | Mobile | DONE |
-| 10 | C1–C3 — CI fixes | Infra | DONE |
-| 11 | C4 — Lulu webhook | Infra | TODO |
-| — | D1 — Privacy policy incognito mode | Deferred | Separate PR (legal) |
-| — | D2 — gVisor worker sandboxing | Deferred | Separate PR (infra) |
-| — | D3 — Final audit & security whitepaper | Deferred | Separate PR (docs) |
+### Files to REWRITE (significant changes):
+
+| File | Lines | Action |
+|------|-------|--------|
+| `CompileShell.tsx` | 724 → ~400 | Remove stage machine, layer cake rendering. Single layout: sidebar + preview. |
+| `FloatingHUD.tsx` | 505 → DELETE | Replace with sidebar sections. All functionality moves to sidebar. |
+| `LaunchOverlay.tsx` | 665 → DELETE | Replace with Export section in sidebar. Pre-flight + download inline. |
+| `PortalStage.tsx` | 570 → DELETE | Replace with empty state in preview area + sidebar ingest section. |
+| `TopBar.tsx` | 173 → ~120 | Simplify: remove edit/systems toggles. Keep title, compile, export. |
+| `PreviewPane.tsx` | 326 → ~200 | Simplify: remove side-by-side logic. Always full remaining width. Always visible. |
+| `PublishingSystems.tsx` | 643 → ~400 | Convert from sliding panel to sidebar section. Compact results. |
+
+### New files:
+
+| File | Est. Lines | Purpose |
+|------|-----------|---------|
+| `Sidebar.tsx` | ~500 | Left sidebar shell with collapsible sections |
+| `StatusBar.tsx` | ~40 | Bottom status bar (engine, grade, build ID, status) |
+| `IngestZone.tsx` | ~150 | Empty-state drop zone for the preview area (replaces PortalStage idle phase) |
+| `ExportSection.tsx` | ~300 | Export sidebar section with inline pre-flight, quality gates, download |
+| `TemplateSection.tsx` | ~200 | Template picker sidebar section (grid + genre tabs + variant toggle) |
+| `LayoutSection.tsx` | ~150 | Page size + margin sidebar section |
+
+### Files UNCHANGED:
+
+| File | Reason |
+|------|--------|
+| `useCompileQueue.ts` | Hook logic is solid — debounce, polling, quality extraction all stay |
+| `editor-types.ts` | Types are correct |
+| `editor-utils.ts` | Genre detection, error translation all stay |
+| `debug-log.ts` | Logging infrastructure stays |
+| `manuscript-store.ts` | Persistence layer stays |
+| `ImageUpload.tsx` | Move into Manuscript sidebar section, but component logic stays |
+| `ManuscriptBrowser.tsx` | Move trigger into sidebar, but modal stays |
+| `RichTextEditor.tsx` | Keep as-is, triggered from sidebar |
+
+---
+
+## Implementation Phases
+
+### Phase 1: Scaffold the new layout
+1. Create `Sidebar.tsx` shell with 6 collapsible sections (empty content)
+2. Create `StatusBar.tsx`
+3. Rewrite `CompileShell.tsx` to use sidebar + preview layout (no stages)
+4. Create `IngestZone.tsx` for empty state
+5. Wire up existing state management (no logic changes, just layout)
+
+### Phase 2: Migrate sidebar content
+1. Move template picker from FloatingHUD to `TemplateSection.tsx`
+2. Move page/margin picker from FloatingHUD to `LayoutSection.tsx`
+3. Move settings from FloatingHUD to inline sidebar section
+4. Move markdown editor from EditorOverlay to Manuscript section
+5. Move image upload into Manuscript section
+
+### Phase 3: Inline export flow
+1. Create `ExportSection.tsx` with platform/paper/preflight/download
+2. Move pre-flight logic from LaunchOverlay inline
+3. Move quality gates inline (C/D warnings, D checkbox)
+4. Move download logic inline
+5. Wire TopBar "Export" button to scroll/open Export section
+
+### Phase 4: Simplify remaining components
+1. Simplify `TopBar.tsx` (remove edit/systems toggles)
+2. Simplify `PreviewPane.tsx` (remove side-by-side, always full width right of sidebar)
+3. Convert `PublishingSystems.tsx` to Analysis sidebar section
+4. Clean up: delete FloatingHUD.tsx, LaunchOverlay.tsx, PortalStage.tsx
+
+### Phase 5: Polish
+1. Responsive behavior (sidebar collapses on mobile)
+2. Keyboard shortcuts (adapt to new layout)
+3. Animations (sidebar sections, preview transitions)
+4. Test all compile/export/quality flows end-to-end
+
+---
+
+## Key Decisions
+
+1. **Sidebar width**: 320px (collapsible to 0 on mobile, icon-only 48px option on desktop)
+2. **Sidebar position**: Left side (matches Vellum/Atticus pattern, reading order left-to-right)
+3. **Accordion behavior**: Multiple sections can be open simultaneously (not mutually exclusive)
+4. **Auto-compile**: Keep current 1s/1.5s debounce behavior. No change to compile logic.
+5. **Mobile**: Sidebar becomes a bottom sheet or full-screen overlay (not a three-panel layout)
+6. **Keyboard shortcuts**: Adapt — `1-6` for sidebar sections, `Space` for compile, `E` for export section
+7. **Export confirmation**: Inline in sidebar, not a modal. Grade D acknowledgment is a checkbox, not a dialog.
+8. **Analysis panel**: Moves from 380px right panel to sidebar section. Compact by default, expandable.
+
+---
+
+## Risk Mitigation
+
+- **No backend changes required** — this is purely frontend UI restructuring
+- **No hook changes** — useCompileQueue, useManuscript, manuscript-store all stay
+- **No type changes** — editor-types.ts stays
+- **Incremental approach** — each phase produces a working editor
+- **Git safety** — all work on `claude/complete-migration-audit-AGs9m` branch
