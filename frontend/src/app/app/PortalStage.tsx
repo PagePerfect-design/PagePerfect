@@ -180,7 +180,7 @@ export default function PortalStage({
                     }
                   }}
                   placeholder="Paste or type your manuscript here..."
-                  className="w-full h-48 resize-none border border-[#111111]/20 bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/60 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
+                  className="w-full h-48 resize-none border border-[#e5e5e0] bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/60 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
                   autoFocus
                 />
                 <div className="mt-3 flex items-center justify-between">
@@ -363,9 +363,9 @@ export default function PortalStage({
         transition={{ duration: 0.5, ease }}
         className="w-full max-w-2xl my-auto"
       >
-        <div className="border border-[#111111]/15 bg-white shadow-lg">
+        <div className="border border-[#111111] bg-white">
           {/* Header — manuscript stats */}
-          <div className="border-b border-[#111111]/[0.06] px-6 py-5">
+          <div className="border-b border-[#e5e5e0] px-6 py-5">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center bg-[#FF3333]/10">
                 <FileText className="h-4 w-4 text-[#FF3333]" />
@@ -378,7 +378,7 @@ export default function PortalStage({
           </div>
 
           {analysis && (
-            <div className="grid grid-cols-2 gap-px bg-[#111111]/[0.04] sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-px bg-[#e5e5e0] sm:grid-cols-4">
               {[
                 { label: 'Chapters', value: analysis.chapters || '—' },
                 { label: 'Words', value: analysis.words.toLocaleString() },
@@ -394,7 +394,7 @@ export default function PortalStage({
           )}
 
           {/* Title */}
-          <div className="border-t border-[#111111]/[0.06] px-6 py-5">
+          <div className="border-t border-[#e5e5e0] px-6 py-5">
             <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">Working title</label>
             <input
               id="working-title"
@@ -403,12 +403,12 @@ export default function PortalStage({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="My Manuscript"
               autoFocus
-              className="w-full border-b border-[#111111]/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-[#111111] placeholder:text-[#111111]/60 focus:border-[#FF3333] focus:outline-none"
+              className="w-full border-b border-[#e5e5e0] bg-transparent pb-2 font-display text-xl font-bold text-[#111111] placeholder:text-[#111111]/60 focus:border-[#FF3333] focus:outline-none"
             />
           </div>
 
           {/* Template picker */}
-          <div className="border-t border-[#111111]/[0.06] px-6 py-5">
+          <div className="border-t border-[#e5e5e0] px-6 py-5">
             <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">
               Choose a design
               {detectedTemplate && (
@@ -429,7 +429,7 @@ export default function PortalStage({
                     className={`relative border p-3 text-left transition-all ${
                       isActive
                         ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                        : 'border-[#111111]/15 hover:border-[#111111]/20'
+                        : 'border-[#e5e5e0] hover:border-[#111111]/40'
                     }`}
                   >
                     {isRecommended && (
@@ -438,7 +438,7 @@ export default function PortalStage({
                       </span>
                     )}
                     {/* Type specimen preview */}
-                    <div className="mb-2 h-16 overflow-hidden border-b border-[#111111]/[0.04] pb-2">
+                    <div className="mb-2 h-16 overflow-hidden border-b border-[#e5e5e0] pb-2">
                       <p className={`text-[14px] font-semibold leading-tight text-[#111111]/80 ${
                         info.font.includes('Garamond') || info.font.includes('Baskerville') || info.font.includes('Bembo') || info.font.includes('Latin Modern')
                           ? 'font-body' : 'font-display'
@@ -488,7 +488,7 @@ export default function PortalStage({
                               className={`border p-3 text-left transition-all ${
                                 isActive
                                   ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                                  : 'border-[#111111]/15 hover:border-[#111111]/20'
+                                  : 'border-[#e5e5e0] hover:border-[#111111]/40'
                               }`}
                             >
                               <span className="block font-mono text-[11px] font-semibold text-[#111111]/80">{info.name}</span>
@@ -505,7 +505,7 @@ export default function PortalStage({
           </div>
 
           {/* Active template detail bar */}
-          <div className="flex items-start gap-3 border-t border-[#111111]/[0.06] px-6 py-3 bg-[#111111]/[0.02]">
+          <div className="flex items-start gap-3 border-t border-[#e5e5e0] px-6 py-3 bg-[#f5f5f0]">
             <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#FF3333]" />
             <div>
               <p className="text-[12px] font-medium text-[#111111]/70">
@@ -518,7 +518,7 @@ export default function PortalStage({
           </div>
 
           {/* Platform selection */}
-          <div className="border-t border-[#111111]/[0.06] px-6 py-4">
+          <div className="border-t border-[#e5e5e0] px-6 py-4">
             <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">
               Where will you publish?
             </p>
@@ -533,7 +533,7 @@ export default function PortalStage({
                   className={`flex-1 border px-3 py-2.5 text-left transition-all ${
                     selectedPlatform === p.key
                       ? 'border-[#FF3333] bg-[#FF3333]/[0.04]'
-                      : 'border-[#111111]/15 hover:border-[#111111]/20'
+                      : 'border-[#e5e5e0] hover:border-[#111111]/40'
                   }`}
                 >
                   <span className={`block font-mono text-[11px] font-semibold ${
@@ -547,7 +547,7 @@ export default function PortalStage({
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-[#111111]/[0.06] px-6 py-4">
+          <div className="flex items-center justify-between border-t border-[#e5e5e0] px-6 py-4">
             <button
               onClick={() => { setText(''); setAnalysis(null); setPhase('idle'); setSelectedPlatform(null); setSelectedTemplate(null); setShowAllTemplates(false) }}
               className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]/70"

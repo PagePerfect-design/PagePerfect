@@ -37,7 +37,7 @@ export default function StatusBar({
     'text-[#111111]/50'
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-30 flex h-7 items-center justify-between border-t border-[#111111]/[0.08] bg-[#FDFCF8] px-4">
+    <div className="fixed bottom-0 left-0 right-0 z-30 flex h-7 items-center justify-between border-t border-[#e5e5e0] bg-[#FDFCF8] px-4">
       <div className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.12em]">
         {/* Engine */}
         {quality?.engine && (

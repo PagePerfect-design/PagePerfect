@@ -14,7 +14,7 @@ function BookSkeleton() {
   return (
     <div className="flex h-full w-full items-center justify-center bg-white">
       <div className="relative h-[520px] w-[380px]">
-        <div className="absolute inset-0 bg-[#111111]/[0.02] border border-[#111111]/[0.06]" />
+        <div className="absolute inset-0 bg-[#f5f5f0] border border-[#e5e5e0]" />
         <motion.div
           className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF3333]/40 to-transparent"
           initial={{ top: '10%' }}
@@ -23,10 +23,10 @@ function BookSkeleton() {
         />
         <div className="absolute inset-x-[15%] top-[12%] space-y-3">
           <div className="h-4 w-3/5 bg-[#111111]/[0.06]" />
-          <div className="h-2 w-4/5 bg-[#111111]/[0.04]" />
+          <div className="h-2 w-4/5 bg-[#f5f5f0]" />
           <div className="mt-6 space-y-2">
             {Array.from({ length: 14 }).map((_, i) => (
-              <div key={i} className="h-1.5 bg-[#111111]/[0.04]" style={{ width: `${70 + Math.sin(i * 1.3) * 20}%` }} />
+              <div key={i} className="h-1.5 bg-[#f5f5f0]" style={{ width: `${70 + Math.sin(i * 1.3) * 20}%` }} />
             ))}
           </div>
         </div>
@@ -50,7 +50,7 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
     'B': 'text-blue-600 border-blue-500/20 bg-blue-500/[0.06]',
     'C': 'text-amber-600 border-amber-500/20 bg-amber-500/[0.06]',
     'D': 'text-red-600 border-red-500/20 bg-red-500/[0.06]',
-  }[quality.typographyGrade] || 'text-[#111111]/60 border-[#111111]/10 bg-[#111111]/[0.03]'
+  }[quality.typographyGrade] || 'text-[#111111]/60 border-[#e5e5e0] bg-[#f5f5f0]'
 
   const hasWarnings = quality.overfullBoxes > 0 || quality.underfullBoxes > 0
 
@@ -76,12 +76,12 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
         </div>
       )}
       {quality.engine && (
-        <div className="border border-[#111111]/[0.06] bg-[#111111]/[0.02] px-2 py-1" title={quality.engine}>
+        <div className="border border-[#e5e5e0] bg-[#f5f5f0] px-2 py-1" title={quality.engine}>
           <span className="font-mono text-[8px] text-[#111111]/50">{quality.engine}</span>
         </div>
       )}
       {quality.buildId && (
-        <div className="border border-[#111111]/[0.06] bg-[#111111]/[0.02] px-2 py-1" title={quality.buildId}>
+        <div className="border border-[#e5e5e0] bg-[#f5f5f0] px-2 py-1" title={quality.buildId}>
           <span className="font-mono text-[8px] text-[#111111]/50">{quality.buildId.slice(0, 20)}</span>
         </div>
       )}
@@ -139,7 +139,7 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
               Engine log
             </summary>
-            <pre className="mt-2 max-h-[200px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
+            <pre className="mt-2 max-h-[200px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
               {errors.filter(e => e.message.startsWith('__detail__')).map(e => e.message.replace('__detail__', '')).join('\n')}
             </pre>
           </details>
@@ -149,7 +149,7 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
               Full engine log
             </summary>
-            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
               {debug.latexLog}
             </pre>
           </details>
@@ -159,7 +159,7 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
               Generated Typst source
             </summary>
-            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
               {debug.texSource}
             </pre>
           </details>
@@ -169,7 +169,7 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
               Injected preamble (header.tex)
             </summary>
-            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
               {debug.headerTex}
             </pre>
           </details>
@@ -179,7 +179,7 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
             <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
               Files in compile directory
             </summary>
-            <pre className="mt-2 max-h-[150px] overflow-auto whitespace-pre-wrap break-all border border-[#111111]/10 bg-[#111111]/[0.03] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
+            <pre className="mt-2 max-h-[150px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
               {debug.filesInDir.join('\n')}
             </pre>
           </details>
@@ -243,7 +243,7 @@ export default function PreviewPane({
               boxShadow: status === 'success'
                 ? '0 2px 8px rgba(0,0,0,0.08), 0 12px 40px -8px rgba(0,0,0,0.12)'
                 : '0 1px 4px rgba(0,0,0,0.06), 0 8px 30px -6px rgba(0,0,0,0.10)',
-              border: '1px solid rgba(17,17,17,0.08)',
+              border: '1px solid #e5e5e0',
             }}
           >
             {pdfUrl ? (
@@ -293,7 +293,7 @@ export default function PreviewPane({
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-[#F8F7F3]">
                 <div className="text-center">
-                  <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-[#111111]/[0.08]">
+                  <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-[#e5e5e0]">
                     <FileText className="h-5 w-5 text-[#111111]/40" />
                   </div>
                   <p className="font-mono text-[11px] text-[#111111]/50">Preview appears here</p>

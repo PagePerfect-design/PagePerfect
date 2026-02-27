@@ -157,7 +157,7 @@ function StructurePanel({ data }: { data: any }) {
   return (
     <div className="space-y-3">
       {/* Section map */}
-      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#f5f5f0]">
         <div className="bg-white p-2.5">
           <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/40">Front Matter</p>
           <p className="mt-1 text-[11px] font-medium text-[#111111]/60">{structure.frontMatter.length || '—'}</p>
@@ -187,7 +187,7 @@ function StructurePanel({ data }: { data: any }) {
 
       {/* Warnings & suggestions */}
       {warnings.length > 0 && (
-        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
+        <div className="space-y-1 border-t border-[#e5e5e0] pt-2">
           {warnings.map((w: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
@@ -197,7 +197,7 @@ function StructurePanel({ data }: { data: any }) {
         </div>
       )}
       {suggestions.length > 0 && (
-        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
+        <div className="space-y-1 border-t border-[#e5e5e0] pt-2">
           {suggestions.map((s: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <Info className="mt-0.5 h-3 w-3 shrink-0 text-blue-500" />
@@ -239,7 +239,7 @@ function PrintQAPanel({ data }: { data: any }) {
       </div>
       <CheckList checks={data.checks} />
       {data.recommendations?.length > 0 && (
-        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
+        <div className="space-y-1 border-t border-[#e5e5e0] pt-2">
           <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/40">Recommendations</p>
           {data.recommendations.map((r: string, i: number) => (
             <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/55">• {r}</p>
@@ -254,7 +254,7 @@ function AssetsPanel({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-4 gap-px overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-4 gap-px overflow-hidden bg-[#f5f5f0]">
         {[
           { label: 'Figures', value: data.stats.figureCount },
           { label: 'Tables', value: data.stats.tableCount },
@@ -288,7 +288,7 @@ function LintPanel({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#f5f5f0]">
         {[
           { label: 'Issues', value: data.stats.totalIssues, color: data.stats.totalIssues > 0 ? 'text-amber-500' : 'text-emerald-500' },
           { label: 'Warnings', value: data.stats.bySeverity?.warn || 0 },
@@ -324,14 +324,14 @@ function MultilingualPanel({ data }: { data: any }) {
     <div className="space-y-3">
       <div className="flex flex-wrap gap-1.5">
         {scriptAnalysis.scripts.map((s: any) => (
-          <span key={s.script} className="inline-flex items-center gap-1 bg-[#111111]/[0.04] px-2 py-0.5 text-[10px]">
+          <span key={s.script} className="inline-flex items-center gap-1 bg-[#f5f5f0] px-2 py-0.5 text-[10px]">
             <span className={`h-1.5 w-1.5 rounded-full ${s.direction === 'rtl' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
             <span className="text-[#111111]/60">{s.label}</span>
             <span className="text-[#111111]/40">{s.percentage}%</span>
           </span>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#f5f5f0]">
         {[
           { label: 'RTL', value: scriptAnalysis.hasRTL ? 'Yes' : 'No' },
           { label: 'Mixed Dir', value: scriptAnalysis.hasMixedDirection ? 'Yes' : 'No' },
@@ -370,7 +370,7 @@ function PlatformPanel({ data }: { data: any }) {
       </div>
       <CheckList checks={data.checks} />
       {data.recommendations?.length > 0 && (
-        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
+        <div className="space-y-1 border-t border-[#e5e5e0] pt-2">
           {data.recommendations.map((r: string, i: number) => (
             <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/55">• {r}</p>
           ))}
@@ -539,10 +539,10 @@ export default function PublishingSystems({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.3 }}
-      className="fixed right-0 top-[3.5rem] bottom-0 z-40 w-[380px] border-l border-[#111111]/[0.06] bg-white/95 backdrop-blur-xl overflow-hidden flex flex-col"
+      className="fixed right-0 top-[3.5rem] bottom-0 z-40 w-[380px] border-l border-[#e5e5e0] bg-white/95 backdrop-blur-xl overflow-hidden flex flex-col"
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-[#e5e5e0] px-4 py-3">
         <div className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4 text-[#FF3333]" />
           <span className="font-display text-sm font-semibold text-[#111111]/80">Publishing Systems</span>
@@ -564,7 +564,7 @@ export default function PublishingSystems({
 
       {/* Summary bar */}
       {analysis?.summary && (
-        <div className="grid grid-cols-4 gap-px bg-[#111111]/[0.04] border-b border-[#111111]/[0.06]">
+        <div className="grid grid-cols-4 gap-px bg-[#f5f5f0] border-b border-[#e5e5e0]">
           {[
             { label: 'Typo', value: analysis.summary.typographyGrade, color: analysis.summary.typographyGrade === 'A' ? 'text-emerald-500' : 'text-amber-500' },
             { label: 'QA', value: analysis.summary.printQAGrade, color: analysis.summary.printQAGrade === 'A' ? 'text-emerald-500' : 'text-amber-500' },
@@ -595,7 +595,7 @@ export default function PublishingSystems({
                 onClick={() => toggleSystem(sys.key)}
                 className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-all ${
                   expandedSystem === sys.key
-                    ? 'bg-[#111111]/[0.04]'
+                    ? 'bg-[#f5f5f0]'
                     : 'hover:bg-[#111111]/[0.02]'
                 }`}
               >
