@@ -5,7 +5,7 @@
  * representative content. This catches template-breaking changes
  * before they reach production.
  *
- * These tests require Pandoc and LuaLaTeX to be installed.
+ * These tests require Pandoc and Typst to be installed.
  * In CI, they run inside the Docker container.
  * Locally, skip with: npm test -- --testPathIgnorePatterns=template-regression
  */
@@ -15,9 +15,9 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// Check if pandoc and lualatex are available
+// Check if pandoc and typst are available
 let hasPandoc = false;
-let hasLualatex = false;
+let hasTypst = false;
 
 try {
   execSync('which pandoc', { stdio: 'pipe' });
@@ -25,11 +25,11 @@ try {
 } catch { /* not installed */ }
 
 try {
-  execSync('which lualatex', { stdio: 'pipe' });
-  hasLualatex = true;
+  execSync('which typst', { stdio: 'pipe' });
+  hasTypst = true;
 } catch { /* not installed */ }
 
-const canRun = hasPandoc && hasLualatex;
+const canRun = hasPandoc && hasTypst;
 const describeIf = canRun ? describe : describe.skip;
 
 // ── Test fixtures ──

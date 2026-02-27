@@ -38,7 +38,7 @@ describe('ENGINEERING_POLICIES', () => {
     expect(ENGINEERING_POLICIES.editorial.raggedRight).toBe(true);
   });
 
-  it('basic disables microtype for pdflatex compatibility', () => {
+  it('basic disables microtype for Typst compatibility', () => {
     expect(ENGINEERING_POLICIES.basic.microtype).toBe(false);
   });
 });
