@@ -228,8 +228,8 @@ export default function PreviewPane({
   sideBySide?: boolean
 }) {
   return (
-    <div className={`absolute inset-0 flex items-center justify-center px-4 pb-24 pt-16 sm:px-0 ${sideBySide ? 'sm:left-1/2' : ''}`}>
-      <div className="relative flex h-full max-h-[680px] w-full max-w-[calc(100vw-2rem)] items-center justify-center sm:max-w-[520px]">
+    <div className={`absolute inset-0 flex items-center justify-center px-4 pb-10 pt-4 sm:px-8 ${sideBySide ? 'sm:left-1/2' : ''}`}>
+      <div className="relative flex h-full max-h-[780px] w-full max-w-[calc(100vw-2rem)] items-center justify-center sm:max-w-[560px]">
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.92 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
