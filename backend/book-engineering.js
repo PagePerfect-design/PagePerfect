@@ -296,125 +296,6 @@ function lintManuscript(md, templateType = 'academic') {
 }
 
 // ================================================================
-// Compile Log Analysis
-// ================================================================
-
-/**
- * Parse LuaLaTeX log output for engineering issues.
- *
- * @param {string} stderr — compilation stderr/log output
- * @returns {{ overfullBoxes, underfullBoxes, warnings, pageBreakIssues }}
- */
-function analyzeCompileLog(stderr) {
-  const result = {
-    overfullBoxes: [],
-    underfullBoxes: [],
-    warnings: [],
-    pageBreakIssues: [],
-    floatIssues: [],
-    footnoteIssues: [],
-  };
-
-  const lines = stderr.split('\n');
-
-  for (const line of lines) {
-    // Overfull \hbox
-    const overfull = line.match(/Overfull \\hbox \((\d+\.?\d*)pt too wide\)(?:.*?at lines? (\d+))?/);
-    if (overfull) {
-      result.overfullBoxes.push({
-        amount: parseFloat(overfull[1]),
-        line: overfull[2] ? parseInt(overfull[2]) : null,
-        severity: parseFloat(overfull[1]) > 10 ? 'warn' : 'info',
-        message: `Overfull hbox by ${overfull[1]}pt${overfull[2] ? ` at line ${overfull[2]}` : ''}`,
-      });
-    }
-
-    // Underfull \hbox
-    const underfull = line.match(/Underfull \\hbox(?:.*?badness (\d+))?(?:.*?at lines? (\d+))?/);
-    if (underfull) {
-      const badness = underfull[1] ? parseInt(underfull[1]) : 0;
-      if (badness > 5000) {
-        result.underfullBoxes.push({
-          badness,
-          line: underfull[2] ? parseInt(underfull[2]) : null,
-          severity: badness > 8000 ? 'warn' : 'info',
-          message: `Underfull hbox (badness ${badness})${underfull[2] ? ` at line ${underfull[2]}` : ''}`,
-        });
-      }
-    }
-
-    // Float warnings
-    if (/Too many unprocessed floats/.test(line)) {
-      result.floatIssues.push({
-        severity: 'warn',
-        message: 'Too many unprocessed floats. Consider fewer consecutive figures or [H] placement.',
-      });
-    }
-
-    // Footnote overflow
-    if (/Footnote.*split|split.*footnote/i.test(line)) {
-      result.footnoteIssues.push({
-        severity: 'warn',
-        message: 'Footnote split across pages. Consider shorter footnotes or endnotes.',
-      });
-    }
-  }
-
-  return result;
-}
-
-// ================================================================
-// LaTeX Engineering Preamble
-// ================================================================
-
-/**
- * Generate LaTeX preamble for book engineering policies.
- *
- * @param {string} templateType — key into ENGINEERING_POLICIES
- * @param {object} [overrides] — optional policy overrides
- * @returns {string} LaTeX preamble snippet
- */
-function generateEngineeringPreamble(templateType, overrides = {}) {
-  const policy = { ...(ENGINEERING_POLICIES[templateType] || ENGINEERING_POLICIES.academic), ...overrides };
-  const commands = [
-    '% ── Book Engineering System ──',
-    '',
-    '% Widow and orphan control',
-    `\\widowpenalty=${policy.widowPenalty}`,
-    `\\clubpenalty=${policy.clubPenalty}`,
-    '',
-    '% Hyphenation and line breaking',
-    `\\hyphenpenalty=${policy.hyphenPenalty}`,
-    `\\tolerance=${policy.tolerance}`,
-    `\\emergencystretch=${policy.emergencyStretch}`,
-    '',
-    '% Float placement defaults',
-    `\\renewcommand{\\floatpagefraction}{0.8}`,
-    `\\renewcommand{\\topfraction}{0.9}`,
-    `\\renewcommand{\\bottomfraction}{0.8}`,
-    `\\renewcommand{\\textfraction}{0.1}`,
-    '',
-  ];
-
-  if (policy.raggedBottom) {
-    commands.push('', '\\raggedbottom');
-  } else {
-    commands.push('', '\\flushbottom');
-  }
-
-  // URL line breaking (safe for header-includes — url already loaded by hyperref)
-  commands.push(
-    '',
-    '% URL line breaking',
-    '\\makeatletter',
-    '\\g@addto@macro\\UrlBreaks{\\do\\/\\do\\-\\do\\.\\do\\=\\do\\?\\do\\&\\do\\_\\do\\~}',
-    '\\makeatother',
-  );
-
-  return commands.join('\n');
-}
-
-// ================================================================
 // Typst Engineering Preamble
 // ================================================================
 
@@ -520,8 +401,6 @@ function analyzeTypstCompileLog(stderr) {
 module.exports = {
   ENGINEERING_POLICIES,
   lintManuscript,
-  analyzeCompileLog,
   analyzeTypstCompileLog,
-  generateEngineeringPreamble,
   generateTypstEngineeringPreamble,
 };

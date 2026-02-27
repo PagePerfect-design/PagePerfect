@@ -6,9 +6,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
 # LOCALE: C.UTF-8 is built into glibc on Debian/Ubuntu — no locale-gen needed.
-# This removes the en_US.UTF-8 dependency entirely. LuaLaTeX's luaotfload reads
-# LANG/LC_ALL; C.UTF-8 satisfies the "valid locale" requirement without the
-# locale package or locale-gen. One fewer failure surface.
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
@@ -30,23 +27,16 @@ RUN curl -fsSL -o /tmp/pandoc.deb \
     && dpkg -i /tmp/pandoc.deb \
     && rm /tmp/pandoc.deb
 
-# Install LaTeX (LuaLaTeX + XeLaTeX) + Ghostscript
-# LuaLaTeX is the primary PDF engine — generates PDFs directly without xdvipdfmx,
-# avoiding the OpenType font embedding bugs in TeX Live 2021's xdvipdfmx driver.
-# XeLaTeX kept as fallback.
-# NOTE: TeX Live is pinned to Ubuntu 22.04's repo version (2021.20220204-1).
-# To upgrade, bump the base image or pin via tlmgr after install.
+# Install fonts + Ghostscript (no TeX Live — Typst is the sole PDF engine)
+# Fonts are installed via system packages and discovered by fontconfig.
+# Typst reads from fontconfig automatically.
 RUN apt-get update && apt-get install -y \
-    texlive-latex-base=2021.20220204-1 \
-    texlive-latex-extra \
-    texlive-fonts-recommended \
-    texlive-fonts-extra \
-    texlive-luatex \
-    texlive-xetex \
-    texlive-latex-recommended \
     ghostscript \
     icc-profiles-free \
     # ── Font packages for PagePerfect templates ──
+    # TeX Live font packages (contain ETbb, Alegreya, Fira, EB Garamond, etc.)
+    texlive-fonts-recommended \
+    texlive-fonts-extra \
     # DejaVu family (Sans, Serif, Sans Mono) — used by 6+ templates
     fonts-dejavu \
     # Noto fonts — multilingual fallback (Arabic, CJK, Devanagari, Hebrew, Thai)
@@ -64,15 +54,12 @@ RUN apt-get update && apt-get install -y \
     fontconfig \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Make TeX Live fonts visible to fontconfig (fc-list) ──
-# TeX Live installs OpenType/TrueType fonts under /usr/share/texlive/texmf-dist/fonts/
-# but fontconfig doesn't scan those directories by default. Without this, fc-list
-# won't find ETbb, Alegreya Sans, Fira Sans, Source Sans Pro, Libertinus, etc.
-# even though they're installed by texlive-fonts-extra.
+# ── Make TeX Live fonts visible to fontconfig ──
+# texlive-fonts-* installs fonts under /usr/share/texlive/texmf-dist/fonts/
+# but fontconfig doesn't scan those directories by default.
 RUN cp /usr/share/texlive/texmf-dist/fontconfig/conf.avail/*.conf /etc/fonts/conf.d/ 2>/dev/null || true \
     && printf '<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">\n<fontconfig>\n  <dir>/usr/share/texlive/texmf-dist/fonts/opentype</dir>\n  <dir>/usr/share/texlive/texmf-dist/fonts/truetype</dir>\n  <dir>/usr/share/texmf/fonts/opentype</dir>\n  <dir>/usr/share/texmf/fonts/truetype</dir>\n</fontconfig>\n' > /etc/fonts/conf.d/99-texlive-fonts.conf \
-    && fc-cache -fv \
-    && luaotfload-tool --update 2>/dev/null || true
+    && fc-cache -fv
 
 # Install Typst (modern typesetting engine — Rust binary, zero locale deps)
 # Typst uses the same Knuth-Plass line-breaking algorithm as TeX but compiles ~27x faster.
@@ -98,8 +85,6 @@ RUN npm ci --omit=dev
 COPY . .
 
 # SECURITY: Create non-root user for running the application.
-# If an attacker gains code execution (e.g. via LaTeX injection),
-# they will NOT have root privileges inside the container.
 RUN groupadd -r ppuser && useradd -r -g ppuser -d /app ppuser \
     && chown -R ppuser:ppuser /app \
     && mkdir -p /tmp && chmod 1777 /tmp
@@ -109,7 +94,7 @@ RUN groupadd -r ppuser && useradd -r -g ppuser -d /app ppuser \
 RUN chmod -R a-w /app/templates /app/typst-templates /app/filters 2>/dev/null || true
 
 # SECURITY: Set resource limits for compile processes in the ppuser profile.
-# Pandoc/LuaLaTeX spawns inherit these limits to prevent resource exhaustion.
+# Pandoc/Typst spawns inherit these limits to prevent resource exhaustion.
 # - Max 512MB virtual memory per process (RLIMIT_AS)
 # - Max 200 open file descriptors (RLIMIT_NOFILE)
 # - Max 50 child processes (RLIMIT_NPROC)

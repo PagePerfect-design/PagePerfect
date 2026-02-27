@@ -2,16 +2,14 @@
  * layout-sanity-checker.js — Post-compilation layout quality analysis
  *
  * Detects typography issues that survive compilation:
- *   - Widows (last line of paragraph alone at top of page)
- *   - Orphans (first line of paragraph alone at bottom of page)
- *   - Short final lines (runts)
  *   - Overfull content (text extending past margins)
- *   - Underfull pages (pages with excessive whitespace)
+ *   - Font/glyph warnings
+ *   - Image errors
+ *   - Reference warnings
  *
- * Works with BOTH Typst and LuaLaTeX compilation output.
+ * Works with Typst compilation output (Typst is the sole PDF engine).
  *
  * Typst approach: Parse Typst's stderr warnings for layout issues.
- * LuaLaTeX approach: Parse .log file for badness/overfull/underfull messages.
  *
  * For PDF-level analysis (future): Use a PDF parser to detect very short
  * last-lines-on-page via text extraction + bounding box analysis.
@@ -126,89 +124,6 @@ function analyzeTypstLayout(stderr, options = {}) {
 }
 
 /**
- * Analyze a LuaLaTeX compile log for layout issues.
- * LaTeX emits "Overfull \\hbox", "Underfull \\vbox", and badness warnings.
- *
- * @param {string} logContent - LaTeX .log file content
- * @param {object} [options] - Analysis options
- * @param {string} [options.template] - Template name for context
- * @returns {{ issues: Array, grade: string, summary: string }}
- */
-function analyzeLatexLayout(logContent, options = {}) {
-  const issues = [];
-  if (!logContent) return { issues, grade: 'A', summary: 'No layout warnings detected.' };
-
-  const lines = logContent.split('\n');
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    // Overfull \hbox — text exceeds line width
-    const overfullH = line.match(/Overfull \\hbox \((\d+(?:\.\d+)?)pt too wide\)/);
-    if (overfullH) {
-      const excess = parseFloat(overfullH[1]);
-      issues.push({
-        category: CATEGORY.OVERFULL,
-        severity: excess > 10 ? SEVERITY.WARNING : SEVERITY.INFO,
-        message: `Overfull hbox: ${excess}pt too wide`,
-        line: extractLatexLineNumber(lines, i),
-        excess,
-        fix: excess > 10
-          ? 'Text extends significantly past the margin. Consider hyphenation or rephrasing.'
-          : 'Minor overfull — usually invisible to readers.',
-      });
-    }
-
-    // Underfull \hbox — loose line (too much space between words)
-    const underfullH = line.match(/Underfull \\hbox \(badness (\d+)\)/);
-    if (underfullH) {
-      const badness = parseInt(underfullH[1]);
-      if (badness >= 5000) {
-        issues.push({
-          category: CATEGORY.UNDERFULL,
-          severity: badness >= 10000 ? SEVERITY.WARNING : SEVERITY.INFO,
-          message: `Underfull hbox: badness ${badness}`,
-          line: extractLatexLineNumber(lines, i),
-          badness,
-          fix: 'A line has excessive word spacing. This is often a widow/orphan side-effect or a forced break.',
-        });
-      }
-    }
-
-    // Underfull \vbox — page has too much vertical space (short page / orphan indicator)
-    const underfullV = line.match(/Underfull \\vbox \(badness (\d+)\)/);
-    if (underfullV) {
-      const badness = parseInt(underfullV[1]);
-      if (badness >= 5000) {
-        issues.push({
-          category: CATEGORY.SHORT_PAGE,
-          severity: badness >= 10000 ? SEVERITY.WARNING : SEVERITY.INFO,
-          message: `Underfull vbox: badness ${badness} — possible widow/orphan or short page`,
-          line: extractLatexLineNumber(lines, i),
-          badness,
-          fix: 'A page has significant empty space at the bottom. This may indicate a widow, orphan, or forced page break.',
-        });
-      }
-    }
-
-    // Font warnings
-    if (/Font Warning.*not available/i.test(line) || /missing character/i.test(line)) {
-      issues.push({
-        category: CATEGORY.FONT_WARNING,
-        severity: SEVERITY.WARNING,
-        message: line.trim().substring(0, 200),
-        fix: 'A font or character is not available. Check that all required fonts are installed.',
-      });
-    }
-  }
-
-  const grade = calculateGrade(issues);
-  const summary = buildSummary(issues, options.template);
-
-  return { issues, grade, summary };
-}
-
-/**
  * Extract line number from a Typst error/warning line.
  * Formats: "warning: file.typ:12:5: message" or "error: at file.typ:12:5"
  */
@@ -219,19 +134,6 @@ function extractTypstLineNumber(line) {
   // Try standalone :LINE:COL format (e.g., "input:12:5")
   const m2 = line.match(/:(\d+):\d+:/);
   return m2 ? parseInt(m2[1]) : null;
-}
-
-/**
- * Extract line number context from LaTeX log.
- * LaTeX logs reference "l.123" for line numbers.
- */
-function extractLatexLineNumber(lines, currentIndex) {
-  // Look ahead for "l.\d+" pattern within 3 lines
-  for (let j = currentIndex; j < Math.min(currentIndex + 4, lines.length); j++) {
-    const m = lines[j].match(/l\.(\d+)/);
-    if (m) return parseInt(m[1]);
-  }
-  return null;
 }
 
 /**
@@ -287,7 +189,6 @@ function buildSummary(issues, template) {
 
 module.exports = {
   analyzeTypstLayout,
-  analyzeLatexLayout,
   SEVERITY,
   CATEGORY,
 };

@@ -7,8 +7,6 @@
  * and complex script detection.
  */
 
-const fontAvailability = require('./font-availability');
-
 // ================================================================
 // Script Detection
 // ================================================================
@@ -83,7 +81,7 @@ function detectScripts(text) {
 
 /**
  * Font fallback chains for different scripts.
- * These are safe defaults for LuaLaTeX with common system fonts.
+ * These are safe defaults for common system fonts.
  */
 const FONT_FALLBACK = {
   arabic: {
@@ -164,93 +162,6 @@ const LINE_BREAKING_RULES = {
 };
 
 // ================================================================
-// LaTeX Preamble Generation
-// ================================================================
-
-/**
- * Generate multilingual LaTeX preamble based on detected scripts.
- *
- * @param {object} scriptAnalysis — from detectScripts
- * @param {object} [opts]         — { primaryFont }
- * @returns {string} LaTeX preamble
- */
-function generateMultilingualPreamble(scriptAnalysis, opts = {}) {
-  const commands = ['% ── Multilingual and Scripture-safe System ──'];
-
-  if (!scriptAnalysis.isMultiscript && !scriptAnalysis.hasRTL) {
-    // Simple case: Latin-only
-    commands.push('% Single-script document (Latin). No additional multilingual setup needed.');
-    return commands.join('\n');
-  }
-
-  // Polyglossia for multilingual support (LuaLaTeX)
-  commands.push('\\usepackage{polyglossia}');
-
-  // Set main language based on primary script
-  const langMap = {
-    arabic: 'arabic',
-    hebrew: 'hebrew',
-    greek: 'greek',
-    cyrillic: 'russian',
-    thai: 'thai',
-    latin: 'english',
-  };
-
-  const mainLang = langMap[scriptAnalysis.primaryScript] || 'english';
-  commands.push(`\\setmainlanguage{${mainLang}}`);
-
-  // Set other languages
-  for (const script of scriptAnalysis.scripts) {
-    const lang = langMap[script.script];
-    if (lang && lang !== mainLang) {
-      commands.push(`\\setotherlanguage{${lang}}`);
-    }
-  }
-
-  // RTL support
-  if (scriptAnalysis.hasRTL) {
-    commands.push('');
-    commands.push('% RTL support');
-    commands.push('\\usepackage{bidi}');
-  }
-
-  // Font configuration for non-Latin scripts (availability-aware)
-  for (const script of scriptAnalysis.scripts) {
-    if (script.script === 'latin') continue;
-    const fallback = FONT_FALLBACK[script.script];
-    if (fallback) {
-      // Walk the primary + fallback lists to find the first available font
-      const candidates = [...fallback.primary, ...fallback.fallback];
-      let fontName = candidates[0]; // default if probing unavailable
-      for (const candidate of candidates) {
-        if (fontAvailability.isFontAvailable(candidate)) {
-          fontName = candidate;
-          break;
-        }
-      }
-      commands.push(`\\newfontfamily{\\${script.script}font}{${fontName}}[Script=${script.label}]`);
-    }
-  }
-
-  // Mixed direction handling
-  if (scriptAnalysis.hasMixedDirection) {
-    commands.push('');
-    commands.push('% Mixed-direction paragraph support');
-    commands.push('\\newcommand{\\ltrtext}[1]{\\begingroup\\textdir TLT #1\\endgroup}');
-    commands.push('\\newcommand{\\rtltext}[1]{\\begingroup\\textdir TRT #1\\endgroup}');
-  }
-
-  // Diacritics support
-  if (scriptAnalysis.hasDiacritics) {
-    commands.push('');
-    commands.push('% Enhanced diacritics rendering');
-    commands.push('% LuaLaTeX handles combining diacritics natively via fontspec');
-  }
-
-  return commands.join('\n');
-}
-
-// ================================================================
 // Manuscript Language Analysis
 // ================================================================
 
@@ -293,28 +204,28 @@ function analyzeMultilingual(md) {
   if (scriptAnalysis.hasRTL) {
     recommendations.push({
       severity: 'warn',
-      message: 'RTL content detected. Ensure the bidi package is available in your LaTeX installation.',
+      message: 'RTL content detected. Ensure your chosen fonts support RTL scripts.',
     });
   }
 
   if (scriptAnalysis.hasMixedDirection) {
     recommendations.push({
       severity: 'info',
-      message: 'Mixed LTR/RTL content detected. Paragraph direction will be handled automatically, but inline direction changes may need \\ltrtext{} or \\rtltext{} wrappers.',
+      message: 'Mixed LTR/RTL content detected. Typst handles paragraph direction automatically via #set text(dir: rtl).',
     });
   }
 
   if (scriptAnalysis.scripts.find(s => s.script === 'cjk')) {
     recommendations.push({
       severity: 'info',
-      message: 'CJK characters detected. Large CJK fonts may increase compilation time. Consider the xeCJK package for optimal typesetting.',
+      message: 'CJK characters detected. Large CJK fonts may increase compilation time.',
     });
   }
 
   if (scriptAnalysis.hasDiacritics) {
     recommendations.push({
       severity: 'info',
-      message: 'Complex diacritics detected. LuaLaTeX handles these natively. Ensure your chosen font supports the required Unicode combining characters.',
+      message: 'Complex diacritics detected. Ensure your chosen font supports the required Unicode combining characters.',
     });
   }
 
@@ -323,7 +234,6 @@ function analyzeMultilingual(md) {
     fontRequirements,
     lineBreakingNeeds,
     recommendations,
-    preamble: generateMultilingualPreamble(scriptAnalysis),
   };
 }
 
@@ -336,6 +246,5 @@ module.exports = {
   FONT_FALLBACK,
   LINE_BREAKING_RULES,
   detectScripts,
-  generateMultilingualPreamble,
   analyzeMultilingual,
 };

@@ -58,96 +58,7 @@ class GridSystem {
   }
 
   /**
-   * Calculate grid-based margins
-   * Ensures margins are multiples of baseline grid.
-   * Validates that margins don't consume more than 40% of the page width,
-   * which would leave insufficient text area.
-   */
-  calculateMargins(pageSize, preset, template = 'academic') {
-    const base = this.baseline[template] || this.baseline.academic; // Fallback to academic
-    const mm = (n) => `${n}mm`;
-    const in_ = (n) => `${n}in`;
-
-    // Grid-based margin calculations
-    const marginMultipliers = {
-      minimal: 2,    // 2 grid units
-      compact: 3,    // 3 grid units
-      narrow: 4,     // 4 grid units
-      normal: 5,     // 5 grid units
-      wide: 6,       // 6 grid units
-      academic: 7,   // 7 grid units
-      generous: 8    // 8 grid units
-    };
-
-    const multiplier = marginMultipliers[preset] || marginMultipliers.normal;
-    let gridMargin = (base * multiplier) / 72; // Convert pt to inches
-
-    // Page width lookup (in inches) for margin validation
-    const pageWidths = {
-      a4: 8.27, letter: 8.5, sixByNine: 6, fiveFiveByEightFive: 5.5,
-      sevenByTen: 7, a5: 5.83, royal: 6.14, bFormat: 5.08, aFormat: 4.37,
-      demy: 5.43, crownQuarto: 7.44, b5: 6.93, massMarket: 4.25,
-      fiveTwentyFiveByEight: 5.25, amazonFiveByEight: 5,
-      amazonSixByNine: 6, amazonSevenByTen: 7, amazonEightByTen: 8,
-      amazonEightFiveByEleven: 8.5,
-    };
-    const pageWidth = pageWidths[pageSize] || pageWidths.letter;
-    // Cap margin so that left + right margins don't exceed 40% of page width.
-    // This ensures at least 60% of page width is usable text area.
-    const maxMargin = pageWidth * 0.20; // 20% per side = 40% total
-    if (gridMargin > maxMargin) {
-      gridMargin = maxMargin;
-    }
-    
-    switch (pageSize) {
-      case 'a4':
-        return `a4paper,margin=${mm(gridMargin * 25.4)}`;
-      case 'letter':
-      default:
-        return `letterpaper,margin=${in_(gridMargin)}`;
-      case 'sixByNine':
-        return `paperwidth=6in,paperheight=9in,margin=${in_(gridMargin)}`;
-      case 'fiveFiveByEightFive':
-        return `paperwidth=5.5in,paperheight=8.5in,margin=${in_(gridMargin)}`;
-      case 'sevenByTen':
-        return `paperwidth=7in,paperheight=10in,margin=${in_(gridMargin)}`;
-      case 'a5':
-        return `paperwidth=148mm,paperheight=210mm,margin=${mm(gridMargin * 25.4)}`;
-      // UK book sizes
-      case 'royal':
-        return `paperwidth=156mm,paperheight=234mm,margin=${mm(gridMargin * 25.4)}`;
-      case 'bFormat':
-        return `paperwidth=129mm,paperheight=198mm,margin=${mm(gridMargin * 25.4)}`;
-      case 'aFormat':
-        return `paperwidth=111mm,paperheight=178mm,margin=${mm(gridMargin * 25.4)}`;
-      case 'demy':
-        return `paperwidth=138mm,paperheight=216mm,margin=${mm(gridMargin * 25.4)}`;
-      case 'crownQuarto':
-        return `paperwidth=189mm,paperheight=246mm,margin=${mm(gridMargin * 25.4)}`;
-      // International standards
-      case 'b5':
-        return `paperwidth=176mm,paperheight=250mm,margin=${mm(gridMargin * 25.4)}`;
-      // US book sizes
-      case 'massMarket':
-        return `paperwidth=4.25in,paperheight=6.87in,margin=${in_(gridMargin)}`;
-      case 'fiveTwentyFiveByEight':
-        return `paperwidth=5.25in,paperheight=8in,margin=${in_(gridMargin)}`;
-      // Amazon KDP sizes
-      case 'amazonFiveByEight':
-        return `paperwidth=5in,paperheight=8in,margin=${in_(gridMargin)}`;
-      case 'amazonSixByNine':
-        return `paperwidth=6in,paperheight=9in,margin=${in_(gridMargin)}`;
-      case 'amazonSevenByTen':
-        return `paperwidth=7in,paperheight=10in,margin=${in_(gridMargin)}`;
-      case 'amazonEightByTen':
-        return `paperwidth=8in,paperheight=10in,margin=${in_(gridMargin)}`;
-      case 'amazonEightFiveByEleven':
-        return `paperwidth=8.5in,paperheight=11in,margin=${in_(gridMargin)}`;
-    }
-  }
-
-  /**
-   * Generate typographic scale for LaTeX
+   * Generate typographic scale values.
    */
   generateTypography(template = 'academic') {
     const base = this.baseline[template];
@@ -253,42 +164,6 @@ class GridSystem {
 `;
   }
 
-  /**
-   * Generate LaTeX commands for grid system
-   */
-  generateLaTeXCommands(template = 'academic') {
-    const typo = this.generateTypography(template);
-    
-    return `
-% Grid System Typography
-\\usepackage{setspace}
-\\setstretch{${typo.lineHeight}}
-
-% Typographic Scale
-\\newcommand{\\gridHOne}{\\fontsize{${typo.h1Size}pt}{${Math.round(typo.h1Size * typo.lineHeight)}pt}\\selectfont}
-\\newcommand{\\gridHTwo}{\\fontsize{${typo.h2Size}pt}{${Math.round(typo.h2Size * typo.lineHeight)}pt}\\selectfont}
-\\newcommand{\\gridHThree}{\\fontsize{${typo.h3Size}pt}{${Math.round(typo.h3Size * typo.lineHeight)}pt}\\selectfont}
-\\newcommand{\\gridSmall}{\\fontsize{${typo.smallSize}pt}{${Math.round(typo.smallSize * typo.lineHeight)}pt}\\selectfont}
-
-% Grid-based Spacing
-\\newcommand{\\gridSpaceXs}{\\vspace{${typo.spacingXs}pt}}
-\\newcommand{\\gridSpaceSm}{\\vspace{${typo.spacingSm}pt}}
-\\newcommand{\\gridSpaceMd}{\\vspace{${typo.spacingMd}pt}}
-\\newcommand{\\gridSpaceLg}{\\vspace{${typo.spacingLg}pt}}
-\\newcommand{\\gridSpaceXl}{\\vspace{${typo.spacingXl}pt}}
-\\newcommand{\\gridSpaceXxl}{\\vspace{${typo.spacingXxl}pt}}
-
-% Baseline Grid (for debugging - remove in production)
-% \\usepackage{eso-pic}
-% \\AddToShipoutPictureBG{%
-%   \\AtTextUpperLeft{%
-%     \\multiput(0,0)(0,${typo.baseSize})(0,100){%
-%       \\line(1,0){\\textwidth}%
-%     }%
-%   }%
-% }
-`;
-  }
 }
 
 module.exports = GridSystem;

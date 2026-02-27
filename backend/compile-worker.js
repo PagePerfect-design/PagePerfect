@@ -1,14 +1,13 @@
 /**
  * Compile Worker — BullMQ processor for PDF compilation jobs.
  *
- * Runs pandoc/lualatex with bounded concurrency (default: 3).
+ * Runs pandoc + typst with bounded concurrency (default: 3).
  * Each job receives only lightweight metadata — the manuscript is written
  * to a temp file BEFORE enqueue and the path is passed via job data.
  *
  * SECURITY FIXES APPLIED:
- *   - LaTeX sanitization on all user-supplied strings (title, font names)
+ *   - Sanitization on all user-supplied strings (title, font names)
  *   - Auth re-verified via userId + admin token (no user auth token in Redis)
- *   - Injection detection on manuscript text
  *   - Font names validated against registry
  *
  * CRITICAL: Auth and watermark decisions are RE-VERIFIED at compile time,
@@ -27,13 +26,10 @@ const log = require('./logger').child({ module: 'worker' });
 const GridSystem = require('./grid-system');
 const provenance = require('./provenance');
 const bookEngineering = require('./book-engineering');
-const multilingual = require('./multilingual');
 const templateExtensions = require('./template-extensions');
 const headingVariants = require('./heading-variants');
-const watermark = require('./watermark');
 const fontAvailability = require('./font-availability');
 const publishing = require('./publishing');
-const errorTranslator = require('./error-translator');
 const typstErrorTranslator = require('./typst-error-translator');
 const typographyAssurance = require('./typography-assurance');
 const layoutSanityChecker = require('./layout-sanity-checker');
@@ -61,29 +57,18 @@ const MAX_STDERR_BYTES = 256 * 1024; // 256KB — cap stderr accumulation from P
 
 // ── Toolchain version detection (once at module load) ──
 let _pandocVersion = 'unknown';
-let _lualatexVersion = 'unknown';
 let _typstVersion = 'unknown';
-let _typstAvailable = false;
 try {
   const pv = execSync('pandoc --version 2>/dev/null | head -1', { encoding: 'utf8', timeout: 5000 });
   const m = pv.match(/pandoc(?:\.exe)?\s+([\d.]+)/);
   if (m) _pandocVersion = m[1];
 } catch {}
 try {
-  const lv = execSync('lualatex --version 2>/dev/null | head -1', { encoding: 'utf8', timeout: 5000 });
-  const m = lv.match(/Version\s+([^\s(]+)/i) || lv.match(/([\d.]+)/);
-  if (m) _lualatexVersion = m[1];
-} catch {}
-try {
   const tv = execSync('typst --version 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
   const m = tv.match(/typst\s+([\d.]+)/i) || tv.match(/([\d.]+)/);
-  if (m) { _typstVersion = m[1]; _typstAvailable = true; }
+  if (m) _typstVersion = m[1];
 } catch {}
-if (_typstAvailable) {
-  log.info({ typstVersion: _typstVersion }, 'Typst engine available');
-} else {
-  log.info('Typst engine not found — using LuaLaTeX only');
-}
+log.info({ pandocVersion: _pandocVersion, typstVersion: _typstVersion }, 'Typst compile engine ready');
 
 /**
  * Build deterministic runtime metadata for every compile result.
@@ -91,12 +76,11 @@ if (_typstAvailable) {
  * without digging into server logs.
  */
 function buildDebugMeta(job, opts = {}) {
-  const engine = opts.engine || job.data.engine || (_typstAvailable ? 'typst' : 'lualatex');
   return {
     locale: SAFE_SPAWN_ENV.LANG,
     pandocVersion: _pandocVersion,
-    lualatexVersion: _lualatexVersion,
     typstVersion: _typstVersion,
+    engine: 'typst',
     engine,
     template: opts.template || job.data.template,
     safeMode: Boolean(opts.safeMode ?? job.data.safeMode),
@@ -108,13 +92,8 @@ function buildDebugMeta(job, opts = {}) {
   };
 }
 
-// SECURITY: Minimal environment for spawned Pandoc/LuaLaTeX processes.
+// SECURITY: Minimal environment for spawned Pandoc/Typst processes.
 // Strips all backend secrets (Stripe, PocketBase, Redis) that Pandoc doesn't need.
-//
-// LOCALE: C.UTF-8 is present on modern glibc without locale-gen. Do NOT inherit from
-// process.env.LANG — hosting (Coolify, Docker Compose, K8s) may inject an invalid
-// locale. PP_SPAWN_LOCALE override: set to empty string to try LANG= (works in some
-// environments when C.UTF-8 fails — see TeX.SE / COMPILE_DEBUG_GUIDE.md).
 const SPAWN_LOCALE = (process.env.PP_SPAWN_LOCALE !== undefined)
   ? process.env.PP_SPAWN_LOCALE
   : 'C.UTF-8';
@@ -125,8 +104,6 @@ const SAFE_SPAWN_ENV = {
   LANG: SPAWN_LOCALE,
   LC_ALL: SPAWN_LOCALE,
   LC_CTYPE: SPAWN_LOCALE,
-  TEXMFHOME: process.env.TEXMFHOME || '',
-  TEXMFVAR: process.env.TEXMFVAR || '',
   SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
 };
 
@@ -228,13 +205,6 @@ async function processCompileJob(job, templateRegistry) {
     };
   }
 
-  // ── Security: check for LaTeX injection attempts in manuscript ──
-  if (latexSanitizer.hasInjectionAttempt(manuscriptText)) {
-    log.warn({ jobId: job.id }, 'LaTeX injection attempt detected');
-    // Don't block — the -raw_tex flag in Pandoc should prevent execution.
-    // But log it for monitoring.
-  }
-
   // ── Re-verify auth at compile time via admin token (no user token in Redis) ──
   const user = await verifyUserTierById(enqueueUserId);
   const userTier = user.tier;
@@ -322,20 +292,20 @@ async function processCompileJob(job, templateRegistry) {
   const templateType = tpl.gridType || 'academic';
   const isFast = compileMode === 'fast';
 
-  // ── Engine selection: Typst (preferred) or LuaLaTeX (fallback) ──
-  // Typst is used when available AND a .typ template exists for this template key.
+  // ── Typst template resolution ──
   const typstTemplatePath = path.resolve(__dirname, 'typst-templates', `${tplKey}.typ`);
-  const requestedEngine = job.data.engine || 'auto';
-  const useTypst = (requestedEngine === 'typst' || requestedEngine === 'auto')
-    && _typstAvailable
-    && fs.existsSync(typstTemplatePath);
-  const engine = useTypst ? 'typst' : 'lualatex';
+  if (!fs.existsSync(typstTemplatePath)) {
+    return {
+      success: false, error: 'template_not_found',
+      message: `Typst template "${tplKey}" not found.`,
+      warnings,
+      debugMeta: buildDebugMeta(job),
+    };
+  }
 
-  log.info({ jobId: job.id, engine, tplKey, typstAvailable: _typstAvailable }, 'Engine selected');
+  log.info({ jobId: job.id, engine: 'typst', tplKey }, 'Compiling with Typst');
 
-  const geo = useTypst
-    ? gridSystem.calculateTypstMargins(pageSize, marginPreset, templateType)
-    : gridSystem.calculateMargins(pageSize, marginPreset, templateType);
+  const geo = gridSystem.calculateTypstMargins(pageSize, marginPreset, templateType);
 
   // Lint manuscript for common issues (double spaces, bad dashes, heading hierarchy)
   try {
@@ -358,16 +328,17 @@ async function processCompileJob(job, templateRegistry) {
   if (sansRes?.warning) warnings.push(sansRes.warning);
   if (monoRes?.warning) warnings.push(monoRes.warning);
 
-  // ════════════════════════════════════════════════════════════
-  // ── TYPST ENGINE PATH ──
-  // ════════════════════════════════════════════════════════════
-  if (useTypst) {
-    // Read and prepare Typst template
-    let typstTpl = await fsp.readFile(typstTemplatePath, 'utf8');
+  // ── Typst compilation ──
+  let typstTpl = await fsp.readFile(typstTemplatePath, 'utf8');
     await fsp.writeFile(path.join(tmpBase, 'template.typ'), typstTpl, 'utf8');
 
     // Assemble Typst preamble (header-includes)
-    const typstPreamble = [geo];
+    // Pandoc emits #horizontalrule for markdown '---' thematic breaks;
+    // the default Pandoc template defines it, but custom templates don't.
+    const typstPreamble = [
+      '#let horizontalrule = line(start: (25%,0%), end: (75%,0%))',
+      geo,
+    ];
     let buildMeta;
     try {
       typstPreamble.push(bookEngineering.generateTypstEngineeringPreamble(templateType));
@@ -594,480 +565,10 @@ async function processCompileJob(job, templateRegistry) {
       template: tplKey,
       title: safeTitle,
     };
-  }
 
-  // ════════════════════════════════════════════════════════════
-  // ── LUALATEX ENGINE PATH (original) ──
-  // ════════════════════════════════════════════════════════════
-
-  // Template patching
-  let tplContent = await fsp.readFile(tpl.templatePath, 'utf8');
-  for (const { original, resolved } of [
-    { original: tpl.mainfont, resolved: mainFont },
-    ...(sansRes ? [{ original: tpl.sansfont, resolved: sansRes.resolved }] : []),
-    ...(monoRes ? [{ original: tpl.monofont, resolved: monoRes.resolved }] : []),
-  ]) {
-    if (original !== resolved) {
-      const esc = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      tplContent = tplContent.replace(
-        new RegExp(`(\\\\set(?:main|sans|mono)font\\{)${esc}(\\})`, 'g'), `$1${resolved}$2`
-      );
-    }
-  }
-
-  // Custom font override — validate font file names
-  const CUSTOM_FONTS_DIR = path.join(os.tmpdir(), 'pp-custom-fonts');
-  if (customFonts && typeof customFonts === 'object') {
-    for (const slot of ['main', 'sans', 'mono']) {
-      const fontId = customFonts[slot];
-      if (!fontId || typeof fontId !== 'string') continue;
-      // Validate fontId format (UUID only — prevents path traversal)
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fontId)) continue;
-      const srcDir = path.join(CUSTOM_FONTS_DIR, fontId);
-      if (!fs.existsSync(srcDir)) continue;
-      const files = fs.readdirSync(srcDir).filter(f => /\.(ttf|otf)$/i.test(f));
-      if (files.length === 0) continue;
-      // Validate filename is safe (no path separators, no special chars)
-      const safeFileName = files[0].replace(/[^a-zA-Z0-9._-]/g, '_');
-      fs.copyFileSync(path.join(srcDir, files[0]), path.join(tmpBase, safeFileName));
-      const cmd = slot === 'main' ? 'setmainfont' : slot === 'sans' ? 'setsansfont' : 'setmonofont';
-      tplContent = tplContent.replace(new RegExp(`(\\\\${cmd})(\\[.*?\\])?\\{[^}]+\\}`), `$1[Path=./]{${safeFileName}}`);
-      warnings.push(`Custom ${slot} font applied: ${safeFileName}`);
-    }
-  }
-
-  // ── Emoji / symbol fallback font (LuaLaTeX only) ──
-  // Register a fallback chain so missing glyphs (emoji, symbols) don't crash
-  // the compile or silently disappear. Noto Color Emoji must be installed in
-  // the Docker image. The fallback is registered via luaotfload and applied
-  // to the main font via RawFeature. We inject this BEFORE \setmainfont by
-  // adding a \directlua block, then patch the \setmainfont call to reference it.
-  //
-  // DEFENSIVE: luaotfload.add_fallback() was added in luaotfload 3.17 (2021).
-  // Older TeX Live installs won't have it. We wrap in pcall + type check so
-  // the compile continues without emoji support rather than crashing.
-  const emojiFallbackLua = [
-    '\\directlua{',
-    '  pp_emoji_fallback_ok = false',
-    '  if luaotfload and type(luaotfload.add_fallback) == "function" then',
-    '    local ok, err = pcall(function()',
-    '      luaotfload.add_fallback("emojifallback", {',
-    '        "Noto Color Emoji:mode=harf;",',
-    '        "Noto Sans Symbols:mode=node;",',
-    '        "Noto Sans Symbols2:mode=node;",',
-    '        "DejaVu Sans:mode=node;",',
-    '      })',
-    '    end)',
-    '    if ok then',
-    '      pp_emoji_fallback_ok = true',
-    '    else',
-    '      texio.write_nl("log", "[pageperfect] emoji fallback registration failed: " .. tostring(err))',
-    '    end',
-    '  else',
-    '    texio.write_nl("log", "[pageperfect] luaotfload.add_fallback not available — emoji fallback disabled")',
-    '  end',
-    '}',
-  ].join('\n');
-
-  // Inject the fallback registration BEFORE \setmainfont in the template
-  const fontspecIdx = tplContent.indexOf('\\usepackage{fontspec}');
-  if (fontspecIdx !== -1) {
-    // Insert after \usepackage{fontspec}
-    const insertPos = tplContent.indexOf('\n', fontspecIdx);
-    if (insertPos !== -1) {
-      tplContent = tplContent.slice(0, insertPos + 1)
-        + '\n' + emojiFallbackLua + '\n'
-        + tplContent.slice(insertPos + 1);
-    }
-  }
-
-  // Patch \setmainfont to CONDITIONALLY include the fallback RawFeature.
-  // Uses \directlua{tex.sprint()} which is fully expandable in LuaTeX —
-  // the expansion happens before fontspec processes the option list.
-  //
-  // Handles BOTH fontspec syntaxes:
-  //   Old: \setmainfont[Options]{Font}
-  //   New: \setmainfont{Font}[Options]   (fontspec ≥ 2.5)
-  tplContent = tplContent.replace(
-    /\\setmainfont(?:\[([^\]]*)\])?\{([^}]+)\}(?:\[([^\]]*)\])?/,
-    (match, preOpts, fontName, postOpts) => {
-      const existingOpts = preOpts || postOpts || '';
-      if (existingOpts.includes('fallback=')) return match; // already has fallback
-      const conditionalFallback = '\\directlua{if pp_emoji_fallback_ok then tex.sprint(",RawFeature={fallback=emojifallback}") end}';
-      // Normalize to [options]{font} syntax with conditional emoji fallback
-      const opts = existingOpts
-        ? `${existingOpts}${conditionalFallback}`
-        : `Ligatures=TeX${conditionalFallback}`;
-      return `\\setmainfont[${opts}]{${fontName}}`;
-    }
-  );
-
-  await fsp.writeFile(path.join(tmpBase, 'template.latex'), tplContent, 'utf8');
-
-  // Preamble assembly
-  const preamble = [`\\geometry{${geo}}`];
-  let buildMeta;
-  try {
-    preamble.push(bookEngineering.generateEngineeringPreamble(templateType));
-    const scripts = multilingual.detectScripts(effectiveMd);
-    if (scripts.isMultiscript || scripts.hasRTL)
-      preamble.push(multilingual.generateMultilingualPreamble(scripts));
-
-    buildMeta = provenance.generateBuildMetadata({
-      manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
-      outputFormat: wantPdfX ? 'pdfx1a' : 'pdf',
-      headingVariant, needsWatermark, customFonts: customFonts || null,
-    });
-    preamble.push(provenance.generateMetadataPreamble(buildMeta));
-
-    if (extensions && typeof extensions === 'object' && Object.keys(extensions).length > 0) {
-      const ext = templateExtensions.validateExtensions(extensions, templateType);
-      if (ext.valid) preamble.push(templateExtensions.generateExtensionPreamble(ext.resolvedTokens));
-      else warnings.push(`Extension errors: ${ext.errors.map(e => e.error).join('; ')}`);
-    }
-
-    const vp = headingVariants.getVariantPreamble(tplKey, headingVariant);
-    if (vp) preamble.push(vp);
-    if (needsWatermark) preamble.push(watermark.generateWatermarkPreamble());
-
-    // ── Template-specific preamble injections ──
-
-    // Lettrine drop caps for fiction/literary templates
-    if (textNormalizer.DROP_CAP_TEMPLATES.has(tplKey)) {
-      preamble.push([
-        '% ── Drop Cap (lettrine) ──',
-        '\\usepackage{lettrine}',
-        '\\renewcommand{\\LettrineFontHook}{\\bfseries}',
-        '\\setcounter{DefaultLines}{3}',
-      ].join('\n'));
-    }
-
-    // Underscore protection for technical templates
-    // (Also added directly in operator.latex and matrix.latex as belt-and-suspenders)
-    if (textNormalizer.UNDERSCORE_TEMPLATES.has(tplKey)) {
-      preamble.push([
-        '% ── Underscore protection ──',
-        '% Allows underscores in text mode without crashing (user_id, api_key)',
-        '\\ifdefined\\underscore\\else\\usepackage{underscore}\\fi',
-      ].join('\n'));
-    }
-  } catch (err) {
-    let debugFiles = [];
-    let debugHeaderTex = null;
-    try { debugFiles = fs.readdirSync(tmpBase); } catch {}
-    try {
-      const hp = path.join(tmpBase, 'header.tex');
-      if (fs.existsSync(hp)) debugHeaderTex = fs.readFileSync(hp, 'utf8');
-    } catch {}
-    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-    return {
-      success: false, error: 'preamble_error', message: String(err), warnings,
-      debug: { texSource: null, latexLog: null, headerTex: debugHeaderTex, filesInDir: debugFiles, captureError: null },
-      debugMeta: meta,
-    };
-  }
-
-  await fsp.writeFile(path.join(tmpBase, 'header.tex'), preamble.join('\n\n'), 'utf8');
-
-  // ── Pre-flight: disk space check ──
-  // LuaLaTeX needs /tmp for .aux, .log, .toc, font cache, and PDF output.
-  // If the filesystem is nearly full, the compile will fail with cryptic errors
-  // ("I can't write on file", segfaults, truncated PDFs). Fail fast with a clear message.
-  try {
-    const tmpStats = await fsp.statfs(tmpBase);
-    const freeBytes = tmpStats.bavail * tmpStats.bsize;
-    const freeMB = Math.round(freeBytes / (1024 * 1024));
-    if (freeBytes < 50 * 1024 * 1024) {
-      log.warn({ jobId: job.id, freeMB }, 'Insufficient disk space for compilation');
-      let debugFiles = [];
-      try { debugFiles = fs.readdirSync(tmpBase); } catch {}
-      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-      return {
-        success: false, error: 'disk_full',
-        message: `Insufficient disk space (${freeMB} MB free). The server needs at least 50 MB to compile a PDF. Please try again later.`,
-        warnings,
-        debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: debugFiles, captureError: null, freeMB },
-        debugMeta: meta,
-      };
-    }
-  } catch (err) {
-    // statfs not available (Node < 18.15) or other error — proceed anyway
-    log.debug({ err: err.message }, 'Disk space check skipped');
-  }
-
-  // Pandoc spawn
-  const hardBreaks = tplKey === 'verse' ? '+hard_line_breaks' : '';
-
-  // ── Template-aware Pandoc format flags ──
-  // Disable tex_math_dollars for non-academic templates to prevent
-  // "$50 on the first job" from crashing LaTeX as a math expression.
-  const disableMath = !textNormalizer.MATH_TEMPLATES.has(tplKey)
-    ? '-tex_math_dollars' : '';
-
-  // Enable fenced_divs for cinema template (Fountain screenplay divs)
-  const fencedDivs = tplKey === 'cinema' ? '+fenced_divs' : '';
-
-  const fromFmt = safeMode
-    ? `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
-    : PANDOC_HAS_CITEPROC
-      ? `--from=markdown+citations${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`
-      : `--from=markdown${hardBreaks}${fencedDivs}${disableMath}-raw_tex-raw_attribute`;
-
-  // ── Lua filters ──
-  const luaFilters = [];
-  const filtersDir = path.join(__dirname, 'filters');
-
-  // Vertical-mode fix — prevents titlesec "entered in horizontal mode" error
-  // by inserting \par before every heading in the Pandoc AST. Applied to all
-  // templates universally; \par is a no-op when already in vertical mode.
-  luaFilters.push('--lua-filter', path.join(filtersDir, 'heading-vmode.lua'));
-
-  // Drop-cap filter for fiction/literary book-class templates
-  if (textNormalizer.DROP_CAP_TEMPLATES.has(tplKey)) {
-    luaFilters.push('--lua-filter', path.join(filtersDir, 'drop-cap.lua'));
-  }
-
-  // Table safety filter for editorial/multi-column templates
-  if (textNormalizer.TABLE_SAFETY_TEMPLATES.has(tplKey)) {
-    luaFilters.push('--lua-filter', path.join(filtersDir, 'table-safety.lua'));
-  }
-
-  // Fountain screenplay filter for cinema template
-  if (tplKey === 'cinema') {
-    luaFilters.push('--lua-filter', path.join(filtersDir, 'fountain.lua'));
-  }
-
-  // Determine top-level division from template class (article → section, book → chapter)
-  const tplClass = headingVariants.TEMPLATE_CLASS[tplKey] || 'article';
-  const topLevelDiv = tplClass === 'book' ? 'chapter' : 'section';
-
-  const args = [
-    mdPath, fromFmt, '--pdf-engine=lualatex',
-    `--top-level-division=${topLevelDiv}`,
-    `--resource-path=${tmpBase}`,
-    '-M', `title=${safeTitle}`,
-    `--template=${path.join(tmpBase, 'template.latex')}`,
-    '-H', path.join(tmpBase, 'header.tex'),
-    '-V', `mainfont=${mainFont}`,
-    ...(isFast ? [] : ['-V', 'microtype=true', '-V', 'csquotes=true']),
-    ...luaFilters,
-    '-o', pdfPath,
-    ...(safeMode ? [] : citeprocArgs(BIB_PATH)),
-  ];
-
-  const startTs = Date.now();
-  const result = await new Promise((resolve) => {
-    let proc;
-    try { proc = spawn('pandoc', args, { cwd: tmpBase, env: SAFE_SPAWN_ENV }); }
-    catch (e) { resolve({ ok: false, error: 'spawn_failed', message: String(e) }); return; }
-
-    let stderr = '';
-    let stderrBytes = 0;
-    proc.stderr.on('data', (d) => { if (stderrBytes < MAX_STDERR_BYTES) { stderr += d.toString(); stderrBytes += d.length; } });
-    proc.on('error', (e) => resolve({ ok: false, error: 'spawn_failed', message: String(e) }));
-
-    let timedOut = false;
-    const kill = setTimeout(() => { timedOut = true; try { proc.kill('SIGKILL'); } catch {} }, COMPILE_TIMEOUT_MS);
-
-    proc.on('close', (code) => {
-      clearTimeout(kill);
-      if (timedOut) { resolve({ ok: false, error: 'compile_timeout', stderr }); return; }
-      if (code === 0 && fs.existsSync(pdfPath)) {
-        resolve({ ok: true, stderr, elapsed: Date.now() - startTs });
-      } else {
-        resolve({ ok: false, error: 'compile_failed', stderr });
-      }
-    });
-  });
-
-  if (!result.ok) {
-    // ── Capture debug artifacts before cleanup ──
-    // SAFETY: The entire debug capture block is wrapped in try/catch so that
-    // a throw during artifact collection (errorTranslator, sanitizeStderr, etc.)
-    // can never prevent the failure result from being returned to BullMQ.
-    let debugTexSource = null;
-    let debugLatexLog = null;
-    let debugHeaderTex = null;
-    let debugFiles = [];
-    let debugCaptureError = null;
-
-    try {
-      try { debugFiles = fs.readdirSync(tmpBase); } catch {}
-
-      // Read LuaLaTeX .log file (name varies by engine invocation)
-      for (const f of debugFiles) {
-        if (f.endsWith('.log')) {
-          try {
-            const raw = fs.readFileSync(path.join(tmpBase, f), 'utf8');
-            debugLatexLog = sanitizeStderr(raw).substring(0, 100000);
-          } catch {}
-          break;
-        }
-      }
-
-      // Read the preamble we injected
-      const headerPath = path.join(tmpBase, 'header.tex');
-      if (fs.existsSync(headerPath)) {
-        try { debugHeaderTex = fs.readFileSync(headerPath, 'utf8'); } catch {}
-      }
-
-      // Generate .tex source for diagnostics (no LuaLaTeX — just Pandoc template rendering)
-      try {
-        const texPath = path.join(tmpBase, 'debug-output.tex');
-        const texArgs = args.map(a => a === pdfPath ? texPath : a);
-        const texProc = spawn('pandoc', texArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV });
-        await new Promise((resolve) => {
-          const t = setTimeout(() => { try { texProc.kill('SIGKILL'); } catch {} resolve(); }, 10000);
-          texProc.on('close', () => { clearTimeout(t); resolve(); });
-          texProc.on('error', () => { clearTimeout(t); resolve(); });
-        });
-        if (fs.existsSync(texPath)) {
-          debugTexSource = fs.readFileSync(texPath, 'utf8').substring(0, 100000);
-        }
-      } catch {}
-    } catch (captureErr) {
-      debugCaptureError = String(captureErr);
-      log.error({ jobId: job.id, err: captureErr.message }, 'Debug artifact capture threw — returning partial debug');
-    }
-
-    // NOW clean up
-    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-
-    // Build the failure response — also wrapped so errorTranslator/sanitizeStderr can't throw us out
-    let structuredErrors = [];
-    let fallbackMessage = 'Compilation failed.';
-    let detail = null;
-    const stderr = result.stderr || '';
-    try {
-      const translated = errorTranslator.translateCompileFailure(
-        stderr, { safeMode, errorCode: result.error }
-      );
-      structuredErrors = translated.errors;
-      fallbackMessage = translated.fallbackMessage;
-    } catch (translErr) {
-      log.error({ jobId: job.id, err: translErr.message }, 'errorTranslator.translateCompileFailure threw');
-      fallbackMessage = stderr.split('\n').filter(l => l.trim()).slice(-5).join(' ') || 'Compilation failed.';
-    }
-    try {
-      detail = sanitizeStderr(stderr.split('\n').slice(-80).join('\n'));
-    } catch (sanErr) {
-      log.error({ jobId: job.id, err: sanErr.message }, 'sanitizeStderr threw');
-      detail = stderr.substring(0, 5000);
-    }
-
-    // ── Persist debug artifacts to disk (keep Redis payload small) ──
-    const debugPayload = {
-      texSource: debugTexSource,
-      latexLog: debugLatexLog,
-      headerTex: debugHeaderTex,
-      filesInDir: debugFiles,
-      captureError: debugCaptureError,
-    };
-    let debugRef = null;
-    try {
-      const debugDir = path.join(os.tmpdir(), 'pp-debug');
-      if (!fs.existsSync(debugDir)) fs.mkdirSync(debugDir, { recursive: true });
-      const debugPath = path.join(debugDir, `${job.id}.json`);
-      fs.writeFileSync(debugPath, JSON.stringify(debugPayload), 'utf8');
-      debugRef = debugPath;
-    } catch (debugWriteErr) {
-      log.warn({ jobId: job.id, err: debugWriteErr.message }, 'Failed to persist debug artifacts to disk — inlining in result');
-    }
-
-    return {
-      success: false, error: result.error || 'compile_failed',
-      message: fallbackMessage, warnings,
-      errors: structuredErrors,
-      detail,
-      // If disk persist succeeded, only send the reference. Otherwise inline the full payload.
-      debug: debugRef ? { debugRef } : debugPayload,
-      debugMeta: meta,
-    };
-  }
-
-  // PDF/X-1a conversion
-  let finalPdfPath = pdfPath;
-  let finalFormat = 'PDF';
-  if (wantPdfX) {
-    const pdfxPath = path.join(tmpBase, 'output-pdfx1a.pdf');
-    const conv = await publishing.convertToPdfX1a(pdfPath, pdfxPath, safeTitle);
-    if (!conv.success) {
-      let debugFiles = [];
-      try { debugFiles = fs.readdirSync(tmpBase); } catch {}
-      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-      return {
-        success: false, error: 'pdfx_conversion_failed', message: conv.error, warnings,
-        debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: debugFiles, captureError: null },
-        debugMeta: meta,
-      };
-    }
-    finalPdfPath = pdfxPath;
-    finalFormat = 'PDF/X-1a:2001';
-  }
-
-  const compileLog = bookEngineering.analyzeCompileLog(result.stderr);
-
-  // Translate raw stderr into structured, human-readable errors
-  const translatedErrors = errorTranslator.translateStderr(result.stderr);
-  const layoutReport = layoutSanityChecker.analyzeLatexLayout(result.stderr, { template: tplKey });
-
-  // Generate typography quality report (pre-analysis + compile log)
-  let typographyReport = null;
-  try {
-    const preAnalysis = typographyAssurance.analyzeTypography({
-      template: tplKey, pageSize, marginPreset, extensions,
-    });
-    typographyReport = typographyAssurance.generateTypographicReport(preAnalysis, compileLog);
-  } catch (err) {
-    log.warn({ err: err.message }, 'Typography report generation failed');
-  }
-
-  // Create export snapshot for provenance audit trail
-  let exportSnapshot = null;
-  if (buildMeta) {
-    try {
-      exportSnapshot = provenance.createExportSnapshot(buildMeta, {
-        success: true,
-        compileTimeMs: result.elapsed,
-        preflightPassed: null, // preflight runs client-side separately
-        lintIssueCount: compileLog.overfullBoxes.length + compileLog.underfullBoxes.length,
-      });
-    } catch (err) {
-      log.warn({ err: err.message }, 'Export snapshot creation failed');
-    }
-  }
-
-  return {
-    success: true,
-    pdfPath: finalPdfPath,
-    tmpBase,
-    elapsed: result.elapsed,
-    engine: 'lualatex',
-    buildId: buildMeta?.buildId,
-    contentHash: buildMeta?.contentHash,
-    needsWatermark,
-    fontFallback: fontRes.isFallback ? `${fontRes.original} -> ${fontRes.resolved}` : null,
-    compileLog: { overfull: compileLog.overfullBoxes.length, underfull: compileLog.underfullBoxes.length },
-    translatedErrors: translatedErrors.summary.total > 0 ? translatedErrors : null,
-    typographyReport: typographyReport ? {
-      score: typographyReport.score,
-      grade: typographyReport.grade,
-      compileStats: typographyReport.compileStats || null,
-    } : null,
-    layoutReport: layoutReport.issues.length > 0 ? { grade: layoutReport.grade, issues: layoutReport.issues.length, summary: layoutReport.summary } : null,
-    warnings,
-    outputFormat: finalFormat,
-    exportSnapshot,
-    debugMeta: meta,
-    userId, userTier,
-    isDownload,
-    template: tplKey,
-    pageSize,
-    title,
-  };
 }
 
-// buildErrorMessages() removed — now handled by errorTranslator.translateCompileFailure()
+// LuaLaTeX engine removed — Typst is the sole PDF engine.
 
 function compileEpub(tmpBase, mdPath, safeTitle, safeMode) {
   const epubPath = path.join(tmpBase, 'output.epub');

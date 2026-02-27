@@ -11,7 +11,6 @@ const rateLimit = require('express-rate-limit');
 const fontAvailability = require('../font-availability');
 const headingVariants = require('../heading-variants');
 const bookEngineering = require('../book-engineering');
-const multilingual = require('../multilingual');
 const provenance = require('../provenance');
 const log = require('../logger');
 const { processCompileJob } = require('../compile-worker');
@@ -610,7 +609,8 @@ module.exports = function compileRoutes(ctx) {
     const sansResolution = tpl.sansfont ? fontAvailability.resolveFont(tpl.sansfont) : null;
     const monoResolution = tpl.monofont ? fontAvailability.resolveFont(tpl.monofont) : null;
 
-    let templateContent = await fsp.readFile(tpl.templatePath, 'utf8');
+    let templateContent = await fsp.readFile(tpl.templatePath, 'utf8'); // Typst template
+
     const fontReplacements = [
       { original: tpl.mainfont, resolved: effectiveMainfont },
       ...(sansResolution ? [{ original: tpl.sansfont, resolved: sansResolution.resolved }] : []),
@@ -623,17 +623,14 @@ module.exports = function compileRoutes(ctx) {
       }
     }
 
+    // Assemble Typst preamble for batch compile
     const preambleParts = [];
     try {
-      preambleParts.push(bookEngineering.generateEngineeringPreamble(templateType));
-      const scriptAnalysis = multilingual.detectScripts(effectiveMd);
-      if (scriptAnalysis.isMultiscript || scriptAnalysis.hasRTL) preambleParts.push(multilingual.generateMultilingualPreamble(scriptAnalysis));
-      const buildMeta = provenance.generateBuildMetadata({ manuscriptText, template: tplKey, pageSize: validSizes[0], marginPreset, safeMode, compileMode, title, headingVariant: batchVariant, customFonts: customFonts || null });
-      preambleParts.push(provenance.generateMetadataPreamble(buildMeta));
+      preambleParts.push(bookEngineering.generateTypstEngineeringPreamble(templateType));
+      const headingVariantsTypst = require('../heading-variants-typst');
+      const vp = headingVariantsTypst.getTypstVariantPreamble(tplKey, batchVariant);
+      if (vp) preambleParts.push(vp);
     } catch { return res.status(500).json({ error: 'preamble_error', message: 'Failed to assemble compile preamble.' }); }
-
-    const batchVarPreamble = headingVariants.getVariantPreamble(tplKey, batchVariant);
-    if (batchVarPreamble) preambleParts.push(batchVarPreamble);
     const preambleStr = preambleParts.join('\n\n');
 
     log.info({ module: 'batch', sizeCount: validSizes.length, template: tplKey, variant: batchVariant }, 'Starting batch compile');
@@ -643,34 +640,26 @@ module.exports = function compileRoutes(ctx) {
 
     for (const size of validSizes) {
       if (!ALL_MARGINS.has(marginPreset)) marginPreset = 'normal';
-      const geo = ctx.gridSystem.calculateMargins(size, marginPreset, templateType);
+      const geo = ctx.gridSystem.calculateTypstMargins(size, marginPreset, templateType);
       const tmpBase = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-batch-'));
 
       try {
         const mdPath = path.join(tmpBase, 'input.md');
         const pdfPath = path.join(tmpBase, 'output.pdf');
         await fsp.writeFile(mdPath, effectiveMd, 'utf8');
-        const tplPath = path.join(tmpBase, 'template.latex');
+        const tplPath = path.join(tmpBase, 'template.typ');
         await fsp.writeFile(tplPath, templateContent, 'utf8');
-        const headerPath = path.join(tmpBase, 'header.tex');
-        await fsp.writeFile(headerPath, `\\geometry{${geo}}\n\n${preambleStr}`, 'utf8');
+        const headerPath = path.join(tmpBase, 'header-includes.typ');
+        // horizontalrule: Pandoc emits #horizontalrule for '---' thematic breaks
+        await fsp.writeFile(headerPath, `#let horizontalrule = line(start: (25%,0%), end: (75%,0%))\n\n${geo}\n\n${preambleStr}`, 'utf8');
 
-        if (customFonts && typeof customFonts === 'object') {
-          for (const slot of ['main', 'sans', 'mono']) {
-            const fontId = customFonts[slot];
-            if (!fontId || typeof fontId !== 'string') continue;
-            const srcDir = path.join(CUSTOM_FONTS_DIR_GLOBAL, fontId);
-            if (!fs.existsSync(srcDir)) continue;
-            const files = fs.readdirSync(srcDir).filter(f => /\.(ttf|otf|woff2?)$/i.test(f));
-            if (files.length > 0) fs.copyFileSync(path.join(srcDir, files[0]), path.join(tmpBase, files[0]));
-          }
-        }
+        const tplClass = headingVariants.TEMPLATE_CLASS[tplKey] || 'article';
+        const topLevelDiv = tplClass === 'book' ? 'chapter' : 'section';
 
         const batchFromFormat = safeMode ? '--from=markdown-raw_tex-raw_attribute' : PANDOC_HAS_CITEPROC ? '--from=markdown+citations-raw_tex-raw_attribute' : '--from=markdown-raw_tex-raw_attribute';
-        const args = [mdPath, batchFromFormat, '--pdf-engine=lualatex', `--resource-path=${tmpBase}`, '-M', `title=${title}`, `--template=${tplPath}`, '-H', headerPath, '-V', `mainfont=${effectiveMainfont}`, ...(isFast ? [] : ['-V', 'microtype=true', '-V', 'csquotes=true']), '-o', pdfPath];
+        const args = [mdPath, batchFromFormat, '--pdf-engine=typst', `--top-level-division=${topLevelDiv}`, `--resource-path=${tmpBase}`, '-M', `title=${title}`, `--template=${tplPath}`, '-H', headerPath, '-V', `mainfont=${effectiveMainfont}`, '-o', pdfPath];
         if (!safeMode) args.push(...citeprocArgs(BIB_PATH));
 
-        // SECURITY + LOCALE: Use the same minimal environment as the main compile path.
         const batchLocale = process.env.PP_SPAWN_LOCALE !== undefined ? process.env.PP_SPAWN_LOCALE : 'C.UTF-8';
         const BATCH_SPAWN_ENV = {
           PATH: process.env.PATH,
@@ -679,8 +668,6 @@ module.exports = function compileRoutes(ctx) {
           LANG: batchLocale,
           LC_ALL: batchLocale,
           LC_CTYPE: batchLocale,
-          TEXMFHOME: process.env.TEXMFHOME || '',
-          TEXMFVAR: process.env.TEXMFVAR || '',
           SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
         };
         const compileResult = await new Promise((resolve) => {
