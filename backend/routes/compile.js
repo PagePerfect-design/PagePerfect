@@ -650,7 +650,8 @@ module.exports = function compileRoutes(ctx) {
         const tplPath = path.join(tmpBase, 'template.typ');
         await fsp.writeFile(tplPath, templateContent, 'utf8');
         const headerPath = path.join(tmpBase, 'header-includes.typ');
-        await fsp.writeFile(headerPath, `${geo}\n\n${preambleStr}`, 'utf8');
+        // horizontalrule: Pandoc emits #horizontalrule for '---' thematic breaks
+        await fsp.writeFile(headerPath, `#let horizontalrule = line(start: (25%,0%), end: (75%,0%))\n\n${geo}\n\n${preambleStr}`, 'utf8');
 
         const tplClass = headingVariants.TEMPLATE_CLASS[tplKey] || 'article';
         const topLevelDiv = tplClass === 'book' ? 'chapter' : 'section';

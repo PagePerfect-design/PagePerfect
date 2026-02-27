@@ -333,7 +333,12 @@ async function processCompileJob(job, templateRegistry) {
     await fsp.writeFile(path.join(tmpBase, 'template.typ'), typstTpl, 'utf8');
 
     // Assemble Typst preamble (header-includes)
-    const typstPreamble = [geo];
+    // Pandoc emits #horizontalrule for markdown '---' thematic breaks;
+    // the default Pandoc template defines it, but custom templates don't.
+    const typstPreamble = [
+      '#let horizontalrule = line(start: (25%,0%), end: (75%,0%))',
+      geo,
+    ];
     let buildMeta;
     try {
       typstPreamble.push(bookEngineering.generateTypstEngineeringPreamble(templateType));
