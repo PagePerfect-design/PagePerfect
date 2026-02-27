@@ -95,6 +95,10 @@
 // ── TABLES — Professional ────────────────────────────────────
 #show table: set text(size: 9pt)
 
+// ── Pandoc compatibility ─────────────────────────────────────
+// Pandoc emits #horizontalrule for Markdown "---" thematic breaks
+#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+
 // ── Header includes (injected by compile pipeline) ───────────
 $for(header-includes)$
 $header-includes$
