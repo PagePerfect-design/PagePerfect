@@ -262,6 +262,9 @@ module.exports = function compileRoutes(ctx) {
               }
             }
           }
+          // Clear cached result for this deterministic ID so the status endpoint
+          // doesn't short-circuit with a stale failure from Redis/in-memory cache.
+          ctx.deleteJobResult(queueKey);
         }
 
         const manuscriptDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-enqueue-'));
