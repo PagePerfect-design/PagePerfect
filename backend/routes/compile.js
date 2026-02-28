@@ -396,6 +396,22 @@ module.exports = function compileRoutes(ctx) {
                 try {
                   const persistedPath = await ctx.persistPdf(id, rv.pdfPath);
                   if (persistedPath) {
+                    // Persist SVG page files alongside the PDF (same as on('completed') handler)
+                    if (rv.svgPageCount > 0 && rv.tmpBase) {
+                      const destDir = path.dirname(persistedPath);
+                      try {
+                        const svgFiles = fs.readdirSync(rv.tmpBase).filter(f => /^page-\d+\.svg$/.test(f));
+                        for (const svgFile of svgFiles) {
+                          const src = path.join(rv.tmpBase, svgFile);
+                          const pageMatch = svgFile.match(/^page-(\d+)\.svg$/);
+                          const normalizedPage = pageMatch ? parseInt(pageMatch[1], 10) : svgFile.replace(/^page-/, '').replace(/\.svg$/, '');
+                          const dest = path.join(destDir, `${id}-page-${normalizedPage}.svg`);
+                          await fsp.copyFile(src, dest);
+                        }
+                      } catch (svgErr) {
+                        log.warn({ module: 'compile-route', jobId: id, err: svgErr.message }, 'Failed to persist SVG pages in status handler');
+                      }
+                    }
                     if (rv.tmpBase) fsp.rm(rv.tmpBase, { recursive: true, force: true }).catch(() => {});
                     rv.pdfPath = persistedPath;
                     delete rv.tmpBase;
@@ -404,7 +420,7 @@ module.exports = function compileRoutes(ctx) {
               }
               ctx.storeJobResult(id, rv);
               if (rv.success) {
-                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, debugMeta: rv.debugMeta || null, engine: rv.engine || null, layoutReport: rv.layoutReport || null, resultUrl: `/api/compile/result/${id}` });
+                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, debugMeta: rv.debugMeta || null, engine: rv.engine || null, layoutReport: rv.layoutReport || null, svgPageCount: rv.svgPageCount || 0, resultUrl: `/api/compile/result/${id}` });
               }
               const debug = resolveDebug(rv);
               return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail, debug, debugMeta: rv.debugMeta || null });
@@ -497,7 +513,7 @@ module.exports = function compileRoutes(ctx) {
 
     // SVG pages are stored alongside the PDF, prefixed with jobId
     const pdfDir = path.dirname(result.pdfPath);
-    const svgFile = path.join(pdfDir, `${id}-page-${String(pageNum).padStart(2, '0')}.svg`);
+    const svgFile = path.join(pdfDir, `${id}-page-${pageNum}.svg`);
 
     if (!fs.existsSync(svgFile)) return res.status(404).json({ error: 'page_not_found', message: `SVG page ${pageNum} not found.` });
 

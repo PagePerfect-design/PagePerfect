@@ -400,7 +400,11 @@ if (redis) {
                 const svgFiles = fs.readdirSync(result.tmpBase).filter(f => /^page-\d+\.svg$/.test(f));
                 for (const svgFile of svgFiles) {
                   const src = path.join(result.tmpBase, svgFile);
-                  const dest = path.join(destDir, `${job.id}-${svgFile}`);
+                  // Normalize Typst's variable-width zero-padding to unpadded page numbers
+                  // e.g. page-01.svg → {jobId}-page-1.svg, page-001.svg → {jobId}-page-1.svg
+                  const pageMatch = svgFile.match(/^page-(\d+)\.svg$/);
+                  const normalizedPage = pageMatch ? parseInt(pageMatch[1], 10) : svgFile.replace(/^page-/, '').replace(/\.svg$/, '');
+                  const dest = path.join(destDir, `${job.id}-page-${normalizedPage}.svg`);
                   await fsp.copyFile(src, dest);
                 }
               } catch (err) {
