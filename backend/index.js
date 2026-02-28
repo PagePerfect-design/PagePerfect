@@ -383,7 +383,7 @@ if (redis) {
         concurrency: Number(process.env.COMPILE_CONCURRENCY || 3),
         lockDuration: 60_000,
         stalledInterval: 30_000,
-        maxStalledCount: 0,
+        maxStalledCount: 1,  // Allow 1 stall recovery before moving to 'failed' — prevents permanent deadlock
         removeOnComplete: { count: 200, age: 3600 },       // keep last 200 or 1 hour, whichever is smaller
         removeOnFail: { count: 1000, age: 24 * 3600 },   // keep last 1000 or 24 hours — more forensic retention for failures
       });
@@ -466,6 +466,14 @@ if (redis) {
           err: err.message, stack: err.stack?.substring(0, 500),
           containerId: os.hostname(),
         }, 'Job failed (BullMQ error)');
+      });
+
+      compileWorker.on('error', (err) => {
+        log.error({ module: 'queue', err: err.message, stack: err.stack?.substring(0, 500) }, 'Worker error');
+      });
+
+      compileWorker.on('stalled', (jobId) => {
+        log.warn({ module: 'queue', jobId }, 'Job stalled (lock expired) — will retry once then fail');
       });
     } else {
       log.info({ module: 'queue' }, 'WORKER_ONLY=true — embedded worker disabled, use standalone worker.js');

@@ -249,7 +249,19 @@ module.exports = function compileRoutes(ctx) {
         const queueKey = isDownload ? `dl-${crypto.randomUUID()}` : `preview-${user.userId || req.ip}`;
         if (!isDownload) {
           const existingJob = await ctx.compileQueue.getJob(queueKey);
-          if (existingJob) { const state = await existingJob.getState(); if (state === 'waiting' || state === 'delayed') await existingJob.remove(); }
+          if (existingJob) {
+            const state = await existingJob.getState();
+            // Remove stale jobs in ANY non-terminal state so new compiles aren't blocked.
+            // Previously only 'waiting'/'delayed' were cleared, leaving 'active' (stalled)
+            // jobs permanently blocking the deterministic preview ID.
+            if (['waiting', 'delayed', 'active', 'completed', 'failed'].includes(state)) {
+              if (state === 'active') log.warn({ module: 'compile', jobId: queueKey }, 'Clearing stalled active job — was blocking new compiles');
+              try { await existingJob.remove(); } catch (e) {
+                log.warn({ module: 'compile', jobId: queueKey, state, err: e.message }, 'Failed to remove existing job, will try discard');
+                try { await existingJob.discard(); await existingJob.moveToFailed(new Error('Superseded by new compile'), queueKey, false); } catch {}
+              }
+            }
+          }
         }
 
         const manuscriptDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-enqueue-'));
