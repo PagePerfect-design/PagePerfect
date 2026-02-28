@@ -18,18 +18,21 @@ describe('GridSystem — Typst methods', () => {
       expect(result).toContain('margin:');
     });
 
-    test('letter uses inches', () => {
+    test('letter uses inches with mirror margins', () => {
       const result = grid.calculateTypstMargins('letter', 'normal');
       expect(result).toContain('8.5in');
       expect(result).toContain('11in');
-      expect(result).toMatch(/margin: [\d.]+in/);
+      expect(result).toMatch(/inside: [\d.]+in/);
+      expect(result).toMatch(/outside: [\d.]+in/);
+      expect(result).toContain('binding: ltr');
     });
 
-    test('a4 uses millimeters', () => {
+    test('a4 uses millimeters with mirror margins', () => {
       const result = grid.calculateTypstMargins('a4', 'normal');
       expect(result).toContain('210mm');
       expect(result).toContain('297mm');
-      expect(result).toMatch(/margin: [\d.]+mm/);
+      expect(result).toMatch(/inside: [\d.]+mm/);
+      expect(result).toMatch(/outside: [\d.]+mm/);
     });
 
     test('a5 uses millimeters', () => {
@@ -74,19 +77,26 @@ describe('GridSystem — Typst methods', () => {
       expect(result).toContain('9in');
     });
 
-    test('minimal preset produces smaller margins than generous', () => {
+    test('minimal preset produces smaller outside margin than generous', () => {
       const minimal = grid.calculateTypstMargins('letter', 'minimal');
       const generous = grid.calculateTypstMargins('letter', 'generous');
-      // Extract margin values
-      const minMargin = parseFloat(minimal.match(/margin: ([\d.]+)in/)[1]);
-      const genMargin = parseFloat(generous.match(/margin: ([\d.]+)in/)[1]);
+      // Extract outside margin values (inside is outside + gutter)
+      const minMargin = parseFloat(minimal.match(/outside: ([\d.]+)in/)[1]);
+      const genMargin = parseFloat(generous.match(/outside: ([\d.]+)in/)[1]);
       expect(minMargin).toBeLessThan(genMargin);
+    });
+
+    test('inside margin is larger than outside (gutter offset)', () => {
+      const result = grid.calculateTypstMargins('letter', 'normal');
+      const inside = parseFloat(result.match(/inside: ([\d.]+)in/)[1]);
+      const outside = parseFloat(result.match(/outside: ([\d.]+)in/)[1]);
+      expect(inside).toBeGreaterThan(outside);
     });
 
     test('margin is capped at 20% of page width', () => {
       // For massMarket (4.25in wide), generous (8 units) should be capped
       const result = grid.calculateTypstMargins('massMarket', 'generous');
-      const margin = parseFloat(result.match(/margin: ([\d.]+)in/)[1]);
+      const margin = parseFloat(result.match(/outside: ([\d.]+)in/)[1]);
       expect(margin).toBeLessThanOrEqual(4.25 * 0.20 + 0.001); // small tolerance for float
     });
 

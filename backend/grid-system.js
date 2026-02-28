@@ -131,11 +131,24 @@ class GridSystem {
 
     const dims = pageDims[pageSize] || pageDims.letter;
     const useMm = dims.w.endsWith('mm');
-    const marginStr = useMm
+
+    // Mirror margins for book binding: inside (gutter) is larger than outside
+    // Gutter offset based on standard print binding requirements
+    const gutterOffset = 0.125; // 0.125in (3.2mm) additional binding margin
+    const insideMargin = gridMargin + gutterOffset;
+    const outsideMargin = gridMargin;
+
+    const insideStr = useMm
+      ? `${(insideMargin * 25.4).toFixed(1)}mm`
+      : `${insideMargin.toFixed(3)}in`;
+    const outsideStr = useMm
+      ? `${(outsideMargin * 25.4).toFixed(1)}mm`
+      : `${outsideMargin.toFixed(3)}in`;
+    const topBottomStr = useMm
       ? `${(gridMargin * 25.4).toFixed(1)}mm`
       : `${gridMargin.toFixed(3)}in`;
 
-    return `#set page(width: ${dims.w}, height: ${dims.h}, margin: ${marginStr})`;
+    return `#set page(width: ${dims.w}, height: ${dims.h}, margin: (inside: ${insideStr}, outside: ${outsideStr}, top: ${topBottomStr}, bottom: ${topBottomStr}), binding: ltr)`;
   }
 
   /**

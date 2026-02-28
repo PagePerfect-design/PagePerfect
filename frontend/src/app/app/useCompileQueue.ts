@@ -44,6 +44,8 @@ export function useCompileQueue({
   const [quality, setQuality] = useState<CompileQuality>(null)
   const pdfBlobRef = useRef<Blob | null>(null)
 
+  const [resultSecret, setResultSecret] = useState<string | null>(null)
+
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const compileGenRef = useRef(0)
@@ -204,7 +206,9 @@ export function useCompileQueue({
       }
 
       // Phase 2: Async Polling (202 Accepted)
-      const { jobId, resultSecret } = await resp.json()
+      const { jobId, resultSecret: secret } = await resp.json()
+      const resultSecret = secret || null
+      setResultSecret(resultSecret)
       // ╔═ H2: 202 body parsed ═╗
       debugLog('H2', '202 body parsed', { jobId, hasJobId: typeof jobId === 'string' && jobId.length > 0, hasSecret: !!resultSecret })
       setStatus('queued')
@@ -295,6 +299,8 @@ export function useCompileQueue({
                 buildId: statusData.buildId ?? null,
                 engine: statusData.engine ?? null,
                 layoutReport: statusData.layoutReport ?? null,
+                svgPageCount: statusData.svgPageCount ?? 0,
+                jobId: jobId ?? null,
               })
             }
 
@@ -403,6 +409,7 @@ export function useCompileQueue({
     pdfBlobRef,
     lastDownloadWatermarked,
     quality,
+    resultSecret,
     compile,
   }
 }

@@ -581,6 +581,33 @@ async function _processCompileJobInner(job, templateRegistry) {
     });
   });
 
+  // ── STEP D2: Generate per-page SVGs for preview ────────────
+  let svgPageCount = 0;
+  if (result.ok) {
+    try {
+      const svgArgs = ['compile'];
+      if (customFontDir && fs.existsSync(customFontDir)) {
+        svgArgs.push('--font-path', customFontDir);
+      }
+      svgArgs.push('main.typ', 'page-{0p}.svg');
+
+      await new Promise((resolve) => {
+        let proc;
+        try { proc = spawn('typst', svgArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV }); }
+        catch { resolve(); return; }
+        proc.on('error', () => resolve());
+        const kill = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} resolve(); }, COMPILE_TIMEOUT_MS);
+        proc.on('close', () => { clearTimeout(kill); resolve(); });
+      });
+
+      // Count generated SVG pages
+      const files = fs.readdirSync(tmpBase).filter(f => /^page-\d+\.svg$/.test(f));
+      svgPageCount = files.length;
+    } catch (err) {
+      log.warn({ err: err.message }, 'SVG page generation failed (non-fatal, PDF still available)');
+    }
+  }
+
   if (!result.ok) {
     // Debug capture for Typst failures
     let debugFiles = [];
@@ -668,6 +695,7 @@ async function _processCompileJobInner(job, templateRegistry) {
   return {
     success: true,
     pdfPath: finalPdfPath,
+    svgPageCount,
     tmpBase,
     elapsed: result.elapsed,
     engine: 'typst',
