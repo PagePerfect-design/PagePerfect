@@ -16,9 +16,12 @@ RUN apt-get update && apt-get install -y \
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
-# Install Node.js 18
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs
+# Install Node.js 20 LTS (direct binary from nodejs.org — no third-party repo)
+# NodeSource deprecated setup_XX.x scripts; direct download is always available.
+RUN NODE_VERSION="20.18.1" \
+    && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+        | tar -xJ -C /usr/local --strip-components=1 \
+    && node --version && npm --version
 
 # Install Pandoc 3.6.2 from GitHub (Ubuntu 22.04 ships ancient 2.9)
 # Pandoc 3.x has built-in --citeproc, better error handling, modern template syntax
