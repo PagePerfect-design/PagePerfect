@@ -159,7 +159,7 @@ class GridSystem {
       const topBottomStr = useMm
         ? `${(gridMargin * 25.4).toFixed(1)}mm`
         : `${gridMargin.toFixed(3)}in`;
-      return `#set page(width: ${dims.w}, height: ${dims.h}, margin: (inside: ${insideStr}, outside: ${outsideStr}, top: ${topBottomStr}, bottom: ${topBottomStr}), binding: ltr)`;
+      return `#set page(width: ${dims.w}, height: ${dims.h}, margin: (inside: ${insideStr}, outside: ${outsideStr}, top: ${topBottomStr}, bottom: ${topBottomStr}), binding: left)`;
     }
 
     // Uniform margins — no binding gutter

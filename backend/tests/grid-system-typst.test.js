@@ -24,7 +24,7 @@ describe('GridSystem — Typst methods', () => {
       expect(result).toContain('11in');
       expect(result).toMatch(/inside: [\d.]+in/);
       expect(result).toMatch(/outside: [\d.]+in/);
-      expect(result).toContain('binding: ltr');
+      expect(result).toContain('binding: left');
     });
 
     test('a4 uses millimeters with mirror margins', () => {
@@ -143,7 +143,7 @@ describe('GridSystem — Typst methods', () => {
         const result = grid.calculateTypstMargins('letter', 'normal', type);
         expect(result).toContain('inside:');
         expect(result).toContain('outside:');
-        expect(result).toContain('binding: ltr');
+        expect(result).toContain('binding: left');
       }
     });
 
