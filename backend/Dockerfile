@@ -4,7 +4,7 @@ FROM ubuntu:22.04
 # Set environment variables to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
+# ── Layer 1: Base tools (curl, wget) ──
 # LOCALE: C.UTF-8 is built into glibc on Debian/Ubuntu — no locale-gen needed.
 RUN apt-get update && apt-get install -y \
     curl \
@@ -16,23 +16,9 @@ RUN apt-get update && apt-get install -y \
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
-# Install Node.js 20 LTS (direct binary from nodejs.org — no third-party repo)
-# NodeSource deprecated setup_XX.x scripts; direct download is always available.
-RUN NODE_VERSION="20.18.1" \
-    && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
-        | tar -xJ -C /usr/local --strip-components=1 \
-    && node --version && npm --version
-
-# Install Pandoc 3.6.2 from GitHub (Ubuntu 22.04 ships ancient 2.9)
-# Pandoc 3.x has built-in --citeproc, better error handling, modern template syntax
-RUN curl -fsSL -o /tmp/pandoc.deb \
-    https://github.com/jgm/pandoc/releases/download/3.6.2/pandoc-3.6.2-1-amd64.deb \
-    && dpkg -i /tmp/pandoc.deb \
-    && rm /tmp/pandoc.deb
-
-# Install fonts + Ghostscript (no TeX Live — Typst is the sole PDF engine)
-# Fonts are installed via system packages and discovered by fontconfig.
-# Typst reads from fontconfig automatically.
+# ── Layer 2: Fonts + Ghostscript (~700MB, changes rarely) ──
+# This layer is placed BEFORE Node/Pandoc/Typst so that version bumps
+# to those tools don't invalidate the expensive font download cache.
 RUN apt-get update && apt-get install -y \
     ghostscript \
     icc-profiles-free \
@@ -64,10 +50,23 @@ RUN cp /usr/share/texlive/texmf-dist/fontconfig/conf.avail/*.conf /etc/fonts/con
     && printf '<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">\n<fontconfig>\n  <dir>/usr/share/texlive/texmf-dist/fonts/opentype</dir>\n  <dir>/usr/share/texlive/texmf-dist/fonts/truetype</dir>\n  <dir>/usr/share/texmf/fonts/opentype</dir>\n  <dir>/usr/share/texmf/fonts/truetype</dir>\n</fontconfig>\n' > /etc/fonts/conf.d/99-texlive-fonts.conf \
     && fc-cache -fv
 
-# Install Typst (modern typesetting engine — Rust binary, zero locale deps)
-# Typst uses the same Knuth-Plass line-breaking algorithm as TeX but compiles ~27x faster.
-# Single static binary (~30MB) — no TeX Live, no fontconfig, no locale-gen needed.
-# Typst reads fonts from system fontconfig dirs + any --font-path arguments.
+# ── Layer 3: Node.js 20 LTS ──
+# Direct binary from nodejs.org — no third-party repo needed.
+RUN NODE_VERSION="20.18.1" \
+    && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+        | tar -xJ -C /usr/local --strip-components=1 \
+    && node --version && npm --version
+
+# ── Layer 4: Pandoc 3.6.2 ──
+# Ubuntu 22.04 ships ancient 2.9; we need 3.x for --citeproc and modern template syntax.
+RUN curl -fsSL -o /tmp/pandoc.deb \
+    https://github.com/jgm/pandoc/releases/download/3.6.2/pandoc-3.6.2-1-amd64.deb \
+    && dpkg -i /tmp/pandoc.deb \
+    && rm /tmp/pandoc.deb
+
+# ── Layer 5: Typst ──
+# Modern typesetting engine — Knuth-Plass line-breaking, ~27x faster than TeX.
+# Reads fonts from system fontconfig dirs + any --font-path arguments.
 RUN TYPST_VERSION="0.13.1" \
     && curl -fsSL -o /tmp/typst.tar.xz \
        "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" \
@@ -80,7 +79,7 @@ RUN TYPST_VERSION="0.13.1" \
 # App dir
 WORKDIR /app
 
-# Install server deps
+# ── Layer 6: npm dependencies (changes with package-lock.json) ──
 COPY package*.json ./
 RUN npm ci --omit=dev
 
