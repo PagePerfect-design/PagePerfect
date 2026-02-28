@@ -82,6 +82,7 @@ export default function ControlStrip({
   // Manuscript
   manuscript,
   onManuscriptChange,
+  onFileUpload,
   assets,
   onAssetsChange,
   // Template
@@ -122,6 +123,7 @@ export default function ControlStrip({
 }: {
   manuscript: string
   onManuscriptChange: (m: string) => void
+  onFileUpload: (f: File) => void
   assets: Asset[]
   onAssetsChange: (a: Asset[]) => void
   template: TemplateKey
@@ -160,6 +162,7 @@ export default function ControlStrip({
   const [genreFilter, setGenreFilter] = useState<Genre>('all')
   const [editorMode, setEditorMode] = useState<'markdown' | 'richtext'>('richtext')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const toggle = (key: string) => {
     setOpenSections(prev => {
@@ -242,6 +245,26 @@ export default function ControlStrip({
               />
             </div>
           )}
+
+          {/* Upload / replace document */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".docx,.md,.txt"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) onFileUpload(file)
+              e.target.value = ''
+            }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex w-full items-center justify-center gap-1.5 border border-[#e5e5e0] py-1.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-150 hover:border-[#111111]/20 hover:text-[#111111]/70"
+          >
+            <Upload className="h-3 w-3" />
+            Upload Document
+          </button>
         </div>
       </Section>
 
@@ -279,6 +302,7 @@ export default function ControlStrip({
               <button
                 key={key}
                 onClick={() => onTemplateChange(key)}
+                title={`${info.subtitle} — ${info.vibe}`}
                 className={`border p-2.5 text-left transition-all duration-150 ${
                   isActive
                     ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
@@ -291,6 +315,9 @@ export default function ControlStrip({
                     ? 'font-body' : 'font-display'
                 }`}>
                   {info.name}
+                </p>
+                <p className="mt-0.5 font-mono text-[7px] leading-tight text-[#111111]/40">
+                  {info.subtitle}
                 </p>
                 <p className="mt-0.5 font-mono text-[8px] text-[#111111]/50">
                   {info.font}

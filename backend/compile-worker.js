@@ -491,7 +491,9 @@ async function _processCompileJobInner(job, templateRegistry) {
     mainParts.push(
       '// PagePerfect compiled document — assembled by compile-worker.js',
       '// Pandoc emits #horizontalrule for Markdown "---" thematic breaks',
-      '#let horizontalrule = line(start: (25%,0%), end: (75%,0%))',
+      '#let horizontalrule = { v(1.5em); align(center)[#text(size: 9pt, fill: luma(140))[\\* #h(1em) \\* #h(1em) \\*]]; v(1.5em) }',
+      '// Helper: tracking() applies letter-spacing to content',
+      '#let tracking(amount, content) = text(tracking: amount)[#content]',
       `#let pp-title = ${typstString(safeTitle)}`,
       `#let pp-author = ${job.data.author ? typstString(latexSanitizer.sanitizeTitle(job.data.author, 200)) : 'none'}`,
       `#let pp-date = ${job.data.date ? typstString(latexSanitizer.sanitizeTitle(job.data.date, 100)) : 'none'}`,

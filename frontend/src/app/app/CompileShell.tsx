@@ -435,6 +435,7 @@ export default function CompileShell() {
           <ControlStrip
             manuscript={manuscript}
             onManuscriptChange={setManuscript}
+            onFileUpload={handleFileAccepted}
             assets={assets}
             onAssetsChange={setAssets}
             template={template}
