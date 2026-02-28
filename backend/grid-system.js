@@ -132,23 +132,41 @@ class GridSystem {
     const dims = pageDims[pageSize] || pageDims.letter;
     const useMm = dims.w.endsWith('mm');
 
-    // Mirror margins for book binding: inside (gutter) is larger than outside
-    // Gutter offset based on standard print binding requirements
-    const gutterOffset = 0.125; // 0.125in (3.2mm) additional binding margin
-    const insideMargin = gridMargin + gutterOffset;
-    const outsideMargin = gridMargin;
+    // Mirror margins only for bound-book templates.
+    // Screenplay, technical manuals, editorial, and minimal are typically
+    // single-sided, spiral-bound, or 3-hole-punched — no binding gutter.
+    const GUTTER_BY_TYPE = {
+      academic: 0.125,  // Bound monographs (symphony, chicago)
+      thesis:   0.125,  // Bound dissertations
+      trade:    0.125,  // Bound novels/cookbooks (paperback, memoir, exhibit, heirloom)
+      creative: 0.125,  // Bound collections (verse) — avantgarde also uses creative but benefits
+      editorial: 0,     // Single-sided journalism (chronicle, international, operator)
+      corporate: 0,     // Reports — often digital or spiral-bound (matrix)
+      basic:     0,     // Zero-opinion universal (minimal, cinema)
+    };
+    const gutterOffset = GUTTER_BY_TYPE[template] ?? 0;
+    const usesMirror = gutterOffset > 0;
 
-    const insideStr = useMm
-      ? `${(insideMargin * 25.4).toFixed(1)}mm`
-      : `${insideMargin.toFixed(3)}in`;
-    const outsideStr = useMm
-      ? `${(outsideMargin * 25.4).toFixed(1)}mm`
-      : `${outsideMargin.toFixed(3)}in`;
-    const topBottomStr = useMm
+    if (usesMirror) {
+      const insideMargin = gridMargin + gutterOffset;
+      const outsideMargin = gridMargin;
+      const insideStr = useMm
+        ? `${(insideMargin * 25.4).toFixed(1)}mm`
+        : `${insideMargin.toFixed(3)}in`;
+      const outsideStr = useMm
+        ? `${(outsideMargin * 25.4).toFixed(1)}mm`
+        : `${outsideMargin.toFixed(3)}in`;
+      const topBottomStr = useMm
+        ? `${(gridMargin * 25.4).toFixed(1)}mm`
+        : `${gridMargin.toFixed(3)}in`;
+      return `#set page(width: ${dims.w}, height: ${dims.h}, margin: (inside: ${insideStr}, outside: ${outsideStr}, top: ${topBottomStr}, bottom: ${topBottomStr}), binding: ltr)`;
+    }
+
+    // Uniform margins — no binding gutter
+    const marginStr = useMm
       ? `${(gridMargin * 25.4).toFixed(1)}mm`
       : `${gridMargin.toFixed(3)}in`;
-
-    return `#set page(width: ${dims.w}, height: ${dims.h}, margin: (inside: ${insideStr}, outside: ${outsideStr}, top: ${topBottomStr}, bottom: ${topBottomStr}), binding: ltr)`;
+    return `#set page(width: ${dims.w}, height: ${dims.h}, margin: ${marginStr})`;
   }
 
   /**
