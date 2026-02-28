@@ -47,6 +47,7 @@
 // ── SECTION HEADINGS — Lowercase Swiss, ruled ────────────────
 // H1: 0.5pt rule above + bold 18pt
 #show heading.where(level: 1): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(18pt)
   line(length: 100%, stroke: 0.5pt)
   v(6pt)
@@ -56,6 +57,7 @@
 
 // H2: Bold 11pt, no rule
 #show heading.where(level: 2): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(12pt)
   text(size: 11pt, weight: "bold")[#it.body]
   v(4pt)
@@ -63,6 +65,7 @@
 
 // H3: Regular weight, same size as body
 #show heading.where(level: 3): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(8pt)
   text(size: 9pt, weight: "regular")[#it.body]
   v(3pt)

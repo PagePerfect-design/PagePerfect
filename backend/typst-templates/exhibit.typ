@@ -44,6 +44,7 @@
 
 // ── CHAPTER HEADINGS — Giant UltraLight Number + Label ───────
 #show heading.where(level: 1): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   pagebreak(weak: true, to: "odd")
   v(72pt)
   align(left)[
@@ -58,6 +59,7 @@
 
 // H2: Tiny uppercase tracked
 #show heading.where(level: 2): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(28pt)
   text(size: 10pt, font: "TeX Gyre Adventor")[#upper(tracking(12pt, it.body))]
   v(10pt)
@@ -65,6 +67,7 @@
 
 // H3: Italic, no tracking
 #show heading.where(level: 3): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(18pt)
   text(size: 10pt, style: "italic", font: "Fira Sans")[#it.body]
   v(6pt)

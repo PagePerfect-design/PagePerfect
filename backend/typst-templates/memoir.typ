@@ -56,6 +56,7 @@
 // ── CHAPTER HEADINGS — Intimate, Warm ────────────────────────
 // Centered chapter number in grey + italic amber title + thin rule
 #show heading.where(level: 1): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   pagebreak(weak: true, to: "odd")
   v(36pt)
   align(center)[
@@ -70,6 +71,7 @@
 
 // H2: Left-aligned bold
 #show heading.where(level: 2): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(20pt)
   text(size: 14pt, weight: "bold")[#it.body]
   v(8pt)
@@ -77,6 +79,7 @@
 
 // H3: Left-aligned italic
 #show heading.where(level: 3): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(14pt)
   text(size: 11pt, style: "italic")[#it.body]
   v(6pt)

@@ -56,6 +56,7 @@
 // ── CHAPTER HEADINGS — Cinematic Title Card ──────────────────
 // Dramatic drop with massive grey number + bold title, right-aligned
 #show heading.where(level: 1): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   pagebreak(weak: true, to: "odd")
   v(48pt)
   align(right)[
@@ -70,6 +71,7 @@
 
 // Level 2: Left-aligned bold
 #show heading.where(level: 2): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(18pt)
   text(size: 12pt, weight: "bold")[#it.body]
   v(8pt)
@@ -77,6 +79,7 @@
 
 // Level 3: Left-aligned bold, smaller
 #show heading.where(level: 3): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(12pt)
   text(size: 11pt, weight: "bold")[#it.body]
   v(6pt)
