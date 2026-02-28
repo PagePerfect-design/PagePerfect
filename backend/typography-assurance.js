@@ -182,7 +182,9 @@ function analyzeTypography(opts) {
 
   // ── Text block proportions ──
   const geoString = gridSystem.calculateTypstMargins(pageSize, marginPreset, template);
-  const marginMatch = geoString.match(/margin:\s*([\d.]+)/);
+  // Mirror margins use "outside: X.XXXin", uniform use "margin: X.XXXin"
+  // Use outside margin for text-block width (excludes binding gutter)
+  const marginMatch = geoString.match(/outside:\s*([\d.]+)/) || geoString.match(/margin:\s*([\d.]+)/);
   const isMetric = geoString.includes('mm');
   if (marginMatch) {
     const margin = parseFloat(marginMatch[1]);
