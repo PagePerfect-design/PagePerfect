@@ -93,11 +93,18 @@ describe('GridSystem — Typst methods', () => {
       expect(inside).toBeGreaterThan(outside);
     });
 
-    test('margin is capped at 20% of page width', () => {
-      // For massMarket (4.25in wide), generous (8 units) should be capped
-      const result = grid.calculateTypstMargins('massMarket', 'generous');
+    test('margin is capped at 20% of page width (mirror template)', () => {
+      // For massMarket (4.25in wide), generous (8 units) should be capped — trade gets mirror
+      const result = grid.calculateTypstMargins('massMarket', 'generous', 'trade');
       const margin = parseFloat(result.match(/outside: ([\d.]+)in/)[1]);
-      expect(margin).toBeLessThanOrEqual(4.25 * 0.20 + 0.001); // small tolerance for float
+      expect(margin).toBeLessThanOrEqual(4.25 * 0.20 + 0.001);
+    });
+
+    test('margin is capped at 20% of page width (uniform template)', () => {
+      // Same cap for non-book templates using uniform margins
+      const result = grid.calculateTypstMargins('massMarket', 'generous', 'basic');
+      const margin = parseFloat(result.match(/margin: ([\d.]+)in/)[1]);
+      expect(margin).toBeLessThanOrEqual(4.25 * 0.20 + 0.001);
     });
 
     test('unknown page size defaults to letter', () => {
@@ -112,16 +119,50 @@ describe('GridSystem — Typst methods', () => {
       expect(result).toBe(normal);
     });
 
-    test('unknown template defaults to academic baseline', () => {
+    test('unknown template defaults to academic baseline but uniform margins (no gutter)', () => {
       const result = grid.calculateTypstMargins('letter', 'normal', 'nonexistent');
-      const academic = grid.calculateTypstMargins('letter', 'normal', 'academic');
-      expect(result).toBe(academic);
+      // Same baseline as academic → same base margin value
+      // But unknown template has no gutter entry → uniform margins (no inside/outside)
+      expect(result).toMatch(/^#set page\(/);
+      expect(result).toMatch(/margin: [\d.]+in/);
+      expect(result).not.toContain('inside:');
+      expect(result).not.toContain('binding:');
     });
 
     test('trade template uses 11pt baseline (different margin from academic)', () => {
       const trade = grid.calculateTypstMargins('letter', 'normal', 'trade');
       const academic = grid.calculateTypstMargins('letter', 'normal', 'academic');
       expect(trade).not.toBe(academic);
+    });
+
+    // ── Template-dependent gutter tests ──
+
+    test('book templates (academic, trade, thesis, creative) get mirror margins', () => {
+      const bookTypes = ['academic', 'trade', 'thesis', 'creative'];
+      for (const type of bookTypes) {
+        const result = grid.calculateTypstMargins('letter', 'normal', type);
+        expect(result).toContain('inside:');
+        expect(result).toContain('outside:');
+        expect(result).toContain('binding: ltr');
+      }
+    });
+
+    test('non-book templates (editorial, corporate, basic) get uniform margins', () => {
+      const nonBookTypes = ['editorial', 'corporate', 'basic'];
+      for (const type of nonBookTypes) {
+        const result = grid.calculateTypstMargins('letter', 'normal', type);
+        expect(result).not.toContain('inside:');
+        expect(result).not.toContain('outside:');
+        expect(result).not.toContain('binding:');
+        expect(result).toMatch(/margin: [\d.]+in/);
+      }
+    });
+
+    test('editorial template has no gutter offset', () => {
+      const result = grid.calculateTypstMargins('letter', 'normal', 'editorial');
+      // Uniform: margin: X.XXXin — single value, no inside/outside
+      const margin = parseFloat(result.match(/margin: ([\d.]+)in/)[1]);
+      expect(margin).toBeGreaterThan(0);
     });
   });
 
