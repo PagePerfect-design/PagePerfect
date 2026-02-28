@@ -208,11 +208,13 @@ function SvgPage({
   page,
   resultSecret,
   className,
+  onError,
 }: {
   jobId: string
   page: number
   resultSecret?: string | null
   className?: string
+  onError?: () => void
 }) {
   const src = resultSecret
     ? `/api/compile/page/${jobId}/${page}?secret=${encodeURIComponent(resultSecret)}`
@@ -224,6 +226,7 @@ function SvgPage({
       alt={`Page ${page}`}
       className={`block h-full w-auto select-none ${className || ''}`}
       draggable={false}
+      onError={onError}
     />
   )
 }
@@ -237,11 +240,13 @@ function PageViewer({
   pageCount,
   resultSecret,
   viewMode,
+  onSvgError,
 }: {
   jobId: string
   pageCount: number
   resultSecret?: string | null
   viewMode: ViewMode
+  onSvgError?: () => void
 }) {
   const [currentPage, setCurrentPage] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -297,7 +302,7 @@ function PageViewer({
             >
               {showLeftPage ? (
                 <div className="relative h-[90%] bg-white" style={{ boxShadow: '-2px 2px 12px rgba(0,0,0,0.08)', border: '1px solid #e5e5e0' }}>
-                  <SvgPage jobId={jobId} page={leftPage} resultSecret={resultSecret} className="h-full" />
+                  <SvgPage jobId={jobId} page={leftPage} resultSecret={resultSecret} className="h-full" onError={onSvgError} />
                 </div>
               ) : (
                 /* Empty verso for title page spread */
@@ -320,7 +325,7 @@ function PageViewer({
             >
               {showRightPage ? (
                 <div className="relative h-[90%] bg-white" style={{ boxShadow: '2px 2px 12px rgba(0,0,0,0.08)', border: '1px solid #e5e5e0' }}>
-                  <SvgPage jobId={jobId} page={rightPage} resultSecret={resultSecret} className="h-full" />
+                  <SvgPage jobId={jobId} page={rightPage} resultSecret={resultSecret} className="h-full" onError={onSvgError} />
                 </div>
               ) : (
                 /* Empty recto if odd page count */
@@ -331,7 +336,7 @@ function PageViewer({
         ) : (
           /* ── Single page view ── */
           <div className="relative h-[90%] max-h-[780px] bg-white" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 12px 40px -8px rgba(0,0,0,0.12)', border: '1px solid #e5e5e0' }}>
-            <SvgPage jobId={jobId} page={currentPage} resultSecret={resultSecret} className="h-full" />
+            <SvgPage jobId={jobId} page={currentPage} resultSecret={resultSecret} className="h-full" onError={onSvgError} />
           </div>
         )}
       </div>
@@ -398,13 +403,21 @@ export default function PreviewPane({
   onViewModeChange: (mode: ViewMode) => void
   onRetry?: () => void
 }) {
+  const [svgFailed, setSvgFailed] = useState(false)
+
+  // Reset svgFailed when a new job completes
+  const jobId = quality?.jobId
+  useEffect(() => { setSvgFailed(false) }, [jobId])
+
   const hasSvgPages = quality && quality.svgPageCount > 0 && quality.jobId
-  const useSvg = !!hasSvgPages && status === 'success'
+  const useSvg = !!hasSvgPages && status === 'success' && !svgFailed
+
+  const handleSvgError = useCallback(() => { setSvgFailed(true) }, [])
 
   return (
     <div className="absolute inset-0 flex flex-col">
       {/* View mode toggle — only shown when we have SVG pages */}
-      {pdfUrl && status === 'success' && hasSvgPages && (
+      {pdfUrl && status === 'success' && hasSvgPages && !svgFailed && (
         <div className="flex h-8 shrink-0 items-center justify-center gap-1 border-b border-[#e5e5e0] bg-[#FDFCF8]">
           <button
             onClick={() => onViewModeChange('single')}
@@ -449,6 +462,7 @@ export default function PreviewPane({
                     pageCount={quality!.svgPageCount}
                     resultSecret={resultSecret}
                     viewMode={viewMode}
+                    onSvgError={handleSvgError}
                   />
                   {/* Quality badge */}
                   {quality && <QualityBadge quality={quality} />}
