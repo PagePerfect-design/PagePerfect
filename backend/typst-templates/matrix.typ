@@ -49,6 +49,7 @@
 // ── SECTION HEADINGS — Corporate Weight Contrast ─────────────
 // H1: Black weight, large, tight tracking
 #show heading.where(level: 1): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(20pt)
   text(size: 22pt, weight: "bold")[#it.body]
   v(8pt)
@@ -56,6 +57,7 @@
 
 // H2: Bold, uppercase, tracked, navy
 #show heading.where(level: 2): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(16pt)
   text(size: 12pt, weight: "bold", fill: corpblue)[#upper(tracking(5pt, it.body))]
   v(6pt)
@@ -63,6 +65,7 @@
 
 // H3: Bold, standard
 #show heading.where(level: 3): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(10pt)
   text(size: 10pt, weight: "bold")[#it.body]
   v(4pt)

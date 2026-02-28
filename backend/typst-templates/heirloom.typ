@@ -48,6 +48,7 @@
 // ── SECTION HEADINGS — Recipe Card Style ─────────────────────
 // H1: Rule above + warm saddlebrown serif title
 #show heading.where(level: 1): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(20pt)
   line(length: 100%, stroke: 0.5pt + rulegrey)
   v(8pt)
@@ -57,6 +58,7 @@
 
 // H2: Tracked uppercase, bold
 #show heading.where(level: 2): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(14pt)
   text(size: 12pt, weight: "bold")[#upper(tracking(3pt, it.body))]
   v(4pt)
@@ -64,6 +66,7 @@
 
 // H3: Bold, standard
 #show heading.where(level: 3): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt)
   v(8pt)
   text(size: 11pt, weight: "bold")[#it.body]
   v(3pt)
