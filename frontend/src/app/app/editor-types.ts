@@ -65,6 +65,8 @@ export type LayoutReport = {
   summary: string
 } | null
 
+export type ViewMode = 'single' | 'spread'
+
 export type CompileQuality = {
   typographyScore: number | null
   typographyGrade: string | null
@@ -72,6 +74,8 @@ export type CompileQuality = {
   underfullBoxes: number
   buildId: string | null
   engine: string | null
+  svgPageCount: number
+  jobId: string | null
   layoutReport: LayoutReport
 } | null
 

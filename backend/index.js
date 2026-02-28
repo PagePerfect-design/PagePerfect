@@ -393,6 +393,20 @@ if (redis) {
         if (result.success && result.pdfPath) {
           const persistedPath = await persistPdf(job.id, result.pdfPath);
           if (persistedPath) {
+            // Also persist SVG page files alongside the PDF
+            if (result.svgPageCount > 0 && result.tmpBase) {
+              const destDir = path.dirname(persistedPath);
+              try {
+                const svgFiles = fs.readdirSync(result.tmpBase).filter(f => /^page-\d+\.svg$/.test(f));
+                for (const svgFile of svgFiles) {
+                  const src = path.join(result.tmpBase, svgFile);
+                  const dest = path.join(destDir, `${job.id}-${svgFile}`);
+                  await fsp.copyFile(src, dest);
+                }
+              } catch (err) {
+                log.warn({ module: 'queue', jobId: job.id, err: err.message }, 'Failed to persist SVG pages');
+              }
+            }
             // Clean up the compile temp dir immediately — PDF is safe in results store
             if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
             result.pdfPath = persistedPath;

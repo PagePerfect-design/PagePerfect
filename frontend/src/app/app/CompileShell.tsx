@@ -21,7 +21,7 @@ import type { ManuscriptListItem } from '@/lib/use-manuscript'
 
 import type {
   TemplateKey, HeadingVariant, PageSize, MarginPreset,
-  CompileMode, CustomFont, Platform, Prefs, Asset,
+  CompileMode, CustomFont, Platform, Prefs, Asset, ViewMode,
 } from './editor-types'
 import { TEMPLATE_INFO, TEMPLATE_KEYS, PAGE_SIZES, MARGIN_INFO, PREFS_KEY, hasTier } from './editor-types'
 import { cleanFromWord, analyzeManuscript } from './editor-utils'
@@ -53,6 +53,7 @@ export default function CompileShell() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [fontUploading, setFontUploading] = useState(false)
   const [targetPlatform, setTargetPlatform] = useState<Platform | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('single')
 
   // ── UI state ──
   const [mounted, setMounted] = useState(false)
@@ -85,6 +86,7 @@ export default function CompileShell() {
     pdfUrl,
     lastDownloadWatermarked,
     quality,
+    resultSecret,
     compile,
   } = useCompileQueue({
     manuscript, template, headingVariant, title, pageSize, marginPreset,
@@ -481,8 +483,10 @@ export default function CompileShell() {
               debug={debug}
               isWatermarked={!hasTier(tier, 'publisher') && !!pdfUrl}
               quality={quality}
+              resultSecret={resultSecret}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
               onRetry={() => compile(false)}
-              sideBySide={false}
             />
           </div>
         </div>

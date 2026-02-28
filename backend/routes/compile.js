@@ -369,7 +369,7 @@ module.exports = function compileRoutes(ctx) {
 
     const cached = await ctx.getJobResult(id);
     if (cached) {
-      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, debugMeta: cached.debugMeta || null, engine: cached.engine || null, layoutReport: cached.layoutReport || null, resultUrl: `/api/compile/result/${id}` });
+      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, debugMeta: cached.debugMeta || null, engine: cached.engine || null, layoutReport: cached.layoutReport || null, svgPageCount: cached.svgPageCount || 0, resultUrl: `/api/compile/result/${id}` });
       const debug = resolveDebug(cached);
       return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: cached.detail, debug, debugMeta: cached.debugMeta || null });
     }
@@ -466,6 +466,41 @@ module.exports = function compileRoutes(ctx) {
       : fs.createReadStream(result.pdfPath);
     stream.on('error', () => { if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' }); });
     stream.pipe(res);
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // GET /api/compile/page/:id/:page — Serve individual SVG page
+  // ══════════════════════════════════════════════════════════
+  router.get('/api/compile/page/:id/:page', async (req, res) => {
+    const { id, page } = req.params;
+    const pageNum = parseInt(page, 10);
+    if (isNaN(pageNum) || pageNum < 1) return res.status(400).json({ error: 'invalid_page', message: 'Page number must be a positive integer.' });
+
+    const result = await ctx.getJobResult(id);
+    if (!result) return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });
+    if (!result.success) return res.status(400).json({ error: 'compile_failed', message: 'Compilation was not successful.' });
+
+    // Auth check (same as result endpoint)
+    if (result.userId) {
+      const requester = await ctx.verifyUserTier(req);
+      if (requester.userId !== result.userId) return res.status(403).json({ error: 'forbidden', message: 'Not authorized.' });
+    } else {
+      const storedSecret = await ctx.getJobSecret(id);
+      if (storedSecret) {
+        const providedSecret = req.query.secret || req.headers['x-pp-result-secret'];
+        if (providedSecret !== storedSecret) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
+      }
+    }
+
+    // SVG pages are stored alongside the PDF, prefixed with jobId
+    const pdfDir = path.dirname(result.pdfPath);
+    const svgFile = path.join(pdfDir, `${id}-page-${String(pageNum).padStart(2, '0')}.svg`);
+
+    if (!fs.existsSync(svgFile)) return res.status(404).json({ error: 'page_not_found', message: `SVG page ${pageNum} not found.` });
+
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    fs.createReadStream(svgFile).pipe(res);
   });
 
   // ══════════════════════════════════════════════════════════

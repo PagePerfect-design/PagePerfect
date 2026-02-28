@@ -1,8 +1,9 @@
 'use client'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertTriangle, FileText, RotateCcw } from 'lucide-react'
+import { AlertTriangle, FileText, RotateCcw, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
 
-import type { Status, CompileError, CompileQuality, CompileDebug } from './editor-types'
+import type { Status, CompileError, CompileQuality, CompileDebug, ViewMode } from './editor-types'
 import { ease } from './editor-types'
 import { translateError, suggestFix } from './editor-utils'
 
@@ -94,7 +95,6 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
    ═══════════════════════════════════════════════════════════════════ */
 
 function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?: CompileDebug; onRetry?: () => void }) {
-  // Prefer structured isSoft flag; fall back to regex detection for backward compat
   const isExpired = errors.some(e => e.isSoft) || (
     !errors.some(e => e.isSoft === false) &&
     errors.some(e =>
@@ -102,13 +102,10 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
     )
   )
 
-  // Find the first actionable fix — prefer structured fix from backend, fall back to suggestFix()
   const visibleErrors = errors.filter(e => !e.message.startsWith('__detail__'))
   const firstFix = (() => {
-    // Check structured fix fields first
     const structured = visibleErrors.find(e => e.fix)
     if (structured?.fix) return structured.fix
-    // Fall back to pattern-based suggestions
     const legacy = visibleErrors.find(e => suggestFix(e.message))
     return legacy ? suggestFix(legacy.message) : null
   })()
@@ -203,7 +200,177 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   LEVITATING BOOK — The PDF preview sits center-screen
+   SVG PAGE — Individual page rendered from backend SVG endpoint
+   ═══════════════════════════════════════════════════════════════════ */
+
+function SvgPage({
+  jobId,
+  page,
+  resultSecret,
+  className,
+}: {
+  jobId: string
+  page: number
+  resultSecret?: string | null
+  className?: string
+}) {
+  const src = resultSecret
+    ? `/api/compile/page/${jobId}/${page}?secret=${encodeURIComponent(resultSecret)}`
+    : `/api/compile/page/${jobId}/${page}`
+
+  return (
+    <img
+      src={src}
+      alt={`Page ${page}`}
+      className={`block h-full w-auto select-none ${className || ''}`}
+      draggable={false}
+    />
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PAGE VIEWER — Renders SVG pages in single or spread layout
+   ═══════════════════════════════════════════════════════════════════ */
+
+function PageViewer({
+  jobId,
+  pageCount,
+  resultSecret,
+  viewMode,
+}: {
+  jobId: string
+  pageCount: number
+  resultSecret?: string | null
+  viewMode: ViewMode
+}) {
+  const [currentPage, setCurrentPage] = useState(1)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Reset to page 1 when job changes
+  useEffect(() => { setCurrentPage(1) }, [jobId])
+
+  const goNext = useCallback(() => {
+    const step = viewMode === 'spread' ? 2 : 1
+    setCurrentPage(p => Math.min(p + step, pageCount))
+  }, [viewMode, pageCount])
+
+  const goPrev = useCallback(() => {
+    const step = viewMode === 'spread' ? 2 : 1
+    setCurrentPage(p => Math.max(p - step, 1))
+  }, [viewMode])
+
+  // Keyboard navigation
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); goNext() }
+      if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); goPrev() }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [goNext, goPrev])
+
+  const isSpread = viewMode === 'spread'
+  const hasPrev = currentPage > 1
+  const hasNext = isSpread ? currentPage + 1 < pageCount : currentPage < pageCount
+
+  // In spread mode: left page (verso) = currentPage, right page (recto) = currentPage + 1
+  // First page (title page) shows alone on the right side of the spread
+  const isFirstPage = currentPage === 1
+  const showLeftPage = isSpread && !isFirstPage
+  const leftPage = isSpread ? currentPage : 0
+  const rightPage = isSpread ? (isFirstPage ? 1 : currentPage + 1) : currentPage
+  const showRightPage = rightPage <= pageCount
+
+  return (
+    <div ref={containerRef} className="flex h-full w-full flex-col items-center justify-center">
+      {/* Page display area */}
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden">
+        {isSpread ? (
+          /* ── Spread view: two pages side by side ── */
+          <div className="flex h-full items-center justify-center gap-0">
+            {/* Left (verso) page */}
+            <div
+              className="relative flex h-full items-center justify-end"
+              style={{ maxWidth: '45%' }}
+            >
+              {showLeftPage ? (
+                <div className="relative h-[90%] bg-white" style={{ boxShadow: '-2px 2px 12px rgba(0,0,0,0.08)', border: '1px solid #e5e5e0' }}>
+                  <SvgPage jobId={jobId} page={leftPage} resultSecret={resultSecret} className="h-full" />
+                </div>
+              ) : (
+                /* Empty verso for title page spread */
+                <div className="h-[90%] bg-[#f5f5f0]" style={{ aspectRatio: '0.707', border: '1px solid #e5e5e0' }} />
+              )}
+            </div>
+
+            {/* Spine shadow */}
+            <div
+              className="relative z-10 h-[90%] w-[3px]"
+              style={{
+                background: 'linear-gradient(to right, rgba(0,0,0,0.12), rgba(0,0,0,0.03), rgba(0,0,0,0.12))',
+              }}
+            />
+
+            {/* Right (recto) page */}
+            <div
+              className="relative flex h-full items-center justify-start"
+              style={{ maxWidth: '45%' }}
+            >
+              {showRightPage ? (
+                <div className="relative h-[90%] bg-white" style={{ boxShadow: '2px 2px 12px rgba(0,0,0,0.08)', border: '1px solid #e5e5e0' }}>
+                  <SvgPage jobId={jobId} page={rightPage} resultSecret={resultSecret} className="h-full" />
+                </div>
+              ) : (
+                /* Empty recto if odd page count */
+                <div className="h-[90%] bg-[#f5f5f0]" style={{ aspectRatio: '0.707', border: '1px solid #e5e5e0' }} />
+              )}
+            </div>
+          </div>
+        ) : (
+          /* ── Single page view ── */
+          <div className="relative h-[90%] max-h-[780px] bg-white" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 12px 40px -8px rgba(0,0,0,0.12)', border: '1px solid #e5e5e0' }}>
+            <SvgPage jobId={jobId} page={currentPage} resultSecret={resultSecret} className="h-full" />
+          </div>
+        )}
+      </div>
+
+      {/* Page navigation bar */}
+      <div className="flex h-10 shrink-0 items-center justify-center gap-4">
+        <button
+          onClick={goPrev}
+          disabled={!hasPrev}
+          className="flex h-7 w-7 items-center justify-center text-[#111111]/50 transition-colors hover:text-[#111111] disabled:opacity-20 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </button>
+        <span className="font-mono text-[10px] tabular-nums text-[#111111]/60">
+          {isSpread ? (
+            isFirstPage
+              ? `1 of ${pageCount}`
+              : showRightPage
+                ? `${leftPage}–${rightPage} of ${pageCount}`
+                : `${leftPage} of ${pageCount}`
+          ) : (
+            `${currentPage} of ${pageCount}`
+          )}
+        </span>
+        <button
+          onClick={goNext}
+          disabled={!hasNext}
+          className="flex h-7 w-7 items-center justify-center text-[#111111]/50 transition-colors hover:text-[#111111] disabled:opacity-20 disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PREVIEW PANE — The PDF preview sits center-screen
+   Renders SVG pages when available, falls back to PDF iframe
    ═══════════════════════════════════════════════════════════════════ */
 
 export default function PreviewPane({
@@ -214,8 +381,10 @@ export default function PreviewPane({
   debug,
   isWatermarked,
   quality,
+  resultSecret,
+  viewMode,
+  onViewModeChange,
   onRetry,
-  sideBySide = false,
 }: {
   pdfUrl: string | null
   loading: boolean
@@ -224,101 +393,177 @@ export default function PreviewPane({
   debug?: CompileDebug
   isWatermarked: boolean
   quality?: CompileQuality
+  resultSecret?: string | null
+  viewMode: ViewMode
+  onViewModeChange: (mode: ViewMode) => void
   onRetry?: () => void
-  sideBySide?: boolean
 }) {
+  const hasSvgPages = quality && quality.svgPageCount > 0 && quality.jobId
+  const useSvg = !!hasSvgPages && status === 'success'
+
   return (
-    <div className={`absolute inset-0 flex items-center justify-center px-4 pb-10 pt-4 sm:px-8 ${sideBySide ? 'sm:left-1/2' : ''}`}>
-      <div className="relative flex h-full max-h-[780px] w-full max-w-[calc(100vw-2rem)] items-center justify-center sm:max-w-[560px]">
-        <motion.div
-          initial={{ opacity: 0, y: 30, scale: 0.92 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.8, ease }}
-          className="relative h-full w-full"
-          style={{ perspective: '2000px' }}
-        >
-          <div
-            className="relative h-full w-full overflow-hidden bg-white transition-shadow duration-500"
-            style={{
-              boxShadow: status === 'success'
-                ? '0 2px 8px rgba(0,0,0,0.08), 0 12px 40px -8px rgba(0,0,0,0.12)'
-                : '0 1px 4px rgba(0,0,0,0.06), 0 8px 30px -6px rgba(0,0,0,0.10)',
-              border: '1px solid #e5e5e0',
-            }}
+    <div className="absolute inset-0 flex flex-col">
+      {/* View mode toggle — only shown when we have SVG pages */}
+      {pdfUrl && status === 'success' && hasSvgPages && (
+        <div className="flex h-8 shrink-0 items-center justify-center gap-1 border-b border-[#e5e5e0] bg-[#FDFCF8]">
+          <button
+            onClick={() => onViewModeChange('single')}
+            className={`flex items-center gap-1 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
+              viewMode === 'single'
+                ? 'text-[#111111] bg-[#111111]/5'
+                : 'text-[#111111]/40 hover:text-[#111111]/60'
+            }`}
           >
-            {pdfUrl ? (
-              <>
-                <iframe
-                  title="PDF preview"
-                  src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
-                  className="h-full w-full"
-                />
-                {/* Quality badge — top right of preview */}
-                {status === 'success' && quality && <QualityBadge quality={quality} />}
-                {/* Quality warning banner — shown for C/D grades below the PDF */}
-                {status === 'success' && quality?.typographyGrade && (quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && (
+            <FileText className="h-3 w-3" />
+            Single
+          </button>
+          <button
+            onClick={() => onViewModeChange('spread')}
+            className={`flex items-center gap-1 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
+              viewMode === 'spread'
+                ? 'text-[#111111] bg-[#111111]/5'
+                : 'text-[#111111]/40 hover:text-[#111111]/60'
+            }`}
+          >
+            <BookOpen className="h-3 w-3" />
+            Spread
+          </button>
+        </div>
+      )}
+
+      {/* Main preview area */}
+      <div className="relative flex-1">
+        <div className="absolute inset-0 flex items-center justify-center px-4 pb-2 pt-4 sm:px-8">
+          <div className="relative flex h-full w-full items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.8, ease }}
+              className="relative h-full w-full"
+            >
+              {useSvg ? (
+                /* ── SVG page renderer ── */
+                <div className="relative h-full w-full">
+                  <PageViewer
+                    jobId={quality!.jobId!}
+                    pageCount={quality!.svgPageCount}
+                    resultSecret={resultSecret}
+                    viewMode={viewMode}
+                  />
+                  {/* Quality badge */}
+                  {quality && <QualityBadge quality={quality} />}
+                  {/* Quality warning banner */}
+                  {quality?.typographyGrade && (quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.3 }}
+                      className={`absolute bottom-10 left-0 right-0 flex items-center gap-2 px-3 py-2 ${
+                        quality.typographyGrade === 'D' ? 'bg-red-500/90' : 'bg-amber-500/90'
+                      } ${isWatermarked ? 'bottom-[74px]' : ''}`}
+                    >
+                      <AlertTriangle className="h-3 w-3 shrink-0 text-white/80" />
+                      <span className="font-mono text-[10px] font-medium text-white">
+                        {quality.typographyGrade === 'D'
+                          ? 'Low quality — adjust margins or template'
+                          : 'Review typography before export'}
+                      </span>
+                    </motion.div>
+                  )}
+                  {isWatermarked && (
+                    <div className="absolute bottom-10 left-0 right-0 flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
+                      <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">
+                        Free preview — watermarked
+                      </span>
+                      <a href="/pricing" className="font-mono text-[10px] font-medium uppercase tracking-wider text-white underline decoration-white/50 hover:decoration-white">
+                        Upgrade
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : pdfUrl ? (
+                /* ── PDF iframe fallback ── */
+                <div
+                  className="relative h-full w-full max-h-[780px] max-w-[560px] mx-auto overflow-hidden bg-white transition-shadow duration-500"
+                  style={{
+                    boxShadow: status === 'success'
+                      ? '0 2px 8px rgba(0,0,0,0.08), 0 12px 40px -8px rgba(0,0,0,0.12)'
+                      : '0 1px 4px rgba(0,0,0,0.06), 0 8px 30px -6px rgba(0,0,0,0.10)',
+                    border: '1px solid #e5e5e0',
+                  }}
+                >
+                  <iframe
+                    title="PDF preview"
+                    src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
+                    className="h-full w-full"
+                  />
+                  {status === 'success' && quality && <QualityBadge quality={quality} />}
+                  {status === 'success' && quality?.typographyGrade && (quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.3 }}
+                      className={`absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-2 ${
+                        quality.typographyGrade === 'D' ? 'bg-red-500/90' : 'bg-amber-500/90'
+                      } ${isWatermarked ? 'bottom-[34px]' : ''}`}
+                    >
+                      <AlertTriangle className="h-3 w-3 shrink-0 text-white/80" />
+                      <span className="font-mono text-[10px] font-medium text-white">
+                        {quality.typographyGrade === 'D'
+                          ? 'Low quality — adjust margins or template'
+                          : 'Review typography before export'}
+                      </span>
+                    </motion.div>
+                  )}
+                  {isWatermarked && (
+                    <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
+                      <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">
+                        Free preview — watermarked
+                      </span>
+                      <a href="/pricing" className="font-mono text-[10px] font-medium uppercase tracking-wider text-white underline decoration-white/50 hover:decoration-white">
+                        Upgrade
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : loading ? (
+                <div className="h-full max-h-[780px] w-full max-w-[560px] mx-auto overflow-hidden bg-white" style={{ border: '1px solid #e5e5e0' }}>
+                  <BookSkeleton />
+                </div>
+              ) : status === 'error' && errors.length > 0 ? (
+                <div className="h-full max-h-[780px] w-full max-w-[560px] mx-auto overflow-hidden bg-white" style={{ border: '1px solid #e5e5e0' }}>
+                  <ErrorPanel errors={errors} debug={debug} onRetry={onRetry} />
+                </div>
+              ) : (
+                <div className="flex h-full max-h-[780px] w-full max-w-[560px] mx-auto items-center justify-center overflow-hidden bg-[#FDFCF8]" style={{ border: '1px solid #e5e5e0' }}>
+                  <div className="text-center">
+                    <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-[#e5e5e0]">
+                      <FileText className="h-5 w-5 text-[#111111]/40" />
+                    </div>
+                    <p className="font-mono text-[11px] text-[#111111]/50">Preview appears here</p>
+                  </div>
+                </div>
+              )}
+
+              <AnimatePresence>
+                {(status === 'compiling' || status === 'queued') && pdfUrl && (
                   <motion.div
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 0.3 }}
-                    className={`absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-2 ${
-                      quality.typographyGrade === 'D'
-                        ? 'bg-red-500/90'
-                        : 'bg-amber-500/90'
-                    } ${isWatermarked ? 'bottom-[34px]' : ''}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute inset-0 z-10 flex items-center justify-center bg-[#FDFCF8]/60 backdrop-blur-[2px]"
                   >
-                    <AlertTriangle className="h-3 w-3 shrink-0 text-white/80" />
-                    <span className="font-mono text-[10px] font-medium text-white">
-                      {quality.typographyGrade === 'D'
-                        ? 'Low quality — adjust margins or template'
-                        : 'Review typography before export'}
-                    </span>
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
+                      <span className="font-mono text-[11px] text-[#111111]/60">Typesetting...</span>
+                    </div>
                   </motion.div>
                 )}
-                {isWatermarked && (
-                  <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
-                    <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">
-                      Free preview — watermarked
-                    </span>
-                    <a href="/pricing" className="font-mono text-[10px] font-medium uppercase tracking-wider text-white underline decoration-white/50 hover:decoration-white">
-                      Upgrade
-                    </a>
-                  </div>
-                )}
-              </>
-            ) : loading ? (
-              <BookSkeleton />
-            ) : status === 'error' && errors.length > 0 ? (
-              <ErrorPanel errors={errors} debug={debug} onRetry={onRetry} />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[#FDFCF8]">
-                <div className="text-center">
-                  <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-[#e5e5e0]">
-                    <FileText className="h-5 w-5 text-[#111111]/40" />
-                  </div>
-                  <p className="font-mono text-[11px] text-[#111111]/50">Preview appears here</p>
-                </div>
-              </div>
-            )}
-
-            <AnimatePresence>
-              {(status === 'compiling' || status === 'queued') && pdfUrl && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute inset-0 z-10 flex items-center justify-center bg-[#FDFCF8]/60 backdrop-blur-[2px]"
-                >
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
-                    <span className="font-mono text-[11px] text-[#111111]/60">Typesetting...</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              </AnimatePresence>
+            </motion.div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   )
