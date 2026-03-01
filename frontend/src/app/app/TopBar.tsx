@@ -2,12 +2,13 @@
 import Link from 'next/link'
 import CompositorMark from '@/components/CompositorMark'
 import {
-  ArrowLeft, Download, AlertTriangle, FileText, Keyboard,
-  Loader2, BarChart3, FolderOpen, Cloud, CloudOff,
+  ArrowLeft, Download, AlertTriangle, FileText,
+  Loader2, BarChart3, FolderOpen, Cloud, CloudOff, RotateCcw,
 } from 'lucide-react'
 
 import type { Status, CompileError } from './editor-types'
 import { translateError } from './editor-utils'
+import Tooltip from './Tooltip'
 
 export default function TopBar({
   title,
@@ -47,116 +48,138 @@ export default function TopBar({
   onShowManuscripts: () => void
 }) {
   return (
-    <div className="fixed left-0 right-0 top-0 z-30">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-2 sm:px-6 sm:py-3 md:px-8">
-        {/* Left: home + back + title */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+    <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#111111]/10 px-4">
+      {/* Left: home + back + title */}
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <Tooltip content="Home" placement="bottom">
           <Link
             href="/"
-            className="flex h-8 w-8 shrink-0 items-center justify-center text-[#111111]/50 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/80"
-            title="Home"
+            className="flex h-8 w-8 shrink-0 items-center justify-center text-[#111111]/40 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/70"
           >
             <CompositorMark size={18} />
           </Link>
-          <div className="hidden h-4 w-px bg-[#111111]/15 sm:block" />
+        </Tooltip>
+        <div className="hidden h-4 w-px bg-[#e5e5e0] sm:block" />
+        <Tooltip content="Back to ingestion" detail="Return to manuscript upload" placement="bottom">
           <button
             onClick={onBack}
-            className="hidden h-8 w-8 shrink-0 items-center justify-center text-[#111111]/50 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/70 sm:flex"
+            className="hidden h-8 w-8 shrink-0 items-center justify-center text-[#111111]/40 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/70 sm:flex"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
           </button>
+        </Tooltip>
+        <Tooltip content="Click to rename" placement="bottom" delay={800}>
           <input
             id="manuscript-title"
             type="text"
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
-            className="min-w-0 max-w-[120px] truncate bg-transparent font-display text-sm font-semibold text-[#111111]/70 placeholder:text-[#111111]/40 focus:text-[#111111] focus:outline-none sm:max-w-none"
+            className="min-w-0 max-w-[280px] truncate bg-transparent font-display text-sm font-semibold text-[#111111]/80 placeholder:text-[#111111]/40 focus:text-[#111111] focus:outline-none"
             placeholder="Untitled"
           />
-          <span className="hidden font-mono text-[10px] text-[#111111]/50 sm:inline">
-            {wordCount.toLocaleString()} words
-          </span>
+        </Tooltip>
+        <span className="hidden shrink-0 font-mono text-[10px] text-[#111111]/40 sm:inline">
+          {wordCount.toLocaleString()} words
+        </span>
 
-          {/* Cloud sync status */}
-          {isLoggedIn && (
-            <>
-              <div className="hidden h-3 w-px bg-[#111111]/15 sm:block" />
-              {saving ? (
-                <span className="inline-flex items-center gap-1 font-mono text-[10px] text-[#111111]/50">
+        {/* Cloud sync status */}
+        {isLoggedIn && (
+          <>
+            <div className="hidden h-3 w-px bg-[#e5e5e0] sm:block" />
+            {saving ? (
+              <Tooltip content="Saving to cloud..." placement="bottom">
+                <span className="inline-flex items-center gap-1 font-mono text-[10px] text-[#111111]/40">
                   <Loader2 className="h-2.5 w-2.5 animate-spin" />
                 </span>
-              ) : saveError ? (
-                <span className="inline-flex items-center gap-1 font-mono text-[10px] text-red-500/50" title={saveError}>
+              </Tooltip>
+            ) : saveError ? (
+              <Tooltip content="Sync failed" detail={saveError} placement="bottom">
+                <span className="inline-flex items-center gap-1 font-mono text-[10px] text-red-500/50">
                   <CloudOff className="h-2.5 w-2.5" />
                 </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 font-mono text-[10px] text-emerald-600/40" title="Synced">
+              </Tooltip>
+            ) : (
+              <Tooltip content="Saved to cloud" placement="bottom">
+                <span className="inline-flex items-center gap-1 font-mono text-[10px] text-emerald-600/40">
                   <Cloud className="h-2.5 w-2.5" />
                 </span>
-              )}
+              </Tooltip>
+            )}
+            <Tooltip content="Open saved manuscripts" shortcut="Esc to close" placement="bottom">
               <button
                 onClick={onShowManuscripts}
-                className="hidden h-7 w-7 items-center justify-center text-[#111111]/50 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/70 sm:flex"
-                title="My Manuscripts"
+                className="hidden h-7 w-7 items-center justify-center text-[#111111]/40 transition-colors hover:bg-[#111111]/[0.06] hover:text-[#111111]/70 sm:flex"
               >
                 <FolderOpen className="h-3 w-3" />
               </button>
-            </>
-          )}
-        </div>
+            </Tooltip>
+          </>
+        )}
+      </div>
 
-        {/* Right: actions */}
-        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
-          {errors.length > 0 && (() => {
-            const e = errors[0]
-            const msg = translateError(e.message)
-            // Prefer structured isSoft flag; fall back to regex detection
-            const isSoft = e.isSoft === true || (
-              e.isSoft !== false &&
-              /expired|recompile|refresh|try again/i.test(msg) && !/failed|error|missing/i.test(msg)
-            )
-            return (
+      {/* Right: actions */}
+      <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+        {errors.length > 0 && (() => {
+          const e = errors[0]
+          const msg = translateError(e.message)
+          const isSoft = e.isSoft === true || (
+            e.isSoft !== false &&
+            /expired|recompile|refresh|try again/i.test(msg) && !/failed|error|missing/i.test(msg)
+          )
+          return (
+            <Tooltip content={msg} placement="bottom">
               <span className={`hidden items-center gap-1.5 font-mono text-[10px] sm:inline-flex ${isSoft ? 'text-amber-500/70' : 'text-red-500/70'}`}>
                 <AlertTriangle className="h-3 w-3 shrink-0" />
                 <span className="max-w-[120px] truncate md:max-w-none">{msg.slice(0, 50)}</span>
               </span>
-            )
-          })()}
+            </Tooltip>
+          )
+        })()}
 
+        <Tooltip content="Recompile preview" detail="Auto-compiles after 3s of inactivity" shortcut="Space" placement="bottom">
           <button
             onClick={onCompile}
             disabled={loading}
-            className="flex h-8 items-center gap-1.5 px-2 text-[11px] font-medium text-[#111111]/50 transition-all hover:bg-[#111111]/[0.04] hover:text-[#111111]/70 disabled:opacity-30 sm:px-3"
-            title="Recompile (Space)"
+            className="flex h-8 items-center gap-1.5 px-2 text-[11px] font-medium text-[#111111]/40 transition-all hover:bg-[#111111]/[0.04] hover:text-[#111111]/70 disabled:opacity-30 sm:px-3"
           >
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Keyboard className="h-3 w-3" />}
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
             <span className="hidden sm:inline">Compile</span>
           </button>
+        </Tooltip>
 
+        <Tooltip content={showEditor ? 'Show preview only' : 'Show text editor'} placement="bottom">
           <button
             onClick={onToggleEditor}
             className={`flex h-8 items-center gap-1.5 px-2 text-[11px] font-medium transition-all sm:px-3 ${
               showEditor
                 ? 'bg-[#111111]/[0.08] text-[#111111]/70'
-                : 'text-[#111111]/50 hover:bg-[#111111]/[0.04] hover:text-[#111111]/70'
+                : 'text-[#111111]/40 hover:bg-[#111111]/[0.04] hover:text-[#111111]/70'
             }`}
           >
             <FileText className="h-3 w-3" />
             <span className="hidden sm:inline">{showEditor ? 'Preview' : 'Edit'}</span>
           </button>
+        </Tooltip>
 
+        <Tooltip content="Analysis systems" detail="Typography, print quality, and manuscript analysis" placement="bottom">
           <button
             onClick={onToggleSystems}
             className={`hidden h-8 items-center gap-1.5 px-3 text-[11px] font-medium transition-all sm:flex ${
               showSystems
                 ? 'bg-[#FF3333]/10 text-[#FF3333] ring-1 ring-[#FF3333]/30'
-                : 'text-[#111111]/50 hover:bg-[#111111]/[0.04] hover:text-[#111111]/70'
+                : 'text-[#111111]/40 hover:bg-[#111111]/[0.04] hover:text-[#111111]/70'
             }`}
           >
             <BarChart3 className="h-3 w-3" />
             Systems
           </button>
+        </Tooltip>
 
+        <Tooltip
+          content={status === 'success' ? 'Export your book' : 'Compile first to enable export'}
+          detail={status === 'success' ? 'Opens pre-flight checks and download' : 'Waiting for successful compile'}
+          placement="bottom"
+        >
           <button
             onClick={onPublish}
             disabled={status !== 'success'}
@@ -165,7 +188,7 @@ export default function TopBar({
             <Download className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Export</span>
           </button>
-        </div>
+        </Tooltip>
       </div>
     </div>
   )

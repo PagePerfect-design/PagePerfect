@@ -6,6 +6,7 @@ import { AlertTriangle, FileText, RotateCcw, ChevronLeft, ChevronRight, BookOpen
 import type { Status, CompileError, CompileQuality, CompileDebug, ViewMode } from './editor-types'
 import { ease } from './editor-types'
 import { translateError, suggestFix } from './editor-utils'
+import Tooltip from './Tooltip'
 
 /* ═══════════════════════════════════════════════════════════════════
    SKELETON LOADER — SVG wireframe shown during typesetting
@@ -386,34 +387,47 @@ export default function PreviewPane({
   onRetry?: () => void
 }) {
   const useSvg = svgPages.length > 0 && status === 'success'
+  // Track if SVG pages are expected but still loading (PDF already rendered)
+  const svgExpected = status === 'success' && (quality?.svgPageCount ?? 0) > 0 && svgPages.length === 0
+  const hasQualityWarning = quality?.typographyGrade === 'C' || quality?.typographyGrade === 'D'
 
   return (
     <div className="absolute inset-0 flex flex-col">
-      {/* View mode toggle — only shown when we have SVG pages */}
+      {/* View mode toggle + help — shown when we have SVG pages */}
       {pdfUrl && status === 'success' && svgPages.length > 0 && (
         <div className="flex h-8 shrink-0 items-center justify-center gap-1 border-b border-[#e5e5e0] bg-[#FDFCF8]">
-          <button
-            onClick={() => onViewModeChange('single')}
-            className={`flex items-center gap-1 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
-              viewMode === 'single'
-                ? 'text-[#111111] bg-[#111111]/5'
-                : 'text-[#111111]/40 hover:text-[#111111]/60'
-            }`}
-          >
-            <FileText className="h-3 w-3" />
-            Single
-          </button>
-          <button
-            onClick={() => onViewModeChange('spread')}
-            className={`flex items-center gap-1 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
-              viewMode === 'spread'
-                ? 'text-[#111111] bg-[#111111]/5'
-                : 'text-[#111111]/40 hover:text-[#111111]/60'
-            }`}
-          >
-            <BookOpen className="h-3 w-3" />
-            Spread
-          </button>
+          <Tooltip content="Single page view" detail="Scroll through pages one at a time" shortcut="↑ ↓">
+            <button
+              onClick={() => onViewModeChange('single')}
+              className={`flex items-center gap-1 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
+                viewMode === 'single'
+                  ? 'text-[#111111] bg-[#111111]/5'
+                  : 'text-[#111111]/40 hover:text-[#111111]/60'
+              }`}
+            >
+              <FileText className="h-3 w-3" />
+              Single
+            </button>
+          </Tooltip>
+          <Tooltip content="Book spread view" detail="Two-page spread like an open book">
+            <button
+              onClick={() => onViewModeChange('spread')}
+              className={`flex items-center gap-1 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
+                viewMode === 'spread'
+                  ? 'text-[#111111] bg-[#111111]/5'
+                  : 'text-[#111111]/40 hover:text-[#111111]/60'
+              }`}
+            >
+              <BookOpen className="h-3 w-3" />
+              Spread
+            </button>
+          </Tooltip>
+          <div className="ml-2 h-3.5 w-px bg-[#e5e5e0]" />
+          <Tooltip content="Keyboard shortcuts" detail="← → cycle templates · Space to compile · ↑ ↓ turn pages">
+            <button className="flex h-5 w-5 items-center justify-center border border-[#111111]/10 font-mono text-[8px] text-[#111111]/30 transition-colors hover:text-[#111111]/50">
+              ?
+            </button>
+          </Tooltip>
         </div>
       )}
 
@@ -428,45 +442,16 @@ export default function PreviewPane({
               className="relative h-full w-full"
             >
               {useSvg ? (
-                /* ── SVG page renderer ── */
+                /* ── SVG page renderer (primary) ── */
                 <div className="relative h-full w-full">
                   <PageViewer
                     svgPages={svgPages}
                     viewMode={viewMode}
                   />
-                  {/* Quality badge */}
                   {quality && <QualityBadge quality={quality} />}
-                  {/* Quality warning banner */}
-                  {quality?.typographyGrade && (quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5, duration: 0.3 }}
-                      className={`absolute bottom-10 left-0 right-0 flex items-center gap-2 px-3 py-2 ${
-                        quality.typographyGrade === 'D' ? 'bg-red-500/90' : 'bg-amber-500/90'
-                      } ${isWatermarked ? 'bottom-[74px]' : ''}`}
-                    >
-                      <AlertTriangle className="h-3 w-3 shrink-0 text-white/80" />
-                      <span className="font-mono text-[10px] font-medium text-white">
-                        {quality.typographyGrade === 'D'
-                          ? 'Low quality — adjust margins or template'
-                          : 'Review typography before export'}
-                      </span>
-                    </motion.div>
-                  )}
-                  {isWatermarked && (
-                    <div className="absolute bottom-10 left-0 right-0 flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
-                      <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">
-                        Free preview — watermarked
-                      </span>
-                      <a href="/pricing" className="font-mono text-[10px] font-medium uppercase tracking-wider text-white underline decoration-white/50 hover:decoration-white">
-                        Upgrade
-                      </a>
-                    </div>
-                  )}
                 </div>
               ) : pdfUrl ? (
-                /* ── PDF iframe fallback ── */
+                /* ── PDF iframe (shown while SVG loads, or as permanent fallback) ── */
                 <div
                   className="relative h-full w-full max-h-[780px] max-w-[560px] mx-auto overflow-hidden bg-white transition-shadow duration-500"
                   style={{
@@ -482,31 +467,10 @@ export default function PreviewPane({
                     className="h-full w-full"
                   />
                   {status === 'success' && quality && <QualityBadge quality={quality} />}
-                  {status === 'success' && quality?.typographyGrade && (quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5, duration: 0.3 }}
-                      className={`absolute bottom-0 left-0 right-0 flex items-center gap-2 px-3 py-2 ${
-                        quality.typographyGrade === 'D' ? 'bg-red-500/90' : 'bg-amber-500/90'
-                      } ${isWatermarked ? 'bottom-[34px]' : ''}`}
-                    >
-                      <AlertTriangle className="h-3 w-3 shrink-0 text-white/80" />
-                      <span className="font-mono text-[10px] font-medium text-white">
-                        {quality.typographyGrade === 'D'
-                          ? 'Low quality — adjust margins or template'
-                          : 'Review typography before export'}
-                      </span>
-                    </motion.div>
-                  )}
-                  {isWatermarked && (
-                    <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
-                      <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">
-                        Free preview — watermarked
-                      </span>
-                      <a href="/pricing" className="font-mono text-[10px] font-medium uppercase tracking-wider text-white underline decoration-white/50 hover:decoration-white">
-                        Upgrade
-                      </a>
+                  {/* SVG loading indicator — shows when SVG is expected but hasn't arrived */}
+                  {svgExpected && (
+                    <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center bg-[#111111]/5 py-1">
+                      <span className="font-mono text-[9px] text-[#111111]/40">Loading page viewer...</span>
                     </div>
                   )}
                 </div>
@@ -525,10 +489,49 @@ export default function PreviewPane({
                       <FileText className="h-5 w-5 text-[#111111]/40" />
                     </div>
                     <p className="font-mono text-[11px] text-[#111111]/50">Preview appears here</p>
+                    <p className="mt-1 font-mono text-[9px] text-[#111111]/35">
+                      Changes auto-compile after 3 seconds
+                    </p>
                   </div>
                 </div>
               )}
 
+              {/* ── Overlay banners (shared across SVG and iframe) ── */}
+              {status === 'success' && pdfUrl && (
+                <div className="absolute bottom-10 left-0 right-0 z-20 flex flex-col gap-0">
+                  {/* Quality warning — C or D grades */}
+                  {hasQualityWarning && quality?.typographyGrade && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.3 }}
+                      className={`flex items-center gap-2 px-3 py-2 ${
+                        quality.typographyGrade === 'D' ? 'bg-red-500/90' : 'bg-amber-500/90'
+                      }`}
+                    >
+                      <AlertTriangle className="h-3 w-3 shrink-0 text-white/80" />
+                      <span className="font-mono text-[10px] font-medium text-white">
+                        {quality.typographyGrade === 'D'
+                          ? 'Low quality — adjust margins or template'
+                          : 'Review typography before export'}
+                      </span>
+                    </motion.div>
+                  )}
+                  {/* Watermark banner */}
+                  {isWatermarked && (
+                    <div className="flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
+                      <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">
+                        Free preview — watermarked
+                      </span>
+                      <a href="/pricing" className="font-mono text-[10px] font-medium uppercase tracking-wider text-white underline decoration-white/50 hover:decoration-white">
+                        Upgrade
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Compile-in-progress overlay */}
               <AnimatePresence>
                 {(status === 'compiling' || status === 'queued') && pdfUrl && (
                   <motion.div

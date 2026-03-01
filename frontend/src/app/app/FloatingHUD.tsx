@@ -20,6 +20,7 @@ import {
   PAGE_SIZES, MARGIN_INFO, GENRE_LABELS, GENRE_ORDER,
   ease, hasTier,
 } from './editor-types'
+import Tooltip from './Tooltip'
 
 /* ═══════════════════════════════════════════════════════════════════
    DOCK BUTTON — Individual button in the floating dock
@@ -30,25 +31,34 @@ function DockButton({
   onClick,
   icon,
   label,
+  tooltip,
+  tooltipDetail,
 }: {
   active: boolean
   onClick: () => void
   icon: React.ReactNode
   label: string
+  tooltip?: string
+  tooltipDetail?: string
 }) {
-  return (
+  const btn = (
     <button
       onClick={onClick}
+      aria-label={label}
       className={`inline-flex items-center gap-1.5 px-2.5 py-2 text-[11px] font-medium transition-all duration-150 sm:gap-2 sm:px-4 sm:text-[12px] ${
         active
           ? 'bg-[#111111] text-white shadow-lg'
-          : 'text-[#111111]/60 hover:bg-[#111111]/[0.05] hover:text-[#111111]/70'
+          : 'text-[#111111]/50 hover:bg-[#111111]/[0.05] hover:text-[#111111]/70'
       }`}
     >
       {icon}
       <span className="hidden sm:inline">{label}</span>
     </button>
   )
+  if (tooltip) {
+    return <Tooltip content={tooltip} detail={tooltipDetail} placement="top" disabled={active}>{btn}</Tooltip>
+  }
+  return btn
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -190,20 +200,23 @@ export default function FloatingHUD({
 
             {/* Heading variant toggle */}
             <div className="flex items-center justify-between border-t border-[#e5e5e0] px-4 py-2.5">
-              <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50">Headings</span>
+              <Tooltip content="Chapter heading style" detail="Changes how chapter titles and section headings appear" placement="top">
+                <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50">Headings</span>
+              </Tooltip>
               <div className="flex gap-1">
                 {(['classic', 'modern', 'bold'] as HeadingVariant[]).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => onHeadingVariantChange(v)}
-                    className={`px-3 py-1 font-mono text-[10px] transition-all ${
-                      headingVariant === v
-                        ? 'bg-[#111111] text-white'
-                        : 'text-[#111111]/55 hover:bg-[#111111]/[0.05] hover:text-[#111111]/80'
-                    }`}
-                  >
-                    {HEADING_VARIANT_INFO[v].label}
-                  </button>
+                  <Tooltip key={v} content={HEADING_VARIANT_INFO[v].label} detail={HEADING_VARIANT_INFO[v].desc} placement="top">
+                    <button
+                      onClick={() => onHeadingVariantChange(v)}
+                      className={`px-3 py-1 font-mono text-[10px] transition-all ${
+                        headingVariant === v
+                          ? 'bg-[#111111] text-white'
+                          : 'text-[#111111]/40 hover:bg-[#111111]/[0.05] hover:text-[#111111]/80'
+                      }`}
+                    >
+                      {HEADING_VARIANT_INFO[v].label}
+                    </button>
+                  </Tooltip>
                 ))}
               </div>
             </div>
@@ -317,27 +330,29 @@ export default function FloatingHUD({
             </details>
 
             {/* Margins */}
-            <p className="mb-2 mt-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">Margins</p>
+            <Tooltip content="Inner whitespace around text" detail="Wider margins = more readable, fewer words per page" placement="top">
+              <p className="mb-2 mt-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">Margins</p>
+            </Tooltip>
             <div className="flex gap-1.5 overflow-x-auto">
               {(Object.keys(MARGIN_INFO) as MarginPreset[]).map((key) => {
                 const info = MARGIN_INFO[key]
                 const isActive = key === marginPreset
                 return (
-                  <button
-                    key={key}
-                    onClick={() => onMarginChange(key)}
-                    className={`shrink-0 px-3 py-1.5 text-center transition-all duration-150 ${
-                      isActive
-                        ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
-                        : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
-                    }`}
-                    title={info.desc}
-                  >
-                    <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
-                      {info.label}
-                    </span>
-                    <span className="block font-mono text-[8px] text-[#111111]/50">{info.desc}</span>
-                  </button>
+                  <Tooltip key={key} content={info.label} detail={info.desc} placement="top">
+                    <button
+                      onClick={() => onMarginChange(key)}
+                      className={`shrink-0 px-3 py-1.5 text-center transition-all duration-150 ${
+                        isActive
+                          ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
+                          : 'bg-[#111111]/[0.02] hover:bg-[#111111]/[0.05]'
+                      }`}
+                    >
+                      <span className={`block text-[11px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
+                        {info.label}
+                      </span>
+                      <span className="block font-mono text-[8px] text-[#111111]/40">{info.desc}</span>
+                    </button>
+                  </Tooltip>
                 )
               })}
             </div>
@@ -437,6 +452,8 @@ export default function FloatingHUD({
           onClick={() => toggleTab('style')}
           icon={<Paintbrush className="h-3.5 w-3.5" />}
           label={TEMPLATE_INFO[template].subtitle}
+          tooltip="Change template"
+          tooltipDetail="Pick a design for your book (← → arrow keys)"
         />
         <div className="mx-0.5 h-4 w-px bg-[#111111]/[0.08]" />
         <DockButton
@@ -444,6 +461,8 @@ export default function FloatingHUD({
           onClick={() => toggleTab('layout')}
           icon={<Ruler className="h-3.5 w-3.5" />}
           label={PAGE_SIZES[pageSize]?.label || 'Size'}
+          tooltip="Change page size & margins"
+          tooltipDetail="Set trim size and margin width"
         />
         <div className="mx-0.5 h-4 w-px bg-[#111111]/[0.08]" />
         <DockButton
@@ -451,51 +470,83 @@ export default function FloatingHUD({
           onClick={() => toggleTab('settings')}
           icon={<Settings2 className="h-3.5 w-3.5" />}
           label="Options"
+          tooltip="Compile options"
+          tooltipDetail="Fast/Full mode, bibliography, custom fonts"
         />
 
         {/* Status dot */}
         <div className="mx-1.5 h-4 w-px bg-[#111111]/[0.08]" />
-        <div className="flex items-center gap-1.5 px-2">
-          <span className={`h-1.5 w-1.5 rounded-full transition-colors ${
-            status === 'compiling' || status === 'queued' ? 'bg-[#FF3333] animate-pulse' :
-            status === 'success' ? 'bg-emerald-500' :
-            status === 'error' ? 'bg-red-500' :
-            'bg-[#111111]/20'
-          }`} />
-          <span className={`font-mono text-[9px] uppercase tracking-[0.1em] ${
-            status === 'compiling' || status === 'queued' ? 'text-[#FF3333]' :
-            status === 'success' ? 'text-emerald-600/70' :
-            status === 'error' ? 'text-red-500/70' :
-            'text-[#111111]/55'
-          }`}>
-            {status === 'queued' ? 'Queued' : status === 'compiling' ? 'Setting' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
-          </span>
-        </div>
+        <Tooltip
+          content={
+            status === 'queued' ? 'In queue' :
+            status === 'compiling' ? 'Typesetting in progress' :
+            status === 'success' ? 'Compile successful' :
+            status === 'error' ? 'Compile failed' :
+            'Waiting for changes'
+          }
+          detail={
+            status === 'compiling' ? 'LuaLaTeX is processing your manuscript' :
+            status === 'success' ? 'PDF ready for preview and download' :
+            status === 'error' ? 'Check the error message for details' :
+            'Edit text or change settings to trigger a compile'
+          }
+          placement="top"
+        >
+          <div className="flex items-center gap-1.5 px-2">
+            <span className={`h-1.5 w-1.5 rounded-full transition-colors ${
+              status === 'compiling' || status === 'queued' ? 'bg-[#FF3333] animate-pulse' :
+              status === 'success' ? 'bg-emerald-500' :
+              status === 'error' ? 'bg-red-500' :
+              'bg-[#111111]/20'
+            }`} />
+            <span className={`font-mono text-[9px] uppercase tracking-[0.1em] ${
+              status === 'compiling' || status === 'queued' ? 'text-[#FF3333]' :
+              status === 'success' ? 'text-emerald-600/70' :
+              status === 'error' ? 'text-red-500/70' :
+              'text-[#111111]/40'
+            }`}>
+              {status === 'queued' ? 'Queued' : status === 'compiling' ? 'Setting' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
+            </span>
+          </div>
+        </Tooltip>
 
         {/* Quality grade — visible after successful compile */}
         {status === 'success' && quality?.typographyGrade && (
           <>
             <div className="mx-1 h-4 w-px bg-[#111111]/[0.08]" />
-            <div className={`flex items-center gap-1 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] ${
-              quality.typographyGrade === 'A' ? 'text-emerald-600/70' :
-              quality.typographyGrade === 'B' ? 'text-blue-600/70' :
-              quality.typographyGrade === 'C' ? 'text-amber-600/70' :
-              'text-red-500/70'
-            }`}>
-              <span className="font-bold">{quality.typographyGrade}</span>
-              {(quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && quality.overfullBoxes > 0 && (
-                <span className="opacity-60">{quality.overfullBoxes} ovf</span>
-              )}
-            </div>
+            <Tooltip
+              content={`Typography Grade ${quality.typographyGrade}`}
+              detail={
+                quality.typographyGrade === 'A' ? 'Excellent typography — no issues detected' :
+                quality.typographyGrade === 'B' ? 'Good typography — minor issues' :
+                quality.typographyGrade === 'C' ? 'Fair — review margins or template for better results' :
+                'Poor — adjust margins, page size, or template'
+              }
+              placement="top"
+            >
+              <div className={`flex items-center gap-1 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] ${
+                quality.typographyGrade === 'A' ? 'text-emerald-600/70' :
+                quality.typographyGrade === 'B' ? 'text-blue-600/70' :
+                quality.typographyGrade === 'C' ? 'text-amber-600/70' :
+                'text-red-500/70'
+              }`}>
+                <span className="font-bold">{quality.typographyGrade}</span>
+                {(quality.typographyGrade === 'C' || quality.typographyGrade === 'D') && quality.overfullBoxes > 0 && (
+                  <span className="opacity-60">{quality.overfullBoxes} ovf</span>
+                )}
+              </div>
+            </Tooltip>
           </>
         )}
-        {/* Engine indicator — shows typst after successful compile */}
+        {/* Engine indicator */}
         {status === 'success' && quality?.engine && (
           <>
             <div className="mx-0.5 h-4 w-px bg-[#111111]/[0.08]" />
-            <span className="px-1.5 font-mono text-[8px] text-[#111111]/50" title={quality.engine}>
-              {quality.engine}
-            </span>
+            <Tooltip content="Typesetting engine" detail={quality.engine} placement="top">
+              <span className="px-1.5 font-mono text-[8px] text-[#111111]/40">
+                {quality.engine}
+              </span>
+            </Tooltip>
           </>
         )}
       </div>

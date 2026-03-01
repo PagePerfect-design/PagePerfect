@@ -7,12 +7,13 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import { useState, useRef, useCallback } from 'react'
-import { Lock, Upload, Loader2, X, Check, AlertTriangle, Download, Shield, Package } from 'lucide-react'
+import { Lock, Upload, Loader2, X, Check, AlertTriangle, Download, Package } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
 const RichTextEditor = dynamic(() => import('./RichTextEditor'), { ssr: false })
 
 import ImageUpload from './ImageUpload'
+import Tooltip from './Tooltip'
 import type {
   TemplateKey, HeadingVariant, PageSize, MarginPreset,
   CompileMode, CustomFont, Asset, Status, Genre, CompileQuality,
@@ -30,6 +31,7 @@ function Section({
   number,
   label,
   summary,
+  helpText,
   open,
   onToggle,
   children,
@@ -38,6 +40,7 @@ function Section({
   number: string
   label: string
   summary: string
+  helpText?: string
   open: boolean
   onToggle: () => void
   children: React.ReactNode
@@ -49,13 +52,13 @@ function Section({
         onClick={onToggle}
         className="flex w-full items-baseline gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-[#f5f5f0]"
       >
-        <span className="font-mono text-[10px] font-bold text-[#111111]/50">{number}</span>
+        <span className="font-mono text-[10px] font-bold text-[#111111]/40">{number}</span>
         <div className="flex-1 min-w-0">
-          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/50">
+          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">
             {label}
           </span>
           {!open && (
-            <span className={`ml-2 font-mono text-[10px] tracking-[0.05em] ${accentColor || 'text-[#111111]/50'}`}>
+            <span className={`ml-2 font-mono text-[10px] tracking-[0.05em] ${accentColor || 'text-[#111111]/40'}`}>
               {summary}
             </span>
           )}
@@ -69,6 +72,12 @@ function Section({
         }}
       >
         <div className="px-4 pb-4">
+          {/* Help text — contextual guidance when section is open */}
+          {helpText && (
+            <p className="mb-3 font-mono text-[9px] leading-relaxed text-[#111111]/40">
+              {helpText}
+            </p>
+          )}
           {children}
         </div>
       </div>
@@ -200,6 +209,7 @@ export default function ControlStrip({
         number="01"
         label="Manuscript"
         summary={`${wordCount.toLocaleString()} words`}
+        helpText="Edit your text here or upload a .md / .docx file. Changes auto-compile after 3 seconds."
         open={openSections.has('manuscript')}
         onToggle={() => toggle('manuscript')}
       >
@@ -273,24 +283,34 @@ export default function ControlStrip({
         number="02"
         label="Template"
         summary={`${TEMPLATE_INFO[template].name} · ${TEMPLATE_INFO[template].font}`}
+        helpText="Pick a design for your book. Each template sets fonts, spacing, and chapter styles. Use ← → arrow keys to cycle quickly."
         open={openSections.has('template')}
         onToggle={() => toggle('template')}
       >
         {/* Genre tabs */}
         <div className="mb-3 flex gap-1">
-          {(['all', ...GENRE_ORDER] as Genre[]).map((g) => (
-            <button
-              key={g}
-              onClick={() => setGenreFilter(g)}
-              className={`px-2 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-all duration-150 ${
-                genreFilter === g
-                  ? 'bg-[#f5f5f0] text-[#111111]/70'
-                  : 'text-[#111111]/50 hover:text-[#111111]/70'
-              }`}
-            >
-              {GENRE_LABELS[g]}
-            </button>
-          ))}
+          {(['all', ...GENRE_ORDER] as Genre[]).map((g) => {
+            const genreDescriptions: Record<Genre, string> = {
+              all: 'Show all 15 templates',
+              fiction: 'Novels, short stories, memoirs',
+              nonfiction: 'Academic, business, journalism',
+              specialist: 'Poetry, screenplays, cookbooks, tech docs',
+            }
+            return (
+              <Tooltip key={g} content={genreDescriptions[g]} placement="bottom">
+                <button
+                  onClick={() => setGenreFilter(g)}
+                  className={`px-2 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-all duration-150 ${
+                    genreFilter === g
+                      ? 'bg-[#f5f5f0] text-[#111111]/70'
+                      : 'text-[#111111]/40 hover:text-[#111111]/70'
+                  }`}
+                >
+                  {GENRE_LABELS[g]}
+                </button>
+              </Tooltip>
+            )
+          })}
         </div>
 
         {/* Template grid — 2 columns */}
@@ -299,50 +319,53 @@ export default function ControlStrip({
             const info = TEMPLATE_INFO[key]
             const isActive = key === template
             return (
-              <button
-                key={key}
-                onClick={() => onTemplateChange(key)}
-                title={`${info.subtitle} — ${info.vibe}`}
-                className={`border p-2.5 text-left transition-all duration-150 ${
-                  isActive
-                    ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                    : 'border-[#e5e5e0] hover:border-[#111111]/20'
-                }`}
-              >
-                {/* Type specimen */}
-                <p className={`text-[11px] font-semibold leading-tight ${isActive ? 'text-[#111111]' : 'text-[#111111]/60'} ${
-                  info.font.includes('Garamond') || info.font.includes('Baskerville') || info.font.includes('Bembo') || info.font.includes('Latin Modern')
-                    ? 'font-body' : 'font-display'
-                }`}>
-                  {info.name}
-                </p>
-                <p className="mt-0.5 font-mono text-[7px] leading-tight text-[#111111]/40">
-                  {info.subtitle}
-                </p>
-                <p className="mt-0.5 font-mono text-[8px] text-[#111111]/50">
-                  {info.font}
-                </p>
-              </button>
+              <Tooltip key={key} content={info.name} detail={info.vibe} placement="right">
+                <button
+                  onClick={() => onTemplateChange(key)}
+                  className={`border p-2.5 text-left transition-all duration-150 ${
+                    isActive
+                      ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
+                      : 'border-[#e5e5e0] hover:border-[#111111]/20'
+                  }`}
+                >
+                  {/* Type specimen */}
+                  <p className={`text-[11px] font-semibold leading-tight ${isActive ? 'text-[#111111]' : 'text-[#111111]/60'} ${
+                    info.font.includes('Garamond') || info.font.includes('Baskerville') || info.font.includes('Bembo') || info.font.includes('Latin Modern')
+                      ? 'font-body' : 'font-display'
+                  }`}>
+                    {info.name}
+                  </p>
+                  <p className="mt-0.5 font-mono text-[7px] leading-tight text-[#111111]/35">
+                    {info.subtitle}
+                  </p>
+                  <p className="mt-0.5 font-mono text-[8px] text-[#111111]/50">
+                    {info.font}
+                  </p>
+                </button>
+              </Tooltip>
             )
           })}
         </div>
 
         {/* Heading variant */}
         <div className="mt-3 flex items-center justify-between border-t border-[#e5e5e0] pt-3">
-          <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Headings</span>
+          <Tooltip content="Chapter heading style" detail="Changes how chapter titles and section headings appear" placement="right">
+            <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Headings</span>
+          </Tooltip>
           <div className="flex gap-1">
             {(['classic', 'modern', 'bold'] as HeadingVariant[]).map((v) => (
-              <button
-                key={v}
-                onClick={() => onHeadingVariantChange(v)}
-                className={`px-2.5 py-1 font-mono text-[9px] transition-all duration-150 ${
-                  headingVariant === v
-                    ? 'bg-[#111111] text-white'
-                    : 'text-[#111111]/50 hover:bg-[#f5f5f0] hover:text-[#111111]/70'
-                }`}
-              >
-                {HEADING_VARIANT_INFO[v].label}
-              </button>
+              <Tooltip key={v} content={HEADING_VARIANT_INFO[v].label} detail={HEADING_VARIANT_INFO[v].desc} placement="bottom">
+                <button
+                  onClick={() => onHeadingVariantChange(v)}
+                  className={`px-2.5 py-1 font-mono text-[9px] transition-all duration-150 ${
+                    headingVariant === v
+                      ? 'bg-[#111111] text-white'
+                      : 'text-[#111111]/40 hover:bg-[#f5f5f0] hover:text-[#111111]/70'
+                  }`}
+                >
+                  {HEADING_VARIANT_INFO[v].label}
+                </button>
+              </Tooltip>
             ))}
           </div>
         </div>
@@ -353,30 +376,34 @@ export default function ControlStrip({
         number="03"
         label="Layout"
         summary={`${PAGE_SIZES[pageSize]?.label || pageSize} · ${MARGIN_INFO[marginPreset]?.label || marginPreset}`}
+        helpText="Set your book's physical dimensions and margins. Choose a standard size for your publishing platform."
         open={openSections.has('layout')}
         onToggle={() => toggle('layout')}
       >
         {/* Page sizes — default 6 */}
-        <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Page Size</p>
+        <Tooltip content="Physical trim size of your book" detail="Pick a standard size for your publishing platform" placement="right">
+          <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Page Size</p>
+        </Tooltip>
         <div className="grid grid-cols-3 gap-1.5">
           {(['fiveFiveByEightFive', 'sixByNine', 'a5', 'royal', 'letter', 'a4'] as PageSize[]).map((key) => {
             const info = PAGE_SIZES[key]
             const isActive = key === pageSize
             return (
-              <button
-                key={key}
-                onClick={() => onPageSizeChange(key)}
-                className={`border py-2 text-center transition-all duration-150 ${
-                  isActive
-                    ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                    : 'border-[#e5e5e0] hover:border-[#111111]/20'
-                }`}
-              >
-                <span className={`block text-[10px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
-                  {info.label}
-                </span>
-                <span className="block font-mono text-[8px] text-[#111111]/50">{info.desc}</span>
-              </button>
+              <Tooltip key={key} content={info.label} detail={info.desc} placement="right">
+                <button
+                  onClick={() => onPageSizeChange(key)}
+                  className={`border py-2 text-center transition-all duration-150 ${
+                    isActive
+                      ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
+                      : 'border-[#e5e5e0] hover:border-[#111111]/20'
+                  }`}
+                >
+                  <span className={`block text-[10px] font-medium ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
+                    {info.label}
+                  </span>
+                  <span className="block font-mono text-[8px] text-[#111111]/40">{info.desc}</span>
+                </button>
+              </Tooltip>
             )
           })}
         </div>
@@ -447,26 +474,28 @@ export default function ControlStrip({
         </details>
 
         {/* Margins */}
-        <p className="mb-2 mt-4 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Margins</p>
+        <Tooltip content="Inner whitespace around text" detail="Wider margins = more readable, fewer words per page" placement="right">
+          <p className="mb-2 mt-4 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Margins</p>
+        </Tooltip>
         <div className="flex flex-wrap gap-1.5">
           {(Object.keys(MARGIN_INFO) as MarginPreset[]).map((key) => {
             const info = MARGIN_INFO[key]
             const isActive = key === marginPreset
             return (
-              <button
-                key={key}
-                onClick={() => onMarginChange(key)}
-                className={`border px-2.5 py-1.5 transition-all duration-150 ${
-                  isActive
-                    ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                    : 'border-[#e5e5e0] hover:border-[#111111]/20'
-                }`}
-                title={info.desc}
-              >
-                <span className={`block font-mono text-[9px] ${isActive ? 'text-[#111111]' : 'text-[#111111]/60'}`}>
-                  {info.label}
-                </span>
-              </button>
+              <Tooltip key={key} content={info.label} detail={info.desc} placement="bottom">
+                <button
+                  onClick={() => onMarginChange(key)}
+                  className={`border px-2.5 py-1.5 transition-all duration-150 ${
+                    isActive
+                      ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
+                      : 'border-[#e5e5e0] hover:border-[#111111]/20'
+                  }`}
+                >
+                  <span className={`block font-mono text-[9px] ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'}`}>
+                    {info.label}
+                  </span>
+                </button>
+              </Tooltip>
             )
           })}
         </div>
@@ -477,50 +506,64 @@ export default function ControlStrip({
         number="04"
         label="Settings"
         summary={`${compileMode === 'fast' ? 'Fast' : 'Full'} · ${safeMode ? 'Standard' : 'Citations'}`}
+        helpText="Control how your book compiles. Fast mode is quicker; Full runs additional typography passes."
         open={openSections.has('settings')}
         onToggle={() => toggle('settings')}
       >
         {/* Compile mode */}
         <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Compile Mode</p>
         <div className="flex border border-[#e5e5e0] p-0.5">
-          {(['fast', 'full'] as CompileMode[]).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => onCompileModeChange(mode)}
-              className={`flex-1 py-1.5 text-center font-mono text-[10px] transition-all duration-150 ${
-                compileMode === mode
-                  ? 'bg-[#f5f5f0] text-[#111111]/70'
-                  : 'text-[#111111]/50 hover:text-[#111111]/70'
-              }`}
-            >
-              {mode === 'fast' ? 'Fast' : 'Full'}
-            </button>
-          ))}
+          {(['fast', 'full'] as CompileMode[]).map((mode) => {
+            const modeDescriptions = {
+              fast: 'Quick preview — single LuaLaTeX pass',
+              full: 'Publication quality — multiple passes for TOC, references',
+            }
+            return (
+              <Tooltip key={mode} content={mode === 'fast' ? 'Fast compile' : 'Full compile'} detail={modeDescriptions[mode]} placement="bottom">
+                <button
+                  onClick={() => onCompileModeChange(mode)}
+                  className={`flex-1 py-1.5 text-center font-mono text-[10px] transition-all duration-150 ${
+                    compileMode === mode
+                      ? 'bg-[#f5f5f0] text-[#111111]/70'
+                      : 'text-[#111111]/40 hover:text-[#111111]/70'
+                  }`}
+                >
+                  {mode === 'fast' ? 'Fast' : 'Full'}
+                </button>
+              </Tooltip>
+            )
+          })}
         </div>
 
         {/* Safe mode */}
-        <label className="mt-3 flex cursor-pointer items-start gap-2.5">
-          <input
-            type="checkbox"
-            checked={safeMode}
-            onChange={(e) => onSafeModeChange(e.target.checked)}
-            className="mt-0.5 h-3 w-3 accent-[#FF3333]"
-          />
-          <div>
-            <span className="font-mono text-[10px] text-[#111111]/50">Standard mode</span>
-            <p className="font-mono text-[9px] leading-snug text-[#111111]/50">
-              {safeMode ? 'Citations skipped' : 'Citations active'}
-            </p>
-          </div>
-        </label>
+        <Tooltip content="Standard mode" detail={safeMode ? 'Citations and bibliography are skipped. Uncheck to enable @cite references.' : 'Citations active — your @cite references will be processed with BibTeX.'} placement="right">
+          <label className="mt-3 flex cursor-pointer items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={safeMode}
+              onChange={(e) => onSafeModeChange(e.target.checked)}
+              className="mt-0.5 h-3 w-3 accent-[#FF3333]"
+            />
+            <div>
+              <span className="font-mono text-[10px] text-[#111111]/60">Standard mode</span>
+              <p className="font-mono text-[9px] leading-snug text-[#111111]/40">
+                {safeMode ? 'Citations skipped — uncheck for bibliography' : 'Citations active — using bibliography references'}
+              </p>
+            </div>
+          </label>
+        </Tooltip>
 
         {/* Custom font */}
         <div className="mt-4 border-t border-[#e5e5e0] pt-3">
-          <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Custom Font</p>
+          <Tooltip content="Upload your own font" detail="Use a .ttf or .otf file as the main body font. Studio tier required." placement="right">
+            <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Custom Font</p>
+          </Tooltip>
           {!hasTier(userTier, 'studio') ? (
-            <a href="/pricing" className="flex items-center justify-center gap-2 border border-dashed border-[#e5e5e0] py-2 font-mono text-[10px] text-[#111111]/50 transition-all hover:border-[#111111]/20 hover:text-[#111111]/80">
-              <Lock className="h-3 w-3" />Studio — <span className="underline">Upgrade</span>
-            </a>
+            <Tooltip content="Studio feature" detail="Upload custom fonts with a Studio lifetime license ($199)" placement="right">
+              <a href="/pricing" className="flex items-center justify-center gap-2 border border-dashed border-[#e5e5e0] py-2 font-mono text-[10px] text-[#111111]/40 transition-all hover:border-[#111111]/20 hover:text-[#111111]/70">
+                <Lock className="h-3 w-3" />Studio — <span className="underline">Upgrade</span>
+              </a>
+            </Tooltip>
           ) : customFont ? (
             <div className="flex items-center gap-2 bg-[#f5f5f0] px-3 py-2">
               <span className="flex-1 truncate font-mono text-[10px] text-[#111111]/50">{customFont.originalName}</span>
@@ -759,11 +802,11 @@ function ExportSection({
         onClick={onToggle}
         className="flex w-full items-baseline gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-[#f5f5f0]"
       >
-        <span className="font-mono text-[10px] font-bold text-[#111111]/50">{number}</span>
+        <span className="font-mono text-[10px] font-bold text-[#111111]/40">{number}</span>
         <div className="flex-1 min-w-0">
-          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/50">Export</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">Export</span>
           {!open && (
-            <span className="ml-2 font-mono text-[10px] tracking-[0.05em] text-[#111111]/50">{summaryText}</span>
+            <span className="ml-2 font-mono text-[10px] tracking-[0.05em] text-[#111111]/40">{summaryText}</span>
           )}
         </div>
       </button>
@@ -773,26 +816,35 @@ function ExportSection({
         style={{ maxHeight: open ? '3000px' : '0px', opacity: open ? 1 : 0 }}
       >
         <div className="space-y-3 px-4 pb-4">
+          <p className="font-mono text-[9px] leading-relaxed text-[#111111]/40">
+            Choose your publishing platform, then run pre-flight checks before downloading.
+          </p>
           {/* Platform */}
           <div>
-            <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Platform</p>
+            <Tooltip content="Select your target platform" detail="Each platform has specific requirements for trim, bleed, and color" placement="right">
+              <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">Platform</p>
+            </Tooltip>
             <div className="flex gap-1.5">
-              <button
-                onClick={() => { setPlatform('kdp'); lastPreflightRef.current = ''; runPreflight() }}
-                className={`flex-1 border py-2 font-mono text-[10px] transition-all duration-150 ${
-                  platform === 'kdp' ? 'border-[#111111] bg-[#111111] text-white' : 'border-[#e5e5e0] text-[#111111]/60 hover:border-[#111111]/20'
-                }`}
-              >
-                Amazon KDP
-              </button>
-              <button
-                onClick={() => { if (hasTier(userTier, 'publisher')) { setPlatform('ingram'); lastPreflightRef.current = ''; runPreflight() } }}
-                className={`flex-1 border py-2 font-mono text-[10px] transition-all duration-150 ${
-                  platform === 'ingram' ? 'border-[#FF3333] bg-[#FF3333] text-white' : 'border-[#e5e5e0] text-[#111111]/60 hover:border-[#111111]/20'
-                } ${!hasTier(userTier, 'publisher') ? 'opacity-40 cursor-not-allowed' : ''}`}
-              >
-                IngramSpark {!hasTier(userTier, 'publisher') && <Lock className="ml-1 inline h-2 w-2" />}
-              </button>
+              <Tooltip content="Amazon KDP" detail="Spine, gutter, and trim validated for KDP specs" placement="bottom">
+                <button
+                  onClick={() => { setPlatform('kdp'); lastPreflightRef.current = ''; runPreflight() }}
+                  className={`flex-1 border py-2 font-mono text-[10px] transition-all duration-150 ${
+                    platform === 'kdp' ? 'border-[#111111] bg-[#111111] text-white' : 'border-[#e5e5e0] text-[#111111]/50 hover:border-[#111111]/20'
+                  }`}
+                >
+                  Amazon KDP
+                </button>
+              </Tooltip>
+              <Tooltip content="IngramSpark" detail={hasTier(userTier, 'publisher') ? 'PDF/X-1a, CMYK, bleed compliance' : 'Publisher tier required — upgrade for IngramSpark support'} placement="bottom">
+                <button
+                  onClick={() => { if (hasTier(userTier, 'publisher')) { setPlatform('ingram'); lastPreflightRef.current = ''; runPreflight() } }}
+                  className={`flex-1 border py-2 font-mono text-[10px] transition-all duration-150 ${
+                    platform === 'ingram' ? 'border-[#FF3333] bg-[#FF3333] text-white' : 'border-[#e5e5e0] text-[#111111]/50 hover:border-[#111111]/20'
+                  } ${!hasTier(userTier, 'publisher') ? 'opacity-40 cursor-not-allowed' : ''}`}
+                >
+                  IngramSpark {!hasTier(userTier, 'publisher') && <Lock className="ml-1 inline h-2 w-2" />}
+                </button>
+              </Tooltip>
             </div>
           </div>
 
