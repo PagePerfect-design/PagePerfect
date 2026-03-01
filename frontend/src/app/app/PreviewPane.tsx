@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, FileText, RotateCcw, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
 
@@ -201,6 +201,8 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
 
 /* ═══════════════════════════════════════════════════════════════════
    SVG PAGE — Renders inline SVG from memory (no network request)
+   Strips Typst's fixed width/height attributes so the viewBox controls
+   aspect ratio and CSS handles responsive scaling.
    ═══════════════════════════════════════════════════════════════════ */
 
 function SvgPage({
@@ -210,10 +212,19 @@ function SvgPage({
   svg: string
   className?: string
 }) {
+  const responsiveSvg = useMemo(() => {
+    // Remove fixed width="Xpt" and height="Ypt" from the root <svg> element.
+    // Keep the viewBox attribute — it defines the coordinate system and aspect ratio.
+    // CSS then sizes the SVG to fill its container height with auto width.
+    return svg
+      .replace(/(<svg\b)([^>]*?)\s+width="[^"]*"/, '$1$2')
+      .replace(/(<svg\b)([^>]*?)\s+height="[^"]*"/, '$1$2')
+  }, [svg])
+
   return (
     <div
-      className={`block h-full w-auto select-none [&>svg]:h-full [&>svg]:w-auto ${className || ''}`}
-      dangerouslySetInnerHTML={{ __html: svg }}
+      className={`h-full overflow-hidden [&>svg]:block [&>svg]:h-full [&>svg]:w-auto ${className || ''}`}
+      dangerouslySetInnerHTML={{ __html: responsiveSvg }}
     />
   )
 }
