@@ -6,12 +6,13 @@
    No stages. No overlays. The book is always visible.
    ═══════════════════════════════════════════════════════════════════ */
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import CompositorMark from '@/components/CompositorMark'
 import { AnimatePresence } from 'framer-motion'
-import { Download, Loader2, Cloud, CloudOff, ArrowLeft } from 'lucide-react'
+import { Download, Loader2, Cloud, CloudOff, ArrowLeft, RotateCcw } from 'lucide-react'
+import Tooltip from './Tooltip'
 
 import { SAMPLES } from './sample'
 import { useAuth } from '@/lib/auth-context'
@@ -314,18 +315,18 @@ export default function CompileShell() {
   // ── Mobile gate ──
   if (mounted && clientIsMobile && !mobileGateDismissed) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050505] px-6">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#FDFCF8] px-6">
         <div className="max-w-md text-center">
-          <CompositorMark size={32} className="mx-auto mb-8 invert opacity-30" />
-          <h1 className="font-display text-2xl font-bold text-white/90">Desktop Required</h1>
-          <p className="mt-4 font-body text-sm leading-relaxed text-white/50">
+          <CompositorMark size={32} className="mx-auto mb-8 opacity-30" />
+          <h1 className="font-display text-2xl font-bold text-[#111111]">Desktop Required</h1>
+          <p className="mt-4 font-body text-sm leading-relaxed text-[#111111]/50">
             PagePerfect&rsquo;s editor requires a desktop browser for the full typesetting experience.
           </p>
           <div className="mt-8 flex flex-col items-center gap-4">
-            <Link href="/" className="inline-flex h-10 items-center px-6 font-mono text-[11px] uppercase tracking-[0.1em] text-white/60 transition-colors hover:text-white">
+            <Link href="/" className="inline-flex h-10 items-center px-6 font-mono text-[11px] uppercase tracking-[0.1em] text-[#111111]/60 transition-colors hover:text-[#111111]">
               Back to Home
             </Link>
-            <button onClick={() => setMobileGateDismissed(true)} className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/25 transition-colors hover:text-white/50">
+            <button onClick={() => setMobileGateDismissed(true)} className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/30 transition-colors hover:text-[#111111]/60">
               Continue anyway
             </button>
           </div>
@@ -341,27 +342,30 @@ export default function CompileShell() {
   return (
     <div className="fixed inset-0 flex flex-col bg-[#FDFCF8]">
       {/* ── TopBar ────────────────────────────────────────── */}
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#e5e5e0] px-4">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#111111]/10 px-4">
         {/* Left: home + title */}
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="flex h-8 w-8 items-center justify-center text-[#111111]/50 transition-colors duration-200 hover:text-[#111111]/70"
-            title="Home"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-          </Link>
+        <div className="flex items-center gap-3 min-w-0">
+          <Tooltip content="Back to home" placement="bottom">
+            <Link
+              href="/"
+              className="flex h-8 w-8 shrink-0 items-center justify-center text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </Link>
+          </Tooltip>
           <div className="h-4 w-px bg-[#e5e5e0]" />
           {hasManuscript ? (
             <>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="max-w-[200px] bg-transparent font-display text-sm font-semibold text-[#111111]/70 placeholder:text-[#111111]/50 focus:text-[#111111] focus:outline-none"
-                placeholder="Untitled"
-              />
-              <span className="hidden font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/50 sm:inline">
+              <Tooltip content="Click to rename" placement="bottom" delay={800}>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="min-w-0 max-w-[280px] bg-transparent font-display text-sm font-semibold text-[#111111]/80 placeholder:text-[#111111]/40 focus:text-[#111111] focus:outline-none"
+                  placeholder="Untitled"
+                />
+              </Tooltip>
+              <span className="hidden shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/40 sm:inline">
                 {wordCount.toLocaleString()} words
               </span>
               {/* Cloud sync */}
@@ -369,62 +373,81 @@ export default function CompileShell() {
                 <>
                   <div className="h-3 w-px bg-[#e5e5e0]" />
                   {manuscriptSaving ? (
-                    <Loader2 className="h-2.5 w-2.5 animate-spin text-[#111111]/50" />
+                    <Tooltip content="Saving to cloud..." placement="bottom">
+                      <span><Loader2 className="h-2.5 w-2.5 animate-spin text-[#111111]/40" /></span>
+                    </Tooltip>
                   ) : manuscriptSaveError ? (
-                    <span title={manuscriptSaveError || undefined}><CloudOff className="h-2.5 w-2.5 text-red-500/50" /></span>
+                    <Tooltip content="Sync failed" detail={manuscriptSaveError || 'Check your connection'} placement="bottom">
+                      <span><CloudOff className="h-2.5 w-2.5 text-red-500/50" /></span>
+                    </Tooltip>
                   ) : (
-                    <span title="Synced"><Cloud className="h-2.5 w-2.5 text-emerald-600/40" /></span>
+                    <Tooltip content="Saved to cloud" placement="bottom">
+                      <span><Cloud className="h-2.5 w-2.5 text-emerald-600/40" /></span>
+                    </Tooltip>
                   )}
                 </>
               )}
             </>
           ) : (
-            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/50">PagePerfect</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">PagePerfect</span>
           )}
         </div>
 
         {/* Right: actions */}
-        <div className="flex items-center gap-2">
-          {/* New manuscript — available to all users when a manuscript is loaded */}
+        <div className="flex shrink-0 items-center gap-2">
+          {/* New manuscript */}
           {hasManuscript && (
-            <button
-              onClick={handleNewManuscript}
-              className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors duration-200 hover:text-[#111111]/70"
-            >
-              New
-            </button>
+            <Tooltip content="Start new manuscript" detail="Clears current work" placement="bottom">
+              <button
+                onClick={handleNewManuscript}
+                className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
+              >
+                New
+              </button>
+            </Tooltip>
           )}
           {/* My manuscripts */}
           {!!user && (
-            <button
-              onClick={handleOpenManuscripts}
-              className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors duration-200 hover:text-[#111111]/70"
-            >
-              Manuscripts
-            </button>
+            <Tooltip content="Open saved manuscripts" shortcut="Esc to close" placement="bottom">
+              <button
+                onClick={handleOpenManuscripts}
+                className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
+              >
+                Manuscripts
+              </button>
+            </Tooltip>
           )}
 
           {hasManuscript && (
             <>
               <div className="h-3 w-px bg-[#e5e5e0]" />
               {/* Compile button */}
-              <button
-                onClick={() => compile(false)}
-                disabled={loading}
-                className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50 transition-colors duration-200 hover:text-[#111111]/70 disabled:opacity-30"
-              >
-                {loading ? <Loader2 className="inline h-3 w-3 animate-spin" /> : 'Compile'}
-              </button>
+              <Tooltip content="Recompile preview" detail="Auto-compiles after 3s of inactivity" shortcut="Space" placement="bottom">
+                <button
+                  onClick={() => compile(false)}
+                  disabled={loading}
+                  className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70 disabled:opacity-30"
+                >
+                  {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
+                  <span className="hidden sm:inline">Compile</span>
+                </button>
+              </Tooltip>
 
               {/* Download button — always visible, THE red CTA */}
-              <button
-                onClick={() => handleDownload(targetPlatform || 'kdp')}
-                disabled={status !== 'success'}
-                className="flex h-8 items-center gap-1.5 bg-[#FF3333] px-4 font-mono text-[9px] uppercase tracking-[0.1em] text-white transition-all duration-200 hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
+              <Tooltip
+                content={status === 'success' ? 'Export your book as PDF' : 'Compile first to enable download'}
+                detail={status === 'success' ? 'Opens export with pre-flight checks' : 'Waiting for successful compile'}
+                placement="bottom"
               >
-                <Download className="h-3 w-3" />
-                <span className="hidden sm:inline">Download PDF</span>
-              </button>
+                <button
+                  onClick={() => handleDownload(targetPlatform || 'kdp')}
+                  disabled={status !== 'success'}
+                  className="flex h-8 items-center gap-1.5 bg-[#FF3333] px-4 font-mono text-[9px] uppercase tracking-[0.1em] text-white transition-all duration-200 hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Download className="h-3 w-3" />
+                  <span className="hidden sm:inline">Download PDF</span>
+                </button>
+              </Tooltip>
             </>
           )}
         </div>
