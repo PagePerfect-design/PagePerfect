@@ -200,30 +200,20 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   SVG PAGE — Individual page rendered from backend SVG endpoint
+   SVG PAGE — Renders inline SVG from memory (no network request)
    ═══════════════════════════════════════════════════════════════════ */
 
 function SvgPage({
-  jobId,
-  page,
-  resultSecret,
+  svg,
   className,
 }: {
-  jobId: string
-  page: number
-  resultSecret?: string | null
+  svg: string
   className?: string
 }) {
-  const src = resultSecret
-    ? `/api/compile/page/${jobId}/${page}?secret=${encodeURIComponent(resultSecret)}`
-    : `/api/compile/page/${jobId}/${page}`
-
   return (
-    <img
-      src={src}
-      alt={`Page ${page}`}
-      className={`block h-full w-auto select-none ${className || ''}`}
-      draggable={false}
+    <div
+      className={`block h-full w-auto select-none [&>svg]:h-full [&>svg]:w-auto ${className || ''}`}
+      dangerouslySetInnerHTML={{ __html: svg }}
     />
   )
 }
@@ -233,21 +223,18 @@ function SvgPage({
    ═══════════════════════════════════════════════════════════════════ */
 
 function PageViewer({
-  jobId,
-  pageCount,
-  resultSecret,
+  svgPages,
   viewMode,
 }: {
-  jobId: string
-  pageCount: number
-  resultSecret?: string | null
+  svgPages: string[]
   viewMode: ViewMode
 }) {
+  const pageCount = svgPages.length
   const [currentPage, setCurrentPage] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Reset to page 1 when job changes
-  useEffect(() => { setCurrentPage(1) }, [jobId])
+  // Reset to page 1 when pages change
+  useEffect(() => { setCurrentPage(1) }, [svgPages])
 
   const goNext = useCallback(() => {
     const step = viewMode === 'spread' ? 2 : 1
@@ -297,7 +284,7 @@ function PageViewer({
             >
               {showLeftPage ? (
                 <div className="relative h-[90%] bg-white" style={{ boxShadow: '-2px 2px 12px rgba(0,0,0,0.08)', border: '1px solid #e5e5e0' }}>
-                  <SvgPage jobId={jobId} page={leftPage} resultSecret={resultSecret} className="h-full" />
+                  <SvgPage svg={svgPages[leftPage - 1]} className="h-full" />
                 </div>
               ) : (
                 /* Empty verso for title page spread */
@@ -320,7 +307,7 @@ function PageViewer({
             >
               {showRightPage ? (
                 <div className="relative h-[90%] bg-white" style={{ boxShadow: '2px 2px 12px rgba(0,0,0,0.08)', border: '1px solid #e5e5e0' }}>
-                  <SvgPage jobId={jobId} page={rightPage} resultSecret={resultSecret} className="h-full" />
+                  <SvgPage svg={svgPages[rightPage - 1]} className="h-full" />
                 </div>
               ) : (
                 /* Empty recto if odd page count */
@@ -331,7 +318,7 @@ function PageViewer({
         ) : (
           /* ── Single page view ── */
           <div className="relative h-[90%] max-h-[780px] bg-white" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 12px 40px -8px rgba(0,0,0,0.12)', border: '1px solid #e5e5e0' }}>
-            <SvgPage jobId={jobId} page={currentPage} resultSecret={resultSecret} className="h-full" />
+            <SvgPage svg={svgPages[currentPage - 1]} className="h-full" />
           </div>
         )}
       </div>
@@ -381,7 +368,7 @@ export default function PreviewPane({
   debug,
   isWatermarked,
   quality,
-  resultSecret,
+  svgPages,
   viewMode,
   onViewModeChange,
   onRetry,
@@ -393,18 +380,17 @@ export default function PreviewPane({
   debug?: CompileDebug
   isWatermarked: boolean
   quality?: CompileQuality
-  resultSecret?: string | null
+  svgPages: string[]
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
   onRetry?: () => void
 }) {
-  const hasSvgPages = quality && quality.svgPageCount > 0 && quality.jobId
-  const useSvg = !!hasSvgPages && status === 'success'
+  const useSvg = svgPages.length > 0 && status === 'success'
 
   return (
     <div className="absolute inset-0 flex flex-col">
       {/* View mode toggle — only shown when we have SVG pages */}
-      {pdfUrl && status === 'success' && hasSvgPages && (
+      {pdfUrl && status === 'success' && svgPages.length > 0 && (
         <div className="flex h-8 shrink-0 items-center justify-center gap-1 border-b border-[#e5e5e0] bg-[#FDFCF8]">
           <button
             onClick={() => onViewModeChange('single')}
@@ -445,9 +431,7 @@ export default function PreviewPane({
                 /* ── SVG page renderer ── */
                 <div className="relative h-full w-full">
                   <PageViewer
-                    jobId={quality!.jobId!}
-                    pageCount={quality!.svgPageCount}
-                    resultSecret={resultSecret}
+                    svgPages={svgPages}
                     viewMode={viewMode}
                   />
                   {/* Quality badge */}

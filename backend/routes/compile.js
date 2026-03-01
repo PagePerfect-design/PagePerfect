@@ -396,6 +396,7 @@ module.exports = function compileRoutes(ctx) {
                 try {
                   const persistedPath = await ctx.persistPdf(id, rv.pdfPath);
                   if (persistedPath) {
+                    // SVG pages are in-memory (rv.svgPages) — no file copy needed.
                     if (rv.tmpBase) fsp.rm(rv.tmpBase, { recursive: true, force: true }).catch(() => {});
                     rv.pdfPath = persistedPath;
                     delete rv.tmpBase;
@@ -404,7 +405,7 @@ module.exports = function compileRoutes(ctx) {
               }
               ctx.storeJobResult(id, rv);
               if (rv.success) {
-                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, debugMeta: rv.debugMeta || null, engine: rv.engine || null, layoutReport: rv.layoutReport || null, resultUrl: `/api/compile/result/${id}` });
+                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, debugMeta: rv.debugMeta || null, engine: rv.engine || null, layoutReport: rv.layoutReport || null, svgPageCount: rv.svgPageCount || 0, resultUrl: `/api/compile/result/${id}` });
               }
               const debug = resolveDebug(rv);
               return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail, debug, debugMeta: rv.debugMeta || null });
@@ -472,7 +473,34 @@ module.exports = function compileRoutes(ctx) {
   });
 
   // ══════════════════════════════════════════════════════════
-  // GET /api/compile/page/:id/:page — Serve individual SVG page
+  // GET /api/compile/pages/:id — Bulk SVG pages (all in one JSON response)
+  // Eliminates per-page file serving — SVGs flow through memory/Redis.
+  // ══════════════════════════════════════════════════════════
+  router.get('/api/compile/pages/:id', async (req, res) => {
+    const { id } = req.params;
+    const result = await ctx.getJobResult(id);
+    if (!result) return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });
+    if (!result.success) return res.status(400).json({ error: 'compile_failed', message: 'Compilation was not successful.' });
+
+    // Auth check (same as result endpoint)
+    if (result.userId) {
+      try {
+        const requester = await ctx.verifyUserTier(req);
+        if (requester.userId !== result.userId) return res.status(403).json({ error: 'forbidden', message: 'Not authorized.' });
+      } catch { return res.status(403).json({ error: 'forbidden', message: 'Not authorized.' }); }
+    } else {
+      const storedSecret = await ctx.getJobSecret(id);
+      if (storedSecret) {
+        const providedSecret = req.query.secret || req.headers['x-pp-result-secret'];
+        if (providedSecret !== storedSecret) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
+      }
+    }
+
+    res.json({ pages: result.svgPages || [], total: result.svgPageCount || 0 });
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // GET /api/compile/page/:id/:page — Serve individual SVG page (legacy)
   // ══════════════════════════════════════════════════════════
   router.get('/api/compile/page/:id/:page', async (req, res) => {
     const { id, page } = req.params;
@@ -497,7 +525,7 @@ module.exports = function compileRoutes(ctx) {
 
     // SVG pages are stored alongside the PDF, prefixed with jobId
     const pdfDir = path.dirname(result.pdfPath);
-    const svgFile = path.join(pdfDir, `${id}-page-${String(pageNum).padStart(2, '0')}.svg`);
+    const svgFile = path.join(pdfDir, `${id}-page-${pageNum}.svg`);
 
     if (!fs.existsSync(svgFile)) return res.status(404).json({ error: 'page_not_found', message: `SVG page ${pageNum} not found.` });
 

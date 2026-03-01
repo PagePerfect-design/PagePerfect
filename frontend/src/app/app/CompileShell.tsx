@@ -86,7 +86,7 @@ export default function CompileShell() {
     pdfUrl,
     lastDownloadWatermarked,
     quality,
-    resultSecret,
+    svgPages,
     compile,
   } = useCompileQueue({
     manuscript, template, headingVariant, title, pageSize, marginPreset,
@@ -483,7 +483,7 @@ export default function CompileShell() {
               debug={debug}
               isWatermarked={!hasTier(tier, 'publisher') && !!pdfUrl}
               quality={quality}
-              resultSecret={resultSecret}
+              svgPages={svgPages}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               onRetry={() => compile(false)}

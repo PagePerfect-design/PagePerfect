@@ -583,6 +583,7 @@ async function _processCompileJobInner(job, templateRegistry) {
 
   // ── STEP D2: Generate per-page SVGs for preview ────────────
   let svgPageCount = 0;
+  let svgPages = [];
   if (result.ok) {
     try {
       const svgArgs = ['compile'];
@@ -600,9 +601,18 @@ async function _processCompileJobInner(job, templateRegistry) {
         proc.on('close', () => { clearTimeout(kill); resolve(); });
       });
 
-      // Count generated SVG pages
+      // Read generated SVG pages into memory (cap at 30 for size)
+      const SVG_PAGE_CAP = 30;
       const files = fs.readdirSync(tmpBase).filter(f => /^page-\d+\.svg$/.test(f));
       svgPageCount = files.length;
+      if (svgPageCount > 0) {
+        const sorted = files.sort((a, b) =>
+          parseInt(a.match(/(\d+)/)[1], 10) - parseInt(b.match(/(\d+)/)[1], 10)
+        );
+        for (const f of sorted.slice(0, SVG_PAGE_CAP)) {
+          svgPages.push(fs.readFileSync(path.join(tmpBase, f), 'utf-8'));
+        }
+      }
     } catch (err) {
       log.warn({ err: err.message }, 'SVG page generation failed (non-fatal, PDF still available)');
     }
@@ -696,6 +706,7 @@ async function _processCompileJobInner(job, templateRegistry) {
     success: true,
     pdfPath: finalPdfPath,
     svgPageCount,
+    svgPages,
     tmpBase,
     elapsed: result.elapsed,
     engine: 'typst',
