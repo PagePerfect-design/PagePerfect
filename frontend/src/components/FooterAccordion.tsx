@@ -46,7 +46,7 @@ export default function FooterAccordion({
 
       {/* Links — always visible on desktop, toggle on mobile */}
       <div
-        className={`overflow-hidden transition-[max-height] duration-250 ease-out md:!max-h-none md:overflow-visible ${
+        className={`overflow-hidden transition-[max-height] duration-350 ease-pp ease-out md:!max-h-none md:overflow-visible ${
           open ? 'max-h-96' : 'max-h-0'
         }`}
       >
@@ -55,7 +55,7 @@ export default function FooterAccordion({
             <Link
               key={href}
               href={href}
-              className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:min-h-0"
+              className="inline-flex min-h-[44px] items-center font-body text-[12px] text-[#111111] transition-colors duration-200 ease-pp hover:text-[#FF3333] md:min-h-0"
             >
               {label}
             </Link>

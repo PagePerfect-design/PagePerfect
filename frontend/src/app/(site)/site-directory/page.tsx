@@ -110,9 +110,9 @@ export default function SitemapPage() {
                     <li key={link.href} className="border-t border-[#e5e5e0] first:border-t-0">
                       <Link
                         href={link.href}
-                        className="group block py-3 transition-colors duration-75"
+                        className="group block py-3 transition-colors duration-200 ease-pp"
                       >
-                        <span className="font-display text-[0.9375rem] font-semibold text-[#111111] transition-colors duration-75 group-hover:text-[#FF3333]">
+                        <span className="font-display text-[0.9375rem] font-semibold text-[#111111] transition-colors duration-200 ease-pp group-hover:text-[#FF3333]">
                           {link.label}
                         </span>
                         {link.description && (
@@ -145,7 +145,7 @@ export default function SitemapPage() {
           <div className="mt-8 flex items-center justify-center gap-4">
             <Link
               href="/app"
-              className="border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222]"
+              className="border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222]"
             >
               Start Formatting
             </Link>

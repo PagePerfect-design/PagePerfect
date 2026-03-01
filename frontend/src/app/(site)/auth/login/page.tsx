@@ -64,7 +64,7 @@ function LoginForm() {
         <div className="mb-6 space-y-3">
           <button
             onClick={() => signInWithOAuth('google')}
-            className="flex min-h-[44px] w-full items-center justify-center gap-2.5 border border-[#111111]/20 bg-white px-5 py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-[#111111] transition-colors duration-75 hover:border-[#111111] hover:bg-[#f5f5f0]"
+            className="flex min-h-[44px] w-full items-center justify-center gap-2.5 border border-[#111111]/20 bg-white px-5 py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-[#111111] transition-colors duration-200 ease-pp hover:border-[#111111] hover:bg-[#f5f5f0]"
             type="button"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -77,7 +77,7 @@ function LoginForm() {
           </button>
           <button
             onClick={() => signInWithOAuth('github')}
-            className="flex min-h-[44px] w-full items-center justify-center gap-2.5 border border-[#111111]/20 bg-white px-5 py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-[#111111] transition-colors duration-75 hover:border-[#111111] hover:bg-[#f5f5f0]"
+            className="flex min-h-[44px] w-full items-center justify-center gap-2.5 border border-[#111111]/20 bg-white px-5 py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-[#111111] transition-colors duration-200 ease-pp hover:border-[#111111] hover:bg-[#f5f5f0]"
             type="button"
           >
             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -111,7 +111,7 @@ function LoginForm() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-75 placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
+              className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-200 ease-pp placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
               placeholder="you@example.com"
               required
               autoComplete="email"
@@ -127,7 +127,7 @@ function LoginForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-75 placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
+              className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-200 ease-pp placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
               placeholder="At least 8 characters"
               required
               minLength={8}
@@ -138,7 +138,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="min-h-[44px] w-full border border-[#FF3333] bg-[#FF3333] py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-colors duration-75 hover:bg-[#E52222] disabled:opacity-50"
+            className="min-h-[44px] w-full border border-[#FF3333] bg-[#FF3333] py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-colors duration-200 ease-pp hover:bg-[#E52222] disabled:opacity-50"
           >
             {loading ? 'Please wait\u2026' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </button>
@@ -146,7 +146,7 @@ function LoginForm() {
 
         {mode === 'login' && (
           <p className="mt-3 text-center">
-            <Link href="/auth/forgot-password" className="font-body text-[12px] text-[#555555] transition-colors duration-75 hover:text-[#FF3333]">
+            <Link href="/auth/forgot-password" className="font-body text-[12px] text-[#555555] transition-colors duration-200 ease-pp hover:text-[#FF3333]">
               Forgot your password?
             </Link>
           </p>
@@ -156,14 +156,14 @@ function LoginForm() {
           {mode === 'login' ? (
             <>
               Don&apos;t have an account?{' '}
-              <button onClick={() => { setMode('signup'); setError(null) }} className="font-semibold text-[#FF3333] transition-colors duration-75 hover:text-[#E52222]">
+              <button onClick={() => { setMode('signup'); setError(null) }} className="font-semibold text-[#FF3333] transition-colors duration-200 ease-pp hover:text-[#E52222]">
                 Sign up
               </button>
             </>
           ) : (
             <>
               Already have an account?{' '}
-              <button onClick={() => { setMode('login'); setError(null) }} className="font-semibold text-[#FF3333] transition-colors duration-75 hover:text-[#E52222]">
+              <button onClick={() => { setMode('login'); setError(null) }} className="font-semibold text-[#FF3333] transition-colors duration-200 ease-pp hover:text-[#E52222]">
                 Sign in
               </button>
             </>
@@ -171,7 +171,7 @@ function LoginForm() {
         </p>
 
         <p className="mt-4 text-center font-body text-[12px] text-[#555555]">
-          <Link href="/app" className="underline transition-colors duration-75 hover:text-[#FF3333]">
+          <Link href="/app" className="underline transition-colors duration-200 ease-pp hover:text-[#FF3333]">
             Continue without an account
           </Link>
           {' '}&mdash; you can always sign up later.

@@ -13,11 +13,11 @@ export default function NotFound() {
               PagePerfect
             </Link>
             <div className="flex items-center gap-6">
-              <Link href="/pricing" className="hidden font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:inline">Pricing</Link>
-              <Link href="/journal" className="hidden font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333] md:inline">Journal</Link>
+              <Link href="/pricing" className="hidden font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-200 ease-pp hover:text-[#FF3333] md:inline">Pricing</Link>
+              <Link href="/journal" className="hidden font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-200 ease-pp hover:text-[#FF3333] md:inline">Journal</Link>
               <Link
                 href="/app"
-                className="border border-[#111111] bg-[#111111] px-5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-transparent hover:text-[#111111]"
+                className="border border-[#111111] bg-[#111111] px-5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-transparent hover:text-[#111111]"
               >
                 Open Editor
               </Link>
@@ -46,13 +46,13 @@ export default function NotFound() {
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
               href="/app"
-              className="inline-block border border-[#FF3333] bg-[#FF3333] px-8 py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222]"
+              className="inline-block border border-[#FF3333] bg-[#FF3333] px-8 py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222]"
             >
               Open Editor
             </Link>
             <Link
               href="/"
-              className="inline-block border border-[#111111]/20 bg-transparent px-8 py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-[#111111] transition-all duration-75 hover:border-[#111111] hover:bg-[#111111] hover:text-white"
+              className="inline-block border border-[#111111]/20 bg-transparent px-8 py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-[#111111] transition-all duration-200 ease-pp hover:border-[#111111] hover:bg-[#111111] hover:text-white"
             >
               Return Home
             </Link>

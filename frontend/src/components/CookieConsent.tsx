@@ -35,13 +35,13 @@ export default function CookieConsent() {
         <div className="flex items-center gap-3">
           <Link
             href="/cookies"
-            className="border border-[#111111]/20 bg-transparent px-5 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111] transition-all duration-75 hover:border-[#111111] hover:bg-[#111111] hover:text-white"
+            className="border border-[#111111]/20 bg-transparent px-5 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111] transition-all duration-200 ease-pp hover:border-[#111111] hover:bg-[#111111] hover:text-white"
           >
             Manage Settings
           </Link>
           <button
             onClick={accept}
-            className="border border-[#111111] bg-[#111111] px-5 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-transparent hover:text-[#111111]"
+            className="border border-[#111111] bg-[#111111] px-5 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-transparent hover:text-[#111111]"
           >
             Accept
           </button>

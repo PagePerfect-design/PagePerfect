@@ -217,7 +217,7 @@ export default async function ArticlePage({ params }: Props) {
               <div className="mt-5 flex items-center gap-4">
                 <Link
                   href="/app"
-                  className="inline-block border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222] hover:border-[#E52222]"
+                  className="inline-block border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222] hover:border-[#E52222]"
                 >
                   Open the Editor &rarr;
                 </Link>

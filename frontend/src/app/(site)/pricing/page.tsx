@@ -134,7 +134,7 @@ function TierRow({
     >
       <div className="grid grid-cols-1 gap-4 py-12 md:grid-cols-[6rem_1fr_1fr] md:items-baseline md:gap-12 md:py-16">
         {/* Tier number — large, ghosted */}
-        <span className="font-display text-[3rem] font-extrabold leading-none tracking-tighter text-[#111111]/[0.06] transition-colors duration-500 group-hover:text-[#FF3333]/20 sm:text-[4rem] md:text-[5rem]">
+        <span className="font-display text-[3rem] font-extrabold leading-none tracking-tighter text-[#111111]/[0.06] transition-colors duration-350 ease-pp group-hover:text-[#FF3333]/20 sm:text-[4rem] md:text-[5rem]">
           {tier.num}
         </span>
 
@@ -406,7 +406,7 @@ function SuccessBanner({ tier }: { tier: string }) {
         </div>
         <Link
           href="/app"
-          className="inline-flex h-10 shrink-0 items-center gap-2 bg-[#FF3333] px-6 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222]"
+          className="inline-flex h-10 shrink-0 items-center gap-2 bg-[#FF3333] px-6 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222]"
         >
           Go to Editor
           <ArrowRight className="h-3 w-3" />
@@ -738,7 +738,7 @@ export default function PricingPage() {
             <div className="mt-10 flex items-center gap-6">
               <Link
                 href="/app"
-                className="group inline-flex h-13 items-center gap-3 border border-[#111111] bg-[#111111] px-10 font-display text-[15px] font-semibold text-white transition-all duration-75 hover:bg-transparent hover:text-[#111111]"
+                className="group inline-flex h-13 items-center gap-3 border border-[#111111] bg-[#111111] px-10 font-display text-[15px] font-semibold text-white transition-all duration-200 ease-pp hover:bg-transparent hover:text-[#111111]"
               >
                 Open the Editor
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
