@@ -396,22 +396,7 @@ module.exports = function compileRoutes(ctx) {
                 try {
                   const persistedPath = await ctx.persistPdf(id, rv.pdfPath);
                   if (persistedPath) {
-                    // Persist SVG page files alongside the PDF (same as on('completed') handler)
-                    if (rv.svgPageCount > 0 && rv.tmpBase) {
-                      const destDir = path.dirname(persistedPath);
-                      try {
-                        const svgFiles = fs.readdirSync(rv.tmpBase).filter(f => /^page-\d+\.svg$/.test(f));
-                        for (const svgFile of svgFiles) {
-                          const src = path.join(rv.tmpBase, svgFile);
-                          const pageMatch = svgFile.match(/^page-(\d+)\.svg$/);
-                          const normalizedPage = pageMatch ? parseInt(pageMatch[1], 10) : svgFile.replace(/^page-/, '').replace(/\.svg$/, '');
-                          const dest = path.join(destDir, `${id}-page-${normalizedPage}.svg`);
-                          await fsp.copyFile(src, dest);
-                        }
-                      } catch (svgErr) {
-                        log.warn({ module: 'compile-route', jobId: id, err: svgErr.message }, 'Failed to persist SVG pages in status handler');
-                      }
-                    }
+                    // SVG pages are in-memory (rv.svgPages) — no file copy needed.
                     if (rv.tmpBase) fsp.rm(rv.tmpBase, { recursive: true, force: true }).catch(() => {});
                     rv.pdfPath = persistedPath;
                     delete rv.tmpBase;
@@ -488,7 +473,34 @@ module.exports = function compileRoutes(ctx) {
   });
 
   // ══════════════════════════════════════════════════════════
-  // GET /api/compile/page/:id/:page — Serve individual SVG page
+  // GET /api/compile/pages/:id — Bulk SVG pages (all in one JSON response)
+  // Eliminates per-page file serving — SVGs flow through memory/Redis.
+  // ══════════════════════════════════════════════════════════
+  router.get('/api/compile/pages/:id', async (req, res) => {
+    const { id } = req.params;
+    const result = await ctx.getJobResult(id);
+    if (!result) return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });
+    if (!result.success) return res.status(400).json({ error: 'compile_failed', message: 'Compilation was not successful.' });
+
+    // Auth check (same as result endpoint)
+    if (result.userId) {
+      try {
+        const requester = await ctx.verifyUserTier(req);
+        if (requester.userId !== result.userId) return res.status(403).json({ error: 'forbidden', message: 'Not authorized.' });
+      } catch { return res.status(403).json({ error: 'forbidden', message: 'Not authorized.' }); }
+    } else {
+      const storedSecret = await ctx.getJobSecret(id);
+      if (storedSecret) {
+        const providedSecret = req.query.secret || req.headers['x-pp-result-secret'];
+        if (providedSecret !== storedSecret) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
+      }
+    }
+
+    res.json({ pages: result.svgPages || [], total: result.svgPageCount || 0 });
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // GET /api/compile/page/:id/:page — Serve individual SVG page (legacy)
   // ══════════════════════════════════════════════════════════
   router.get('/api/compile/page/:id/:page', async (req, res) => {
     const { id, page } = req.params;

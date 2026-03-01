@@ -393,25 +393,8 @@ if (redis) {
         if (result.success && result.pdfPath) {
           const persistedPath = await persistPdf(job.id, result.pdfPath);
           if (persistedPath) {
-            // Also persist SVG page files alongside the PDF
-            if (result.svgPageCount > 0 && result.tmpBase) {
-              const destDir = path.dirname(persistedPath);
-              try {
-                const svgFiles = fs.readdirSync(result.tmpBase).filter(f => /^page-\d+\.svg$/.test(f));
-                for (const svgFile of svgFiles) {
-                  const src = path.join(result.tmpBase, svgFile);
-                  // Normalize Typst's variable-width zero-padding to unpadded page numbers
-                  // e.g. page-01.svg → {jobId}-page-1.svg, page-001.svg → {jobId}-page-1.svg
-                  const pageMatch = svgFile.match(/^page-(\d+)\.svg$/);
-                  const normalizedPage = pageMatch ? parseInt(pageMatch[1], 10) : svgFile.replace(/^page-/, '').replace(/\.svg$/, '');
-                  const dest = path.join(destDir, `${job.id}-page-${normalizedPage}.svg`);
-                  await fsp.copyFile(src, dest);
-                }
-              } catch (err) {
-                log.warn({ module: 'queue', jobId: job.id, err: err.message }, 'Failed to persist SVG pages');
-              }
-            }
-            // Clean up the compile temp dir immediately — PDF is safe in results store
+            // SVG pages are now stored in-memory (result.svgPages) — no file copy needed.
+            // Clean up the compile temp dir immediately — PDF is safe in results store.
             if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
             result.pdfPath = persistedPath;
             delete result.tmpBase;

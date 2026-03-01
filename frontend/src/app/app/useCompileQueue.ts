@@ -42,6 +42,7 @@ export function useCompileQueue({
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [lastDownloadWatermarked, setLastDownloadWatermarked] = useState(false)
   const [quality, setQuality] = useState<CompileQuality>(null)
+  const [svgPages, setSvgPages] = useState<string[]>([])
   const pdfBlobRef = useRef<Blob | null>(null)
 
   const [resultSecret, setResultSecret] = useState<string | null>(null)
@@ -125,6 +126,7 @@ export function useCompileQueue({
     setStatus('compiling')
     setErrors([])
     setDebug(null)
+    setSvgPages([])
 
     try {
       const effectiveMd = adjustHeadingsForTemplate(manuscript, template)
@@ -351,6 +353,27 @@ export function useCompileQueue({
 
             debugLog('H4', 'PDF blob received', { jobId, blobSize: blob.size })
             handlePdfBlob(blob, pdfResp, downloadAfter)
+
+            // Phase 4: Fetch SVG pages in bulk (non-blocking — PDF already shown)
+            const svgCount = statusData.svgPageCount ?? 0
+            if (svgCount > 0) {
+              const svgHeaders: Record<string, string> = { ...fetchHeaders }
+              if (resultSecret) svgHeaders['x-pp-result-secret'] = resultSecret
+              fetch(`/api/compile/pages/${jobId}`, {
+                headers: svgHeaders,
+                signal: controller.signal,
+                cache: 'no-store',
+              })
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                  if (gen === compileGenRef.current && data?.pages?.length > 0) {
+                    setSvgPages(data.pages)
+                  }
+                })
+                .catch(() => { /* SVG fetch failed — PDF iframe stays as fallback */ })
+            } else {
+              setSvgPages([])
+            }
             return
           }
         } catch (err) {
@@ -409,6 +432,7 @@ export function useCompileQueue({
     pdfBlobRef,
     lastDownloadWatermarked,
     quality,
+    svgPages,
     resultSecret,
     compile,
   }
