@@ -1,25 +1,25 @@
-export const SAMPLE_MD = `# Maritime Trade in the 17th Century
+export const SAMPLE_MD = `# Introduction
 
 Dr. Alistair Finch argues that Bristol's maritime networks reshaped Atlantic economies. As noted by [@Finch2023], merchants coordinated flows of capital, commodities, and information across ports.
 
-## Background
-The longue durée perspective frames trade as a system of structures rather than isolated events.  This view emphasizes how shipping routes, credit instruments, and port institutions evolved together.
+The longue durée perspective frames trade as a system of structures rather than isolated events. This view emphasizes how shipping routes, credit instruments, and port institutions evolved together.
 
-## Chapter 1 — Bristol and the Atlantic
+# Bristol and the Atlantic
+
 Bristol's ship registries reveal dense ties to Ireland, the Iberian Peninsula, and the Americas. Surviving manifests show iterative risk-sharing arrangements among syndicates.
 
-### Method
+## Method
+
 This manuscript uses primary customs ledgers and port books, cross-checked with secondary sources. Tables and figures are omitted in this short sample.
 
-## Conclusion
+# Conclusion
+
 Early-modern trade networks laid foundations for global capitalism [@Braudel1982].
 
 # References
 `;
 
-export const FICTION_SAMPLE_MD = `# The Lantern Keeper
-
-## Chapter 1 — The Lighthouse
+export const FICTION_SAMPLE_MD = `# Chapter 1 — The Lighthouse
 
 The storm had been building since noon, and by dusk the sea was a wall of gray noise against the rocks below.
 
@@ -37,7 +37,7 @@ Marguerite took the lantern from its hook and descended to the gallery. The beam
 
 She pulled on her oilskin and went down to the landing. The stairs were slick with spray, each step a negotiation with the wind. At the bottom, wedged between two boulders, she found what the sea had brought her: a rowing boat, half-swamped, with a man lying face-down across the thwarts.
 
-## Chapter 2 — The Stranger
+# Chapter 2 — The Stranger
 
 He did not wake for two days.
 

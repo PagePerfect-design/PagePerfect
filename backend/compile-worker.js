@@ -292,6 +292,24 @@ async function _processCompileJobInner(job, templateRegistry) {
     warnings.push(`${imgResult.stripped} remote image(s) removed — upload assets directly.`);
   }
 
+  // ── Strip leading H1 that duplicates the title (book-class templates) ──
+  // Book-class templates auto-generate a title page from pp-title. If the
+  // manuscript also begins with `# Title`, Pandoc treats it as Chapter 1,
+  // producing a duplicate title with chapter numbering. Strip it.
+  const tplClassForStrip = headingVariants.TEMPLATE_CLASS[tplKey] || 'article';
+  if (tplClassForStrip === 'book' && safeTitle) {
+    const titleMatch = manuscriptText.match(/^\s*#\s+(.+?)[\s]*\n/);
+    if (titleMatch) {
+      const h1Text = titleMatch[1].trim();
+      const normalizedH1 = h1Text.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const normalizedTitle = safeTitle.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (normalizedH1 === normalizedTitle) {
+        manuscriptText = manuscriptText.slice(titleMatch[0].length);
+        log.info({ jobId: job.id, title: safeTitle }, 'Stripped leading H1 that duplicates title page');
+      }
+    }
+  }
+
   // ── Compile in isolated temp dir ──
   const tmpBase = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-worker-'));
   const mdPath = path.join(tmpBase, 'input.md');
