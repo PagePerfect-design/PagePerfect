@@ -151,31 +151,44 @@ export default function FloatingHUD({
               ))}
             </div>
 
-            {/* Template cards */}
+            {/* Template cards — uniform height with type specimens */}
             <div className="max-h-[50vh] overflow-y-auto p-2">
               <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                 {filteredTemplates.map((key) => {
                   const info = TEMPLATE_INFO[key]
                   const isActive = key === template
                   const isHovered = key === hoveredTemplate
+                  const isSerif = info.kind === 'serif'
+                  const isMono = info.kind === 'mono'
                   return (
                     <button
                       key={key}
                       onClick={() => { onTemplateChange(key); onTabChange(null) }}
                       onMouseEnter={() => setHoveredTemplate(key)}
                       onMouseLeave={() => setHoveredTemplate(null)}
-                      className={`group relative flex flex-col items-start px-3 py-3 text-left transition-all duration-150 ${
+                      className={`group relative flex h-[72px] flex-col justify-between p-2.5 text-left transition-all duration-150 ${
                         isActive
                           ? 'bg-[#FF3333]/10 ring-1 ring-[#FF3333]/30'
                           : 'hover:bg-[#111111]/[0.04]'
                       }`}
                     >
-                      <span className={`text-[12px] font-semibold ${isActive ? 'text-[#111111]' : 'text-[#111111]/60'}`}>
-                        {info.name}
-                      </span>
-                      <span className={`text-[10px] ${isActive ? 'text-[#FF3333]/80' : 'text-[#111111]/50'}`}>
-                        {info.subtitle}
-                      </span>
+                      {/* Type specimen preview */}
+                      <p className={`truncate text-[14px] leading-none ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'} ${
+                        isMono ? 'font-mono font-normal' : isSerif ? 'font-body font-semibold italic' : 'font-display font-bold tracking-tight'
+                      }`}>
+                        {info.specimen}
+                      </p>
+                      {/* Name + kind badge */}
+                      <div className="flex items-end justify-between gap-1">
+                        <span className={`truncate font-mono text-[9px] leading-none ${isActive ? 'text-[#111111]/70' : 'text-[#111111]/40'}`}>
+                          {info.name}
+                        </span>
+                        <span className={`shrink-0 font-mono text-[7px] uppercase leading-none tracking-[0.08em] ${
+                          isActive ? 'text-[#FF3333]/60' : 'text-[#111111]/25'
+                        }`}>
+                          {info.kind}
+                        </span>
+                      </div>
 
                       <AnimatePresence>
                         {isHovered && !isActive && (

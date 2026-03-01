@@ -410,15 +410,22 @@ export function useCompileQueue({
   const compileRef = useRef(compile)
   compileRef.current = compile
 
-  // ── Debounced auto-compile in design stage ──
+  // ── Auto-compile in design stage ──
+  // Text changes: 3s debounce (user is still typing)
+  // Design changes (template, size, margins, etc.): immediate (user made a deliberate choice)
   const prevManuscriptRef = useRef(manuscript)
   useEffect(() => {
     if (stage !== 'design' || !manuscript.trim()) return
     if (debounceRef.current) window.clearTimeout(debounceRef.current)
     const isTextChange = prevManuscriptRef.current !== manuscript
     prevManuscriptRef.current = manuscript
-    const delay = isTextChange ? 3000 : 1500
-    debounceRef.current = window.setTimeout(() => { void compileRef.current(false) }, delay)
+    if (isTextChange) {
+      // Text edit — debounce 3s to avoid compiling mid-sentence
+      debounceRef.current = window.setTimeout(() => { void compileRef.current(false) }, 3000)
+    } else {
+      // Design change (template, page size, margins, heading variant, etc.) — compile immediately
+      void compileRef.current(false)
+    }
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, stage])

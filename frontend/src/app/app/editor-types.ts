@@ -91,12 +91,16 @@ export type Prefs = {
 
 export type Genre = 'fiction' | 'nonfiction' | 'specialist' | 'all'
 
+export type FontKind = 'serif' | 'sans' | 'mono'
+
 export type TemplateEntry = {
   name: string
   subtitle: string
   vibe: string
   genre: Genre
   font: string
+  kind: FontKind
+  specimen: string   // Short sample text in the template's voice
 }
 
 export type DetectedGenre = {
@@ -117,23 +121,23 @@ export type Analysis = {
 
 export const TEMPLATE_INFO: Record<TemplateKey, TemplateEntry> = {
   // Fiction
-  symphony:      { name: 'Symphony',       subtitle: 'The Classic Novel',        vibe: 'Elegant serifs. Best for History, Romance, and Literary Fiction.',     genre: 'fiction',     font: 'EB Garamond' },
-  paperback:     { name: 'Paperback',      subtitle: 'The Modern Bestseller',    vibe: 'Clean and fast. Best for Thrillers, Sci-Fi, and Airport Reads.',      genre: 'fiction',     font: 'Alegreya Sans' },
-  exhibit:       { name: 'Exhibit',        subtitle: 'The Art Gallery',          vibe: 'Minimalist and airy. Best for Poetry, Photography, and Memoirs.',     genre: 'fiction',     font: 'Fira Sans' },
-  memoir:        { name: 'Memoir',         subtitle: 'The Personal Story',       vibe: 'Warm and intimate. Best for Memoir, Autobiography, and Travel.',      genre: 'fiction',     font: 'Libre Baskerville' },
+  symphony:      { name: 'Symphony',       subtitle: 'The Classic Novel',        vibe: 'Elegant serifs. Best for History, Romance, and Literary Fiction.',     genre: 'fiction',     font: 'EB Garamond',        kind: 'serif', specimen: 'Chapter One' },
+  paperback:     { name: 'Paperback',      subtitle: 'The Modern Bestseller',    vibe: 'Clean and fast. Best for Thrillers, Sci-Fi, and Airport Reads.',      genre: 'fiction',     font: 'Alegreya Sans',      kind: 'sans',  specimen: 'PART ONE' },
+  exhibit:       { name: 'Exhibit',        subtitle: 'The Art Gallery',          vibe: 'Minimalist and airy. Best for Poetry, Photography, and Memoirs.',     genre: 'fiction',     font: 'Fira Sans',          kind: 'sans',  specimen: 'White Space' },
+  memoir:        { name: 'Memoir',         subtitle: 'The Personal Story',       vibe: 'Warm and intimate. Best for Memoir, Autobiography, and Travel.',      genre: 'fiction',     font: 'Libre Baskerville',  kind: 'serif', specimen: 'Dear Reader' },
   // Non-Fiction
-  chicago:       { name: 'Chicago',        subtitle: 'The University Press',     vibe: 'Scholarly authority. Best for Research, History, and Dissertations.', genre: 'nonfiction',  font: 'ETbb (Bembo)' },
-  thesis:        { name: 'Thesis',         subtitle: 'The Dissertation',         vibe: 'Double-spaced, numbered sections. University submission format.',     genre: 'nonfiction',  font: 'Latin Modern' },
-  chronicle:     { name: 'Chronicle',      subtitle: 'The Journalist',           vibe: 'Bold and objective. Best for True Crime, Essays, and Magazines.',     genre: 'nonfiction',  font: 'TeX Gyre Heros' },
-  matrix:        { name: 'Matrix',         subtitle: 'The Boardroom Report',     vibe: 'Structured and dense. Best for Business, Strategy, and Reports.',     genre: 'nonfiction',  font: 'Fira Sans' },
-  international: { name: 'International',  subtitle: 'The Swiss Standard',       vibe: 'Pure grid logic. Best for Design, Architecture, and Monographs.',     genre: 'nonfiction',  font: 'TeX Gyre Heros' },
+  chicago:       { name: 'Chicago',        subtitle: 'The University Press',     vibe: 'Scholarly authority. Best for Research, History, and Dissertations.', genre: 'nonfiction',  font: 'ETbb (Bembo)',       kind: 'serif', specimen: '1. Introduction' },
+  thesis:        { name: 'Thesis',         subtitle: 'The Dissertation',         vibe: 'Double-spaced, numbered sections. University submission format.',     genre: 'nonfiction',  font: 'Latin Modern',       kind: 'serif', specimen: 'Abstract' },
+  chronicle:     { name: 'Chronicle',      subtitle: 'The Journalist',           vibe: 'Bold and objective. Best for True Crime, Essays, and Magazines.',     genre: 'nonfiction',  font: 'TeX Gyre Heros',     kind: 'sans',  specimen: 'BREAKING' },
+  matrix:        { name: 'Matrix',         subtitle: 'The Boardroom Report',     vibe: 'Structured and dense. Best for Business, Strategy, and Reports.',     genre: 'nonfiction',  font: 'Fira Sans',          kind: 'sans',  specimen: 'Q4 Results' },
+  international: { name: 'International',  subtitle: 'The Swiss Standard',       vibe: 'Pure grid logic. Best for Design, Architecture, and Monographs.',     genre: 'nonfiction',  font: 'TeX Gyre Heros',     kind: 'sans',  specimen: 'Raster · Grid' },
   // Specialist
-  verse:         { name: 'Verse',          subtitle: 'The Poetry Collection',    vibe: 'Centered titles, generous leading. For Poetry and Verse Drama.',      genre: 'specialist',  font: 'EB Garamond' },
-  cinema:        { name: 'Cinema',         subtitle: 'The Screenplay',           vibe: 'Hollywood Standard. 1 page = 1 minute. Courier, proper sluglines.',  genre: 'specialist',  font: 'TeX Gyre Cursor' },
-  heirloom:      { name: 'Heirloom',       subtitle: 'The Cookbook',              vibe: 'Ingredient blocks, bold steps. Best for Recipes and Food Writing.',   genre: 'specialist',  font: 'Fira Sans' },
-  operator:      { name: 'Operator',       subtitle: 'The Technical Manual',     vibe: 'Warning boxes, code blocks. Best for Docs, Guides, and Manuals.',    genre: 'specialist',  font: 'Fira Sans' },
-  avantgarde:    { name: 'Avant-Garde',    subtitle: 'The Experimental',         vibe: 'Brutalist blockquotes, deconstructed grid. For rule-breakers.',       genre: 'specialist',  font: 'Source Sans 3' },
-  minimal:       { name: 'Minimal',        subtitle: 'The Universal',            vibe: 'Zero dependencies. Compiles anywhere. Pure content, no fuss.',        genre: 'specialist',  font: 'Latin Modern' },
+  verse:         { name: 'Verse',          subtitle: 'The Poetry Collection',    vibe: 'Centered titles, generous leading. For Poetry and Verse Drama.',      genre: 'specialist',  font: 'EB Garamond',        kind: 'serif', specimen: 'I. Autumn' },
+  cinema:        { name: 'Cinema',         subtitle: 'The Screenplay',           vibe: 'Hollywood Standard. 1 page = 1 minute. Courier, proper sluglines.',  genre: 'specialist',  font: 'TeX Gyre Cursor',    kind: 'mono',  specimen: 'FADE IN:' },
+  heirloom:      { name: 'Heirloom',       subtitle: 'The Cookbook',              vibe: 'Ingredient blocks, bold steps. Best for Recipes and Food Writing.',   genre: 'specialist',  font: 'Fira Sans',          kind: 'sans',  specimen: 'Serves 4' },
+  operator:      { name: 'Operator',       subtitle: 'The Technical Manual',     vibe: 'Warning boxes, code blocks. Best for Docs, Guides, and Manuals.',    genre: 'specialist',  font: 'Fira Sans',          kind: 'sans',  specimen: '$ npm run' },
+  avantgarde:    { name: 'Avant-Garde',    subtitle: 'The Experimental',         vibe: 'Brutalist blockquotes, deconstructed grid. For rule-breakers.',       genre: 'specialist',  font: 'Source Sans 3',      kind: 'sans',  specimen: 'MANIFESTO' },
+  minimal:       { name: 'Minimal',        subtitle: 'The Universal',            vibe: 'Zero dependencies. Compiles anywhere. Pure content, no fuss.',        genre: 'specialist',  font: 'Latin Modern',       kind: 'serif', specimen: 'Hello World' },
 }
 
 export const HEADING_VARIANT_INFO: Record<HeadingVariant, { label: string; desc: string }> = {
