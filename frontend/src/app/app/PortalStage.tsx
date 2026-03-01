@@ -422,11 +422,13 @@ export default function PortalStage({
                 const info = TEMPLATE_INFO[key]
                 const isRecommended = key === detectedTemplate
                 const isActive = key === activeTemplate
+                const isSerif = info.kind === 'serif'
+                const isMono = info.kind === 'mono'
                 return (
                   <button
                     key={key}
                     onClick={() => setSelectedTemplate(key)}
-                    className={`relative border p-3 text-left transition-all ${
+                    className={`relative flex h-[88px] flex-col justify-between border p-3 text-left transition-all ${
                       isActive
                         ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
                         : 'border-[#e5e5e0] hover:border-[#111111]/40'
@@ -438,22 +440,19 @@ export default function PortalStage({
                       </span>
                     )}
                     {/* Type specimen preview */}
-                    <div className="mb-2 h-16 overflow-hidden border-b border-[#e5e5e0] pb-2">
-                      <p className={`text-[14px] font-semibold leading-tight text-[#111111]/80 ${
-                        info.font.includes('Garamond') || info.font.includes('Baskerville') || info.font.includes('Bembo') || info.font.includes('Latin Modern')
-                          ? 'font-body' : 'font-display'
-                      }`}>
-                        Chapter One
-                      </p>
-                      <p className={`mt-1 text-[9px] leading-relaxed text-[#111111]/60 ${
-                        info.font.includes('Garamond') || info.font.includes('Baskerville') || info.font.includes('Bembo') || info.font.includes('Latin Modern')
-                          ? 'font-body' : 'font-display'
-                      }`}>
-                        The morning light crept through the window, casting long shadows across the desk where the manuscript lay waiting.
-                      </p>
+                    <p className={`truncate text-[16px] leading-none ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'} ${
+                      isMono ? 'font-mono font-normal' : isSerif ? 'font-body font-semibold italic' : 'font-display font-bold tracking-tight'
+                    }`}>
+                      {info.specimen}
+                    </p>
+                    {/* Name + kind */}
+                    <div>
+                      <span className="block font-mono text-[10px] font-semibold text-[#111111]/70">{info.name}</span>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <span className="font-mono text-[8px] text-[#111111]/40">{info.subtitle}</span>
+                        <span className="font-mono text-[7px] uppercase tracking-[0.08em] text-[#111111]/25">{info.kind}</span>
+                      </div>
                     </div>
-                    <span className="block font-mono text-[11px] font-semibold text-[#111111]/80">{info.name}</span>
-                    <span className="block font-mono text-[9px] text-[#111111]/60 mt-0.5">{info.subtitle}</span>
                   </button>
                 )
               })}
@@ -481,18 +480,27 @@ export default function PortalStage({
                         {templates.map((key) => {
                           const info = TEMPLATE_INFO[key]
                           const isActive = key === activeTemplate
+                          const isSerif = info.kind === 'serif'
+                          const isMono = info.kind === 'mono'
                           return (
                             <button
                               key={key}
                               onClick={() => setSelectedTemplate(key)}
-                              className={`border p-3 text-left transition-all ${
+                              className={`flex h-[72px] flex-col justify-between border p-2.5 text-left transition-all ${
                                 isActive
                                   ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
                                   : 'border-[#e5e5e0] hover:border-[#111111]/40'
                               }`}
                             >
-                              <span className="block font-mono text-[11px] font-semibold text-[#111111]/80">{info.name}</span>
-                              <span className="block font-mono text-[9px] text-[#111111]/60 mt-0.5">{info.subtitle}</span>
+                              <p className={`truncate text-[14px] leading-none ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'} ${
+                                isMono ? 'font-mono font-normal' : isSerif ? 'font-body font-semibold italic' : 'font-display font-bold tracking-tight'
+                              }`}>
+                                {info.specimen}
+                              </p>
+                              <div className="flex items-end justify-between gap-1">
+                                <span className="truncate font-mono text-[9px] leading-none text-[#111111]/50">{info.name}</span>
+                                <span className="shrink-0 font-mono text-[7px] uppercase leading-none tracking-[0.08em] text-[#111111]/25">{info.kind}</span>
+                              </div>
                             </button>
                           )
                         })}
