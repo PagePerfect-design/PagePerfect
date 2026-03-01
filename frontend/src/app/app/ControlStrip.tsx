@@ -14,6 +14,7 @@ const RichTextEditor = dynamic(() => import('./RichTextEditor'), { ssr: false })
 
 import ImageUpload from './ImageUpload'
 import Tooltip from './Tooltip'
+import TemplateCard from './TemplateCard'
 import type {
   TemplateKey, HeadingVariant, PageSize, MarginPreset,
   CompileMode, CustomFont, Asset, Status, Genre, CompileQuality,
@@ -315,42 +316,16 @@ export default function ControlStrip({
 
         {/* Template grid — 2 columns, uniform fixed-height cards */}
         <div className="grid grid-cols-2 gap-1.5">
-          {filteredTemplates.map((key) => {
-            const info = TEMPLATE_INFO[key]
-            const isActive = key === template
-            const isSerif = info.kind === 'serif'
-            const isMono = info.kind === 'mono'
-            return (
-              <Tooltip key={key} content={info.subtitle} detail={info.vibe} placement="right">
-                <button
-                  onClick={() => onTemplateChange(key)}
-                  className={`flex h-[72px] flex-col justify-between border p-2 text-left transition-all duration-150 ${
-                    isActive
-                      ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                      : 'border-[#e5e5e0] hover:border-[#111111]/30 hover:bg-[#111111]/[0.01]'
-                  }`}
-                >
-                  {/* Top: type specimen preview — shows the character of the template */}
-                  <p className={`truncate text-[13px] leading-none ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'} ${
-                    isMono ? 'font-mono font-normal' : isSerif ? 'font-body font-semibold italic' : 'font-display font-bold tracking-tight'
-                  }`}>
-                    {info.specimen}
-                  </p>
-                  {/* Bottom: name + kind badge — always same position */}
-                  <div className="flex items-end justify-between gap-1">
-                    <span className={`truncate font-mono text-[9px] leading-none ${isActive ? 'text-[#111111]/70' : 'text-[#111111]/40'}`}>
-                      {info.name}
-                    </span>
-                    <span className={`shrink-0 font-mono text-[7px] uppercase leading-none tracking-[0.08em] ${
-                      isActive ? 'text-[#FF3333]/60' : 'text-[#111111]/25'
-                    }`}>
-                      {info.kind}
-                    </span>
-                  </div>
-                </button>
-              </Tooltip>
-            )
-          })}
+          {filteredTemplates.map((key) => (
+            <Tooltip key={key} content={TEMPLATE_INFO[key].subtitle} detail={TEMPLATE_INFO[key].vibe} placement="right">
+              <TemplateCard
+                templateKey={key}
+                info={TEMPLATE_INFO[key]}
+                active={key === template}
+                onClick={() => onTemplateChange(key)}
+              />
+            </Tooltip>
+          ))}
         </div>
 
         {/* Heading variant */}
