@@ -123,10 +123,18 @@ export default {
         '26': '6.5rem',
         '30': '7.5rem',
       },
+      transitionTimingFunction: {
+        'pp': 'cubic-bezier(0.25, 0.4, 0.25, 1)',
+        'pp-dramatic': 'cubic-bezier(0.22, 0.61, 0.36, 1)',
+      },
+      transitionDuration: {
+        '350': '350ms',
+      },
       animation: {
-        'fade-in': 'fadeIn 0.6s ease-out',
-        'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+        'fade-in': 'fadeIn 0.6s cubic-bezier(0.25, 0.4, 0.25, 1)',
+        'fade-in-up': 'fadeInUp 0.8s cubic-bezier(0.25, 0.4, 0.25, 1) forwards',
         'reveal-up': 'revealUp 0.8s cubic-bezier(0.25, 0.4, 0.25, 1) forwards',
+        'skeleton': 'skeletonPulse 1.5s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -148,6 +156,10 @@ export default {
             filter: 'blur(0px)',
             transform: 'translateY(0)',
           },
+        },
+        skeletonPulse: {
+          '0%, 100%': { opacity: '0.4' },
+          '50%': { opacity: '0.7' },
         },
       },
     },

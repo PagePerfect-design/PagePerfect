@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Inter_Tight, Source_Serif_4, IBM_Plex_Mono } from 'next/font/google'
+import { ViewTransitions } from 'next-view-transitions'
 import Providers from '@/components/Providers'
 
 const display = Inter_Tight({ subsets: ['latin'], variable: '--font-display', weight: ['400','500','600','700','800'] })
@@ -26,13 +27,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
-      <body className="flex min-h-dvh flex-col bg-[#FDFCF8] text-[#111111] antialiased">
-        <div className="bg-noise" />
-        <Providers>
-          {children}
-        </Providers>
-      </body>
-    </html>
+    <ViewTransitions>
+      <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+        <body className="flex min-h-dvh flex-col bg-[#FDFCF8] text-[#111111] antialiased">
+          <div className="bg-noise" />
+          <Providers>
+            {children}
+          </Providers>
+        </body>
+      </html>
+    </ViewTransitions>
   )
 }

@@ -1,17 +1,25 @@
+'use client'
+
+import { Reveal } from '@/components/Reveal'
+
 /**
- * Gradient blend strip between dark ↔ light sections.
- * Renders a 96–120px tall gradient that smoothly transitions
- * between void (dark) and warm paper (light) backgrounds.
+ * Visual separator between landing page sections.
+ * - `rule`: Swiss-style 2px horizontal rule that reveals on scroll
+ * - `fade`: Gradient blend between dark ↔ light sections
  */
-export function SectionTransition({ to }: { to: 'light' | 'dark' }) {
+export function SectionTransition({ variant = 'rule' }: { variant?: 'rule' | 'fade' }) {
+  if (variant === 'rule') {
+    return (
+      <Reveal direction="none">
+        <div aria-hidden className="mx-auto my-16 h-[2px] w-full max-w-7xl bg-[#111111]" />
+      </Reveal>
+    )
+  }
+
   return (
     <div
       aria-hidden
-      className={`relative h-24 md:h-30 ${
-        to === 'light'
-          ? 'bg-gradient-to-b from-[#050507] to-[#f7f6f3]'
-          : 'bg-gradient-to-b from-[#f7f6f3] to-[#050507]'
-      }`}
+      className="h-24 bg-gradient-to-b from-[#050507] to-[#f7f6f3] md:h-30"
     />
   )
 }

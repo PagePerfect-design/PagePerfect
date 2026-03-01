@@ -144,7 +144,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
           <button
             onClick={() => fetchAll()}
             disabled={loading}
-            className="min-h-[44px] border border-[#111111] bg-[#111111] px-5 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-colors duration-75 hover:bg-[#333333] disabled:opacity-50"
+            className="min-h-[44px] border border-[#111111] bg-[#111111] px-5 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-colors duration-200 ease-pp hover:bg-[#333333] disabled:opacity-50"
           >
             {loading ? 'Checking\u2026' : 'Re-check'}
           </button>
@@ -289,7 +289,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
                 <div className="mt-3 ml-5">
                   <button
                     onClick={() => setFontExpanded(!fontExpanded)}
-                    className="min-h-[44px] font-mono text-[11px] text-[#FF3333] transition-colors duration-75 hover:text-[#E52222]"
+                    className="min-h-[44px] font-mono text-[11px] text-[#FF3333] transition-colors duration-200 ease-pp hover:text-[#E52222]"
                   >
                     {fontExpanded ? 'Hide' : 'Show'} full font inventory
                   </button>
@@ -350,13 +350,13 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
       <div className="flex flex-wrap gap-3">
         <Link
           href="/app"
-          className="inline-flex min-h-[44px] items-center border border-[#FF3333] bg-[#FF3333] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-colors duration-75 hover:bg-[#E52222]"
+          className="inline-flex min-h-[44px] items-center border border-[#FF3333] bg-[#FF3333] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-colors duration-200 ease-pp hover:bg-[#E52222]"
         >
           Open Editor
         </Link>
         <Link
           href="/docs"
-          className="inline-flex min-h-[44px] items-center border border-[#111111] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111] transition-colors duration-75 hover:bg-[#111111] hover:text-white"
+          className="inline-flex min-h-[44px] items-center border border-[#111111] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111] transition-colors duration-200 ease-pp hover:bg-[#111111] hover:text-white"
         >
           Documentation
         </Link>

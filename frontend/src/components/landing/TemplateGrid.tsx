@@ -536,7 +536,7 @@ export function TemplateGrid() {
                 <Link
                   key={t.key}
                   href={`/app?template=${t.key}`}
-                  className="group block bg-[#FDFCF8] transition-colors duration-75 hover:bg-[#F5F4F0]"
+                  className="group block bg-[#FDFCF8] transition-colors duration-200 ease-pp hover:bg-[#F5F4F0]"
                 >
                   {/* Category + plate number */}
                   <div className="flex items-baseline justify-between px-5 pt-5">

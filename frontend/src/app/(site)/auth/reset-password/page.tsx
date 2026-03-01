@@ -115,7 +115,7 @@ function ResetPasswordForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-75 placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
+              className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-200 ease-pp placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
               placeholder="At least 8 characters"
               required
               minLength={8}
@@ -133,7 +133,7 @@ function ResetPasswordForm() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-75 placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
+              className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-200 ease-pp placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
               placeholder="Repeat your new password"
               required
               minLength={8}
@@ -144,14 +144,14 @@ function ResetPasswordForm() {
           <button
             type="submit"
             disabled={loading}
-            className="min-h-[44px] w-full border border-[#FF3333] bg-[#FF3333] py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-colors duration-75 hover:bg-[#E52222] disabled:opacity-50"
+            className="min-h-[44px] w-full border border-[#FF3333] bg-[#FF3333] py-3 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-colors duration-200 ease-pp hover:bg-[#E52222] disabled:opacity-50"
           >
             {loading ? 'Updating\u2026' : 'Update password'}
           </button>
         </form>
 
         <p className="mt-6 text-center font-body text-[12px] text-[#555555]">
-          <Link href="/auth/login" className="underline transition-colors duration-75 hover:text-[#FF3333]">
+          <Link href="/auth/login" className="underline transition-colors duration-200 ease-pp hover:text-[#FF3333]">
             Back to sign in
           </Link>
         </p>

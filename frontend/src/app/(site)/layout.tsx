@@ -16,13 +16,13 @@ function Nav() {
           </Link>
           {/* Desktop nav */}
           <div className="hidden items-center gap-6 md:flex">
-            <Link href="/pricing" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Pricing</Link>
-            <Link href="/journal" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Journal</Link>
-            <Link href="/docs" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Docs</Link>
+            <Link href="/pricing" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-200 ease-pp hover:text-[#FF3333]">Pricing</Link>
+            <Link href="/journal" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-200 ease-pp hover:text-[#FF3333]">Journal</Link>
+            <Link href="/docs" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-200 ease-pp hover:text-[#FF3333]">Docs</Link>
             <NavAuth />
             <Link
               href="/app"
-              className="bg-[#FF3333] px-5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222]"
+              className="bg-[#FF3333] px-5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222]"
             >
               Open Editor
             </Link>

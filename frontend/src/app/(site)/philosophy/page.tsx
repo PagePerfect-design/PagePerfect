@@ -235,13 +235,13 @@ export default function PhilosophyPage() {
           <div className="mt-8 flex items-center justify-center gap-4">
             <Link
               href="/app"
-              className="border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222]"
+              className="border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222]"
             >
               Start Formatting
             </Link>
             <Link
               href="/docs"
-              className="border border-[#111111]/20 px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-75 hover:border-[#111111] hover:text-[#111111]"
+              className="border border-[#111111]/20 px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-200 ease-pp hover:border-[#111111] hover:text-[#111111]"
             >
               Read Docs
             </Link>
