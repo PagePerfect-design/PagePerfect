@@ -833,10 +833,10 @@ body[data-editor] > * > footer { display: none !important; }
 }
 
 /* ===== Nav link underline reveal ===== */
-[data-specimen] nav a[href]:not(.bg-\\[\\#FF3333\\]) {
+[data-specimen] nav a[href]:not([class*="bg-"]) {
   position: relative;
 }
-[data-specimen] nav a[href]:not(.bg-\\[\\#FF3333\\])::after {
+[data-specimen] nav a[href]:not([class*="bg-"])::after {
   content: '';
   position: absolute;
   bottom: -2px;
@@ -846,7 +846,7 @@ body[data-editor] > * > footer { display: none !important; }
   background: #FF3333;
   transition: width var(--t-fast) var(--ease-pp);
 }
-[data-specimen] nav a[href]:not(.bg-\\[\\#FF3333\\]):hover::after {
+[data-specimen] nav a[href]:not([class*="bg-"]):hover::after {
   width: 100%;
 }
 
