@@ -292,6 +292,9 @@ async function _processCompileJobInner(job, templateRegistry) {
     warnings.push(`${imgResult.stripped} remote image(s) removed — upload assets directly.`);
   }
 
+  // ── Sanitize title (needed by H1-stripping and later by compile pipeline) ──
+  const safeTitle = latexSanitizer.sanitizeTitle(title);
+
   // ── Strip leading H1 that duplicates the title (book-class templates) ──
   // Book-class templates auto-generate a title page from pp-title. If the
   // manuscript also begins with `# Title`, Pandoc treats it as Chapter 1,
@@ -347,9 +350,6 @@ async function _processCompileJobInner(job, templateRegistry) {
       log.info({ jobId: job.id, assetsCopied }, 'Copied image assets into compile dir');
     }
   }
-
-  // ── Sanitize title for LaTeX ──
-  const safeTitle = latexSanitizer.sanitizeTitle(title);
 
   // ── EPUB path ──
   if (wantEpub) return compileEpub(tmpBase, mdPath, safeTitle, safeMode);
