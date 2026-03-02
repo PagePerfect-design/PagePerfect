@@ -6,6 +6,7 @@ import { FileText, Check, ChevronRight } from 'lucide-react'
 import { SAMPLES } from './sample'
 import type { TemplateKey, Genre, Analysis, Platform } from './editor-types'
 import { ease, TEMPLATE_INFO, GENRE_ORDER, GENRE_LABELS } from './editor-types'
+import TemplateCard from './TemplateCard'
 import { cleanFromWord, analyzeManuscript, wordCategory } from './editor-utils'
 
 const PLATFORM_OPTIONS: { key: Platform | 'generic'; label: string; detail: string }[] = [
@@ -422,38 +423,20 @@ export default function PortalStage({
                 const info = TEMPLATE_INFO[key]
                 const isRecommended = key === detectedTemplate
                 const isActive = key === activeTemplate
-                const isSerif = info.kind === 'serif'
-                const isMono = info.kind === 'mono'
                 return (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedTemplate(key)}
-                    className={`relative flex h-[88px] flex-col justify-between border p-3 text-left transition-all ${
-                      isActive
-                        ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                        : 'border-[#e5e5e0] hover:border-[#111111]/40'
-                    }`}
-                  >
+                  <div key={key} className="relative">
                     {isRecommended && (
-                      <span className="absolute -top-2 right-2 bg-[#FF3333] px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.1em] text-white">
+                      <span className="absolute -top-2 right-2 z-10 bg-[#FF3333] px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.1em] text-white">
                         Rec
                       </span>
                     )}
-                    {/* Type specimen preview */}
-                    <p className={`truncate text-[16px] leading-none ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'} ${
-                      isMono ? 'font-mono font-normal' : isSerif ? 'font-body font-semibold italic' : 'font-display font-bold tracking-tight'
-                    }`}>
-                      {info.specimen}
-                    </p>
-                    {/* Name + kind */}
-                    <div>
-                      <span className="block font-mono text-[10px] font-semibold text-[#111111]/70">{info.name}</span>
-                      <div className="mt-0.5 flex items-center gap-2">
-                        <span className="font-mono text-[8px] text-[#111111]/40">{info.subtitle}</span>
-                        <span className="font-mono text-[7px] uppercase tracking-[0.08em] text-[#111111]/25">{info.kind}</span>
-                      </div>
-                    </div>
-                  </button>
+                    <TemplateCard
+                      templateKey={key}
+                      info={info}
+                      active={isActive}
+                      onClick={() => setSelectedTemplate(key)}
+                    />
+                  </div>
                 )
               })}
             </div>
@@ -477,33 +460,15 @@ export default function PortalStage({
                         {GENRE_LABELS[genre]}
                       </p>
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {templates.map((key) => {
-                          const info = TEMPLATE_INFO[key]
-                          const isActive = key === activeTemplate
-                          const isSerif = info.kind === 'serif'
-                          const isMono = info.kind === 'mono'
-                          return (
-                            <button
-                              key={key}
-                              onClick={() => setSelectedTemplate(key)}
-                              className={`flex h-[72px] flex-col justify-between border p-2.5 text-left transition-all ${
-                                isActive
-                                  ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                                  : 'border-[#e5e5e0] hover:border-[#111111]/40'
-                              }`}
-                            >
-                              <p className={`truncate text-[14px] leading-none ${isActive ? 'text-[#111111]' : 'text-[#111111]/50'} ${
-                                isMono ? 'font-mono font-normal' : isSerif ? 'font-body font-semibold italic' : 'font-display font-bold tracking-tight'
-                              }`}>
-                                {info.specimen}
-                              </p>
-                              <div className="flex items-end justify-between gap-1">
-                                <span className="truncate font-mono text-[9px] leading-none text-[#111111]/50">{info.name}</span>
-                                <span className="shrink-0 font-mono text-[7px] uppercase leading-none tracking-[0.08em] text-[#111111]/25">{info.kind}</span>
-                              </div>
-                            </button>
-                          )
-                        })}
+                        {templates.map((key) => (
+                          <TemplateCard
+                            key={key}
+                            templateKey={key}
+                            info={TEMPLATE_INFO[key]}
+                            active={key === activeTemplate}
+                            onClick={() => setSelectedTemplate(key)}
+                          />
+                        ))}
                       </div>
                     </div>
                   )

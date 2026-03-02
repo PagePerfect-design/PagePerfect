@@ -149,6 +149,7 @@ export default function Tooltip({
   }, [])
 
   // Clone the child to attach trigger handlers + ref
+  // Use display:contents so the wrapper is invisible to CSS grid/flex layout
   const trigger = (
     <span
       ref={triggerRef as React.RefObject<HTMLSpanElement>}
@@ -156,7 +157,7 @@ export default function Tooltip({
       onMouseLeave={hide}
       onFocus={show}
       onBlur={hide}
-      className="inline-flex"
+      style={{ display: 'contents' }}
     >
       {children}
     </span>
