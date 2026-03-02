@@ -53,6 +53,15 @@ const RESULT_REDIS_TTL = 1800; // 30 minutes (up from 10 — results now persist
 const resultStore = createResultStore();
 const RESULTS_DIR = resultStore.type === 'local' ? resultStore.dir : '__s3__';
 
+// ── Compile Generation Counter ──
+// Prevents a known BullMQ race condition with deterministic preview IDs:
+// When user switches templates rapidly, old compile results can overwrite
+// new ones because the on('completed') handler fires after the new compile
+// is already enqueued. Each enqueue increments the generation for that
+// job ID; the completed/failed handlers only store results if the generation
+// matches (meaning this is still the most recent compile for that ID).
+const jobGenerations = new Map();
+
 /**
  * Persist a compiled PDF via the result store abstraction.
  * Returns the new path/reference, or null on failure.
@@ -389,6 +398,17 @@ if (redis) {
       });
 
       compileWorker.on('completed', async (job, result) => {
+        // Guard: discard stale results from superseded compiles.
+        // When user switches templates rapidly, old compiles finish after new ones are enqueued.
+        // Without this check, the old result overwrites the new compile's pending state.
+        const jobGen = job.data._compileGen;
+        const currentGen = jobGenerations.get(job.id);
+        if (jobGen !== undefined && currentGen !== undefined && jobGen < currentGen) {
+          log.info({ module: 'queue', jobId: job.id, jobGen, currentGen }, 'Discarding stale compile result (superseded by newer compile)');
+          if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
+          return;
+        }
+
         // Persist PDF to results store so it survives temp dir cleanup and restarts
         if (result.success && result.pdfPath) {
           const persistedPath = await persistPdf(job.id, result.pdfPath);
@@ -444,6 +464,14 @@ if (redis) {
       });
 
       compileWorker.on('failed', (job, err) => {
+        // Guard: discard stale failures from superseded compiles
+        const jobGen = job.data._compileGen;
+        const currentGen = jobGenerations.get(job.id);
+        if (jobGen !== undefined && currentGen !== undefined && jobGen < currentGen) {
+          log.info({ module: 'queue', jobId: job.id, jobGen, currentGen }, 'Discarding stale compile failure (superseded)');
+          return;
+        }
+
         const failResult = {
           success: false,
           error: 'worker_error',
@@ -785,6 +813,7 @@ const ctx = {
   persistPdf,
   resultStore,
   RESULTS_DIR,
+  jobGenerations,
   get activeSyncCompiles() { return activeSyncCompiles; },
   set activeSyncCompiles(v) { activeSyncCompiles = v; },
   MAX_SYNC_CONCURRENT,

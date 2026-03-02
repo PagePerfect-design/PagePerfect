@@ -267,6 +267,12 @@ module.exports = function compileRoutes(ctx) {
           ctx.deleteJobResult(queueKey);
         }
 
+        // Increment compile generation for this deterministic preview ID.
+        // The on('completed') handler checks this to discard stale results from
+        // old compiles that finish after a newer compile was enqueued.
+        const compileGen = (ctx.jobGenerations.get(queueKey) || 0) + 1;
+        ctx.jobGenerations.set(queueKey, compileGen);
+
         const manuscriptDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-enqueue-'));
         const manuscriptPath = path.join(manuscriptDir, 'manuscript.md');
         await fsp.writeFile(manuscriptPath, manuscriptText, 'utf8');
@@ -279,6 +285,7 @@ module.exports = function compileRoutes(ctx) {
           assets: validAssets.length > 0 ? validAssets : null,
           author: typeof author === 'string' ? author.slice(0, 200) : null,
           date: typeof docDate === 'string' ? docDate.slice(0, 100) : null,
+          _compileGen: compileGen,
         }, { jobId: queueKey, priority: ctx.hasTier(userTier, 'publisher') ? 1 : 5 });
 
         const resultSecret = !user.userId ? crypto.randomBytes(16).toString('hex') : null;
@@ -390,6 +397,16 @@ module.exports = function compileRoutes(ctx) {
           if (state === 'completed' || state === 'failed') {
             const rv = job.returnvalue;
             if (rv && typeof rv === 'object') {
+              // Guard: check compile generation to avoid storing stale results.
+              // BullMQ may return a completed job from an OLD compile after the
+              // deterministic ID was reused for a newer compile.
+              const rvGen = rv._compileGen ?? job.data?._compileGen;
+              const currentGen = ctx.jobGenerations.get(id);
+              if (rvGen !== undefined && currentGen !== undefined && rvGen < currentGen) {
+                // Stale result from superseded compile — tell frontend to keep polling
+                return res.json({ jobId: id, status: 'active', progress: 0 });
+              }
+
               // Persist PDF if the on('completed') handler hasn't done it yet
               const alreadyPersisted = ctx.resultStore ? ctx.resultStore.owns(rv.pdfPath) : (rv.pdfPath && rv.pdfPath.startsWith(ctx.RESULTS_DIR));
               if (rv.success && rv.pdfPath && !alreadyPersisted) {
