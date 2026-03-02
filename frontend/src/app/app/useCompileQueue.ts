@@ -127,6 +127,9 @@ export function useCompileQueue({
     setErrors([])
     setDebug(null)
     setSvgPages([])
+    // Clear stale PDF so errors show the ErrorPanel instead of old content
+    setPdfUrl(prev => { if (prev) URL.revokeObjectURL(prev); return null })
+    pdfBlobRef.current = null
 
     try {
       const effectiveMd = adjustHeadingsForTemplate(manuscript, template)
