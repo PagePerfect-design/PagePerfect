@@ -303,45 +303,63 @@ module.exports = function compileRoutes(ctx) {
     }
 
     // ── Sync fallback ──
+    // Without Redis/BullMQ, compile synchronously but store the result
+    // so the frontend can poll status and fetch SVG pages (same flow as async).
     if (ctx.activeSyncCompiles >= ctx.MAX_SYNC_CONCURRENT) return res.status(503).json({ error: 'server_busy', message: 'Server is at capacity. Please try again in a moment.' });
     ctx.activeSyncCompiles++;
 
-    try {
-      const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-sync-'));
-      const manuscriptPath = path.join(tmpDir, 'manuscript.md');
-      await fsp.writeFile(manuscriptPath, manuscriptText, 'utf8');
+    // Generate a deterministic job ID for this sync compile (same format as async)
+    const syncJobId = isDownload ? `dl-sync-${crypto.randomUUID()}` : `preview-sync-${user.userId || req.ip}`;
 
-      const result = await processCompileJob({
-        data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, extensions: req.body.extensions || null, assets: validAssets.length > 0 ? validAssets : null, author: typeof author === 'string' ? author.slice(0, 200) : null, date: typeof docDate === 'string' ? docDate.slice(0, 100) : null },
-      }, ctx.DESIGN_TEMPLATES);
+    // Clear any prior sync result for this key
+    ctx.deleteJobResult(syncJobId);
 
-      if (!result.success) { fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {}); return res.status(400).json(result); }
+    // Return 202 immediately so the frontend starts polling — compile runs in background
+    const resultSecret = !user.userId ? crypto.randomBytes(16).toString('hex') : null;
+    if (resultSecret) ctx.storeJobSecret(syncJobId, resultSecret);
 
-      const isEpub = result.outputFormat === 'EPUB3';
-      const contentType = isEpub ? 'application/epub+zip' : 'application/pdf';
-      const filename = isEpub ? `${slug(title) || 'manuscript'}.epub` : buildFilename(title, template, pageSize);
+    res.status(202).json({
+      jobId: syncJobId, status: 'queued', message: 'Compilation started.',
+      statusUrl: `/api/compile/status/${syncJobId}`, resultUrl: `/api/compile/result/${syncJobId}`,
+      ...(resultSecret ? { resultSecret } : {}),
+    });
 
-      if (result.buildId) res.setHeader('X-PP-Build-Id', result.buildId);
-      if (result.contentHash) res.setHeader('X-PP-Content-Hash', result.contentHash);
-      if (result.elapsed) res.setHeader('X-PP-Compile-Time', String(result.elapsed));
-      if (result.fontFallback) res.setHeader('X-PP-Font-Fallback', result.fontFallback);
-      res.setHeader('X-PP-Watermarked', result.needsWatermark ? 'true' : 'false');
-      res.setHeader('X-PP-Template', result.template || template);
-      res.setHeader('X-PP-Format', result.outputFormat || 'PDF');
-      res.setHeader('X-PP-Filename', filename);
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-      res.setHeader('Cache-Control', 'no-store');
+    // Run compile in background (response already sent)
+    (async () => {
+      try {
+        const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-sync-'));
+        const manuscriptPath = path.join(tmpDir, 'manuscript.md');
+        await fsp.writeFile(manuscriptPath, manuscriptText, 'utf8');
 
-      const stream = fs.createReadStream(result.pdfPath);
-      stream.on('close', () => { fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {}); fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {}); });
-      stream.pipe(res);
-    } catch (err) {
-      log.error({ module: 'compile:sync', err: err.message }, 'Compilation error');
-      if (!res.headersSent) res.status(500).json({ error: 'compile_failed', message: err.message });
-    } finally {
-      ctx.activeSyncCompiles--;
-    }
+        const result = await processCompileJob({
+          id: syncJobId,
+          data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, extensions: req.body.extensions || null, assets: validAssets.length > 0 ? validAssets : null, author: typeof author === 'string' ? author.slice(0, 200) : null, date: typeof docDate === 'string' ? docDate.slice(0, 100) : null },
+        }, ctx.DESIGN_TEMPLATES);
+
+        if (!result.success) {
+          fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+          ctx.storeJobResult(syncJobId, result);
+          return;
+        }
+
+        // Persist PDF to results store so it survives temp dir cleanup
+        const persistedPath = await ctx.persistPdf(syncJobId, result.pdfPath);
+        if (persistedPath) {
+          result.pdfPath = persistedPath;
+          if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
+          delete result.tmpBase;
+        }
+        fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+
+        ctx.storeJobResult(syncJobId, result);
+        log.info({ module: 'compile:sync', jobId: syncJobId, template, elapsed: result.elapsed, svgPages: (result.svgPages || []).length }, 'Sync compile stored');
+      } catch (err) {
+        log.error({ module: 'compile:sync', jobId: syncJobId, err: err.message }, 'Sync compilation error');
+        ctx.storeJobResult(syncJobId, { success: false, error: 'compile_failed', message: err.message, warnings: [] });
+      } finally {
+        ctx.activeSyncCompiles--;
+      }
+    })();
   });
 
   // ══════════════════════════════════════════════════════════

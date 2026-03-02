@@ -610,14 +610,27 @@ async function _processCompileJobInner(job, templateRegistry) {
       }
       svgArgs.push('main.typ', 'page-{0p}.svg');
 
-      await new Promise((resolve) => {
+      const svgResult = await new Promise((resolve) => {
         let proc;
         try { proc = spawn('typst', svgArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV }); }
-        catch { resolve(); return; }
-        proc.on('error', () => resolve());
-        const kill = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} resolve(); }, COMPILE_TIMEOUT_MS);
-        proc.on('close', () => { clearTimeout(kill); resolve(); });
+        catch (e) { resolve({ ok: false, error: String(e) }); return; }
+        let svgStderr = '';
+        let svgStderrBytes = 0;
+        proc.stderr.on('data', (d) => { if (svgStderrBytes < 8192) { svgStderr += d.toString(); svgStderrBytes += d.length; } });
+        proc.on('error', (e) => resolve({ ok: false, error: String(e) }));
+        let timedOut = false;
+        const kill = setTimeout(() => { timedOut = true; try { proc.kill('SIGKILL'); } catch {} }, COMPILE_TIMEOUT_MS);
+        proc.on('close', (code) => {
+          clearTimeout(kill);
+          if (timedOut) { resolve({ ok: false, error: 'svg_timeout', stderr: svgStderr }); return; }
+          if (code === 0) { resolve({ ok: true, stderr: svgStderr }); }
+          else { resolve({ ok: false, error: `svg_exit_${code}`, stderr: svgStderr }); }
+        });
       });
+
+      if (!svgResult.ok) {
+        log.warn({ jobId: job.id, tplKey, error: svgResult.error, stderr: (svgResult.stderr || '').slice(0, 500) }, 'SVG generation failed (non-fatal, PDF still available)');
+      }
 
       // Read generated SVG pages into memory (cap at 30 for size)
       const SVG_PAGE_CAP = 30;
@@ -630,6 +643,9 @@ async function _processCompileJobInner(job, templateRegistry) {
         for (const f of sorted.slice(0, SVG_PAGE_CAP)) {
           svgPages.push(fs.readFileSync(path.join(tmpBase, f), 'utf-8'));
         }
+      } else if (svgResult.ok) {
+        // Typst exited 0 but produced no SVG files — log for investigation
+        log.warn({ jobId: job.id, tplKey }, 'SVG compile succeeded but produced 0 SVG files');
       }
     } catch (err) {
       log.warn({ err: err.message }, 'SVG page generation failed (non-fatal, PDF still available)');
