@@ -488,7 +488,7 @@ body[data-editor] > * > footer { display: none !important; }
   display: block;
   font-family: var(--font-display);
   font-size: 0.8125rem;
-  color: #6a6a64;
+  color: #555550;
   padding: 0.375rem 1.5rem;
   border-left: 3px solid transparent;
   transition: color var(--t-fast) var(--ease-pp), border-color var(--t-fast) var(--ease-pp);
@@ -527,7 +527,7 @@ body[data-editor] > * > footer { display: none !important; }
   text-transform: uppercase;
   font-size: 0.6875rem;
   letter-spacing: 0.05em;
-  color: #6a6a64;
+  color: #555550;
 }
 .docs-table td {
   padding: 0.625rem 0.75rem;
@@ -537,7 +537,7 @@ body[data-editor] > * > footer { display: none !important; }
 }
 .docs-table tr:last-child td { border-bottom: 0; }
 .docs-table td.accent { color: #FF3333; font-family: var(--font-mono); font-size: 0.8125rem; }
-.docs-table td.muted { color: #6a6a64; }
+.docs-table td.muted { color: #555550; }
 
 /* Left-border admonitions — no color boxes, just structure */
 .docs-admonition {
@@ -626,7 +626,7 @@ body[data-editor] > * > footer { display: none !important; }
   letter-spacing: 0.1em;
   padding: 0.25rem 0.625rem;
   border: 1px solid #e5e5e0;
-  color: #6a6a64;
+  color: #555550;
 }
 .docs-badge-live { border-color: #16a34a; color: #16a34a; }
 .docs-badge-api  { border-color: #FF3333; color: #FF3333; }
@@ -778,7 +778,7 @@ body[data-editor] > * > footer { display: none !important; }
   display: block;
   font-family: var(--font-body);
   font-size: 0.8125rem;
-  color: #6a6a64;
+  color: #555550;
   padding: 0.375rem 1.5rem;
   border-left: 3px solid transparent;
   transition: color var(--t-fast) var(--ease-pp), border-color var(--t-fast) var(--ease-pp);

@@ -19,7 +19,7 @@ export default function JournalHeader() {
             Where Swiss precision meets Madison Avenue pragmatism. Essays on typography,
             layout, and visual communication — grounded in empirical research, not aesthetic opinion.
           </p>
-          <p className="mt-3 font-body text-base leading-relaxed text-[#555555]">
+          <p className="mt-3 font-body text-base leading-relaxed text-[#4a4a4a]">
             Every design choice must be justified by data, reader psychology, or conversion metrics.
             We do not design to win awards. We design to communicate.
           </p>

@@ -13,9 +13,9 @@ export default function EditorLayout({
   return (
     <>
       <SetEditorBodyAttr />
-      <div data-specimen="" className="fixed inset-0 bg-[#FDFCF8] text-[#111111]">
+      <main data-specimen="" className="fixed inset-0 bg-[#FDFCF8] text-[#111111]" role="main" aria-label="PagePerfect Editor">
         {children}
-      </div>
+      </main>
     </>
   )
 }

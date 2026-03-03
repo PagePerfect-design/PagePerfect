@@ -24,7 +24,7 @@ export default function StatusPage() {
           >
             System Status
           </h1>
-          <p className="mt-4 max-w-xl font-body text-base leading-relaxed text-[#555555]">
+          <p className="mt-4 max-w-xl font-body text-base leading-relaxed text-[#4a4a4a]">
             Verifies that the proxy is healthy and shows enabled options from the compiler service.
           </p>
         </div>

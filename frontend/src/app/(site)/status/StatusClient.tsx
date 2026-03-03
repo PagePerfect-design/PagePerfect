@@ -125,7 +125,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
             <h2 className="font-display text-lg font-bold tracking-tight text-[#111111]">
               API Connectivity
             </h2>
-            <p className="mt-1 font-body text-sm text-[#555555]">
+            <p className="mt-1 font-body text-sm text-[#4a4a4a]">
               Frontend calls{' '}
               <code className="border border-[#e5e5e0] bg-[#f5f5f0] px-1.5 py-0.5 font-mono text-[12px] text-[#111111]">
                 /api/*
@@ -202,7 +202,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
           Server Capabilities
         </h2>
         {!details?.ok ? (
-          <p className="font-body text-sm text-[#555555]">
+          <p className="font-body text-sm text-[#4a4a4a]">
             No details endpoint or not available.
           </p>
         ) : (
@@ -255,12 +255,12 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
                   </span>
                 </div>
                 {details.fonts?.probeWorking && (
-                  <span className="font-mono text-[11px] text-[#555555]">
+                  <span className="font-mono text-[11px] text-[#4a4a4a]">
                     {details.fonts.available}/{details.fonts.total} installed
                   </span>
                 )}
               </div>
-              <p className="mt-1 ml-5 font-body text-sm text-[#555555]">
+              <p className="mt-1 ml-5 font-body text-sm text-[#4a4a4a]">
                 Typst fonts required by the{' '}
                 {details.templates?.length || 15} design templates.
               </p>
@@ -322,7 +322,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
                                 {f.category}
                               </span>
                             </div>
-                            <div className="shrink-0 text-right font-mono text-[11px] text-[#555555]">
+                            <div className="shrink-0 text-right font-mono text-[11px] text-[#4a4a4a]">
                               {f.available === false && f.bestFallback ? (
                                 <span className="text-[#dc2626]">
                                   fallback: {f.bestFallback}

@@ -46,7 +46,7 @@ export default function DocsMobileNav() {
             return (
               <div key={s.id}>
                 {showGroup && (
-                  <div className="px-4 pt-4 pb-1 font-mono text-[0.5625rem] uppercase tracking-[0.15em] text-[#555555]">
+                  <div className="px-4 pt-4 pb-1 font-mono text-[0.5625rem] uppercase tracking-[0.15em] text-[#4a4a4a]">
                     {s.group}
                   </div>
                 )}

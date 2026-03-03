@@ -78,7 +78,9 @@ function storeJobResult(id, value) {
     const redisValue = { ...value };
     // Keep pdfPath in Redis so we can check if the file still exists on recovery
     delete redisValue.tmpBase; // tmpBase is local-only
-    redis.setex(`pp:result:${id}`, RESULT_REDIS_TTL, JSON.stringify(redisValue)).catch(() => {});
+    redis.setex(`pp:result:${id}`, RESULT_REDIS_TTL, JSON.stringify(redisValue)).catch((err) => {
+      log.warn({ module: 'result-store', jobId: id, err: err.message }, 'Failed to persist result to Redis');
+    });
   }
 }
 
@@ -100,7 +102,9 @@ async function getJobResult(id) {
         return parsed;
       } else {
         // File was cleaned up — result is unservable, clean up Redis
-        redis.del(`pp:result:${id}`).catch(() => {});
+        redis.del(`pp:result:${id}`).catch((err) => {
+          log.warn({ module: 'result-store', jobId: id, err: err.message }, 'Failed to delete stale result from Redis');
+        });
         return null;
       }
     }
@@ -137,10 +141,14 @@ const resultCleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [id, res] of jobResults) {
     if (res._storedAt && now - res._storedAt > RESULT_TTL_MS) {
-      if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {});
+      if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch((err) => {
+        log.warn({ module: 'result-cleanup', jobId: id, err: err.message }, 'Failed to clean temp dir');
+      });
       // Clean persisted PDF via result store
       if (res.pdfPath && resultStore.owns(res.pdfPath)) {
-        resultStore.remove(res.pdfPath).catch(() => {});
+        resultStore.remove(res.pdfPath).catch((err) => {
+          log.warn({ module: 'result-cleanup', jobId: id, err: err.message }, 'Failed to remove persisted PDF');
+        });
       }
       deleteJobResult(id);
     }
@@ -177,9 +185,9 @@ async function sweepOrphanedTmpDirs() {
         }
       } catch { /* cleaned by another process */ }
     }
-    if (swept > 0) console.log(`[disk-sweep] Removed ${swept} orphaned temp dir(s)`);
+    if (swept > 0) log.info({ module: 'disk-sweep', swept }, 'Removed orphaned temp dirs');
   } catch (err) {
-    console.error('[disk-sweep] Error:', err.message);
+    log.error({ module: 'disk-sweep', err: err.message }, 'Sweep error');
   }
 }
 
@@ -266,7 +274,7 @@ async function checkDiskSpace() {
     if (parts.length >= 5) {
       const usagePercent = parseInt(parts[4]) / 100;
       if (usagePercent >= DISK_SPACE_EMERGENCY_THRESHOLD) {
-        console.warn(`[disk-sentinel] /tmp usage at ${(usagePercent * 100).toFixed(0)}% — triggering emergency sweep`);
+        log.warn({ module: 'disk-sentinel', usagePercent: (usagePercent * 100).toFixed(0) }, 'High /tmp usage — triggering emergency sweep');
         // Emergency: sweep ALL temp dirs regardless of age
         const entries = await fsp.readdir(tmpDir);
         let swept = 0;
@@ -306,7 +314,7 @@ async function checkDiskSpace() {
             }
           }
         } catch { /* best-effort */ }
-        if (swept > 0) console.warn(`[disk-sentinel] Emergency swept ${swept} temp dir(s)`);
+        if (swept > 0) log.warn({ module: 'disk-sentinel', swept }, 'Emergency swept temp dirs');
       }
     }
   } catch (err) {
@@ -362,9 +370,9 @@ async function sweepExpiredManuscripts() {
         if (del.ok) purged++;
       } catch { /* best-effort */ }
     }
-    if (purged > 0) console.log(`[manuscript-sweep] Purged ${purged} expired manuscript(s)`);
+    if (purged > 0) log.info({ module: 'manuscript-sweep', purged }, 'Purged expired manuscripts');
   } catch (err) {
-    console.error('[manuscript-sweep] Error:', err.message);
+    log.error({ module: 'manuscript-sweep', err: err.message }, 'Sweep error');
   }
 }
 
