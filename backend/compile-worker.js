@@ -371,7 +371,7 @@ async function _processCompileJobInner(job, templateRegistry) {
 
   log.info({ jobId: job.id, engine: 'typst', tplKey }, 'Compiling with Typst');
 
-  const geo = gridSystem.calculateTypstMargins(pageSize, marginPreset, templateType);
+  const geo = gridSystem.calculateTypstMargins(pageSize, marginPreset, templateType, tplKey);
 
   // Lint manuscript for common issues (double spaces, bad dashes, heading hierarchy)
   try {
@@ -512,6 +512,9 @@ async function _processCompileJobInner(job, templateRegistry) {
       '#let horizontalrule = { v(1.5em); align(center)[#text(size: 9pt, fill: luma(140))[\\* #h(1em) \\* #h(1em) \\*]]; v(1.5em) }',
       '// Helper: tracking() applies letter-spacing to content',
       '#let tracking(amount, content) = text(tracking: amount)[#content]',
+      '// Pandoc wraps tables in #figure(kind: table) — strip the wrapper so',
+      '// template #show table rules work directly without unwanted numbering.',
+      '#show figure.where(kind: table): it => it.body',
       `#let pp-title = ${typstString(safeTitle)}`,
       `#let pp-author = ${job.data.author ? typstString(latexSanitizer.sanitizeTitle(job.data.author, 200)) : 'none'}`,
       `#let pp-date = ${job.data.date ? typstString(latexSanitizer.sanitizeTitle(job.data.date, 100)) : 'none'}`,
@@ -531,10 +534,14 @@ async function _processCompileJobInner(job, templateRegistry) {
     const vp = headingVariantsTypst.getTypstVariantPreamble(tplKey, headingVariant);
     if (vp) mainParts.push(vp);
 
-    // 6. Watermark (free tier only)
+    // 6. Drop caps (fiction/literary templates only)
+    const dc = dropCapTypst.getDropCapPreamble(tplKey);
+    if (dc) mainParts.push(dc);
+
+    // 7. Watermark (free tier only)
     if (needsWatermark) mainParts.push(watermarkTypst.generateTypstWatermarkPreamble());
 
-    // 7. Build provenance
+    // 8. Build provenance
     buildMeta = provenance.generateBuildMetadata({
       manuscriptText, template: tplKey, pageSize, marginPreset, safeMode, compileMode, title,
       outputFormat: wantPdfX ? 'pdfx1a' : 'pdf',
@@ -542,10 +549,10 @@ async function _processCompileJobInner(job, templateRegistry) {
     });
     mainParts.push(`// Build: ${buildMeta.buildId} | ${buildMeta.timestamp}`);
 
-    // 8. Template content (title page — after %% CONTENT %%)
+    // 9. Template content (title page — after %% CONTENT %%)
     if (tplContentSection) mainParts.push(tplContentSection);
 
-    // 9. Body (from Pandoc conversion)
+    // 10. Body (from Pandoc conversion)
     const bodyContent = await fsp.readFile(bodyPath, 'utf8');
     mainParts.push(bodyContent);
   } catch (err) {

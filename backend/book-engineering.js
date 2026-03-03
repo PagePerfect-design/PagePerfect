@@ -316,23 +316,12 @@ function generateTypstEngineeringPreamble(templateType, overrides = {}) {
   // Typst handles widow/orphan control internally via its own line-breaking
   // algorithm (Knuth-Plass). Unlike LaTeX, there are no user-facing penalty
   // knobs — Typst's algorithm inherently avoids widows/orphans in most cases.
-  // We only emit the controls Typst actually exposes: justify and hyphenate.
-
-  // Justification
-  if (policy.raggedRight) {
-    commands.push('#set par(justify: false)');
-  } else {
-    commands.push('#set par(justify: true)');
-  }
-
-  // Hyphenation control
-  // LaTeX hyphenpenalty: 50=aggressive, 200=minimal, 10000=none
-  if (policy.hyphenPenalty >= 5000) {
-    commands.push('#set text(hyphenate: false)');
-  } else {
-    commands.push('#set text(hyphenate: true)');
-  }
-
+  //
+  // Justify and hyphenate are NOT emitted here. Every template already sets
+  // both explicitly, and this preamble comes AFTER the template in assembly
+  // order — emitting them here would override the template's intentional
+  // choices (e.g. exhibit/cinema want justify:false, verse/avantgarde want
+  // hyphenate:false). The template is the authority on its own typography.
 
   return commands.join('\n');
 }
