@@ -56,7 +56,7 @@
 // ── CHAPTER HEADINGS — Centered, Restrained ──────────────────
 // Level 1: Chapter titles with "CHAPTER N" label + centered bold title
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   pagebreak(weak: true, to: "odd")
   v(50pt)
   align(center)[
@@ -71,7 +71,7 @@
 
 // Level 2: Centered, bold
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(24pt)
   align(center, text(size: 12pt, weight: "bold")[#it.body])
   v(12pt)
@@ -79,7 +79,7 @@
 
 // Level 3: Centered, italic
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(18pt)
   align(center, text(size: 11pt, style: "italic")[#it.body])
   v(8pt)
@@ -87,7 +87,7 @@
 
 // Level 4: Left-aligned, small caps
 #show heading.where(level: 4): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(14pt)
   text(size: 11pt)[#smallcaps[#it.body]]
   v(6pt)

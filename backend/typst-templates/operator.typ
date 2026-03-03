@@ -64,7 +64,7 @@
 // ── SECTION HEADINGS — Technical Hierarchy ───────────────────
 // H1: Navy blue, numbered
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(20pt)
   text(size: 18pt, weight: "bold", fill: headblue)[
     #counter(heading).display()
@@ -76,7 +76,7 @@
 
 // H2: Navy blue, numbered
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(14pt)
   text(size: 13pt, weight: "bold", fill: headblue)[
     #counter(heading).display()
@@ -88,7 +88,7 @@
 
 // H3: Bold, black
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(10pt)
   text(size: 10pt, weight: "bold")[#it.body]
   v(4pt)

@@ -39,7 +39,7 @@
 #set heading(numbering: "1.1.1")
 
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(28pt)
   text(size: 16pt, weight: "bold")[
     #counter(heading).display()
@@ -50,7 +50,7 @@
 }
 
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(22pt)
   text(size: 14pt, weight: "bold")[
     #counter(heading).display()
@@ -61,7 +61,7 @@
 }
 
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(16pt)
   text(size: 12pt, weight: "bold")[
     #counter(heading).display()

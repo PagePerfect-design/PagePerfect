@@ -33,21 +33,21 @@
 
 // ── HEADINGS — Standard, tightened ────────────────────────────
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(18pt)
   text(size: 16pt, weight: "bold")[#it.body]
   v(10pt)
 }
 
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(14pt)
   text(size: 13pt, weight: "bold")[#it.body]
   v(8pt)
 }
 
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(10pt)
   text(size: 11pt, weight: "bold")[#it.body]
   v(6pt)

@@ -323,6 +323,25 @@ function generateTypstEngineeringPreamble(templateType, overrides = {}) {
   // choices (e.g. exhibit/cinema want justify:false, verse/avantgarde want
   // hyphenate:false). The template is the authority on its own typography.
 
+  // Explicitly request optimized (Knuth-Plass) line-breaking for all templates.
+  // This is the default for justified text in Typst, but we set it explicitly
+  // to ensure consistent quality even if Typst's defaults change.
+  commands.push('#set par(linebreaks: "optimized")');
+
+  // For categories that benefit from aggressive hyphenation, lower the
+  // hyphenation cost so Typst breaks words more readily — preventing the
+  // extreme inter-word spacing that plagues narrow justified columns.
+  if (policy.hyphenPenalty !== undefined && policy.hyphenPenalty <= 50) {
+    // Academic, editorial, creative: prefer more hyphenation over bad spacing
+    commands.push('#set text(costs: (hyphenation: 10%))');
+  } else if (policy.hyphenPenalty !== undefined && policy.hyphenPenalty <= 100) {
+    // Trade (fiction): moderate hyphenation
+    commands.push('#set text(costs: (hyphenation: 40%))');
+  } else {
+    // Corporate, basic: conservative hyphenation but still prevent rivers
+    commands.push('#set text(costs: (hyphenation: 70%))');
+  }
+
   return commands.join('\n');
 }
 

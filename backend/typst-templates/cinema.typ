@@ -40,7 +40,7 @@
 // ── HEADINGS — Screenplay hierarchy ──────────────────────────
 // Sluglines (scene headings) = H1 = ALL CAPS, triple-spaced above
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(24pt)
   text(size: 12pt, weight: "bold")[#upper[#it.body]]
   v(12pt)
@@ -48,7 +48,7 @@
 
 // H2: Bold, normal case
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(12pt)
   text(size: 12pt, weight: "bold")[#it.body]
   v(6pt)
@@ -56,7 +56,7 @@
 
 // H3: Regular weight
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(12pt)
   text(size: 12pt, weight: "regular")[#it.body]
   v(3pt)
