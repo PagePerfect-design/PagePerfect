@@ -496,7 +496,7 @@ export default function ControlStrip({
         <div className="flex border border-[#e5e5e0] p-0.5">
           {(['fast', 'full'] as CompileMode[]).map((mode) => {
             const modeDescriptions = {
-              fast: 'Quick preview — single LuaLaTeX pass',
+              fast: 'Quick preview — single Typst pass',
               full: 'Publication quality — multiple passes for TOC, references',
             }
             return (

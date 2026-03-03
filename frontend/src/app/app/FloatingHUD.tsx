@@ -480,7 +480,7 @@ export default function FloatingHUD({
             'Waiting for changes'
           }
           detail={
-            status === 'compiling' ? 'LuaLaTeX is processing your manuscript' :
+            status === 'compiling' ? 'Typst is processing your manuscript' :
             status === 'success' ? 'PDF ready for preview and download' :
             status === 'error' ? 'Check the error message for details' :
             'Edit text or change settings to trigger a compile'

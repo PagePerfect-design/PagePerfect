@@ -43,7 +43,7 @@ export default function StatusBar({
         {/* Engine */}
         {quality?.engine && (
           <>
-            <Tooltip content="Typesetting engine" detail="LuaLaTeX processes your manuscript into a typeset PDF" placement="top">
+            <Tooltip content="Typesetting engine" detail="Typst processes your manuscript into a typeset PDF" placement="top">
               <span className="text-[#111111]/40 cursor-default">{quality.engine}</span>
             </Tooltip>
             <span className="text-[#111111]/20">·</span>
@@ -87,7 +87,7 @@ export default function StatusBar({
         <Tooltip
           content={statusLabel}
           detail={
-            status === 'compiling' ? 'LuaLaTeX is processing your manuscript' :
+            status === 'compiling' ? 'Typst is processing your manuscript' :
             status === 'queued' ? 'Waiting for an available compile slot' :
             status === 'success' ? 'PDF ready — preview and download available' :
             status === 'error' ? 'Compilation failed — check the preview for details' :
