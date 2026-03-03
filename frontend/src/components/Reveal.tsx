@@ -1,9 +1,6 @@
 'use client'
 
-import { useRef, Children, type ReactNode } from 'react'
-import { motion, useInView, useReducedMotion } from 'framer-motion'
-
-const EASE = [0.25, 0.4, 0.25, 1] as const
+import { useRef, useEffect, useState, Children, type ReactNode } from 'react'
 
 const DIRECTION_MAP = {
   up:    { y: 24, x: 0 },
@@ -12,6 +9,18 @@ const DIRECTION_MAP = {
   right: { y: 0, x: -24 },
   none:  { y: 0, x: 0 },
 } as const
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setReduced(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setReduced(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return reduced
+}
 
 interface RevealProps {
   children: ReactNode
@@ -28,9 +37,27 @@ export function Reveal({
   className = '',
   once = true,
 }: RevealProps) {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once, margin: '-80px' })
-  const prefersReducedMotion = useReducedMotion()
+  const ref = useRef<HTMLDivElement>(null)
+  const [isInView, setIsInView] = useState(false)
+  const prefersReducedMotion = usePrefersReducedMotion()
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true)
+          if (once) observer.disconnect()
+        } else if (!once) {
+          setIsInView(false)
+        }
+      },
+      { rootMargin: '-80px' }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [once])
 
   if (prefersReducedMotion) {
     return <div className={className}>{children}</div>
@@ -38,16 +65,28 @@ export function Reveal({
 
   const { x, y } = DIRECTION_MAP[direction]
 
+  const hiddenStyle: React.CSSProperties = {
+    opacity: 0,
+    transform: `translate(${x}px, ${y}px)`,
+    filter: 'blur(4px)',
+    transitionDelay: `${delay}s`,
+  }
+
+  const visibleStyle: React.CSSProperties = {
+    opacity: 1,
+    transform: 'translate(0px, 0px)',
+    filter: 'blur(0px)',
+    transitionDelay: `${delay}s`,
+  }
+
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y, x, filter: 'blur(4px)' }}
-      animate={isInView ? { opacity: 1, y: 0, x: 0, filter: 'blur(0px)' } : {}}
-      transition={{ duration: 0.6, delay, ease: EASE }}
-      className={className}
+      className={`transition-all duration-700 ease-[cubic-bezier(0.25,0.4,0.25,1)] ${className}`}
+      style={isInView ? visibleStyle : hiddenStyle}
     >
       {children}
-    </motion.div>
+    </div>
   )
 }
 

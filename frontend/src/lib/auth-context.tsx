@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import type { RecordModel } from 'pocketbase'
-import { createClient, isPocketBaseConfigured } from './supabase'
+import { createClient, isPocketBaseConfigured } from './pocketbase'
 import type { Tier } from './database.types'
 import { purgeUserManuscripts } from './use-manuscript'
 

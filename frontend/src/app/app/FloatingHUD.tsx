@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   Paintbrush,
   Ruler,
@@ -125,15 +124,9 @@ export default function FloatingHUD({
   return (
     <div className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-2rem)] max-w-fit -translate-x-1/2 sm:bottom-8 sm:w-auto">
       {/* Fan menus — pop up above the dock */}
-      <AnimatePresence>
         {activeTab === 'style' && (
-          <motion.div
-            key="style-fan"
-            initial={{ opacity: 0, y: 12, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.95 }}
-            transition={{ duration: 0.2, ease }}
-            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/15 bg-white shadow-elevated backdrop-blur-xl sm:w-[520px]"
+          <div
+            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/15 bg-white shadow-elevated backdrop-blur-xl sm:w-[520px] animate-fade-in"
           >
             {/* Genre tabs */}
             <div className="flex gap-0.5 overflow-x-auto border-b border-[#e5e5e0] px-3 pt-2">
@@ -172,21 +165,15 @@ export default function FloatingHUD({
                         active={isActive}
                         onClick={() => { onTemplateChange(key); onTabChange(null) }}
                       />
-                      <AnimatePresence>
-                        {isHovered && !isActive && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 4 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute -top-12 left-0 z-50 w-48 border border-[#111111]/15 bg-white px-3 py-2 shadow-elevated"
-                          >
-                            <p className="font-body text-[10px] leading-[1.5] text-[#111111]/50">
-                              {info.vibe}
-                            </p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      {isHovered && !isActive && (
+                        <div
+                          className="absolute -top-12 left-0 z-50 w-48 border border-[#111111]/15 bg-white px-3 py-2 shadow-elevated animate-fade-in"
+                        >
+                          <p className="font-body text-[10px] leading-[1.5] text-[#111111]/50">
+                            {info.vibe}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -215,17 +202,12 @@ export default function FloatingHUD({
                 ))}
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {activeTab === 'layout' && (
-          <motion.div
-            key="layout-fan"
-            initial={{ opacity: 0, y: 12, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.95 }}
-            transition={{ duration: 0.2, ease }}
-            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/15 bg-white p-3 shadow-elevated backdrop-blur-xl sm:w-auto sm:p-4"
+          <div
+            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/15 bg-white p-3 shadow-elevated backdrop-blur-xl sm:w-auto sm:p-4 animate-fade-in"
           >
             {/* Page Size */}
             <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">Page Size</p>
@@ -351,17 +333,12 @@ export default function FloatingHUD({
                 )
               })}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {activeTab === 'settings' && (
-          <motion.div
-            key="settings-fan"
-            initial={{ opacity: 0, y: 12, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.95 }}
-            transition={{ duration: 0.2, ease }}
-            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/15 bg-white p-4 shadow-elevated backdrop-blur-xl sm:w-72"
+          <div
+            className="mb-3 w-[calc(100vw-2rem)] border border-[#111111]/15 bg-white p-4 shadow-elevated backdrop-blur-xl sm:w-72 animate-fade-in"
           >
             <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">Compile Options</p>
 
@@ -436,9 +413,8 @@ export default function FloatingHUD({
                 </label>
               )}
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
 
       {/* The Dock */}
       <div className="flex items-center gap-1 border border-[#111111]/15 bg-white/95 p-1.5 shadow-elevated backdrop-blur-xl">

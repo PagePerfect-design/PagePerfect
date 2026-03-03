@@ -12,25 +12,9 @@ const nextConfig: NextConfig = {
     ]
   },
   async headers() {
-    // CSP directives — strict but compatible with Next.js, Tailwind, Google Fonts, and PDF iframe preview.
-    // Inline styles required by Tailwind and next/font; blob: required for PDF iframe rendering.
-    const cspDirectives = [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://js.stripe.com",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https:",
-      "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://pb.pageperfect.studio https://api.stripe.com",
-      "frame-src 'self' blob: https://js.stripe.com",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "frame-ancestors 'self'",
-      "upgrade-insecure-requests",
-    ].join('; ')
-
+    // CSP is handled per-request by middleware.ts (nonce-based).
+    // Only static security headers remain here.
     const securityHeaders = [
-      { key: 'Content-Security-Policy', value: cspDirectives },
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

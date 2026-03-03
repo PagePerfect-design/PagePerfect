@@ -1,11 +1,10 @@
 'use client'
 import { useCallback, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { FileText, Check, ChevronRight } from 'lucide-react'
 
 import { SAMPLES } from './sample'
 import type { TemplateKey, Genre, Analysis, Platform } from './editor-types'
-import { ease, TEMPLATE_INFO, GENRE_ORDER, GENRE_LABELS } from './editor-types'
+import { TEMPLATE_INFO, GENRE_ORDER, GENRE_LABELS } from './editor-types'
 import TemplateCard from './TemplateCard'
 import { cleanFromWord, analyzeManuscript, wordCategory } from './editor-utils'
 
@@ -119,14 +118,9 @@ export default function PortalStage({
         onDragLeave={(e) => { if (e.currentTarget === e.target) setDragActive(false) }}
         onDrop={handleDrop}
       >
-        <AnimatePresence>
           {dragActive && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="absolute inset-0"
+            <div
+              className="absolute inset-0 animate-fade-in"
               style={{
                 backgroundImage:
                   'linear-gradient(to right, rgba(255,51,51,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,51,51,0.08) 1px, transparent 1px)',
@@ -134,13 +128,10 @@ export default function PortalStage({
               }}
             />
           )}
-        </AnimatePresence>
 
         <div className="relative z-10 w-full max-w-xl px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease }}
+          <div
+            className="animate-fade-in-up"
           >
             <h1 className="font-display text-[clamp(2.5rem,6vw,5rem)] font-extrabold leading-[0.9] tracking-tighter text-[#111111]">
               Drop your manuscript.
@@ -148,7 +139,7 @@ export default function PortalStage({
             <p className="mt-6 font-body text-lg text-[#111111]/60">
               .md, .txt, or .docx
             </p>
-          </motion.div>
+          </div>
 
           <input
             id="manuscript-upload"
@@ -159,14 +150,9 @@ export default function PortalStage({
             className="sr-only"
           />
 
-          <AnimatePresence>
             {pasteMode && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 12 }}
-                transition={{ duration: 0.25 }}
-                className="mt-8 w-full"
+              <div
+                className="mt-8 w-full animate-fade-in-up"
               >
                 <textarea
                   id="manuscript-paste"
@@ -205,17 +191,13 @@ export default function PortalStage({
                     <ChevronRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
 
           {/* First-visit CTA — "See a finished book" */}
           {!pasteMode && !hasResumable && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.5 }}
-              className="mt-10"
+            <div
+              className="mt-10 animate-fade-in-up"
             >
               <button
                 onClick={() => onLoadSample('fiction')}
@@ -227,15 +209,12 @@ export default function PortalStage({
               <p className="mt-3 font-mono text-[10px] text-[#111111]/50">
                 Loads a sample novel — KDP-ready in seconds
               </p>
-            </motion.div>
+            </div>
           )}
 
           {!pasteMode && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-              className="mt-8 flex items-center justify-center gap-6"
+            <div
+              className="mt-8 flex items-center justify-center gap-6 animate-fade-in"
             >
               <button
                 onClick={() => { setPasteMode(true); setPasteText('') }}
@@ -284,14 +263,12 @@ export default function PortalStage({
                   </button>
                 </>
               )}
-            </motion.div>
+            </div>
           )}
 
           {convertError && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-8 mx-auto max-w-sm border border-red-500/20 bg-red-500/5 px-4 py-3 text-left"
+            <div
+              className="mt-8 mx-auto max-w-sm border border-red-500/20 bg-red-500/5 px-4 py-3 text-left animate-fade-in"
             >
               <p className="font-mono text-[11px] text-red-600">{convertError}</p>
               <button
@@ -300,17 +277,14 @@ export default function PortalStage({
               >
                 Dismiss
               </button>
-            </motion.div>
+            </div>
           )}
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="mt-16 font-mono text-[10px] text-[#111111]/50"
+          <p
+            className="mt-16 font-mono text-[10px] text-[#111111]/50 animate-fade-in"
           >
             Your text is stored only for your active session. Deleted on sign-out or within 24 hours.
-          </motion.p>
+          </p>
         </div>
       </div>
     )
@@ -319,26 +293,14 @@ export default function PortalStage({
   if (phase === 'analyzing') {
     return (
       <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#FDFCF8]">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5, ease }}
-          className="text-center"
+        <div
+          className="text-center animate-fade-in"
         >
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 border border-[#FF3333]/20"
-              initial={{ width: 40, height: 40, opacity: 0.6 }}
-              animate={{ width: 300 + i * 100, height: 300 + i * 100, opacity: 0 }}
-              transition={{ duration: 1.5, delay: i * 0.3, repeat: Infinity }}
-            />
-          ))}
           <div className="relative z-10">
             <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
             <p className="font-mono text-[12px] text-[#111111]/50">Analyzing manuscript...</p>
           </div>
-        </motion.div>
+        </div>
       </div>
     )
   }
@@ -358,11 +320,8 @@ export default function PortalStage({
 
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#FDFCF8] px-6 overflow-y-auto py-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease }}
-        className="w-full max-w-2xl my-auto"
+      <div
+        className="w-full max-w-2xl my-auto animate-fade-in-up"
       >
         <div className="border border-[#111111] bg-white">
           {/* Header — manuscript stats */}
@@ -536,7 +495,7 @@ export default function PortalStage({
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

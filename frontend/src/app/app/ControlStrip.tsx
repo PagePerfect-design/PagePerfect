@@ -10,7 +10,7 @@ import { useState, useRef, useCallback } from 'react'
 import { Lock, Upload, Loader2, X, Check, AlertTriangle, Download, Package } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
-const RichTextEditor = dynamic(() => import('./RichTextEditor'), { ssr: false })
+const RichTextEditor = dynamic(() => import(/* webpackChunkName: "tiptap-editor" */ './RichTextEditor'), { ssr: false })
 
 import ImageUpload from './ImageUpload'
 import Tooltip from './Tooltip'
@@ -728,7 +728,7 @@ function ExportSection({
   async function handleEpubDownload() {
     setEpubLoading(true)
     try {
-      const { createClient, isPocketBaseConfigured } = await import('@/lib/supabase')
+      const { createClient, isPocketBaseConfigured } = await import('@/lib/pocketbase')
       const body: Record<string, unknown> = {
         manuscriptText: manuscript, template, headingVariant,
         title: title || 'Manuscript', pageSize, marginPreset,
@@ -754,7 +754,7 @@ function ExportSection({
   async function handleBatchExport() {
     setBatchLoading(true)
     try {
-      const { createClient, isPocketBaseConfigured } = await import('@/lib/supabase')
+      const { createClient, isPocketBaseConfigured } = await import('@/lib/pocketbase')
       const allSizes = Object.keys(PAGE_SIZES)
       const body: Record<string, unknown> = {
         manuscriptText: manuscript, template, title: title || 'Manuscript',
