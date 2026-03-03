@@ -54,7 +54,7 @@ PagePerfect/
 │   │   │       └── sample.ts              # Sample manuscript
 │   │   │
 │   │   ├── lib/
-│   │   │   ├── supabase.ts          # PocketBase client factory (legacy filename)
+│   │   │   ├── pocketbase.ts        # PocketBase client factory
 │   │   │   ├── auth-context.tsx      # AuthProvider context (PocketBase auth)
 │   │   │   ├── database.types.ts     # PocketBase collection types
 │   │   │   └── stripe.ts            # Stripe.js loader + createPayment helper
@@ -635,7 +635,7 @@ The compile pipeline treats user input as hostile. Defense is layered:
 
 ### Auth (PocketBase)
 
-- **Client**: `frontend/src/lib/supabase.ts` (legacy filename) exports `createClient()` returning a PocketBase singleton
+- **Client**: `frontend/src/lib/pocketbase.ts` exports `createClient()` returning a PocketBase singleton
 - **Context**: `frontend/src/lib/auth-context.tsx` provides `AuthProvider` with:
   - `signIn(email, password)` / `signUp(email, password)`
   - `signInWithOAuth('google' | 'github')` — popup flow
@@ -692,7 +692,7 @@ These are the env vars used in the frontend code. Configure them in the Vercel d
 
 | Variable | Used In | Description |
 |----------|---------|-------------|
-| `NEXT_PUBLIC_POCKETBASE_URL` | `lib/supabase.ts` | PocketBase URL (`https://pb.pageperfect.studio`) |
+| `NEXT_PUBLIC_POCKETBASE_URL` | `lib/pocketbase.ts` | PocketBase URL (`https://pb.pageperfect.studio`) |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `lib/stripe.ts` | Stripe publishable key (`pk_live_...` or `pk_test_...`) |
 | `NEXT_PUBLIC_STRIPE_PRICE_PUBLISHER` | `pricing/page.tsx` | Stripe price ID for Publisher tier |
 | `NEXT_PUBLIC_STRIPE_PRICE_STUDIO` | `pricing/page.tsx` | Stripe price ID for Studio tier |
@@ -773,7 +773,7 @@ Test files in `backend/tests/`:
 | Root layout (fonts, metadata) | `frontend/src/app/layout.tsx` |
 | API proxy config | `frontend/next.config.ts` |
 | Reusable UI components | `frontend/src/components/` |
-| Auth context & PocketBase client | `frontend/src/lib/auth-context.tsx`, `frontend/src/lib/supabase.ts` |
+| Auth context & PocketBase client | `frontend/src/lib/auth-context.tsx`, `frontend/src/lib/pocketbase.ts` |
 | Auth pages (login, reset) | `frontend/src/app/(site)/auth/` |
 | PocketBase collection types | `frontend/src/lib/database.types.ts` |
 | Stripe integration | `frontend/src/lib/stripe.ts`, `backend/index.js` (webhook + create-payment routes) |

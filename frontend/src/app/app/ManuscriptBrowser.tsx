@@ -1,9 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { FolderOpen, Plus, X, Loader2, Trash2 } from 'lucide-react'
-
-import { ease } from './editor-types'
 import type { ManuscriptListItem } from '@/lib/use-manuscript'
 
 export default function ManuscriptBrowser({
@@ -30,20 +27,12 @@ export default function ManuscriptBrowser({
   if (!visible) return null
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24"
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center pt-24 animate-fade-in"
       onClick={onClose}
     >
-      <motion.div
-        initial={{ opacity: 0, y: -12, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -12, scale: 0.97 }}
-        transition={{ duration: 0.2, ease }}
-        className="w-full max-w-md border border-[#111111]/10 bg-white shadow-elevated"
+      <div
+        className="w-full max-w-md border border-[#111111]/10 bg-white shadow-elevated animate-fade-in-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -135,7 +124,7 @@ export default function ManuscriptBrowser({
             })
           )}
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   )
 }

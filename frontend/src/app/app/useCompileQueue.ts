@@ -7,7 +7,7 @@ import type {
   CompileQuality, CompileDebug, Asset,
 } from './editor-types'
 import { adjustHeadingsForTemplate, buildFilename, abortableDelay } from './editor-utils'
-import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
+import { createClient, isPocketBaseConfigured } from '@/lib/pocketbase'
 import { debugLog } from './debug-log'
 
 /* ═══════════════════════════════════════════════════════════════════

@@ -233,8 +233,8 @@ async function _processCompileJobInner(job, templateRegistry) {
   const {
     manuscriptPath, template, title, pageSize, marginPreset,
     safeMode, compileMode, outputFormat, customFonts,
-    headingVariant, isDownload, userId: enqueueUserId, extensions,
-    assets,
+    headingVariant, isDownload, userId: enqueueUserId, userTier: enqueueTier,
+    extensions, assets,
   } = job.data;
 
   const tplKey = templateRegistry[String(template)] ? String(template) : 'symphony';
@@ -253,10 +253,15 @@ async function _processCompileJobInner(job, templateRegistry) {
     };
   }
 
-  // ── Re-verify auth at compile time via admin token (no user token in Redis) ──
-  const user = await verifyUserTierById(enqueueUserId);
-  const userTier = user.tier;
-  const userId = user.userId;
+  // ── User tier — trust enqueue-time verification (already checked against PocketBase).
+  // This removes the compile worker's network dependency, enabling --network none isolation.
+  // Falls back to network re-verification only for legacy jobs without userTier in payload.
+  const userId = enqueueUserId;
+  let userTier = enqueueTier;
+  if (!userTier) {
+    const user = await verifyUserTierById(enqueueUserId);
+    userTier = user.tier;
+  }
   const wantPdfX = outputFormat === 'pdfx1a';
   const wantEpub = outputFormat === 'epub';
 

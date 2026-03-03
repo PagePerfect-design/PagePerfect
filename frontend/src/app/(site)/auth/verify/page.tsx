@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
+import { createClient, isPocketBaseConfigured } from '@/lib/pocketbase'
 
 type Status = 'loading' | 'success' | 'error'
 

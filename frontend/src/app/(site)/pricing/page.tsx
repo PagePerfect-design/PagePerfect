@@ -2,14 +2,36 @@
 
 import { Fragment, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { motion, useInView, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Check, X, Loader2 } from 'lucide-react'
+
+/* ── useInView — lightweight Intersection Observer hook ── */
+function useInView(ref: React.RefObject<HTMLElement | null>, opts?: { once?: boolean; margin?: string }) {
+  const [inView, setInView] = useState(false)
+  const triggered = useRef(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (opts?.once && triggered.current) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true)
+          if (opts?.once) { triggered.current = true; observer.disconnect() }
+        } else if (!opts?.once) {
+          setInView(false)
+        }
+      },
+      { rootMargin: opts?.margin || '0px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ref, opts?.once, opts?.margin])
+  return inView
+}
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import type { StripeElementsOptions } from '@stripe/stripe-js'
 import { useAuth } from '@/lib/auth-context'
 import { stripePromise, createPayment } from '@/lib/stripe'
-
-const ease = [0.25, 0.4, 0.25, 1] as const
 
 // ── Tier data — editorial prose, not bullet lists ──
 
@@ -125,12 +147,12 @@ function TierRow({
         : 'border border-[#111111] text-[#111111] hover:bg-[#111111] hover:text-white'
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 24 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.7, delay: index * 0.08, ease }}
-      className="group"
+      className={`group transition-all duration-700 ${
+        inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+      }`}
+      style={{ transitionDelay: `${index * 80}ms` }}
     >
       <div className="grid grid-cols-1 gap-4 py-12 md:grid-cols-[6rem_1fr_1fr] md:items-baseline md:gap-12 md:py-16">
         {/* Tier number — large, ghosted */}
@@ -201,7 +223,7 @@ function TierRow({
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -311,12 +333,8 @@ function CheckoutOverlay({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="fixed inset-0 z-50 flex items-center justify-center"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in"
     >
       {/* Backdrop */}
       <div
@@ -325,12 +343,8 @@ function CheckoutOverlay({
       />
 
       {/* Panel */}
-      <motion.div
-        initial={{ opacity: 0, y: 32, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 32, scale: 0.98 }}
-        transition={{ duration: 0.4, ease }}
-        className="relative z-10 mx-4 w-full max-w-md"
+      <div
+        className="relative z-10 mx-4 w-full max-w-md animate-fade-in-up"
       >
         {/* Header — dark, editorial */}
         <div className="flex items-center justify-between border border-white/[0.06] border-b-0 bg-[#0a0a0f] px-6 py-5">
@@ -371,8 +385,8 @@ function CheckoutOverlay({
             </div>
           )}
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   )
 }
 
@@ -380,11 +394,8 @@ function CheckoutOverlay({
 
 function SuccessBanner({ tier }: { tier: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease }}
-      className="mx-auto mb-8 max-w-6xl px-6 md:px-8"
+    <div
+      className="mx-auto mb-8 max-w-6xl px-6 md:px-8 animate-fade-in-up"
     >
       <div className="flex items-center justify-between gap-4 border border-emerald-600/20 bg-emerald-600/[0.05] px-6 py-4">
         <div className="flex items-center gap-4">
@@ -412,7 +423,7 @@ function SuccessBanner({ tier }: { tier: string }) {
           <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -513,34 +524,33 @@ export default function PricingPage() {
       {/* ── HEADER ── */}
       <section className="pt-32 pb-16 md:pt-44 md:pb-20">
         <div ref={headerRef} className="mx-auto max-w-6xl px-6 md:px-8">
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={headerInView ? { opacity: 1 } : {}}
-            transition={{ duration: 0.5, ease }}
-            className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]"
+          <p
+            className={`mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111] transition-all duration-500 ${
+              headerInView ? 'opacity-100' : 'opacity-0'
+            }`}
           >
             Pricing
-          </motion.p>
+          </p>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 24 }}
-            animate={headerInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.1, ease }}
-            className="max-w-3xl font-display text-display-lg font-extrabold leading-[0.9] tracking-tighter text-[#111111]"
+          <h1
+            className={`max-w-3xl font-display text-display-lg font-extrabold leading-[0.9] tracking-tighter text-[#111111] transition-all duration-700 ${
+              headerInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+            }`}
+            style={{ transitionDelay: '100ms' }}
           >
             Draft for free.
             <br />
             Pay for the print.
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={headerInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.2, ease }}
-            className="mt-6 max-w-xl font-body text-lg leading-relaxed text-[#111111]/60"
+          <p
+            className={`mt-6 max-w-xl font-body text-lg leading-relaxed text-[#111111]/60 transition-all duration-700 ${
+              headerInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            }`}
+            style={{ transitionDelay: '200ms' }}
           >
             Design your entire book for free. Pay once when it&apos;s ready to upload to KDP.
-          </motion.p>
+          </p>
         </div>
       </section>
 
@@ -581,11 +591,10 @@ export default function PricingPage() {
       {/* ── COMPARISON TABLE — Swiss-style feature matrix ── */}
       <section ref={compareRef} className="pb-32 md:pb-44">
         <div className="mx-auto max-w-6xl px-6 md:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={compareInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, ease }}
-            className="mb-16 max-w-2xl md:mb-20"
+          <div
+            className={`mb-16 max-w-2xl md:mb-20 transition-all duration-700 ${
+              compareInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+            }`}
           >
             <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]">
               Compare
@@ -593,12 +602,13 @@ export default function PricingPage() {
             <h2 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tighter text-[#111111] md:text-5xl">
               What&apos;s included
             </h2>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={compareInView ? { opacity: 1 } : {}}
-            transition={{ duration: 0.6, delay: 0.2, ease }}
+          <div
+            className={`transition-all duration-600 ${
+              compareInView ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{ transitionDelay: '200ms' }}
           >
             {/* Desktop table — hidden on mobile */}
             <div className="hidden md:block">
@@ -663,7 +673,7 @@ export default function PricingPage() {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -675,11 +685,10 @@ export default function PricingPage() {
       {/* ── FAQ ── */}
       <section ref={faqRef} className="py-32 md:py-44">
         <div className="mx-auto max-w-6xl px-6 md:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={faqInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, ease }}
-            className="mb-16 max-w-2xl md:mb-20"
+          <div
+            className={`mb-16 max-w-2xl md:mb-20 transition-all duration-700 ${
+              faqInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+            }`}
           >
             <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.15em] text-[#111111]">
               FAQ
@@ -687,17 +696,17 @@ export default function PricingPage() {
             <h2 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tighter text-[#111111] md:text-5xl">
               Common questions
             </h2>
-          </motion.div>
+          </div>
 
           <div>
             {FAQ.map((item, i) => (
               <Fragment key={item.q}>
                 <div className="h-px bg-[#111111]/10" />
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={faqInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ duration: 0.5, delay: 0.1 + i * 0.05, ease }}
-                  className="grid grid-cols-1 gap-4 py-10 md:grid-cols-[1fr_1fr] md:gap-12 md:py-12"
+                <div
+                  className={`grid grid-cols-1 gap-4 py-10 md:grid-cols-[1fr_1fr] md:gap-12 md:py-12 transition-all duration-500 ${
+                    faqInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                  }`}
+                  style={{ transitionDelay: `${100 + i * 50}ms` }}
                 >
                   <h3 className="font-display text-[17px] font-bold leading-snug text-[#111111]">
                     {item.q}
@@ -705,7 +714,7 @@ export default function PricingPage() {
                   <p className="font-body text-[15px] leading-relaxed text-[#111111]/60">
                     {item.a}
                   </p>
-                </motion.div>
+                </div>
               </Fragment>
             ))}
             <div className="h-px bg-[#111111]/10" />
@@ -721,11 +730,10 @@ export default function PricingPage() {
       {/* ── FINAL CTA ── */}
       <section ref={ctaRef} className="py-32 md:py-44">
         <div className="mx-auto max-w-6xl px-6 md:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={ctaInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, ease }}
-            className="max-w-2xl"
+          <div
+            className={`max-w-2xl transition-all duration-700 ${
+              ctaInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+            }`}
           >
             <h2 className="font-display text-4xl font-extrabold leading-[0.9] tracking-tighter text-[#111111] md:text-5xl">
               Try it now.
@@ -753,12 +761,11 @@ export default function PricingPage() {
             <p className="mt-6 font-mono text-[11px] text-[#111111]/50">
               No account required &middot; Works in any browser
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* ── PAYMENT OVERLAY ── */}
-      <AnimatePresence>
         {checkoutTier && clientSecret && (
           <CheckoutOverlay
             tier={checkoutTier}
@@ -768,7 +775,6 @@ export default function PricingPage() {
             onError={handlePaymentError}
           />
         )}
-      </AnimatePresence>
     </main>
   )
 }

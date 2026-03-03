@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
+import { createClient, isPocketBaseConfigured } from '@/lib/pocketbase'
 
 function ResetPasswordForm() {
   const router = useRouter()

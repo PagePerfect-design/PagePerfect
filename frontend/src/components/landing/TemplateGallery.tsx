@@ -1,8 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { motion, useInView } from 'framer-motion'
-import { useRef } from 'react'
+import { useRef, useEffect, useState } from 'react'
 
 const TEMPLATES = [
   { key: 'symphony', name: 'Symphony', desc: 'Classical literary fiction', tag: 'Fiction', gradient: 'from-blue-500/30 to-indigo-500/20' },
@@ -37,8 +36,24 @@ function MiniPage() {
 }
 
 export function TemplateGallery() {
-  const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '-60px' })
+  const ref = useRef<HTMLDivElement>(null)
+  const [inView, setInView] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '-60px' }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <section className="section-separator relative overflow-hidden bg-surface-raised py-32 md:py-44">
@@ -57,11 +72,12 @@ export function TemplateGallery() {
 
         <div ref={ref} className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {TEMPLATES.map((t, i) => (
-            <motion.div
+            <div
               key={t.key}
-              initial={{ opacity: 0, y: 24 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: i * 0.06, duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
+              className={`transition-all duration-700 ease-[cubic-bezier(0.25,0.4,0.25,1)] ${
+                inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+              }`}
+              style={{ transitionDelay: `${i * 60}ms` }}
             >
               <Link
                 href={`/app?template=${t.key}`}
@@ -86,7 +102,7 @@ export function TemplateGallery() {
                   </div>
                 </div>
               </Link>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

@@ -288,7 +288,8 @@ module.exports = function compileRoutes(ctx) {
           manuscriptPath, template, title, pageSize, marginPreset,
           safeMode, compileMode, outputFormat,
           customFonts: customFonts || null, headingVariant: hv,
-          isDownload, userId: user.userId, extensions: req.body.extensions || null,
+          isDownload, userId: user.userId, userTier,
+          extensions: req.body.extensions || null,
           assets: validAssets.length > 0 ? validAssets : null,
           author: typeof author === 'string' ? author.slice(0, 200) : null,
           date: typeof docDate === 'string' ? docDate.slice(0, 100) : null,
@@ -340,7 +341,7 @@ module.exports = function compileRoutes(ctx) {
 
         const result = await processCompileJob({
           id: syncJobId,
-          data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, extensions: req.body.extensions || null, assets: validAssets.length > 0 ? validAssets : null, author: typeof author === 'string' ? author.slice(0, 200) : null, date: typeof docDate === 'string' ? docDate.slice(0, 100) : null },
+          data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, userTier, extensions: req.body.extensions || null, assets: validAssets.length > 0 ? validAssets : null, author: typeof author === 'string' ? author.slice(0, 200) : null, date: typeof docDate === 'string' ? docDate.slice(0, 100) : null },
         }, ctx.DESIGN_TEMPLATES);
 
         if (!result.success) {

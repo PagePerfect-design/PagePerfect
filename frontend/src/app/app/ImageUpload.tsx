@@ -1,9 +1,8 @@
 'use client'
 import { useRef, useState, useCallback } from 'react'
 import { Upload, X, Image as ImageIcon, AlertCircle } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 import type { Asset } from './editor-types'
-import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
+import { createClient, isPocketBaseConfigured } from '@/lib/pocketbase'
 
 const ALLOWED_EXTS = new Set(['.png', '.jpg', '.jpeg', '.pdf', '.svg', '.eps', '.tiff', '.tif'])
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
@@ -139,59 +138,45 @@ export default function ImageUpload({
       />
 
       {/* Error message */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex items-start gap-1.5 text-[11px] text-red-600"
-          >
-            <AlertCircle className="mt-0.5 h-3 w-3 flex-shrink-0" />
-            <span>{error}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {error && (
+        <div
+          className="flex items-start gap-1.5 text-[11px] text-red-600 animate-fade-in"
+        >
+          <AlertCircle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {/* Asset list */}
-      <AnimatePresence>
-        {assets.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-1"
-          >
-            {assets.map(asset => (
-              <motion.div
-                key={asset.assetId}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                className="group flex items-center gap-2 border border-[#111111]/8 bg-white px-2 py-1.5"
+      {assets.length > 0 && (
+        <div className="space-y-1 animate-fade-in">
+          {assets.map(asset => (
+            <div
+              key={asset.assetId}
+              className="group flex items-center gap-2 border border-[#111111]/8 bg-white px-2 py-1.5 animate-fade-in"
+            >
+              <ImageIcon className="h-3 w-3 flex-shrink-0 text-[#111111]/40" />
+              <button
+                onClick={() => insertAsset(asset)}
+                className="flex-1 truncate text-left font-mono text-[10px] text-[#111111]/50 hover:text-[#FF3333] transition-colors"
+                title={`Click to insert ![${asset.originalName}](${asset.filename}) into manuscript`}
               >
-                <ImageIcon className="h-3 w-3 flex-shrink-0 text-[#111111]/40" />
-                <button
-                  onClick={() => insertAsset(asset)}
-                  className="flex-1 truncate text-left font-mono text-[10px] text-[#111111]/50 hover:text-[#FF3333] transition-colors"
-                  title={`Click to insert ![${asset.originalName}](${asset.filename}) into manuscript`}
-                >
-                  {asset.originalName}
-                </button>
-                <span className="font-mono text-[9px] text-[#111111]/40">
-                  {formatSize(asset.size)}
-                </span>
-                <button
-                  onClick={() => removeAsset(asset.assetId)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-[#111111]/40 hover:text-[#FF3333]"
-                  title="Remove image"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+                {asset.originalName}
+              </button>
+              <span className="font-mono text-[9px] text-[#111111]/40">
+                {formatSize(asset.size)}
+              </span>
+              <button
+                onClick={() => removeAsset(asset.assetId)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-[#111111]/40 hover:text-[#FF3333]"
+                title="Remove image"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

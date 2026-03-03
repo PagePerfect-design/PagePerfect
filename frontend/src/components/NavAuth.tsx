@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
-import { isPocketBaseConfigured } from '@/lib/supabase'
+import { isPocketBaseConfigured } from '@/lib/pocketbase'
 
 export default function NavAuth() {
   const { user, profile, loading, signOut } = useAuth()

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   BookOpen,
   Quote,
@@ -534,12 +533,8 @@ export default function PublishingSystems({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.3 }}
-      className="fixed right-0 top-[3.5rem] bottom-0 z-40 w-[380px] border-l border-[#e5e5e0] bg-white/95 backdrop-blur-xl overflow-hidden flex flex-col"
+    <div
+      className="fixed right-0 top-[3.5rem] bottom-0 z-40 w-[380px] border-l border-[#e5e5e0] bg-white/95 backdrop-blur-xl overflow-hidden flex flex-col animate-fade-in"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#e5e5e0] px-4 py-3">
@@ -610,14 +605,9 @@ export default function PublishingSystems({
                 }
               </button>
 
-              <AnimatePresence>
                 {expandedSystem === sys.key && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
+                  <div
+                    className="overflow-hidden animate-fade-in"
                   >
                     <div className="px-3 pb-3 pt-1">
                       <p className="mb-2 text-[9px] text-[#111111]/40">{sys.description}</p>
@@ -630,13 +620,12 @@ export default function PublishingSystems({
                         renderSystemContent(sys.key)
                       )}
                     </div>
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
             </div>
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }

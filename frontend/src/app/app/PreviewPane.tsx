@@ -1,10 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, FileText, RotateCcw, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
 
 import type { Status, CompileError, CompileQuality, CompileDebug, ViewMode } from './editor-types'
-import { ease } from './editor-types'
 import { translateError, suggestFix } from './editor-utils'
 import Tooltip from './Tooltip'
 
@@ -17,12 +15,14 @@ function BookSkeleton() {
     <div className="flex h-full w-full items-center justify-center bg-white">
       <div className="relative h-[520px] w-[380px]">
         <div className="absolute inset-0 bg-[#f5f5f0] border border-[#e5e5e0]" />
-        <motion.div
+        <div
           className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF3333]/40 to-transparent"
-          initial={{ top: '10%' }}
-          animate={{ top: '90%' }}
-          transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+          style={{
+            top: '10%',
+            animation: 'skeleton-scan 2s ease-in-out infinite alternate',
+          }}
         />
+        <style>{`@keyframes skeleton-scan { from { top: 10%; } to { top: 90%; } }`}</style>
         <div className="absolute inset-x-[15%] top-[12%] space-y-3">
           <div className="h-4 w-3/5 bg-[#e5e5e0]" />
           <div className="h-2 w-4/5 bg-[#f5f5f0]" />
@@ -57,11 +57,8 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
   const hasWarnings = quality.overfullBoxes > 0 || quality.underfullBoxes > 0
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.3 }}
-      className="absolute top-2 right-2 z-20 flex flex-wrap items-center gap-1 sm:top-3 sm:right-3 sm:gap-2"
+    <div
+      className="absolute top-2 right-2 z-20 flex flex-wrap items-center gap-1 sm:top-3 sm:right-3 sm:gap-2 animate-fade-in"
     >
       <div className={`flex items-center gap-1.5 border px-2 py-1 ${gradeColor}`}>
         <span className="font-mono text-[9px] uppercase tracking-wider opacity-60">Typography</span>
@@ -87,7 +84,7 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
           <span className="font-mono text-[8px] text-[#111111]/50">{quality.buildId.slice(0, 20)}</span>
         </div>
       )}
-    </motion.div>
+    </div>
   )
 }
 
@@ -435,11 +432,8 @@ export default function PreviewPane({
       <div className="relative flex-1">
         <div className="absolute inset-0 flex items-center justify-center px-4 pb-2 pt-4 sm:px-8">
           <div className="relative flex h-full w-full items-center justify-center">
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.8, ease }}
-              className="relative h-full w-full"
+            <div
+              className="relative h-full w-full animate-fade-in-up"
             >
               {useSvg ? (
                 /* ── SVG page renderer (primary) ── */
@@ -501,11 +495,8 @@ export default function PreviewPane({
                 <div className="absolute bottom-10 left-0 right-0 z-20 flex flex-col gap-0">
                   {/* Quality warning — C or D grades */}
                   {hasQualityWarning && quality?.typographyGrade && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5, duration: 0.3 }}
-                      className={`flex items-center gap-2 px-3 py-2 ${
+                    <div
+                      className={`flex items-center gap-2 px-3 py-2 animate-fade-in ${
                         quality.typographyGrade === 'D' ? 'bg-red-500/90' : 'bg-amber-500/90'
                       }`}
                     >
@@ -515,7 +506,7 @@ export default function PreviewPane({
                           ? 'Low quality — adjust margins or template'
                           : 'Review typography before export'}
                       </span>
-                    </motion.div>
+                    </div>
                   )}
                   {/* Watermark banner */}
                   {isWatermarked && (
@@ -532,23 +523,17 @@ export default function PreviewPane({
               )}
 
               {/* Compile-in-progress overlay */}
-              <AnimatePresence>
                 {(status === 'compiling' || status === 'queued') && pdfUrl && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute inset-0 z-10 flex items-center justify-center bg-[#FDFCF8]/60 backdrop-blur-[2px]"
+                  <div
+                    className="absolute inset-0 z-10 flex items-center justify-center bg-[#FDFCF8]/60 backdrop-blur-[2px] animate-fade-in"
                   >
                     <div className="flex flex-col items-center gap-3">
                       <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
                       <span className="font-mono text-[11px] text-[#111111]/60">Typesetting...</span>
                     </div>
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>
