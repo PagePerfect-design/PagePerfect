@@ -1,159 +1,117 @@
-# Plan: Fix PDF Preview — Eliminate File-Serving Fragility
+# Plan: Pinpoint Perfect Formatting
 
-## Problem
+Three agents audited the full Typst pipeline — all 15 templates, the assembly order, grid system, engineering preamble, Pandoc body conversion, and Lua filters. Here are all issues ranked by impact.
 
-The SVG page preview is broken. The pipeline has **three compounding fragility
-points** that produce persistent 404s:
+---
 
-1. **Filename padding mismatch** — Typst's `{0p}` pads to the width of the
-   max page number (3 pages → `page-1.svg`, not `page-01.svg`). The serving
-   route used `padStart(2, '0')`. Fixed in git, not deployed.
-2. **Race condition** — BullMQ marks "completed" before the `on('completed')`
-   handler copies SVGs. The status endpoint's fallback path persists the PDF
-   but forgets the SVGs.
-3. **Ephemeral filesystem** — SVGs live in `/tmp/ppresults/`. Sweepers,
-   restarts, or disk pressure delete them independently of the result metadata.
+## CRITICAL 1: Engineering preamble overwrites template typography (5 of 15 templates)
 
-The iframe fallback works but defeats the purpose — the whole point of Typst
-is native SVG output for a sharp, controllable preview with page navigation.
+Assembly order: template → grid override → **engineering preamble** → heading variant.
 
-## What Top-Tier Companies Do
+The engineering preamble emits `#set par(justify: ...)` and `#set text(hyphenate: ...)` based on the template's *category*. These come AFTER the template, so they always win. But every template already explicitly sets both — the preamble only conflicts.
 
-| Product | Strategy |
-|---------|----------|
-| **typst.app** | Compile to vector IR on server → render client-side via WASM (`typst.ts`) |
-| **Overleaf** | Compile to PDF on server → render client-side via PDF.js on `<canvas>` |
-| **Figma** | Server-side render → stream tiles to client via WebGL |
+| Template | gridType | Template wants | Engineering emits | Broken |
+|----------|----------|---------------|-------------------|--------|
+| **exhibit** | trade | justify:false, hyphenate:false | justify:true, hyphenate:true | Both wrong |
+| **cinema** | basic | justify:false, hyphenate:false | justify:true, hyphenate:true | Both wrong |
+| **operator** | editorial | justify:true | justify:false | Justify wrong |
+| **avantgarde** | creative | hyphenate:false | hyphenate:true | Hyphenate wrong |
+| **verse** | creative | hyphenate:false | hyphenate:true | Hyphenate wrong |
 
-The common pattern: **never serve raw files from an ephemeral temp directory
-via convention-dependent filename lookups.** Either embed the data in the
-response, stream through a reliable pipeline, or render client-side.
+**Fix:** Remove justify/hyphenation from `generateTypstEngineeringPreamble()`. Templates are the authority.
+**File:** `backend/book-engineering.js`
 
-## Strategy: Embed SVG Pages in the Compile Result
+---
 
-Read SVG content into memory and deliver it through the existing job result
-channel. This eliminates filename conventions, file persistence, race
-conditions, and the separate per-page HTTP endpoint entirely.
+## CRITICAL 2: Cinema screenplay body is EMPTY (`fountain.lua` emits LaTeX into Typst)
 
+`fountain.lua` emits `pandoc.RawBlock('latex', ...)` for every screenplay element (scene headings, character cues, dialogue, transitions). When Pandoc's output is `-t typst`, **LaTeX raw blocks are silently discarded**. The entire screenplay body vanishes.
+
+The chain: Fountain text → `normalizeFountain()` → fenced divs → `fountain.lua` → `RawBlock('latex', ...)` → Pandoc `-t typst` → dropped.
+
+**Fix:** Rewrite `fountain.lua` to emit native Pandoc AST nodes (headers, divs with classes) instead of LaTeX raw blocks. The `cinema.typ` template's `#show heading` rules already handle scene headings as uppercase H1s — the filter just needs to produce standard AST elements that Pandoc's Typst writer can serialize.
+**File:** `backend/filters/fountain.lua`
+
+---
+
+## CRITICAL 3: Cinema asymmetric margins destroyed by grid system
+
+`cinema.typ` sets `margin: (left: 1.5in, right: 1in)` — the screenplay industry standard. The grid system classifies cinema as `basic` (gutterOffset: 0) and replaces this with uniform margins.
+
+**Fix:** Pass `tplKey` to `calculateTypstMargins()` and skip margin override when `tplKey === 'cinema'` (cinema manages its own margins entirely, including hardcoded US Letter page size).
+**Files:** `backend/grid-system.js`, `backend/compile-worker.js`
+
+---
+
+## MEDIUM 1: Tables wrapped in `#figure` with no show rules
+
+Pandoc wraps tables in `#figure(... , kind: table)`. Templates have no `#show figure` rules, so tables get:
+- Unwanted figure numbering
+- Extra vertical spacing from the figure wrapper
+- Empty caption area
+
+**Fix:** Add to the compile preamble:
+```typst
+#show figure.where(kind: table): it => it.body
 ```
-CURRENT (fragile):
-  Worker → typst SVG → files on disk → copy to /tmp/ppresults/ → HTTP serve per-page → <img src>
-  Failure points: filename convention, copy race, file existence, auth per request
+This strips the figure wrapper, letting template `#show table` rules work directly.
+**File:** `backend/compile-worker.js` (preamble assembly)
 
-PROPOSED (robust):
-  Worker → typst SVG → read strings into result → storeJobResult → memory/Redis
-  Frontend → GET /api/compile/pages/{id} → JSON array of SVG strings → render inline
-  Failure points: none new — same channel as compile status (already works)
-```
+---
+
+## MEDIUM 2: Drop cap system is dead code
+
+`drop-cap-typst.js` is imported but `getDropCapPreamble()` is never called. Drop caps for paperback, memoir, and symphony are designed but unwired.
+
+**Fix:** Wire into assembly after heading variant step.
+**File:** `backend/compile-worker.js`
+
+---
+
+## MEDIUM 3: Inconsistent `#let horizontalrule` across compile paths
+
+Main compile path: centered `* * *` asterisks (scene break ornament).
+Batch compile path: simple 50% horizontal line.
+Tests: same as batch (wrong).
+
+**Fix:** Extract the `horizontalrule` definition to a shared constant and use it in all three locations.
+**Files:** `backend/compile-worker.js`, `backend/routes/compile.js`
+
+---
 
 ## Implementation Steps
 
-### Step 1: compile-worker.js — Read SVGs into result object
+### Step 1: Fix engineering preamble overrides
+**File:** `backend/book-engineering.js`
+- In `generateTypstEngineeringPreamble()`, remove the `#set par(justify: ...)` and `#set text(hyphenate: ...)` emissions. The function should only emit the comment header.
 
-After the existing SVG generation step (~line 604), read each file into a
-string array and return it with the result:
+### Step 2: Fix cinema screenplay filter
+**File:** `backend/filters/fountain.lua`
+- Replace all `pandoc.RawBlock('latex', ...)` with native AST nodes:
+  - Scene headings → `pandoc.Header(1, text)` (template shows H1 as uppercase sluglines)
+  - Character cues → `pandoc.Div(pandoc.Para(pandoc.Strong(text)), {class="character"})`
+  - Dialogue → `pandoc.BlockQuote(pandoc.Para(text))` (template shows blockquotes as dialogue blocks)
+  - Parentheticals → `pandoc.Div(pandoc.Para(pandoc.Emph(text)), {class="parenthetical"})`
+  - Transitions → `pandoc.Para(pandoc.Strong(text))`
 
-```js
-const svgPages = [];
-if (svgPageCount > 0) {
-  const sorted = files.sort((a, b) =>
-    parseInt(a.match(/(\d+)/)[1], 10) - parseInt(b.match(/(\d+)/)[1], 10)
-  );
-  // Cap at 30 pages to keep memory/Redis reasonable
-  for (const f of sorted.slice(0, 30)) {
-    svgPages.push(fs.readFileSync(path.join(tmpBase, f), 'utf-8'));
-  }
-}
-// Return: { ..., svgPages, svgPageCount }
-```
+### Step 3: Fix cinema margin/page override
+**Files:** `backend/grid-system.js`, `backend/compile-worker.js`
+- Add `tplKey` parameter to `calculateTypstMargins()`
+- Return empty string when `tplKey === 'cinema'` (cinema controls its own page geometry)
 
-### Step 2: routes/compile.js — New bulk SVG endpoint
+### Step 4: Fix table figure wrapping
+**File:** `backend/compile-worker.js`
+- Add to preamble (mainParts step 1): `#show figure.where(kind: table): it => it.body`
 
-Add `GET /api/compile/pages/:id` that returns all SVG pages in one request.
-Same auth as the existing result endpoint:
+### Step 5: Wire drop caps
+**File:** `backend/compile-worker.js`
+- After step 5 (heading variant), add: `const dc = dropCapTypst.getDropCapPreamble(tplKey); if (dc) mainParts.push(dc);`
 
-```js
-router.get('/api/compile/pages/:id', async (req, res) => {
-  const result = await ctx.getJobResult(req.params.id);
-  // ... auth check (same as /api/compile/result/:id) ...
-  res.json({ pages: result.svgPages || [], total: result.svgPageCount || 0 });
-});
-```
+### Step 6: Unify horizontalrule definition
+**Files:** `backend/compile-worker.js`, `backend/routes/compile.js`
+- Extract to a shared constant in `compile-utils.js`
 
-### Step 3: useCompileQueue.ts — Fetch SVG pages after compile completes
-
-After status returns `completed` with `svgPageCount > 0`, fetch the bulk
-SVG array. Store in new state `svgPages: string[]`:
-
-```ts
-if (statusData.svgPageCount > 0) {
-  const svgResp = await fetch(`/api/compile/pages/${jobId}`, {
-    headers: resultHeaders, signal: controller.signal,
-  });
-  if (svgResp.ok) {
-    const { pages } = await svgResp.json();
-    setSvgPages(pages);
-  }
-}
-```
-
-### Step 4: PreviewPane.tsx — Render SVGs inline from memory
-
-Replace `<img src="/api/compile/page/...">` with inline SVG:
-
-```tsx
-function SvgPage({ svg, className }: { svg: string; className?: string }) {
-  return (
-    <div
-      className={className}
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
-  );
-}
-```
-
-Benefits:
-- **Zero network requests per page** — all SVGs already in memory
-- **Instant page navigation** — no loading delay when flipping
-- **True vector quality** at any zoom level
-- **DOM access** for future text selection / annotations
-
-### Step 5: Clean up old file-serving pipeline
-
-- Remove SVG file copy logic from `on('completed')` handler in index.js
-- Remove SVG file copy from the status-endpoint race condition path
-- Remove or deprecate `GET /api/compile/page/:id/:page` endpoint
-- Remove `svgFailed` iframe fallback state (no longer needed — if
-  `svgPages` is empty, fall back to iframe; if populated, render inline)
-
-## Size Budget
-
-| Pages | Raw SVG | Gzipped (auto via Express compression) |
-|-------|---------|---------------------------------------|
-| 3     | ~240 KB | ~24 KB                                |
-| 10    | ~800 KB | ~80 KB                                |
-| 30    | ~2.4 MB | ~240 KB                               |
-
-Cap at 30 embedded pages. Documents >30 pages get the first 30 as SVG
-(covers all preview needs) and the full PDF blob for download. These
-compressed sizes are smaller than the PDF itself.
-
-## Files Modified
-
-| File | Change |
-|------|--------|
-| `backend/compile-worker.js` | Read SVG files into `svgPages` string array in result |
-| `backend/routes/compile.js` | Add `GET /api/compile/pages/:id` endpoint; remove old per-page endpoint |
-| `backend/index.js` | Remove SVG file copy from `on('completed')` and cleanup |
-| `frontend/src/app/app/useCompileQueue.ts` | Fetch `/api/compile/pages/{id}` after compile; new `svgPages` state |
-| `frontend/src/app/app/PreviewPane.tsx` | Render from `svgPages[]` strings instead of `<img src>` |
-| `frontend/src/app/app/CompileShell.tsx` | Pass `svgPages` to PreviewPane |
-| `frontend/src/app/app/editor-types.ts` | (Possibly) update CompileQuality or add svgPages type |
-
-## What This Does NOT Do
-
-- No new npm dependencies
-- No WASM integration (that's the aspirational typst.ts path for later)
-- No changes to the PDF compile pipeline or download flow
-- No changes to the Typst template system
-- No changes to auth, payments, or any other subsystem
+### Step 7: Verify and push
+- Run backend tests
+- TypeScript check frontend
+- Commit and push
