@@ -6,7 +6,6 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronRight, Upload } from 'lucide-react'
 
 import { SAMPLES } from './sample'
@@ -65,14 +64,9 @@ export default function IngestZone({
       onDrop={handleDrop}
     >
       {/* Drag grid overlay */}
-      <AnimatePresence>
         {dragActive && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="absolute inset-0 z-10"
+          <div
+            className="absolute inset-0 z-10 animate-fade-in"
             style={{
               backgroundImage:
                 'linear-gradient(to right, rgba(255,51,51,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,51,51,0.06) 1px, transparent 1px)',
@@ -80,50 +74,38 @@ export default function IngestZone({
             }}
           />
         )}
-      </AnimatePresence>
 
       <div className="relative z-20 w-full max-w-xl px-8">
 
         {/* ── Red accent rule ── */}
-        <motion.div
-          initial={{ opacity: 0, width: 0 }}
-          animate={{ opacity: 1, width: 64 }}
-          transition={{ duration: 0.5 }}
-          className="h-[2px] bg-[#FF3333]"
+        <div
+          className="h-[2px] bg-[#FF3333] animate-fade-in"
+          style={{ width: 64 }}
         />
 
         {/* ── Kicker ── */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.15, duration: 0.4 }}
-          className="mt-5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50"
+        <p
+          className="mt-5 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50 animate-fade-in"
         >
           01&ensp;Input
-        </motion.p>
+        </p>
 
         {/* ── Display heading — hero-scale typography ── */}
-        <motion.h1
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="mt-3 font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]"
+        <h1
+          className="mt-3 font-display text-[clamp(2rem,5vw,3.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111] animate-fade-in-up"
         >
           Drop your
           <br />
           manuscript.
-        </motion.h1>
+        </h1>
 
         {/* ── Body description ── */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.35, duration: 0.4 }}
-          className="mt-5 max-w-sm font-body text-sm leading-[1.7] text-[#333333]"
+        <p
+          className="mt-5 max-w-sm font-body text-sm leading-[1.7] text-[#333333] animate-fade-in"
         >
           Paste from Word, drag in a .docx, or start from a sample.
           Smart quotes and encoding artifacts are cleaned automatically.
-        </motion.p>
+        </p>
 
         <input
           ref={fileInputRef}
@@ -135,11 +117,8 @@ export default function IngestZone({
 
         {/* ── Drop zone — bordered rectangle, sharp geometry ── */}
         {!pasteMode && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45, duration: 0.5 }}
-            className="mt-8"
+          <div
+            className="mt-8 animate-fade-in-up"
           >
             <button
               type="button"
@@ -166,18 +145,13 @@ export default function IngestZone({
             <p className="mt-2.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/40">
               .md&ensp;&middot;&ensp;.txt&ensp;&middot;&ensp;.docx&ensp;&mdash;&ensp;up to 10 MB
             </p>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Paste mode ── */}
-        <AnimatePresence>
           {pasteMode && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.2 }}
-              className="mt-8"
+            <div
+              className="mt-8 animate-fade-in-up"
             >
               <textarea
                 value={pasteText}
@@ -209,17 +183,13 @@ export default function IngestZone({
                   <ChevronRight className="h-3 w-3" />
                 </button>
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
 
         {/* ── Secondary actions ── */}
         {!pasteMode && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.4 }}
-            className="mt-6"
+          <div
+            className="mt-6 animate-fade-in"
           >
             {/* Divider with "or" */}
             <div className="flex items-center gap-3">
@@ -248,18 +218,15 @@ export default function IngestZone({
                 </button>
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Privacy line ── */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="mt-10 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40"
+        <p
+          className="mt-10 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40 animate-fade-in"
         >
           Session-scoped&ensp;&middot;&ensp;deleted on sign-out or within 24h
-        </motion.p>
+        </p>
 
       </div>
     </div>

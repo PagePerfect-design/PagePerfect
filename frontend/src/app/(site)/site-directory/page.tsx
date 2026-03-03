@@ -82,7 +82,7 @@ export default function SitemapPage() {
           >
             Sitemap
           </h1>
-          <p className="mt-4 max-w-xl font-body text-base leading-relaxed text-[#555555]">
+          <p className="mt-4 max-w-xl font-body text-base leading-relaxed text-[#4a4a4a]">
             Complete index of every page, tool, and resource available on PagePerfect.
           </p>
         </div>
@@ -116,7 +116,7 @@ export default function SitemapPage() {
                           {link.label}
                         </span>
                         {link.description && (
-                          <span className="mt-0.5 block font-body text-[0.8125rem] text-[#555555]">
+                          <span className="mt-0.5 block font-body text-[0.8125rem] text-[#4a4a4a]">
                             {link.description}
                           </span>
                         )}

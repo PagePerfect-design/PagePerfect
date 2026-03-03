@@ -210,7 +210,7 @@ export default async function ArticlePage({ params }: Props) {
               <p className="font-display text-lg font-bold text-[#111]">
                 Every principle above is built into PagePerfect.
               </p>
-              <p className="mt-2 max-w-md font-body text-sm text-[#555555]">
+              <p className="mt-2 max-w-md font-body text-sm text-[#4a4a4a]">
                 Baseline grids, proportional type scales, and 15 professionally engineered
                 templates. Preview for free, export KDP-ready PDFs from $19.99.
               </p>

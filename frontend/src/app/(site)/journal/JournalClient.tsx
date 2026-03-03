@@ -122,7 +122,7 @@ export default function JournalClient() {
 
                 <div className="mt-8 border-t border-[#e5e5e0] pt-6">
                   <SectionLabel>About</SectionLabel>
-                  <p className="font-body text-[0.8125rem] leading-relaxed text-[#555555]">
+                  <p className="font-body text-[0.8125rem] leading-relaxed text-[#4a4a4a]">
                     Written by an editorial team trained in the International Typographic Style
                     and direct-response advertising. Form follows function — and the function is to convert.
                   </p>
@@ -189,7 +189,7 @@ export default function JournalClient() {
             Typeset your manuscript
           </h2>
           </Reveal>
-          <p className="mt-4 max-w-lg font-body text-base text-[#555555]">
+          <p className="mt-4 max-w-lg font-body text-base text-[#4a4a4a]">
             Every principle in these essays is built into PagePerfect — baseline grids,
             golden-ratio scales, and 12 templates engineered for readability and conversion.
           </p>

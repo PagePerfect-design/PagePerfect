@@ -165,10 +165,17 @@ module.exports = function compileRoutes(ctx) {
     };
     const pandoc = spawn('pandoc', [docxPath, '-t', 'markdown', '--wrap=none', `--resource-path=${tmpBase}`], { cwd: tmpBase, env: convEnv });
     let stdout = '', stderr = '';
+    let responded = false;
     pandoc.stdout.on('data', (d) => { stdout += d.toString(); });
     pandoc.stderr.on('data', (d) => { stderr += d.toString(); });
+    pandoc.on('error', (err) => {
+      log.error({ module: 'convert', err: err.message }, 'Pandoc spawn error');
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+      if (!responded) { responded = true; res.status(500).json({ error: 'conversion_failed', message: 'Pandoc could not be started.' }); }
+    });
     const killer = setTimeout(() => { try { pandoc.kill('SIGKILL'); } catch {} }, 30_000);
     pandoc.on('close', (code) => {
+      if (responded) return;
       clearTimeout(killer);
       try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
       if (code === 0 && stdout.length > 0) return res.json({ markdown: stdout });
@@ -281,7 +288,8 @@ module.exports = function compileRoutes(ctx) {
           manuscriptPath, template, title, pageSize, marginPreset,
           safeMode, compileMode, outputFormat,
           customFonts: customFonts || null, headingVariant: hv,
-          isDownload, userId: user.userId, extensions: req.body.extensions || null,
+          isDownload, userId: user.userId, userTier,
+          extensions: req.body.extensions || null,
           assets: validAssets.length > 0 ? validAssets : null,
           author: typeof author === 'string' ? author.slice(0, 200) : null,
           date: typeof docDate === 'string' ? docDate.slice(0, 100) : null,
@@ -333,7 +341,7 @@ module.exports = function compileRoutes(ctx) {
 
         const result = await processCompileJob({
           id: syncJobId,
-          data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, extensions: req.body.extensions || null, assets: validAssets.length > 0 ? validAssets : null, author: typeof author === 'string' ? author.slice(0, 200) : null, date: typeof docDate === 'string' ? docDate.slice(0, 100) : null },
+          data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, userTier, extensions: req.body.extensions || null, assets: validAssets.length > 0 ? validAssets : null, author: typeof author === 'string' ? author.slice(0, 200) : null, date: typeof docDate === 'string' ? docDate.slice(0, 100) : null },
         }, ctx.DESIGN_TEMPLATES);
 
         if (!result.success) {
@@ -385,7 +393,14 @@ module.exports = function compileRoutes(ctx) {
       // If debug contains a disk reference, load and return the full payload
       if (result.debug && result.debug.debugRef && typeof result.debug.debugRef === 'string') {
         try {
-          const raw = fs.readFileSync(result.debug.debugRef, 'utf8');
+          // SECURITY: Validate debugRef is within the expected debug directory to prevent path traversal
+          const DEBUG_DIR = path.join(os.tmpdir(), 'pp-debug');
+          const resolvedPath = path.resolve(result.debug.debugRef);
+          if (!resolvedPath.startsWith(DEBUG_DIR)) {
+            log.warn({ module: 'status', jobId: id, debugRef: result.debug.debugRef }, 'Debug artifact path traversal attempt blocked');
+            return { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: 'Invalid debug reference path' };
+          }
+          const raw = fs.readFileSync(resolvedPath, 'utf8');
           return JSON.parse(raw);
         } catch {
           log.warn({ module: 'status', jobId: id, debugRef: result.debug.debugRef }, 'Failed to load debug artifacts from disk');
@@ -474,8 +489,11 @@ module.exports = function compileRoutes(ctx) {
     } else {
       const storedSecret = await ctx.getJobSecret(id);
       if (storedSecret) {
-        const providedSecret = req.query.secret || req.headers['x-pp-result-secret'];
-        if (providedSecret !== storedSecret) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
+        const providedSecret = String(req.query.secret || req.headers['x-pp-result-secret'] || '');
+        // Timing-safe comparison to prevent brute-force timing attacks
+        const secretsMatch = storedSecret.length === providedSecret.length &&
+          crypto.timingSafeEqual(Buffer.from(storedSecret), Buffer.from(providedSecret));
+        if (!secretsMatch) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
         ctx.deleteJobResult(`${id}:secret`);
       }
     }
@@ -503,7 +521,12 @@ module.exports = function compileRoutes(ctx) {
     const stream = ctx.resultStore
       ? ctx.resultStore.createReadStream(result.pdfPath)
       : fs.createReadStream(result.pdfPath);
-    stream.on('error', () => { if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' }); });
+    stream.on('error', (err) => {
+      log.error({ module: 'compile:stream', jobId: id, err: err.message }, 'PDF stream error');
+      stream.destroy();
+      if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' });
+    });
+    res.on('close', () => { if (!stream.destroyed) stream.destroy(); });
     stream.pipe(res);
   });
 
@@ -526,8 +549,10 @@ module.exports = function compileRoutes(ctx) {
     } else {
       const storedSecret = await ctx.getJobSecret(id);
       if (storedSecret) {
-        const providedSecret = req.query.secret || req.headers['x-pp-result-secret'];
-        if (providedSecret !== storedSecret) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
+        const providedSecret = String(req.query.secret || req.headers['x-pp-result-secret'] || '');
+        const secretsMatch = storedSecret.length === providedSecret.length &&
+          crypto.timingSafeEqual(Buffer.from(storedSecret), Buffer.from(providedSecret));
+        if (!secretsMatch) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
       }
     }
 
@@ -661,7 +686,14 @@ module.exports = function compileRoutes(ctx) {
     };
     res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
     res.setHeader('Cache-Control', 'private, max-age=3600');
-    fs.createReadStream(filePath).pipe(res);
+    const stream = fs.createReadStream(filePath);
+    stream.on('error', (err) => {
+      log.error({ module: 'assets:stream', assetId: id, err: err.message }, 'Asset stream error');
+      stream.destroy();
+      if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read asset.' });
+    });
+    res.on('close', () => { if (!stream.destroyed) stream.destroy(); });
+    stream.pipe(res);
   });
 
   // ══════════════════════════════════════════════════════════

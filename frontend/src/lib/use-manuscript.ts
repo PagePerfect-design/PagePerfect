@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createClient, isPocketBaseConfigured } from './supabase'
+import { createClient, isPocketBaseConfigured } from './pocketbase'
 import type { ManuscriptRecord } from './database.types'
 
 const MANUSCRIPT_KEY = 'pp-manuscript-v1'

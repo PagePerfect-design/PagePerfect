@@ -47,7 +47,7 @@ function Footer() {
               <CompositorMark size={26} />
               <span className="font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">PagePerfect</span>
             </div>
-            <p className="mt-3 max-w-xs font-body text-sm leading-relaxed text-[#555555]">
+            <p className="mt-3 max-w-xs font-body text-sm leading-relaxed text-[#4a4a4a]">
               Professional typesetting in your browser. Built on Typst. Inspired by M&uuml;ller-Brockmann.
             </p>
             {/* Colophon — desktop only, tucked under brand */}

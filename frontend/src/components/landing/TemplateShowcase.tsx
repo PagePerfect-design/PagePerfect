@@ -1,8 +1,7 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { motion, useScroll, useTransform, useInView, type MotionValue } from 'framer-motion'
 import { Reveal } from './Reveal'
 
 const TEMPLATES = [
@@ -59,24 +58,43 @@ function BookCover({ color }: { color: string }) {
   )
 }
 
+/**
+ * Interpolate a value based on scroll progress using input/output ranges.
+ * Equivalent to framer-motion's useTransform(progress, inputRange, outputRange).
+ */
+function interpolate(progress: number, inputRange: number[], outputRange: number[]): number {
+  // Clamp progress to input range
+  if (progress <= inputRange[0]) return outputRange[0]
+  if (progress >= inputRange[inputRange.length - 1]) return outputRange[outputRange.length - 1]
+
+  // Find the segment
+  for (let i = 0; i < inputRange.length - 1; i++) {
+    if (progress >= inputRange[i] && progress <= inputRange[i + 1]) {
+      const segmentProgress = (progress - inputRange[i]) / (inputRange[i + 1] - inputRange[i])
+      return outputRange[i] + segmentProgress * (outputRange[i + 1] - outputRange[i])
+    }
+  }
+  return outputRange[outputRange.length - 1]
+}
+
 function CarouselCard({
   template,
-  progress,
+  scrollProgress,
 }: {
   template: typeof TEMPLATES[0]
-  progress: MotionValue<number>
+  scrollProgress: number
 }) {
-  const rotateX = useTransform(progress, [0, 0.5, 1], [12, 0, -4])
-  const translateZ = useTransform(progress, [0, 0.5, 1], [-60, 0, 20])
-  const scale = useTransform(progress, [0, 0.5, 1], [0.85, 1, 0.98])
+  // Derive transforms from scroll progress — same ranges as the original framer-motion useTransform
+  const rotateX = interpolate(scrollProgress, [0, 0.5, 1], [12, 0, -4])
+  const translateZ = interpolate(scrollProgress, [0, 0.5, 1], [-60, 0, 20])
+  const scale = interpolate(scrollProgress, [0, 0.5, 1], [0.85, 1, 0.98])
 
   return (
-    <motion.div
+    <div
       style={{
-        rotateX,
-        translateZ,
-        scale,
+        transform: `rotateX(${rotateX}deg) translateZ(${translateZ}px) scale(${scale})`,
         transformStyle: 'preserve-3d',
+        willChange: 'transform',
       }}
     >
       <Link
@@ -126,19 +144,69 @@ function CarouselCard({
           </div>
         </div>
       </Link>
-    </motion.div>
+    </div>
   )
 }
 
 export function TemplateShowcase() {
-  const containerRef = useRef(null)
-  const gridRef = useRef(null)
-  const inView = useInView(gridRef, { once: true, margin: '-80px' })
+  const containerRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const rafRef = useRef<number>(0)
+  const [scrollProgress, setScrollProgress] = useState(0)
+  const [inView, setInView] = useState(false)
 
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start end', 'end start'],
-  })
+  // IntersectionObserver replaces useInView(gridRef, { once: true, margin: '-80px' })
+  useEffect(() => {
+    const el = gridRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '-80px' }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  // Scroll listener replaces useScroll({ target: containerRef, offset: ['start end', 'end start'] })
+  const updateScrollProgress = useCallback(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    const rect = el.getBoundingClientRect()
+    const windowHeight = window.innerHeight
+
+    // offset: ['start end', 'end start'] means:
+    // progress=0 when element top hits viewport bottom (rect.top === windowHeight)
+    // progress=1 when element bottom hits viewport top (rect.bottom === 0)
+    const totalTravel = windowHeight + rect.height
+    const distanceTraveled = windowHeight - rect.top
+    const progress = Math.max(0, Math.min(1, distanceTraveled / totalTravel))
+
+    setScrollProgress(progress)
+  }, [])
+
+  useEffect(() => {
+    function onScroll() {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = requestAnimationFrame(updateScrollProgress)
+    }
+
+    // Initial calculation
+    updateScrollProgress()
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      cancelAnimationFrame(rafRef.current)
+    }
+  }, [updateScrollProgress])
 
   return (
     <section ref={containerRef} className="section-separator relative overflow-hidden py-32 md:py-44">
@@ -166,22 +234,23 @@ export function TemplateShowcase() {
         <div ref={gridRef} className="perspective-1200">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4" style={{ transformStyle: 'preserve-3d' }}>
             {TEMPLATES.map((t, i) => (
-              <motion.div
+              <div
                 key={t.key}
-                initial={{ opacity: 0, y: 40, rotateX: 15 }}
-                animate={inView ? { opacity: 1, y: 0, rotateX: 0 } : {}}
-                transition={{
-                  delay: i * 0.07,
-                  duration: 0.8,
-                  ease: [0.25, 0.4, 0.25, 1],
+                style={{
+                  opacity: inView ? 1 : 0,
+                  transform: inView
+                    ? 'translateY(0px) rotateX(0deg)'
+                    : 'translateY(40px) rotateX(15deg)',
+                  transition: `opacity 0.8s cubic-bezier(0.25, 0.4, 0.25, 1) ${i * 0.07}s, transform 0.8s cubic-bezier(0.25, 0.4, 0.25, 1) ${i * 0.07}s`,
+                  transformStyle: 'preserve-3d',
+                  willChange: 'opacity, transform',
                 }}
-                style={{ transformStyle: 'preserve-3d' }}
               >
                 <CarouselCard
                   template={t}
-                  progress={scrollYProgress}
+                  scrollProgress={scrollProgress}
                 />
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>

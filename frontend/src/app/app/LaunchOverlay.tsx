@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { Check, X, AlertTriangle, Download, Lock, Loader2, Package, Shield } from 'lucide-react'
-import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
+import { createClient, isPocketBaseConfigured } from '@/lib/pocketbase'
 import { slug } from './editor-utils'
 import type {
   TemplateKey,
@@ -19,7 +18,7 @@ import type {
   PreflightResult,
   CompileQuality,
 } from './editor-types'
-import { TEMPLATE_INFO, PAGE_SIZES, ease, hasTier } from './editor-types'
+import { TEMPLATE_INFO, PAGE_SIZES, hasTier } from './editor-types'
 
 export default function LaunchOverlay({
   title,
@@ -243,17 +242,11 @@ export default function LaunchOverlay({
                     <span className="inline-block h-3 w-3 shrink-0 text-center font-mono text-[10px] text-[#111111]/50">·</span>
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#FDFCF8]/80 backdrop-blur-md"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#FDFCF8]/80 backdrop-blur-md animate-fade-in"
     >
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease }}
-        className="w-full max-w-xl px-6"
+      <div
+        className="w-full max-w-xl px-6 animate-fade-in-up"
       >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
@@ -352,12 +345,9 @@ export default function LaunchOverlay({
                 <div className="text-red-500/70">[ERROR] {fetchError}</div>
               ) : preflight ? (
                 preflight.checks.map((check, i) => (
-                  <motion.div
+                  <div
                     key={i}
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.08, duration: 0.2 }}
-                    className="mb-1.5"
+                    className="mb-1.5 animate-fade-in"
                   >
                     <div className="flex items-start gap-2">
                       <span className="mt-0.5">{statusIcon(check.status)}</span>
@@ -373,7 +363,7 @@ export default function LaunchOverlay({
                         <p className="text-[10px] text-[#111111]/55">{check.detail}</p>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 ))
               ) : null}
             </div>
@@ -659,7 +649,7 @@ export default function LaunchOverlay({
           {TEMPLATE_INFO[template]?.name} / {PAGE_SIZES[pageSize]?.label} / {title || 'Untitled'}
           {quality?.buildId && <> / {quality.buildId.slice(0, 20)}</>}
         </p>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   )
 }

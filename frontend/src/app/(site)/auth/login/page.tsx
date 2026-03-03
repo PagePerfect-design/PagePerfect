@@ -53,7 +53,7 @@ function LoginForm() {
           >
             {mode === 'login' ? 'Welcome back' : 'Create your account'}
           </h1>
-          <p className="mt-2 font-body text-sm text-[#555555]">
+          <p className="mt-2 font-body text-sm text-[#4a4a4a]">
             {mode === 'login'
               ? 'Sign in to save manuscripts and access premium features.'
               : 'Free to start. Upgrade anytime.'}
@@ -97,7 +97,7 @@ function LoginForm() {
         {/* Email/password form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="border border-[#dc2626]/20 bg-[#dc2626]/5 p-3 font-body text-sm text-[#dc2626]">
+            <div id="form-error" role="alert" className="border border-[#dc2626]/20 bg-[#dc2626]/5 p-3 font-body text-sm text-[#dc2626]">
               {error}
             </div>
           )}
@@ -111,6 +111,7 @@ function LoginForm() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              aria-describedby={error ? 'form-error' : undefined}
               className="min-h-[44px] w-full border border-[#111111]/20 bg-white px-3 py-2.5 font-body text-sm text-[#111111] transition-colors duration-200 ease-pp placeholder:text-[#111111]/30 hover:border-[#111111]/40 focus:border-[#111111] focus:outline-none"
               placeholder="you@example.com"
               required
@@ -146,13 +147,13 @@ function LoginForm() {
 
         {mode === 'login' && (
           <p className="mt-3 text-center">
-            <Link href="/auth/forgot-password" className="font-body text-[12px] text-[#555555] transition-colors duration-200 ease-pp hover:text-[#FF3333]">
+            <Link href="/auth/forgot-password" className="font-body text-[12px] text-[#4a4a4a] transition-colors duration-200 ease-pp hover:text-[#FF3333]">
               Forgot your password?
             </Link>
           </p>
         )}
 
-        <p className="mt-6 text-center font-body text-sm text-[#555555]">
+        <p className="mt-6 text-center font-body text-sm text-[#4a4a4a]">
           {mode === 'login' ? (
             <>
               Don&apos;t have an account?{' '}
@@ -170,7 +171,7 @@ function LoginForm() {
           )}
         </p>
 
-        <p className="mt-4 text-center font-body text-[12px] text-[#555555]">
+        <p className="mt-4 text-center font-body text-[12px] text-[#4a4a4a]">
           <Link href="/app" className="underline transition-colors duration-200 ease-pp hover:text-[#FF3333]">
             Continue without an account
           </Link>

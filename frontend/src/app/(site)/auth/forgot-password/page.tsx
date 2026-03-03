@@ -43,13 +43,13 @@ function ForgotPasswordForm() {
             >
               Check your email
             </h1>
-            <p className="mt-2 font-body text-sm text-[#555555]">
+            <p className="mt-2 font-body text-sm text-[#4a4a4a]">
               We sent a password reset link to <strong className="text-[#111111]">{email}</strong>.
               Click the link in the email to reset your password.
             </p>
           </div>
 
-          <p className="mb-4 font-body text-[12px] text-[#555555]">
+          <p className="mb-4 font-body text-[12px] text-[#4a4a4a]">
             Didn&apos;t receive the email? Check your spam folder or try again.
           </p>
 
@@ -60,7 +60,7 @@ function ForgotPasswordForm() {
             Try a different email
           </button>
 
-          <p className="mt-6 font-body text-[12px] text-[#555555]">
+          <p className="mt-6 font-body text-[12px] text-[#4a4a4a]">
             <Link href="/auth/login" className="underline transition-colors duration-200 ease-pp hover:text-[#FF3333]">
               Back to sign in
             </Link>
@@ -80,7 +80,7 @@ function ForgotPasswordForm() {
           >
             Reset your password
           </h1>
-          <p className="mt-2 font-body text-sm text-[#555555]">
+          <p className="mt-2 font-body text-sm text-[#4a4a4a]">
             Enter your email address and we&apos;ll send you a link to reset your password.
           </p>
         </div>
@@ -118,7 +118,7 @@ function ForgotPasswordForm() {
           </button>
         </form>
 
-        <p className="mt-6 text-center font-body text-sm text-[#555555]">
+        <p className="mt-6 text-center font-body text-sm text-[#4a4a4a]">
           Remember your password?{' '}
           <Link href="/auth/login" className="font-semibold text-[#FF3333] transition-colors duration-200 ease-pp hover:text-[#E52222]">
             Sign in

@@ -49,6 +49,10 @@ export default function TopBar({
 }) {
   return (
     <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#111111]/10 px-4">
+      {/* Screen reader: announce compile status changes */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {loading ? 'Compiling manuscript...' : status === 'error' && errors.length > 0 ? `Compile error: ${errors[0]?.message || 'Unknown error'}` : status === 'success' ? 'Compilation complete' : ''}
+      </div>
       {/* Left: home + back + title */}
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <Tooltip content="Home" placement="bottom">

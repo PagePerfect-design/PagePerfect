@@ -6,11 +6,10 @@
    No stages. No overlays. The book is always visible.
    ═══════════════════════════════════════════════════════════════════ */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import CompositorMark from '@/components/CompositorMark'
-import { AnimatePresence } from 'framer-motion'
 import { Download, Loader2, Cloud, CloudOff, ArrowLeft, RotateCcw } from 'lucide-react'
 import Tooltip from './Tooltip'
 
@@ -201,7 +200,7 @@ export default function CompileShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manuscript, template])
 
-  const wordCount = manuscript.split(/\s+/).filter(w => w.length > 0).length
+  const wordCount = useMemo(() => manuscript.split(/\s+/).filter(w => w.length > 0).length, [manuscript])
 
   // ── Handlers ──
 
@@ -530,20 +529,18 @@ export default function CompileShell() {
       )}
 
       {/* ── Manuscript browser modal ──────────────────────── */}
-      <AnimatePresence>
-        {showManuscripts && (
-          <ManuscriptBrowser
-            visible={showManuscripts}
-            manuscripts={manuscriptList}
-            loading={manuscriptListLoading}
-            currentId={manuscriptId}
-            onLoad={handleLoadManuscript}
-            onDelete={handleDeleteManuscript}
-            onNew={handleNewManuscript}
-            onClose={() => setShowManuscripts(false)}
-          />
-        )}
-      </AnimatePresence>
+      {showManuscripts && (
+        <ManuscriptBrowser
+          visible={showManuscripts}
+          manuscripts={manuscriptList}
+          loading={manuscriptListLoading}
+          currentId={manuscriptId}
+          onLoad={handleLoadManuscript}
+          onDelete={handleDeleteManuscript}
+          onNew={handleNewManuscript}
+          onClose={() => setShowManuscripts(false)}
+        />
+      )}
     </div>
   )
 }

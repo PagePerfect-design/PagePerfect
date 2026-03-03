@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
+import { createClient, isPocketBaseConfigured } from '@/lib/pocketbase'
 
 function ResetPasswordForm() {
   const router = useRouter()
@@ -76,7 +76,7 @@ function ResetPasswordForm() {
           >
             Password updated
           </h1>
-          <p className="mt-2 font-body text-sm text-[#555555]">
+          <p className="mt-2 font-body text-sm text-[#4a4a4a]">
             Your password has been reset. Redirecting you to sign in&hellip;
           </p>
         </div>
@@ -94,7 +94,7 @@ function ResetPasswordForm() {
           >
             Set a new password
           </h1>
-          <p className="mt-2 font-body text-sm text-[#555555]">
+          <p className="mt-2 font-body text-sm text-[#4a4a4a]">
             Enter your new password below.
           </p>
         </div>
@@ -150,7 +150,7 @@ function ResetPasswordForm() {
           </button>
         </form>
 
-        <p className="mt-6 text-center font-body text-[12px] text-[#555555]">
+        <p className="mt-6 text-center font-body text-[12px] text-[#4a4a4a]">
           <Link href="/auth/login" className="underline transition-colors duration-200 ease-pp hover:text-[#FF3333]">
             Back to sign in
           </Link>

@@ -7,7 +7,7 @@ import type {
   CompileQuality, CompileDebug, Asset,
 } from './editor-types'
 import { adjustHeadingsForTemplate, buildFilename, abortableDelay } from './editor-utils'
-import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
+import { createClient, isPocketBaseConfigured } from '@/lib/pocketbase'
 import { debugLog } from './debug-log'
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -56,6 +56,14 @@ export function useCompileQueue({
   useEffect(() => {
     return () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl) }
   }, [pdfUrl])
+
+  // Abort in-flight requests on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
 
   // ── Immediate status feedback on settings change ──
   // Show "compiling" immediately when any design parameter changes so the user
@@ -430,7 +438,6 @@ export function useCompileQueue({
       void compileRef.current(false)
     }
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, stage])
 
   return {
