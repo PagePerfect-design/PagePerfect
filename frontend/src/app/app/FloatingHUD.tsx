@@ -450,13 +450,13 @@ export default function FloatingHUD({
         <Tooltip
           content={
             status === 'queued' ? 'In queue' :
-            status === 'compiling' ? 'Typesetting in progress' :
-            status === 'success' ? 'Compile successful' :
-            status === 'error' ? 'Compile failed' :
+            status === 'compiling' ? 'Updating preview' :
+            status === 'success' ? 'Preview ready' :
+            status === 'error' ? 'Compile error' :
             'Waiting for changes'
           }
           detail={
-            status === 'compiling' ? 'Typst is processing your manuscript' :
+            status === 'compiling' ? 'Your manuscript is being typeset' :
             status === 'success' ? 'PDF ready for preview and download' :
             status === 'error' ? 'Check the error message for details' :
             'Edit text or change settings to trigger a compile'
@@ -476,7 +476,7 @@ export default function FloatingHUD({
               status === 'error' ? 'text-red-500/70' :
               'text-[#111111]/40'
             }`}>
-              {status === 'queued' ? 'Queued' : status === 'compiling' ? 'Setting' : status === 'success' ? 'Ready' : status === 'error' ? 'Issue' : 'Idle'}
+              {status === 'queued' ? 'Queued\u2026' : status === 'compiling' ? 'Updating\u2026' : status === 'success' ? 'Ready' : status === 'error' ? 'Error' : 'Idle'}
             </span>
           </div>
         </Tooltip>

@@ -66,6 +66,7 @@ export type LayoutReport = {
 } | null
 
 export type ViewMode = 'single' | 'spread'
+export type ChangeReason = 'template' | 'layout' | 'settings' | 'text' | null
 
 export type CompileQuality = {
   typographyScore: number | null
