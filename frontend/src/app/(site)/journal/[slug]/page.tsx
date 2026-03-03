@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { ARTICLES } from '../articles'
 
@@ -46,7 +47,7 @@ function estimateWordCount(article: (typeof ARTICLES)[number]): number {
   return Math.round(allText.split(/\s+/).length)
 }
 
-function JsonLd({ article }: { article: (typeof ARTICLES)[number] }) {
+function JsonLd({ article, nonce }: { article: (typeof ARTICLES)[number]; nonce: string }) {
   const seo = article.seo
   const wordCount = estimateWordCount(article)
 
@@ -87,6 +88,7 @@ function JsonLd({ article }: { article: (typeof ARTICLES)[number] }) {
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
     />
   )
@@ -102,6 +104,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default async function ArticlePage({ params }: Props) {
   const { slug } = await params
+  const nonce = (await headers()).get('x-nonce') ?? ''
   const index = ARTICLES.findIndex((a) => a.slug === slug)
   if (index === -1) notFound()
 
@@ -111,7 +114,7 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <>
-      <JsonLd article={article} />
+      <JsonLd article={article} nonce={nonce} />
       <main id="main">
         <article className="py-12 md:py-20">
           <div className="mx-auto max-w-3xl px-6 md:px-8">

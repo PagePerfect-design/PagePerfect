@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { headers } from 'next/headers'
 import { Inter_Tight, Source_Serif_4, IBM_Plex_Mono } from 'next/font/google'
 import { ViewTransitions } from 'next-view-transitions'
 import Providers from '@/components/Providers'
@@ -25,7 +26,12 @@ export const metadata: Metadata = {
   themeColor: '#FDFCF8',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Read the nonce from middleware so Next.js applies it to its hydration scripts.
+  // Without this read, inline <script> tags lack the nonce and CSP blocks them.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const nonce = (await headers()).get('x-nonce') ?? ''
+
   return (
     <ViewTransitions>
       <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
