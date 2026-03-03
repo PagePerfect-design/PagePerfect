@@ -84,8 +84,19 @@ class GridSystem {
   /**
    * Calculate Typst page geometry string.
    * Returns a Typst #set page(...) snippet for the compile pipeline.
+   *
+   * @param {string} pageSize — page size key (e.g. 'letter', 'sixByNine')
+   * @param {string} preset — margin preset key (e.g. 'normal', 'wide')
+   * @param {string} template — grid type (e.g. 'academic', 'trade', 'basic')
+   * @param {string} [tplKey] — specific template key (e.g. 'cinema', 'paperback')
    */
-  calculateTypstMargins(pageSize, preset, template = 'academic') {
+  calculateTypstMargins(pageSize, preset, template = 'academic', tplKey = '') {
+    // Cinema manages its own page geometry entirely — industry-standard
+    // screenplay margins (left: 1.5in, right: 1in) that must not be overridden.
+    if (tplKey === 'cinema') {
+      return '';
+    }
+
     const base = this.baseline[template] || this.baseline.academic;
     const marginMultipliers = {
       minimal: 2, compact: 3, narrow: 4, normal: 5,

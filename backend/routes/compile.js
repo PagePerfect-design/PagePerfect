@@ -769,7 +769,7 @@ module.exports = function compileRoutes(ctx) {
 
     for (const size of validSizes) {
       if (!ALL_MARGINS.has(marginPreset)) marginPreset = 'normal';
-      const geo = ctx.gridSystem.calculateTypstMargins(size, marginPreset, templateType);
+      const geo = ctx.gridSystem.calculateTypstMargins(size, marginPreset, templateType, tplKey);
       const tmpBase = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-batch-'));
 
       try {
@@ -805,7 +805,8 @@ module.exports = function compileRoutes(ctx) {
         // Step B: Assemble main.typ
         const bodyContent = await fsp.readFile(bodyPath, 'utf8');
         const mainParts = [
-          '#let horizontalrule = line(start: (25%,0%), end: (75%,0%))',
+          '#let horizontalrule = { v(1.5em); align(center)[#text(size: 9pt, fill: luma(140))[\\* #h(1em) \\* #h(1em) \\*]]; v(1.5em) }',
+          '#show figure.where(kind: table): it => it.body',
           `#let pp-title = ${typstStr(safeTitle)}`,
           '#let pp-author = none',
           '#let pp-date = none',

@@ -12,53 +12,29 @@ describe('generateTypstEngineeringPreamble', () => {
     expect(result).toContain('Book Engineering System');
   });
 
-  test('academic produces justified text', () => {
-    const result = generateTypstEngineeringPreamble('academic');
-    expect(result).toContain('#set par(justify: true)');
-    expect(result).not.toContain('#set par(justify: false)');
+  // The Typst preamble deliberately does NOT emit justify or hyphenation
+  // rules. Every template already sets both explicitly, and the preamble
+  // comes after the template in assembly order — emitting them here would
+  // override the template's intentional choices (exhibit, cinema, verse, etc.)
+
+  test('does not emit justify rules (template is the authority)', () => {
+    for (const type of Object.keys(ENGINEERING_POLICIES)) {
+      const result = generateTypstEngineeringPreamble(type);
+      expect(result).not.toContain('#set par(justify:');
+    }
   });
 
-  test('academic produces hyphenated text', () => {
-    const result = generateTypstEngineeringPreamble('academic');
-    expect(result).toContain('#set text(hyphenate: true)');
+  test('does not emit hyphenation rules (template is the authority)', () => {
+    for (const type of Object.keys(ENGINEERING_POLICIES)) {
+      const result = generateTypstEngineeringPreamble(type);
+      expect(result).not.toContain('#set text(hyphenate:');
+    }
   });
 
-  test('editorial produces ragged right (justify: false)', () => {
-    const result = generateTypstEngineeringPreamble('editorial');
-    expect(result).toContain('#set par(justify: false)');
-  });
-
-  test('creative produces ragged right (justify: false)', () => {
-    const result = generateTypstEngineeringPreamble('creative');
-    expect(result).toContain('#set par(justify: false)');
-  });
-
-  test('trade produces justified text', () => {
-    const result = generateTypstEngineeringPreamble('trade');
-    expect(result).toContain('#set par(justify: true)');
-  });
-
-  test('high hyphenPenalty disables hyphenation', () => {
-    const result = generateTypstEngineeringPreamble('academic', { hyphenPenalty: 10000 });
-    expect(result).toContain('#set text(hyphenate: false)');
-  });
-
-  test('low hyphenPenalty enables hyphenation', () => {
-    const result = generateTypstEngineeringPreamble('academic', { hyphenPenalty: 50 });
-    expect(result).toContain('#set text(hyphenate: true)');
-  });
-
-  test('hyphenPenalty boundary at 5000', () => {
-    const below = generateTypstEngineeringPreamble('academic', { hyphenPenalty: 4999 });
-    const at = generateTypstEngineeringPreamble('academic', { hyphenPenalty: 5000 });
-    expect(below).toContain('#set text(hyphenate: true)');
-    expect(at).toContain('#set text(hyphenate: false)');
-  });
-
-  test('overrides take precedence over policy defaults', () => {
-    // academic defaults to justify: true, override to raggedRight
-    const result = generateTypstEngineeringPreamble('academic', { raggedRight: true });
-    expect(result).toContain('#set par(justify: false)');
+  test('overrides do not reintroduce justify/hyphenation', () => {
+    const result = generateTypstEngineeringPreamble('academic', { raggedRight: true, hyphenPenalty: 10000 });
+    expect(result).not.toContain('#set par(justify:');
+    expect(result).not.toContain('#set text(hyphenate:');
   });
 
   test('unknown template falls back to academic policy', () => {
@@ -67,11 +43,11 @@ describe('generateTypstEngineeringPreamble', () => {
     expect(result).toBe(academic);
   });
 
-  test('all template types produce valid output', () => {
+  test('all template types produce valid output (comment only)', () => {
     for (const type of Object.keys(ENGINEERING_POLICIES)) {
       const result = generateTypstEngineeringPreamble(type);
-      expect(result).toContain('#set par(justify:');
-      expect(result).toContain('#set text(hyphenate:');
+      expect(result).toContain('Book Engineering System');
+      expect(typeof result).toBe('string');
     }
   });
 
