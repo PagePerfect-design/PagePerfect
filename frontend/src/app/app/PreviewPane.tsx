@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { AlertTriangle, FileText, RotateCcw, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
+import { AlertTriangle, FileText, RotateCcw, ChevronLeft, ChevronRight, ChevronDown, BookOpen } from 'lucide-react'
 
-import type { Status, CompileError, CompileQuality, CompileDebug, ViewMode } from './editor-types'
+import type { Status, CompileError, CompileQuality, CompileDebug, ViewMode, ChangeReason } from './editor-types'
 import { translateError, suggestFix } from './editor-utils'
 import Tooltip from './Tooltip'
 
@@ -231,8 +231,10 @@ function PageViewer({
   const [currentPage, setCurrentPage] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Reset to page 1 when pages change
-  useEffect(() => { setCurrentPage(1) }, [svgPages])
+  // Clamp page position when page count changes (preserve position across recompiles)
+  useEffect(() => {
+    setCurrentPage(p => Math.min(p, svgPages.length || 1))
+  }, [svgPages])
 
   const goNext = useCallback(() => {
     const step = viewMode === 'spread' ? 2 : 1
@@ -367,6 +369,7 @@ export default function PreviewPane({
   isWatermarked,
   quality,
   svgPages,
+  changeReason,
   viewMode,
   onViewModeChange,
   onRetry,
@@ -379,6 +382,7 @@ export default function PreviewPane({
   isWatermarked: boolean
   quality?: CompileQuality
   svgPages: string[]
+  changeReason?: ChangeReason
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
   onRetry?: () => void
@@ -387,6 +391,15 @@ export default function PreviewPane({
   // Track if SVG pages are expected but still loading (PDF already rendered)
   const svgExpected = status === 'success' && (quality?.svgPageCount ?? 0) > 0 && svgPages.length === 0
   const hasQualityWarning = quality?.typographyGrade === 'C' || quality?.typographyGrade === 'D'
+  const isCompiling = status === 'compiling' || status === 'queued'
+  const hasPreview = !!(pdfUrl || useSvg)
+
+  // Overlay message based on what the user changed
+  const overlayLabel =
+    changeReason === 'template' ? 'Updating template\u2026' :
+    changeReason === 'layout' ? 'Updating layout\u2026' :
+    changeReason === 'settings' ? 'Updating\u2026' :
+    'Updating preview\u2026'
 
   return (
     <div className="absolute inset-0 flex flex-col">
@@ -432,62 +445,80 @@ export default function PreviewPane({
       <div className="relative flex-1">
         <div className="absolute inset-0 flex items-center justify-center px-4 pb-2 pt-4 sm:px-8">
           <div className="relative flex h-full w-full items-center justify-center">
-            <div
-              className="relative h-full w-full animate-fade-in-up"
-            >
-              {useSvg ? (
-                /* ── SVG page renderer (primary) ── */
-                <div className="relative h-full w-full">
-                  <PageViewer
-                    svgPages={svgPages}
-                    viewMode={viewMode}
-                  />
-                  {quality && <QualityBadge quality={quality} />}
-                </div>
-              ) : pdfUrl ? (
-                /* ── PDF iframe (shown while SVG loads, or as permanent fallback) ── */
+            {/* Stable wrapper — no animation, content layers handle their own transitions */}
+            <div className="relative h-full w-full">
+
+              {/* ── Layer 1: PDF iframe (base layer, always present when pdfUrl exists) ── */}
+              {pdfUrl && (
                 <div
-                  className="relative h-full w-full max-h-[780px] max-w-[560px] mx-auto overflow-hidden bg-white transition-shadow duration-500"
-                  style={{
-                    boxShadow: status === 'success'
-                      ? '0 2px 8px rgba(0,0,0,0.08), 0 12px 40px -8px rgba(0,0,0,0.12)'
-                      : '0 1px 4px rgba(0,0,0,0.06), 0 8px 30px -6px rgba(0,0,0,0.10)',
-                    border: '1px solid #e5e5e0',
-                  }}
+                  className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ease-pp ${
+                    useSvg ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                  }`}
                 >
-                  <iframe
-                    title="PDF preview"
-                    src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
-                    className="h-full w-full"
-                  />
-                  {status === 'success' && quality && <QualityBadge quality={quality} />}
-                  {/* SVG loading indicator — shows when SVG is expected but hasn't arrived */}
-                  {svgExpected && (
-                    <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center bg-[#111111]/5 py-1">
-                      <span className="font-mono text-[9px] text-[#111111]/40">Loading page viewer...</span>
-                    </div>
-                  )}
-                </div>
-              ) : loading ? (
-                <div className="h-full max-h-[780px] w-full max-w-[560px] mx-auto overflow-hidden bg-white" style={{ border: '1px solid #e5e5e0' }}>
-                  <BookSkeleton />
-                </div>
-              ) : status === 'error' && errors.length > 0 ? (
-                <div className="h-full max-h-[780px] w-full max-w-[560px] mx-auto overflow-hidden bg-white" style={{ border: '1px solid #e5e5e0' }}>
-                  <ErrorPanel errors={errors} debug={debug} onRetry={onRetry} />
-                </div>
-              ) : (
-                <div className="flex h-full max-h-[780px] w-full max-w-[560px] mx-auto items-center justify-center overflow-hidden bg-[#FDFCF8]" style={{ border: '1px solid #e5e5e0' }}>
-                  <div className="text-center">
-                    <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-[#e5e5e0]">
-                      <FileText className="h-5 w-5 text-[#111111]/40" />
-                    </div>
-                    <p className="font-mono text-[11px] text-[#111111]/50">Preview appears here</p>
-                    <p className="mt-1 font-mono text-[9px] text-[#111111]/35">
-                      Changes auto-compile after 3 seconds
-                    </p>
+                  <div
+                    className="relative h-full w-full max-h-[780px] max-w-[560px] mx-auto overflow-hidden bg-white transition-shadow duration-500"
+                    style={{
+                      boxShadow: status === 'success'
+                        ? '0 2px 8px rgba(0,0,0,0.08), 0 12px 40px -8px rgba(0,0,0,0.12)'
+                        : '0 1px 4px rgba(0,0,0,0.06), 0 8px 30px -6px rgba(0,0,0,0.10)',
+                      border: '1px solid #e5e5e0',
+                    }}
+                  >
+                    <iframe
+                      title="PDF preview"
+                      src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
+                      className="h-full w-full"
+                    />
+                    {status === 'success' && !useSvg && quality && <QualityBadge quality={quality} />}
+                    {/* SVG loading indicator — shows when SVG is expected but hasn't arrived */}
+                    {svgExpected && (
+                      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center bg-[#111111]/5 py-1">
+                        <span className="font-mono text-[9px] text-[#111111]/40">Loading page viewer...</span>
+                      </div>
+                    )}
                   </div>
                 </div>
+              )}
+
+              {/* ── Layer 2: SVG page renderer (fades in on top of PDF) ── */}
+              {svgPages.length > 0 && status === 'success' && (
+                <div className="absolute inset-0 animate-fade-in">
+                  <div className="relative h-full w-full">
+                    <PageViewer
+                      svgPages={svgPages}
+                      viewMode={viewMode}
+                    />
+                    {quality && <QualityBadge quality={quality} />}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Layer 3: Skeleton / Error / Empty state (shown when no preview exists) ── */}
+              {!hasPreview && (
+                <>
+                  {loading ? (
+                    <div className="h-full max-h-[780px] w-full max-w-[560px] mx-auto overflow-hidden bg-white" style={{ border: '1px solid #e5e5e0' }}>
+                      <BookSkeleton />
+                    </div>
+                  ) : status === 'error' && errors.length > 0 ? (
+                    <div className="h-full max-h-[780px] w-full max-w-[560px] mx-auto overflow-hidden bg-white" style={{ border: '1px solid #e5e5e0' }}>
+                      <ErrorPanel errors={errors} debug={debug} onRetry={onRetry} />
+                    </div>
+                  ) : (
+                    <div className="flex h-full max-h-[780px] w-full max-w-[560px] mx-auto items-center justify-center overflow-hidden bg-[#FDFCF8]" style={{ border: '1px solid #e5e5e0' }}>
+                      <div className="text-center">
+                        <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-[#e5e5e0]">
+                          <FileText className="h-5 w-5 text-[#111111]/40" />
+                        </div>
+                        <p className="font-mono text-[11px] text-[#111111]/50">Your preview will appear here</p>
+                        <p className="mt-2 font-mono text-[9px] text-[#111111]/35">
+                          Use the <span className="font-semibold text-[#111111]/50">Style</span> and <span className="font-semibold text-[#111111]/50">Layout</span> controls below to design your book
+                        </p>
+                        <ChevronDown className="mx-auto mt-3 h-3.5 w-3.5 text-[#111111]/25" />
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* ── Overlay banners (shared across SVG and iframe) ── */}
@@ -522,17 +553,19 @@ export default function PreviewPane({
                 </div>
               )}
 
-              {/* Compile-in-progress overlay */}
-                {(status === 'compiling' || status === 'queued') && pdfUrl && (
-                  <div
-                    className="absolute inset-0 z-10 flex items-center justify-center bg-[#FDFCF8]/60 backdrop-blur-[2px] animate-fade-in"
-                  >
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
-                      <span className="font-mono text-[11px] text-[#111111]/60">Typesetting...</span>
-                    </div>
+              {/* ── Compile-in-progress overlay — always rendered, visibility via CSS opacity ── */}
+              {hasPreview && (
+                <div
+                  className={`absolute inset-0 z-10 flex items-center justify-center bg-[#FDFCF8]/60 backdrop-blur-[2px] transition-opacity duration-300 ease-pp ${
+                    isCompiling ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
+                    <span className="font-mono text-[11px] text-[#111111]/60">{overlayLabel}</span>
                   </div>
-                )}
+                </div>
+              )}
             </div>
           </div>
         </div>
