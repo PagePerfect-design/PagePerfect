@@ -328,18 +328,19 @@ function generateTypstEngineeringPreamble(templateType, overrides = {}) {
   // to ensure consistent quality even if Typst's defaults change.
   commands.push('#set par(linebreaks: "optimized")');
 
-  // For categories that benefit from aggressive hyphenation, lower the
-  // hyphenation cost so Typst breaks words more readily — preventing the
-  // extreme inter-word spacing that plagues narrow justified columns.
+  // Typst's default hyphenation cost is 100%. Values below 100% make
+  // hyphenation MORE aggressive; values above 100% make it LESS aggressive.
+  // Previous values (10%, 40%, 70%) were all below default, causing excessive
+  // word breaks across all template categories.
   if (policy.hyphenPenalty !== undefined && policy.hyphenPenalty <= 50) {
-    // Academic, editorial, creative: prefer more hyphenation over bad spacing
-    commands.push('#set text(costs: (hyphenation: 10%))');
+    // Academic, editorial, creative: balanced — slightly above default
+    commands.push('#set text(costs: (hyphenation: 120%))');
   } else if (policy.hyphenPenalty !== undefined && policy.hyphenPenalty <= 100) {
-    // Trade (fiction): moderate hyphenation
-    commands.push('#set text(costs: (hyphenation: 40%))');
+    // Trade (fiction): readers find excessive hyphenation distracting
+    commands.push('#set text(costs: (hyphenation: 200%))');
   } else {
-    // Corporate, basic: conservative hyphenation but still prevent rivers
-    commands.push('#set text(costs: (hyphenation: 70%))');
+    // Corporate, basic: business docs should rarely hyphenate
+    commands.push('#set text(costs: (hyphenation: 300%))');
   }
 
   return commands.join('\n');
