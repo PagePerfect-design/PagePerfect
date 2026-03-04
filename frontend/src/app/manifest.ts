@@ -4,12 +4,17 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'PagePerfect',
     short_name: 'PagePerfect',
+    description: 'Professional typesetting in your browser. Transform Markdown into print-ready PDFs.',
+    start_url: '/app',
+    scope: '/',
+    id: '/app',
+    display: 'standalone',
+    theme_color: '#FDFCF8',
+    background_color: '#FDFCF8',
     icons: [
       { src: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
       { src: '/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' },
+      { src: '/android-chrome-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
-    theme_color: '#FDFCF8',
-    background_color: '#FDFCF8',
-    display: 'standalone',
   }
 }
