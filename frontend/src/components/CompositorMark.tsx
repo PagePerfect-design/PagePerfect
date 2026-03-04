@@ -15,12 +15,11 @@ export default function CompositorMark({
   color?: string
   className?: string
 }) {
-  const w = Math.round(size * 91 / 104)
   return (
     <Image
-      src="/pp-mark.png"
+      src="/android-chrome-192x192.png"
       alt="PagePerfect"
-      width={w}
+      width={size}
       height={size}
       className={className}
       priority
