@@ -48,7 +48,7 @@
 // ── SECTION HEADINGS — Newsroom Style ────────────────────────
 // H1: 3pt rule above + bold 24pt
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(20pt)
   line(length: 100%, stroke: 3pt)
   v(6pt)
@@ -58,7 +58,7 @@
 
 // H2: 0.5pt rule above + tracked uppercase 14pt
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(16pt)
   line(length: 100%, stroke: 0.5pt + rulegrey)
   v(4pt)
@@ -68,7 +68,7 @@
 
 // H3: Bold, no rules
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(10pt)
   text(size: 11pt, weight: "bold")[#it.body]
   v(4pt)

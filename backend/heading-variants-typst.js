@@ -9,12 +9,13 @@
  * Variants are Typst show rules injected via header-includes.
  * "classic" returns empty string because the template already contains defaults.
  *
- * IMPORTANT: Every heading show rule MUST reset `first-line-indent` and
- * `spacing` to prevent inheritance from the template's #set par(...).
+ * IMPORTANT: Every heading show rule MUST reset `first-line-indent`, `spacing`,
+ * and `justify` to prevent inheritance from the template's #set par(...).
  * Without this, templates with first-line-indent (chicago: 2em, symphony: 1.5em,
  * paperback: 1.5em, etc.) cause indented chapter numbers and titles,
- * and templates with spacing > 0 (exhibit: 0.2in, heirloom: 8pt, etc.)
- * add unwanted gaps between heading elements.
+ * templates with spacing > 0 (exhibit: 0.2in, heirloom: 8pt, etc.)
+ * add unwanted gaps between heading elements, and templates with justify: true
+ * cause catastrophic word-spacing in headings (titles stretched across the line).
  */
 
 'use strict';
@@ -31,7 +32,7 @@ const BOOK_MODERN = `
 // Clean, restrained, letterspaced. No ornament, no drama.
 
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   pagebreak(weak: true, to: "odd")
   v(40pt)
   text(size: 10pt, tracking: 1.5pt, fill: luma(140))[
@@ -43,21 +44,21 @@ const BOOK_MODERN = `
 }
 
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(22pt)
   text(size: 11pt, tracking: 0.8pt)[#upper[#it.body]]
   v(8pt)
 }
 
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(16pt)
   text(size: 11pt, fill: luma(140))[#it.body]
   v(6pt)
 }
 
 #show heading.where(level: 4): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(12pt)
   text(size: 10pt, style: "italic")[#it.body]
   v(4pt)
@@ -69,7 +70,7 @@ const BOOK_BOLD = `
 // Dramatic, oversized numbers, heavy rules, maximum presence.
 
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   pagebreak(weak: true, to: "odd")
   v(24pt)
   text(size: 96pt, weight: "bold", fill: luma(225))[
@@ -83,7 +84,7 @@ const BOOK_BOLD = `
 }
 
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(20pt)
   line(length: 100%, stroke: 1pt)
   v(6pt)
@@ -92,14 +93,14 @@ const BOOK_BOLD = `
 }
 
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(16pt)
   text(size: 11pt, weight: "bold")[#it.body]
   v(6pt)
 }
 
 #show heading.where(level: 4): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(12pt)
   text(size: 11pt, weight: "bold")[#it.body]
   v(4pt)
@@ -115,21 +116,21 @@ const ARTICLE_MODERN = `
 // Clean, restrained, letterspaced. Hairline rules, no drama.
 
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(22pt)
   text(size: 16pt, tracking: 0.6pt)[#it.body]
   v(10pt)
 }
 
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(16pt)
   text(size: 10pt, tracking: 1pt, fill: luma(140))[#upper[#it.body]]
   v(6pt)
 }
 
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(10pt)
   text(size: 11pt, style: "italic", fill: luma(140))[#it.body]
   v(4pt)
@@ -141,7 +142,7 @@ const ARTICLE_BOLD = `
 // Heavy rules, large type, maximum presence.
 
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(6pt)
   line(length: 100%, stroke: 3pt)
   v(8pt)
@@ -150,7 +151,7 @@ const ARTICLE_BOLD = `
 }
 
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(3pt)
   line(length: 100%, stroke: 0.5pt)
   v(6pt)
@@ -159,7 +160,7 @@ const ARTICLE_BOLD = `
 }
 
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(10pt)
   text(size: 11pt, weight: "bold")[#it.body]
   v(4pt)
@@ -174,7 +175,7 @@ const THESIS_MODERN = `
 // ── Heading Variant: Modern (Thesis — numbered sections preserved) ──
 
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(22pt)
   text(size: 16pt, tracking: 0.6pt)[
     #counter(heading).display() #h(0.5em) #it.body
@@ -183,7 +184,7 @@ const THESIS_MODERN = `
 }
 
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(16pt)
   text(size: 10pt, tracking: 1pt, fill: luma(140))[
     #upper[#counter(heading).display() #h(0.5em) #it.body]
@@ -192,7 +193,7 @@ const THESIS_MODERN = `
 }
 
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(10pt)
   text(size: 11pt, style: "italic", fill: luma(140))[
     #counter(heading).display() #h(0.5em) #it.body
@@ -205,7 +206,7 @@ const THESIS_BOLD = `
 // ── Heading Variant: Bold (Thesis — numbered sections preserved) ──
 
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(6pt)
   line(length: 100%, stroke: 3pt)
   v(8pt)
@@ -216,7 +217,7 @@ const THESIS_BOLD = `
 }
 
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(3pt)
   line(length: 100%, stroke: 0.5pt)
   v(6pt)
@@ -227,7 +228,7 @@ const THESIS_BOLD = `
 }
 
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(10pt)
   text(size: 11pt, weight: "bold")[
     #counter(heading).display() #h(0.5em) #it.body

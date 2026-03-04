@@ -60,7 +60,7 @@
 // ── CHAPTER HEADINGS — Ornamental Style ──────────────────────
 // Centered small-caps "CHAPTER N" in grey + oxblood title + thin rule
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   pagebreak(weak: true, to: "odd")
   v(50pt)
   align(center)[
@@ -77,7 +77,7 @@
 
 // Level 2: Left-aligned bold serif
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(24pt)
   text(size: 14pt, weight: "bold")[#it.body]
   v(12pt)
@@ -85,7 +85,7 @@
 
 // Level 3: Left-aligned italic
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(18pt)
   text(size: 12pt, style: "italic")[#it.body]
   v(8pt)
@@ -93,7 +93,7 @@
 
 // Level 4: Small caps
 #show heading.where(level: 4): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(14pt)
   text(size: 11pt)[#smallcaps[#it.body]]
   v(6pt)

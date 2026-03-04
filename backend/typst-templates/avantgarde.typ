@@ -40,7 +40,7 @@
 // ── CHAPTER HEADINGS — Deconstructed ─────────────────────────
 // Massive ghost number behind + uppercase bold title
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   pagebreak(weak: true, to: "odd")
   v(36pt)
   align(left)[
@@ -55,7 +55,7 @@
 
 // H2: Aggressive, uppercase
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(18pt)
   text(size: 14pt, weight: "bold", font: "DejaVu Sans")[#upper[#it.body]]
   v(6pt)
@@ -63,7 +63,7 @@
 
 // H3: Bold, normal case
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(12pt)
   text(size: 11pt, weight: "bold", font: "DejaVu Sans")[#it.body]
   v(4pt)

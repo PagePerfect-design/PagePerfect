@@ -38,7 +38,7 @@
 // ── CHAPTER HEADINGS — Centered, Delicate ────────────────────
 // Poem titles as chapter openings — centered, italic, thin rule
 #show heading.where(level: 1): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   pagebreak(weak: true, to: "odd")
   v(60pt)
   align(center)[
@@ -55,7 +55,7 @@
 
 // H2 = poem title within a section — centered italic
 #show heading.where(level: 2): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(30pt)
   align(center, text(size: 14pt, style: "italic")[#it.body])
   v(12pt)
@@ -63,7 +63,7 @@
 
 // H3 = subsection — centered small caps
 #show heading.where(level: 3): it => {
-  set par(first-line-indent: 0pt, spacing: 0pt)
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
   v(18pt)
   align(center, text(size: 11pt)[#smallcaps[#it.body]])
   v(8pt)
