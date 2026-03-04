@@ -46,10 +46,13 @@ function getDropCapPreamble(templateKey, options = {}) {
 
 #let _pp-drop-cap-pending = state("pp-drop-cap", false)
 
-// Signal that the next paragraph should get a drop cap
+// Signal that the next paragraph should get a drop cap.
+// IMPORTANT: The update MUST come AFTER it — Typst state is positional.
+// If the flag is set before the heading renders, paragraphs INSIDE the
+// heading (chapter label, title text) see true and get an unwanted drop cap.
 #show heading.where(level: 1): it => {
-  _pp-drop-cap-pending.update(true)
   it
+  _pp-drop-cap-pending.update(true)
 }
 
 // Apply drop cap to the first paragraph after a chapter heading
