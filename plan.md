@@ -1,252 +1,178 @@
-# Plan: Debug LaTeX File Generation
+# Plan: Eliminate Editor Flicker & Improve Discoverability
 
-## Root Cause Analysis
+## Persona Analysis
 
-All three hypotheses are confirmed:
+Ten users were consulted to identify the problems:
 
-### 1. No `.tex` file is ever written to disk
+| # | Persona | Key Pain Point |
+|---|---------|---------------|
+| 1 | **Sarah, 34, first-time author** | Flicker when changing templates makes her think the app is broken. She doesn't discover the floating HUD dock — it looks like a status bar, not a control panel. |
+| 2 | **Marcus, 42, academic (LaTeX-familiar)** | Template cycling with arrow keys causes a full white-flash between each, making comparison impossible. Expects old output to stay visible until the new one is ready. |
+| 3 | **Priya, 28, self-publishing author** | After uploading her manuscript, she doesn't know what to do next. The preview shows "Typesetting..." skeleton then flashes to PDF — feels unstable. |
+| 4 | **James, 55, design director (InDesign)** | Flash to white skeleton between every setting change is unacceptable. Adobe products show stale content with a progress indicator; he expects the same. |
+| 5 | **Lin, 24, graduate student** | "Setting" in the status dot means nothing. The flicker makes her unsure if her change actually applied. |
+| 6 | **David, 31, indie dev** | Rapid template cycling (arrow keys) causes compounding flicker with each abort/restart. Expects VS Code-style "stale content + background update" behavior. |
+| 7 | **Elena, 26, publisher's assistant** | Needs to compare 3-4 templates quickly. Each change destroys the preview, shows skeleton, waits, shows PDF. ~3s of visual chaos per template. |
+| 8 | **Robert, 68, retired professor** | Any flashing is alarming. He thinks he's causing errors. The skeleton scan line looks like a buffering video. |
+| 9 | **Aisha, 39, cookbook author** | Doesn't notice the floating HUD buttons at the bottom. Scrolls the ControlStrip looking for settings that are actually in the HUD. |
+| 10 | **Tom, 36, technical writer** | The status label "Setting" during compile is cryptic. The preview content shouldn't vanish during updates. |
 
-Pandoc with `-o output.pdf` generates LaTeX **in memory** and pipes it to LuaLaTeX via an internal stdin pipe. It never writes an intermediate `.tex` file. The only files written to the worker temp dir (`/tmp/pp-worker-XXXXXX/`) before Pandoc runs are:
+**Unanimous across all 10:** The preview should never flash to white/skeleton during setting changes. Keep old content visible with a subtle overlay until new content is ready.
 
-| File | Purpose |
+---
+
+## Root Cause of Flicker
+
+In `useCompileQueue.ts`, the `compile()` function (lines 133-140) immediately:
+
+```js
+setSvgPages([])            // line 137 — destroys SVG pages
+setPdfUrl(prev => { ... return null })  // line 139 — destroys PDF blob URL
+pdfBlobRef.current = null  // line 140 — destroys blob reference
+```
+
+This clears ALL preview content **before** the new compile starts. PreviewPane's conditional chain falls through to `BookSkeleton` (white page with scan line), causing the flash.
+
+The compile-in-progress overlay has this condition:
+```tsx
+(status === 'compiling' || status === 'queued') && pdfUrl
+```
+
+Since `pdfUrl` is now `null`, the overlay never renders. Result: **old content -> white skeleton -> new content** instead of **old content -> blurred overlay -> new content**.
+
+Secondary issue: `animate-fade-in-up` on the preview wrapper (PreviewPane line 436) re-triggers its 0.8s translateY+opacity animation every time content switches (SVG/PDF/skeleton/error), adding a slide-up to every flash.
+
+---
+
+## Changes
+
+### 1. Keep old preview visible during recompile (`useCompileQueue.ts`)
+
+Stop destroying preview content at compile start. The old PDF stays visible under the compiling overlay.
+
+In `compile()`:
+- **Remove** line 139 (`setPdfUrl(null)`) — keep old PDF URL alive
+- **Remove** line 140 (`pdfBlobRef.current = null`) — keep blob reference
+- **Keep** line 137 (`setSvgPages([])`) — clear stale SVG so we fall back to PDF iframe under overlay (SVG would show the wrong template)
+
+`handlePdfBlob` (line 99) already atomically swaps: `setPdfUrl(prev => { if (prev) URL.revokeObjectURL(prev); return url })`. The iframe reloads from the new in-memory blob URL instantly (no network round-trip).
+
+**Error handling:** On error paths, add `setPdfUrl(prev => { if (prev) URL.revokeObjectURL(prev); return null })` so ErrorPanel can render. Errors are rare and the user needs to see them.
+
+Add a `changeReason` state (`'template' | 'layout' | 'text' | 'settings' | null`) that captures what triggered the compile, for use in the overlay message.
+
+### 2. Remove `animate-fade-in-up` from preview wrapper (`PreviewPane.tsx`)
+
+Line 436: `className="relative h-full w-full animate-fade-in-up"` — the 0.8s translateY animation re-fires on every content switch. Replace with a stable opacity transition:
+
+```tsx
+className="relative h-full w-full"
+```
+
+No motion on the wrapper. Individual content layers handle their own transitions.
+
+### 3. Always-render compiling overlay with CSS opacity (`PreviewPane.tsx`)
+
+Currently the overlay conditionally mounts/unmounts, causing a pop. Instead, always render it (when `pdfUrl` exists) and control visibility via CSS `opacity` + `transition`:
+
+```tsx
+{pdfUrl && (
+  <div
+    className={`absolute inset-0 z-10 flex items-center justify-center
+      bg-[#FDFCF8]/60 backdrop-blur-[2px]
+      transition-opacity duration-300 ease-pp
+      ${(status === 'compiling' || status === 'queued')
+        ? 'opacity-100'
+        : 'opacity-0 pointer-events-none'
+      }`}
+  >
+    <div className="flex flex-col items-center gap-3">
+      <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
+      <span className="font-mono text-[11px] text-[#111111]/60">
+        {changeReason === 'template' ? 'Updating template...'
+         : changeReason === 'layout' ? 'Updating layout...'
+         : 'Updating preview...'}
+      </span>
+    </div>
+  </div>
+)}
+```
+
+Smooth 300ms fade-in when compile starts. Smooth 300ms fade-out when it finishes. No jarring pop.
+
+### 4. Smooth SVG page arrival (`PreviewPane.tsx`)
+
+When SVG pages arrive after the PDF is already showing, the switch is abrupt. Fix by rendering BOTH layers simultaneously — PDF as base, SVG fading in on top:
+
+```tsx
+{/* PDF iframe — always present as base layer when pdfUrl exists */}
+{pdfUrl && (
+  <div className={`absolute inset-0 ... ${useSvg ? 'opacity-0' : 'opacity-100'} transition-opacity duration-500`}>
+    <iframe ... />
+  </div>
+)}
+
+{/* SVG renderer — fades in on top when available */}
+{svgPages.length > 0 && status === 'success' && (
+  <div className="absolute inset-0 ... transition-opacity duration-500 opacity-100"
+    style={{ animation: 'fadeIn 0.4s ease-pp' }}>
+    <PageViewer ... />
+  </div>
+)}
+```
+
+### 5. Clearer status labels (`FloatingHUD.tsx`)
+
+Replace cryptic labels:
+- "Setting" -> "Updating..."
+- "Queued" -> "Queued..."
+- "Issue" -> "Error"
+- Tooltip detail for compiling: "Your manuscript is being typeset" (not "Typst is processing...")
+
+### 6. First-use hint in empty preview (`PreviewPane.tsx`)
+
+The empty state shows "Preview appears here" which is passive. Replace with actionable guidance:
+- Primary: "Your preview will appear here"
+- Secondary: "Use the Style and Layout controls below to customize your book"
+- Add a subtle downward chevron/arrow hinting at the HUD dock
+
+### 7. Preserve page position across recompiles (`PreviewPane.tsx` PageViewer)
+
+Currently resets to page 1 every time SVG pages change. Instead, clamp to bounds:
+
+```tsx
+useEffect(() => {
+  setCurrentPage(p => Math.min(p, svgPages.length || 1))
+}, [svgPages])
+```
+
+User stays on page 3 after a template change (if the new output has >= 3 pages).
+
+---
+
+## Files Modified
+
+| File | Changes |
 |------|---------|
-| `input.md` | Processed manuscript markdown |
-| `template.latex` | Patched Pandoc template (copy of selected template with font substitutions) |
-| `header.tex` | Assembled preamble (geometry, extensions, watermark, engineering policies) |
+| `useCompileQueue.ts` | Stop clearing pdfUrl/blob at compile start; clear pdfUrl on error paths; add `changeReason` state |
+| `PreviewPane.tsx` | Remove animate-fade-in-up; always-render overlay with opacity transition; dual-layer SVG/PDF rendering; better empty state; show change reason; preserve page position |
+| `FloatingHUD.tsx` | Clearer status labels and tooltip text |
 
-LuaLaTeX **does** create `.log` and `.aux` files during compilation, but...
+## Files NOT Modified
 
-### 2. The temp directory is destroyed immediately on failure
+- `CompileShell.tsx` — passes state down correctly already (may need to pass `changeReason` through)
+- `ControlStrip.tsx` — no changes for this fix
+- `globals.css` — transitions use Tailwind utilities
+- `tailwind.config.ts` — existing `ease-pp` timing function and `duration-300` sufficient
 
-At `compile-worker.js:541-542`:
-```javascript
-if (!result.ok) {
-    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-```
+## Verification
 
-This runs **before** the error response is even constructed. The `.log`, `.aux`, and any other LuaLaTeX output files exist briefly during compilation but are destroyed before anyone can inspect them.
-
-### 3. The "Engine log" in the UI is truncated stderr, not a real log file
-
-At `compile-worker.js:551`:
-```javascript
-detail: sanitizeStderr(stderr.split('\n').slice(-15).join('\n')),
-```
-
-Only the **last 15 lines** of stderr (with server paths stripped) are returned. The full LuaLaTeX log (often hundreds of lines with critical context) is discarded. This truncated string is sent to the frontend via the `detail` field, prefixed with `__detail__` in `useCompileQueue.ts`, and rendered in a collapsible "Engine log" `<details>` section in `PreviewPane.tsx`.
-
----
-
-## The Fix
-
-### Phase 1: Capture debug artifacts before temp dir cleanup (Backend)
-
-**File:** `backend/compile-worker.js`
-
-**Change A** — After `result.ok` check fails (line 541), before `fs.rmSync`, capture everything useful:
-
-1. List all files in `tmpBase` (diagnostic — shows what compilation stage was reached)
-2. Read any `.log` file (LuaLaTeX writes `input.log` or similar — try all `*.log` names)
-3. Read `header.tex` (the assembled preamble — already on disk)
-4. Generate the `.tex` source by re-running Pandoc with `-o output.tex` instead of `-o output.pdf` (fast — no LuaLaTeX, just template rendering, 10s timeout). This shows exactly what LaTeX Pandoc would have sent to the engine.
-5. **Then** run `fs.rmSync` to clean up as before.
-
-**Change B** — Increase stderr capture from 15 lines to 80 lines (line 551).
-
-**Change C** — Include debug artifacts in the error return object:
-```javascript
-return {
-  success: false, error: result.error || 'compile_failed',
-  message: fallbackMessage, warnings,
-  errors: structuredErrors,
-  detail: sanitizeStderr(stderr.split('\n').slice(-80).join('\n')),
-  debug: {
-    texSource: <generated .tex content, capped at 100KB>,
-    latexLog: <full .log file content, sanitized>,
-    headerTex: <the preamble that was injected>,
-    filesInDir: <string[] of filenames that existed>,
-  },
-};
-```
-
-### Phase 2: Pass debug data through the status endpoint (Backend)
-
-**File:** `backend/routes/compile.js` (or `backend/index.js` — wherever job results are stored/returned)
-
-The BullMQ job result is stored in memory and returned via `GET /api/compile/status/:jobId`. The `debug` field needs to flow through:
-- Store it in the in-memory job result
-- Return it in the status response
-- Also handle the sync fallback path (direct `processCompileJob` call)
-
-### Phase 3: Display debug artifacts in the frontend error panel
-
-**File:** `frontend/src/app/app/PreviewPane.tsx`
-
-Extend the existing "Engine log" `<details>` section to also show:
-- **"Generated LaTeX"** — collapsible `<pre>` block showing the `.tex` source (if available)
-- **"Full Engine Log"** — the complete `.log` file (if available), replacing the truncated stderr
-- **"Compile Directory"** — list of files that existed (diagnostic)
-- **"Preamble (header.tex)"** — the injected preamble
-
-These go inside the existing error panel, as additional collapsible sections below the current "Engine log".
-
-**File:** `frontend/src/app/app/useCompileQueue.ts`
-
-Pass the `debug` field through from the status response to the error state.
-
-**File:** `frontend/src/app/app/editor-types.ts`
-
-Add a `CompileDebug` type:
-```typescript
-export type CompileDebug = {
-  texSource?: string | null
-  latexLog?: string | null
-  headerTex?: string | null
-  filesInDir?: string[] | null
-} | null
-```
-
----
-
-## Specific Code Changes
-
-### 1. `backend/compile-worker.js` — Lines 541-552
-
-**Before (current):**
-```javascript
-if (!result.ok) {
-    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-    const stderr = result.stderr || '';
-    const { errors: structuredErrors, fallbackMessage } = errorTranslator.translateCompileFailure(
-      stderr, { safeMode, errorCode: result.error }
-    );
-    return {
-      success: false, error: result.error || 'compile_failed',
-      message: fallbackMessage, warnings,
-      errors: structuredErrors,
-      detail: sanitizeStderr(stderr.split('\n').slice(-15).join('\n')),
-    };
-}
-```
-
-**After (new):**
-```javascript
-if (!result.ok) {
-    // ── Capture debug artifacts before cleanup ──
-    let debugTexSource = null;
-    let debugLatexLog = null;
-    let debugHeaderTex = null;
-    let debugFiles = [];
-
-    try {
-      debugFiles = fs.readdirSync(tmpBase);
-    } catch {}
-
-    // Read LuaLaTeX .log file (name varies by engine invocation)
-    for (const f of debugFiles) {
-      if (f.endsWith('.log')) {
-        try {
-          const raw = fs.readFileSync(path.join(tmpBase, f), 'utf8');
-          debugLatexLog = sanitizeStderr(raw).substring(0, 100000);
-        } catch {}
-        break;
-      }
-    }
-
-    // Read the preamble we injected
-    const headerPath = path.join(tmpBase, 'header.tex');
-    if (fs.existsSync(headerPath)) {
-      try { debugHeaderTex = fs.readFileSync(headerPath, 'utf8'); } catch {}
-    }
-
-    // Generate .tex source (fast: no LuaLaTeX, just Pandoc template rendering)
-    try {
-      const texPath = path.join(tmpBase, 'debug-output.tex');
-      const texArgs = args.map(a => a === pdfPath ? texPath : a);
-      const texProc = spawn('pandoc', texArgs, { cwd: tmpBase, env: SAFE_SPAWN_ENV });
-      await new Promise((resolve) => {
-        const t = setTimeout(() => { try { texProc.kill('SIGKILL'); } catch {} resolve(); }, 10000);
-        texProc.on('close', () => { clearTimeout(t); resolve(); });
-        texProc.on('error', () => { clearTimeout(t); resolve(); });
-      });
-      if (fs.existsSync(texPath)) {
-        debugTexSource = fs.readFileSync(texPath, 'utf8').substring(0, 100000);
-      }
-    } catch {}
-
-    // NOW clean up
-    try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
-
-    const stderr = result.stderr || '';
-    const { errors: structuredErrors, fallbackMessage } = errorTranslator.translateCompileFailure(
-      stderr, { safeMode, errorCode: result.error }
-    );
-    return {
-      success: false, error: result.error || 'compile_failed',
-      message: fallbackMessage, warnings,
-      errors: structuredErrors,
-      detail: sanitizeStderr(stderr.split('\n').slice(-80).join('\n')),
-      debug: {
-        texSource: debugTexSource,
-        latexLog: debugLatexLog,
-        headerTex: debugHeaderTex,
-        filesInDir: debugFiles,
-      },
-    };
-}
-```
-
-### 2. `backend/routes/compile.js` — Status endpoint
-
-Ensure the `debug` field from the job result is included in the status response. Find the status handler (likely `GET /api/compile/status/:jobId`) and add `debug` to the response body when the job has failed.
-
-### 3. `frontend/src/app/app/editor-types.ts`
-
-Add `CompileDebug` type. Add `debug` field to whichever type holds compile results.
-
-### 4. `frontend/src/app/app/useCompileQueue.ts`
-
-When a job fails and the status response includes `debug`, pass it through to the component state alongside the existing `errors` array.
-
-### 5. `frontend/src/app/app/PreviewPane.tsx`
-
-In the `ErrorPanel` component, after the existing "Engine log" `<details>`, add new collapsible sections:
-
-```jsx
-{debug?.texSource && (
-  <details className="mt-2">
-    <summary className="...">Generated LaTeX source</summary>
-    <pre className="...">{debug.texSource}</pre>
-  </details>
-)}
-{debug?.latexLog && (
-  <details className="mt-2">
-    <summary className="...">Full engine log</summary>
-    <pre className="...">{debug.latexLog}</pre>
-  </details>
-)}
-{debug?.headerTex && (
-  <details className="mt-2">
-    <summary className="...">Injected preamble (header.tex)</summary>
-    <pre className="...">{debug.headerTex}</pre>
-  </details>
-)}
-{debug?.filesInDir && debug.filesInDir.length > 0 && (
-  <details className="mt-2">
-    <summary className="...">Files in compile directory</summary>
-    <pre className="...">{debug.filesInDir.join('\n')}</pre>
-  </details>
-)}
-```
-
----
-
-## Tasks for You (the user) After Implementation
-
-1. **Test locally:** Start backend + frontend, trigger a compile failure (e.g., invalid markdown with unmatched `$`), and verify the error panel now shows the debug sections.
-
-2. **Inspect the `.tex` source:** With the generated LaTeX visible, you can identify the exact issue — missing packages, broken preamble, font problems, etc.
-
-3. **Check Docker:** The `.tex` generation step runs Pandoc a second time (without LuaLaTeX). Ensure Pandoc is available in the Docker container (it is — it's the primary tool).
-
-4. **Optional: Gate behind debug flag.** The debug artifacts can be large (up to 100KB each). If you want to keep production responses lean, we can gate behind a `debug=true` query parameter. Let me know.
+- Change template via HUD -> old preview stays visible with blur overlay, new preview fades in
+- Rapid arrow-key template cycling -> overlay persists, no white flashes, last compile wins
+- Change page size -> same smooth behavior
+- Change margins -> same smooth behavior
+- Compile error -> overlay fades out, ErrorPanel shows (pdfUrl cleared on error)
+- Text edit -> 3s debounce, overlay shows when compile starts
+- SVG arrival -> fades in smoothly over PDF iframe
+- Page position preserved after template change
+- Empty state shows actionable guidance pointing to HUD dock
