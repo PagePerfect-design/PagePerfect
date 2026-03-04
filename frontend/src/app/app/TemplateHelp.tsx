@@ -52,7 +52,7 @@ export default function TemplateHelp() {
         onMouseLeave={() => setOpen(false)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(255,255,255,0.08)] text-text-ghost bg-surface-subtle hover:bg-surface-overlay hover:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent"
+        className="inline-flex h-6 w-6 items-center justify-center border border-[#111111]/15 text-[#111111]/50 bg-[#111111]/[0.03] hover:bg-[#111111]/[0.06] hover:text-[#111111]/70 focus:outline-none focus:ring-2 focus:ring-[#FF3333]/30"
         title="About templates"
       >
         <span className="font-mono text-xs">?</span>
@@ -64,14 +64,14 @@ export default function TemplateHelp() {
           role="dialog"
           id={tipId}
           aria-label="Template guidance"
-          className="fixed z-[9999] w-[22rem] rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface-overlay p-4 shadow-elevated"
+          className="fixed z-[9999] w-[22rem] border border-[#111111]/10 bg-white p-4 shadow-elevated"
           style={{
             top: position.top,
             left: position.left - 176, // Half of width (22rem = 352px)
           }}
         >
-          <div className="font-semibold text-text-primary text-sm">Choose a design template</div>
-          <ul className="mt-2 space-y-2 text-sm leading-6 text-text-secondary">
+          <div className="font-display font-semibold text-[#111111] text-sm">Choose a design template</div>
+          <ul className="mt-2 space-y-2 text-sm leading-6 text-[#111111]/60">
             <li>
               <span className="font-semibold">🎼 Symphony Layout</span> — Classic academic design with harmonious typography. Perfect for scholarly papers, dissertations, and academic publications.
             </li>
@@ -91,7 +91,7 @@ export default function TemplateHelp() {
               <span className="font-semibold">📚 Legacy Templates</span> — Classic Academic (Chicago) and Modern Trade Paperback for existing users.
             </li>
           </ul>
-          <p className="mt-2 text-xs text-text-ghost">
+          <p className="mt-2 text-xs text-[#111111]/55">
             You can switch templates any time — the PDF recompiles automatically.
           </p>
         </div>,

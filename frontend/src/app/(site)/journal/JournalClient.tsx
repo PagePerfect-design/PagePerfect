@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useState, useMemo, useCallback } from 'react'
+import { Reveal } from '@/components/Reveal'
 import { ARTICLES } from './articles'
 import type { Article } from './articles'
 
@@ -74,7 +75,7 @@ export default function JournalClient() {
                     <button
                       key={cat}
                       onClick={() => setCategory(cat)}
-                      className={`inline-flex shrink-0 items-center gap-1.5 border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors duration-75 ${
+                      className={`inline-flex shrink-0 items-center gap-1.5 border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors duration-200 ease-pp ${
                         isActive
                           ? 'journal-chip-active'
                           : 'border-[#111111]/10 text-[#333333]'
@@ -100,7 +101,7 @@ export default function JournalClient() {
                       <button
                         key={cat}
                         onClick={() => setCategory(cat)}
-                        className={`flex w-full items-center justify-between py-1 text-left transition-colors duration-75 ${
+                        className={`flex w-full items-center justify-between py-1 text-left transition-colors duration-200 ease-pp ${
                           isActive
                             ? 'journal-category-active'
                             : ''
@@ -121,7 +122,7 @@ export default function JournalClient() {
 
                 <div className="mt-8 border-t border-[#e5e5e0] pt-6">
                   <SectionLabel>About</SectionLabel>
-                  <p className="font-body text-[0.8125rem] leading-relaxed text-[#555555]">
+                  <p className="font-body text-[0.8125rem] leading-relaxed text-[#4a4a4a]">
                     Written by an editorial team trained in the International Typographic Style
                     and direct-response advertising. Form follows function — and the function is to convert.
                   </p>
@@ -166,7 +167,7 @@ export default function JournalClient() {
                 <div className="mt-8 flex justify-center">
                   <button
                     onClick={() => setVisiblePages((p) => p + 1)}
-                    className="inline-flex h-11 items-center justify-center border border-[#111111]/20 px-8 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-75 hover:border-[#111111] hover:text-[#111111]"
+                    className="inline-flex h-11 items-center justify-center border border-[#111111]/20 px-8 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-200 ease-pp hover:border-[#111111] hover:text-[#111111]"
                   >
                     Show {Math.min(remaining, PAGE_SIZE)} more of {remaining} remaining
                   </button>
@@ -180,26 +181,28 @@ export default function JournalClient() {
       {/* CTA */}
       <section className="border-t-2 border-[#111111] py-16">
         <div className="mx-auto max-w-7xl px-6 md:px-8">
+          <Reveal>
           <p className="font-mono text-[0.625rem] uppercase tracking-[0.15em] text-[#111111]/50 mb-4">
             Put theory into practice
           </p>
           <h2 className="font-display text-h2 font-extrabold tracking-tighter text-[#111111]" style={{ lineHeight: 0.95 }}>
             Typeset your manuscript
           </h2>
-          <p className="mt-4 max-w-lg font-body text-base text-[#555555]">
+          </Reveal>
+          <p className="mt-4 max-w-lg font-body text-base text-[#4a4a4a]">
             Every principle in these essays is built into PagePerfect — baseline grids,
             golden-ratio scales, and 12 templates engineered for readability and conversion.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <Link
               href="/app"
-              className="inline-flex h-11 items-center justify-center border border-[#FF3333] bg-[#FF3333] px-8 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222] hover:border-[#E52222]"
+              className="inline-flex h-11 items-center justify-center border border-[#FF3333] bg-[#FF3333] px-8 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222] hover:border-[#E52222]"
             >
               Open the Editor &rarr;
             </Link>
             <Link
               href="/docs"
-              className="inline-flex h-11 items-center justify-center border border-[#111111]/20 px-8 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-75 hover:border-[#111111] hover:text-[#111111]"
+              className="inline-flex h-11 items-center justify-center border border-[#111111]/20 px-8 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-200 ease-pp hover:border-[#111111] hover:text-[#111111]"
             >
               Read Docs
             </Link>

@@ -53,6 +53,15 @@ const RESULT_REDIS_TTL = 1800; // 30 minutes (up from 10 — results now persist
 const resultStore = createResultStore();
 const RESULTS_DIR = resultStore.type === 'local' ? resultStore.dir : '__s3__';
 
+// ── Compile Generation Counter ──
+// Prevents a known BullMQ race condition with deterministic preview IDs:
+// When user switches templates rapidly, old compile results can overwrite
+// new ones because the on('completed') handler fires after the new compile
+// is already enqueued. Each enqueue increments the generation for that
+// job ID; the completed/failed handlers only store results if the generation
+// matches (meaning this is still the most recent compile for that ID).
+const jobGenerations = new Map();
+
 /**
  * Persist a compiled PDF via the result store abstraction.
  * Returns the new path/reference, or null on failure.
@@ -69,7 +78,9 @@ function storeJobResult(id, value) {
     const redisValue = { ...value };
     // Keep pdfPath in Redis so we can check if the file still exists on recovery
     delete redisValue.tmpBase; // tmpBase is local-only
-    redis.setex(`pp:result:${id}`, RESULT_REDIS_TTL, JSON.stringify(redisValue)).catch(() => {});
+    redis.setex(`pp:result:${id}`, RESULT_REDIS_TTL, JSON.stringify(redisValue)).catch((err) => {
+      log.warn({ module: 'result-store', jobId: id, err: err.message }, 'Failed to persist result to Redis');
+    });
   }
 }
 
@@ -91,7 +102,9 @@ async function getJobResult(id) {
         return parsed;
       } else {
         // File was cleaned up — result is unservable, clean up Redis
-        redis.del(`pp:result:${id}`).catch(() => {});
+        redis.del(`pp:result:${id}`).catch((err) => {
+          log.warn({ module: 'result-store', jobId: id, err: err.message }, 'Failed to delete stale result from Redis');
+        });
         return null;
       }
     }
@@ -128,10 +141,14 @@ const resultCleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [id, res] of jobResults) {
     if (res._storedAt && now - res._storedAt > RESULT_TTL_MS) {
-      if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch(() => {});
+      if (res.tmpBase) fsp.rm(res.tmpBase, { recursive: true, force: true }).catch((err) => {
+        log.warn({ module: 'result-cleanup', jobId: id, err: err.message }, 'Failed to clean temp dir');
+      });
       // Clean persisted PDF via result store
       if (res.pdfPath && resultStore.owns(res.pdfPath)) {
-        resultStore.remove(res.pdfPath).catch(() => {});
+        resultStore.remove(res.pdfPath).catch((err) => {
+          log.warn({ module: 'result-cleanup', jobId: id, err: err.message }, 'Failed to remove persisted PDF');
+        });
       }
       deleteJobResult(id);
     }
@@ -168,9 +185,9 @@ async function sweepOrphanedTmpDirs() {
         }
       } catch { /* cleaned by another process */ }
     }
-    if (swept > 0) console.log(`[disk-sweep] Removed ${swept} orphaned temp dir(s)`);
+    if (swept > 0) log.info({ module: 'disk-sweep', swept }, 'Removed orphaned temp dirs');
   } catch (err) {
-    console.error('[disk-sweep] Error:', err.message);
+    log.error({ module: 'disk-sweep', err: err.message }, 'Sweep error');
   }
 }
 
@@ -257,7 +274,7 @@ async function checkDiskSpace() {
     if (parts.length >= 5) {
       const usagePercent = parseInt(parts[4]) / 100;
       if (usagePercent >= DISK_SPACE_EMERGENCY_THRESHOLD) {
-        console.warn(`[disk-sentinel] /tmp usage at ${(usagePercent * 100).toFixed(0)}% — triggering emergency sweep`);
+        log.warn({ module: 'disk-sentinel', usagePercent: (usagePercent * 100).toFixed(0) }, 'High /tmp usage — triggering emergency sweep');
         // Emergency: sweep ALL temp dirs regardless of age
         const entries = await fsp.readdir(tmpDir);
         let swept = 0;
@@ -297,7 +314,7 @@ async function checkDiskSpace() {
             }
           }
         } catch { /* best-effort */ }
-        if (swept > 0) console.warn(`[disk-sentinel] Emergency swept ${swept} temp dir(s)`);
+        if (swept > 0) log.warn({ module: 'disk-sentinel', swept }, 'Emergency swept temp dirs');
       }
     }
   } catch (err) {
@@ -353,9 +370,9 @@ async function sweepExpiredManuscripts() {
         if (del.ok) purged++;
       } catch { /* best-effort */ }
     }
-    if (purged > 0) console.log(`[manuscript-sweep] Purged ${purged} expired manuscript(s)`);
+    if (purged > 0) log.info({ module: 'manuscript-sweep', purged }, 'Purged expired manuscripts');
   } catch (err) {
-    console.error('[manuscript-sweep] Error:', err.message);
+    log.error({ module: 'manuscript-sweep', err: err.message }, 'Sweep error');
   }
 }
 
@@ -383,17 +400,29 @@ if (redis) {
         concurrency: Number(process.env.COMPILE_CONCURRENCY || 3),
         lockDuration: 60_000,
         stalledInterval: 30_000,
-        maxStalledCount: 0,
+        maxStalledCount: 1,  // Allow 1 stall recovery before moving to 'failed' — prevents permanent deadlock
         removeOnComplete: { count: 200, age: 3600 },       // keep last 200 or 1 hour, whichever is smaller
         removeOnFail: { count: 1000, age: 24 * 3600 },   // keep last 1000 or 24 hours — more forensic retention for failures
       });
 
       compileWorker.on('completed', async (job, result) => {
+        // Guard: discard stale results from superseded compiles.
+        // When user switches templates rapidly, old compiles finish after new ones are enqueued.
+        // Without this check, the old result overwrites the new compile's pending state.
+        const jobGen = job.data._compileGen;
+        const currentGen = jobGenerations.get(job.id);
+        if (jobGen !== undefined && currentGen !== undefined && jobGen < currentGen) {
+          log.info({ module: 'queue', jobId: job.id, jobGen, currentGen }, 'Discarding stale compile result (superseded by newer compile)');
+          if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
+          return;
+        }
+
         // Persist PDF to results store so it survives temp dir cleanup and restarts
         if (result.success && result.pdfPath) {
           const persistedPath = await persistPdf(job.id, result.pdfPath);
           if (persistedPath) {
-            // Clean up the compile temp dir immediately — PDF is safe in results store
+            // SVG pages are now stored in-memory (result.svgPages) — no file copy needed.
+            // Clean up the compile temp dir immediately — PDF is safe in results store.
             if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
             result.pdfPath = persistedPath;
             delete result.tmpBase;
@@ -443,15 +472,25 @@ if (redis) {
       });
 
       compileWorker.on('failed', (job, err) => {
+        // Guard: discard stale failures from superseded compiles
+        const jobGen = job.data._compileGen;
+        const currentGen = jobGenerations.get(job.id);
+        if (jobGen !== undefined && currentGen !== undefined && jobGen < currentGen) {
+          log.info({ module: 'queue', jobId: job.id, jobGen, currentGen }, 'Discarding stale compile failure (superseded)');
+          return;
+        }
+
         const failResult = {
           success: false,
           error: 'worker_error',
           message: err.message || 'Compilation failed unexpectedly.',
-          debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: `BullMQ failed event: ${err.message}`, stack: err.stack?.substring(0, 2000) || null },
+          errors: [{ message: err.message || 'Worker error', fix: 'Try again or contact support.', severity: 'error', category: 'server', isServerError: true }],
+          warnings: [],
+          detail: err.stack?.substring(0, 2000) || null,
+          debug: { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: `BullMQ failed event: ${err.message}` },
           debugMeta: {
             locale: process.env.LANG || 'C.UTF-8',
             pandocVersion: PANDOC_VERSION,
-            lualatexVersion: LUALATEX_VERSION,
             nodeVersion: process.version,
             workerPid: process.pid,
             containerId: os.hostname(),
@@ -464,6 +503,14 @@ if (redis) {
           err: err.message, stack: err.stack?.substring(0, 500),
           containerId: os.hostname(),
         }, 'Job failed (BullMQ error)');
+      });
+
+      compileWorker.on('error', (err) => {
+        log.error({ module: 'queue', err: err.message, stack: err.stack?.substring(0, 500) }, 'Worker error');
+      });
+
+      compileWorker.on('stalled', (jobId) => {
+        log.warn({ module: 'queue', jobId }, 'Job stalled (lock expired) — will retry once then fail');
       });
     } else {
       log.info({ module: 'queue' }, 'WORKER_ONLY=true — embedded worker disabled, use standalone worker.js');
@@ -481,7 +528,7 @@ if (redis) {
 
 // ── Locale runtime assertion ──
 // Verify the configured locale exists in the OS. A missing locale will cause
-// LuaLaTeX's luaotfload to fail with "Unable to read environment locale".
+// fontconfig to fail with locale errors that break font resolution.
 // This catches base image changes that could silently reintroduce the bug.
 try {
   const localeList = execSync('locale -a 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
@@ -492,7 +539,7 @@ try {
   if (localeFound) {
     log.info({ module: 'startup', locale: process.env.LANG || 'C.UTF-8' }, 'Locale verified');
   } else {
-    log.fatal({ module: 'startup', locale: process.env.LANG || 'C.UTF-8', available: available.filter(l => l).slice(0, 20) }, 'CONFIGURED LOCALE NOT FOUND — LuaLaTeX will fail. Set LANG to an available locale (e.g. C.UTF-8).');
+    log.fatal({ module: 'startup', locale: process.env.LANG || 'C.UTF-8', available: available.filter(l => l).slice(0, 20) }, 'CONFIGURED LOCALE NOT FOUND — fontconfig may fail. Set LANG to an available locale (e.g. C.UTF-8).');
   }
 } catch (err) {
   log.warn({ module: 'startup', err: err.message }, 'Locale check skipped (locale command not available)');
@@ -500,23 +547,15 @@ try {
 
 // ── Pandoc version detection ──
 let PANDOC_VERSION = 'unknown';
-let LUALATEX_VERSION = 'unknown';
 try {
   const versionOutput = execSync('pandoc --version', { encoding: 'utf8', timeout: 5000 });
   const match = versionOutput.match(/pandoc(?:\.exe)?\s+(\d+)\.(\d+)(?:\.(\d+))?/);
   if (match) {
     PANDOC_VERSION = `${match[1]}.${match[2]}${match[3] ? '.' + match[3] : ''}`;
-    log.info({ module: 'startup', pandocVersion: PANDOC_VERSION, pdfEngine: 'lualatex' }, 'Pandoc detected');
+    log.info({ module: 'startup', pandocVersion: PANDOC_VERSION, pdfEngine: 'typst' }, 'Pandoc detected');
   }
 } catch {
   log.warn({ module: 'startup' }, 'Could not detect Pandoc version');
-}
-try {
-  const lualatexOutput = execSync('lualatex --version 2>/dev/null | head -1', { encoding: 'utf8', timeout: 5000 });
-  const luaMatch = lualatexOutput.match(/Version\s+([^\s(]+)/i) || lualatexOutput.match(/([\d.]+)/);
-  if (luaMatch) LUALATEX_VERSION = luaMatch[1];
-} catch {
-  // non-fatal — version is advisory
 }
 
 // ── Allowed origins ──
@@ -667,21 +706,21 @@ async function isStripeEventProcessed(eventId) {
 // ================================================================
 
 const DESIGN_TEMPLATES = {
-  symphony: { name: 'Symphony', description: 'Van de Graaf Canon, EB Garamond, ornamental openings — the academic monograph perfected.', category: 'Academic', templatePath: path.resolve(__dirname, 'templates/symphony.latex'), mainfont: 'EB Garamond', sansfont: 'Libertinus Sans', monofont: 'DejaVu Sans Mono', gridType: 'academic', characteristics: ['EB Garamond + Libertinus Sans', 'Van de Graaf Canon', 'Ornamental headings', 'Hanging footnotes'] },
-  chicago: { name: 'Chicago', description: 'University press monograph — ETbb (Bembo), true footnotes, CMOS running heads.', category: 'Academic', templatePath: path.resolve(__dirname, 'templates/chicago.latex'), mainfont: 'ETbb', sansfont: 'Latin Modern Sans', monofont: 'Latin Modern Mono', gridType: 'academic', characteristics: ['ETbb (Bembo)', '2em paragraph indent', 'True footnotes', 'Centered running heads'] },
-  paperback: { name: 'Paperback', description: 'Cinematic page-turner — Alegreya Sans, scene breaks, filmic chapter openings.', category: 'Fiction', templatePath: path.resolve(__dirname, 'templates/paperback.latex'), mainfont: 'Alegreya Sans', sansfont: 'TeX Gyre Heros', monofont: 'DejaVu Sans Mono', gridType: 'trade', characteristics: ['Alegreya Sans', 'Cinematic chapter numbers', 'Scene break ornaments', '1.5em fiction indent'] },
-  chronicle: { name: 'Chronicle', description: 'Swiss journalism — TeX Gyre Heros, heavy rules, pull-quote blocks, flush-left ragged-right.', category: 'Editorial', templatePath: path.resolve(__dirname, 'templates/chronicle.latex'), mainfont: 'TeX Gyre Heros', sansfont: null, monofont: 'Fira Mono', gridType: 'editorial', characteristics: ['TeX Gyre Heros', 'Flush left / ragged right', '3pt section rules', 'Pull-quote blockquotes'] },
-  exhibit: { name: 'Exhibit', description: 'White Cube gallery — Fira Sans, extreme whitespace, ghost-number chapter openings.', category: 'Trade', templatePath: path.resolve(__dirname, 'templates/exhibit.latex'), mainfont: 'Fira Sans', sansfont: 'TeX Gyre Adventor', monofont: 'Fira Mono', gridType: 'trade', characteristics: ['Fira Sans + TeX Gyre Adventor', '80pt ghost chapter numbers', 'Ragged right', 'Generous whitespace'] },
-  matrix: { name: 'Matrix', description: 'Swiss corporate annual report — Fira Sans with lining figures, MidnightBlue accents, booktabs.', category: 'Business', templatePath: path.resolve(__dirname, 'templates/matrix.latex'), mainfont: 'Fira Sans', sansfont: null, monofont: 'Fira Mono', gridType: 'corporate', characteristics: ['Fira Sans (lining figures)', 'Corporate blue palette', 'Executive summary blocks', 'booktabs tables'] },
-  avantgarde: { name: 'Avant-Garde', description: 'Deconstructed manifesto — Source Sans 3, 120pt ghost numbers, brutalist blockquotes.', category: 'Creative', templatePath: path.resolve(__dirname, 'templates/avantgarde.latex'), mainfont: 'Source Sans 3', sansfont: 'DejaVu Sans', monofont: 'TeX Gyre Cursor', gridType: 'creative', characteristics: ['Source Sans 3', '120pt ghost chapter numbers', 'Brutalist blockquotes', 'Ragged right'] },
-  minimal: { name: 'Minimal', description: 'Radical compatibility — compiles anywhere, zero extra dependencies. Latin Modern on pdflatex.', category: 'Basic', templatePath: path.resolve(__dirname, 'templates/minimal.latex'), mainfont: 'Latin Modern Roman', sansfont: null, monofont: null, gridType: 'basic', characteristics: ['Zero dependencies', 'pdflatex compatible', 'Latin Modern', 'Maximum portability'] },
-  international: { name: 'International', description: 'Müller-Brockmann Swiss Standard — one font, no italics, visible structure, modular grid.', category: 'Design', templatePath: path.resolve(__dirname, 'templates/international.latex'), mainfont: 'TeX Gyre Heros', sansfont: 'TeX Gyre Heros', monofont: 'TeX Gyre Cursor', gridType: 'editorial', characteristics: ['TeX Gyre Heros only', 'No italics', 'Flush left / ragged right', 'Rule-separated sections'] },
-  cinema: { name: 'Cinema', description: 'Hollywood Standard screenplay — Courier 12pt, strict margins, 1 page = 1 minute rule.', category: 'Screenplay', templatePath: path.resolve(__dirname, 'templates/cinema.latex'), mainfont: 'TeX Gyre Cursor', sansfont: null, monofont: 'TeX Gyre Cursor', gridType: 'basic', characteristics: ['TeX Gyre Cursor (Courier)', 'Industry-standard margins', 'Single-spaced', 'Dialogue blocks'] },
-  heirloom: { name: 'Heirloom', description: 'Modern gastronomy cookbook — recipe cards, ingredient blocks, warm saddlebrown palette.', category: 'Cookbook', templatePath: path.resolve(__dirname, 'templates/heirloom.latex'), mainfont: 'Fira Sans', sansfont: 'DejaVu Serif', monofont: 'Fira Mono', gridType: 'trade', characteristics: ['Fira Sans + DejaVu Serif headers', 'Ingredient colorboxes', 'Bold numbered steps', 'Warm earth tones'] },
-  operator: { name: 'Operator', description: 'Engineering manual — Fira Sans/Mono, admonition boxes (warning/info/code), structured hierarchy.', category: 'Technical', templatePath: path.resolve(__dirname, 'templates/operator.latex'), mainfont: 'Fira Sans', sansfont: null, monofont: 'Fira Mono', gridType: 'editorial', characteristics: ['Fira Sans + Fira Mono', 'Warning/Info/Code admonition boxes', 'Navy blue headings', 'Technical hierarchy'] },
-  verse: { name: 'Verse', description: 'Poetry collection — EB Garamond, centered titles, generous leading, line-based layout.', category: 'Poetry', templatePath: path.resolve(__dirname, 'templates/verse.latex'), mainfont: 'EB Garamond', sansfont: 'Libertinus Sans', monofont: 'DejaVu Sans Mono', gridType: 'creative', characteristics: ['EB Garamond', 'Centered italic titles', 'Generous leading', 'No paragraph indent'] },
-  thesis: { name: 'Thesis', description: 'University dissertation — Latin Modern, double-spaced, numbered sections, submission-ready.', category: 'Academic', templatePath: path.resolve(__dirname, 'templates/thesis.latex'), mainfont: 'Latin Modern Roman', sansfont: 'Latin Modern Sans', monofont: 'Latin Modern Mono', gridType: 'thesis', characteristics: ['Latin Modern Roman', 'Double-spaced', 'Numbered sections', 'University standard'] },
-  memoir: { name: 'Memoir', description: 'Personal narrative — Libre Baskerville, warm amber accents, decorative scene breaks.', category: 'Fiction', templatePath: path.resolve(__dirname, 'templates/memoir.latex'), mainfont: 'Libre Baskerville', sansfont: 'TeX Gyre Heros', monofont: 'DejaVu Sans Mono', gridType: 'trade', characteristics: ['Libre Baskerville', 'Warm amber accents', 'Decorative scene breaks', 'Intimate headings'] },
+  symphony: { name: 'Symphony', description: 'Van de Graaf Canon, EB Garamond, ornamental openings — the academic monograph perfected.', category: 'Academic', templatePath: path.resolve(__dirname, 'typst-templates/symphony.typ'), mainfont: 'EB Garamond', sansfont: 'Libertinus Sans', monofont: 'DejaVu Sans Mono', gridType: 'academic', characteristics: ['EB Garamond + Libertinus Sans', 'Van de Graaf Canon', 'Ornamental headings', 'Hanging footnotes'] },
+  chicago: { name: 'Chicago', description: 'University press monograph — ETbb (Bembo), true footnotes, CMOS running heads.', category: 'Academic', templatePath: path.resolve(__dirname, 'typst-templates/chicago.typ'), mainfont: 'ETbb', sansfont: 'Latin Modern Sans', monofont: 'Latin Modern Mono', gridType: 'academic', characteristics: ['ETbb (Bembo)', '2em paragraph indent', 'True footnotes', 'Centered running heads'] },
+  paperback: { name: 'Paperback', description: 'Cinematic page-turner — Alegreya Sans, scene breaks, filmic chapter openings.', category: 'Fiction', templatePath: path.resolve(__dirname, 'typst-templates/paperback.typ'), mainfont: 'Alegreya Sans', sansfont: 'TeX Gyre Heros', monofont: 'DejaVu Sans Mono', gridType: 'trade', characteristics: ['Alegreya Sans', 'Cinematic chapter numbers', 'Scene break ornaments', '1.5em fiction indent'] },
+  chronicle: { name: 'Chronicle', description: 'Swiss journalism — TeX Gyre Heros, heavy rules, pull-quote blocks, flush-left ragged-right.', category: 'Editorial', templatePath: path.resolve(__dirname, 'typst-templates/chronicle.typ'), mainfont: 'TeX Gyre Heros', sansfont: null, monofont: 'Fira Mono', gridType: 'editorial', characteristics: ['TeX Gyre Heros', 'Flush left / ragged right', '3pt section rules', 'Pull-quote blockquotes'] },
+  exhibit: { name: 'Exhibit', description: 'White Cube gallery — Fira Sans, extreme whitespace, ghost-number chapter openings.', category: 'Trade', templatePath: path.resolve(__dirname, 'typst-templates/exhibit.typ'), mainfont: 'Fira Sans', sansfont: 'TeX Gyre Adventor', monofont: 'Fira Mono', gridType: 'trade', characteristics: ['Fira Sans + TeX Gyre Adventor', '80pt ghost chapter numbers', 'Ragged right', 'Generous whitespace'] },
+  matrix: { name: 'Matrix', description: 'Swiss corporate annual report — Fira Sans with lining figures, MidnightBlue accents, booktabs.', category: 'Business', templatePath: path.resolve(__dirname, 'typst-templates/matrix.typ'), mainfont: 'Fira Sans', sansfont: null, monofont: 'Fira Mono', gridType: 'corporate', characteristics: ['Fira Sans (lining figures)', 'Corporate blue palette', 'Executive summary blocks', 'booktabs tables'] },
+  avantgarde: { name: 'Avant-Garde', description: 'Deconstructed manifesto — Source Sans 3, 120pt ghost numbers, brutalist blockquotes.', category: 'Creative', templatePath: path.resolve(__dirname, 'typst-templates/avantgarde.typ'), mainfont: 'Source Sans 3', sansfont: 'DejaVu Sans', monofont: 'TeX Gyre Cursor', gridType: 'creative', characteristics: ['Source Sans 3', '120pt ghost chapter numbers', 'Brutalist blockquotes', 'Ragged right'] },
+  minimal: { name: 'Minimal', description: 'Radical compatibility — compiles anywhere, zero extra dependencies. Latin Modern, maximum portability.', category: 'Basic', templatePath: path.resolve(__dirname, 'typst-templates/minimal.typ'), mainfont: 'Latin Modern Roman', sansfont: null, monofont: null, gridType: 'basic', characteristics: ['Zero dependencies', 'Minimal dependencies', 'Latin Modern', 'Maximum portability'] },
+  international: { name: 'International', description: 'Müller-Brockmann Swiss Standard — one font, no italics, visible structure, modular grid.', category: 'Design', templatePath: path.resolve(__dirname, 'typst-templates/international.typ'), mainfont: 'TeX Gyre Heros', sansfont: 'TeX Gyre Heros', monofont: 'TeX Gyre Cursor', gridType: 'editorial', characteristics: ['TeX Gyre Heros only', 'No italics', 'Flush left / ragged right', 'Rule-separated sections'] },
+  cinema: { name: 'Cinema', description: 'Hollywood Standard screenplay — Courier 12pt, strict margins, 1 page = 1 minute rule.', category: 'Screenplay', templatePath: path.resolve(__dirname, 'typst-templates/cinema.typ'), mainfont: 'TeX Gyre Cursor', sansfont: null, monofont: 'TeX Gyre Cursor', gridType: 'basic', characteristics: ['TeX Gyre Cursor (Courier)', 'Industry-standard margins', 'Single-spaced', 'Dialogue blocks'] },
+  heirloom: { name: 'Heirloom', description: 'Modern gastronomy cookbook — recipe cards, ingredient blocks, warm saddlebrown palette.', category: 'Cookbook', templatePath: path.resolve(__dirname, 'typst-templates/heirloom.typ'), mainfont: 'Fira Sans', sansfont: 'DejaVu Serif', monofont: 'Fira Mono', gridType: 'trade', characteristics: ['Fira Sans + DejaVu Serif headers', 'Ingredient colorboxes', 'Bold numbered steps', 'Warm earth tones'] },
+  operator: { name: 'Operator', description: 'Engineering manual — Fira Sans/Mono, admonition boxes (warning/info/code), structured hierarchy.', category: 'Technical', templatePath: path.resolve(__dirname, 'typst-templates/operator.typ'), mainfont: 'Fira Sans', sansfont: null, monofont: 'Fira Mono', gridType: 'editorial', characteristics: ['Fira Sans + Fira Mono', 'Warning/Info/Code admonition boxes', 'Navy blue headings', 'Technical hierarchy'] },
+  verse: { name: 'Verse', description: 'Poetry collection — EB Garamond, centered titles, generous leading, line-based layout.', category: 'Poetry', templatePath: path.resolve(__dirname, 'typst-templates/verse.typ'), mainfont: 'EB Garamond', sansfont: 'Libertinus Sans', monofont: 'DejaVu Sans Mono', gridType: 'creative', characteristics: ['EB Garamond', 'Centered italic titles', 'Generous leading', 'No paragraph indent'] },
+  thesis: { name: 'Thesis', description: 'University dissertation — Latin Modern, double-spaced, numbered sections, submission-ready.', category: 'Academic', templatePath: path.resolve(__dirname, 'typst-templates/thesis.typ'), mainfont: 'Latin Modern Roman', sansfont: 'Latin Modern Sans', monofont: 'Latin Modern Mono', gridType: 'thesis', characteristics: ['Latin Modern Roman', 'Double-spaced', 'Numbered sections', 'University standard'] },
+  memoir: { name: 'Memoir', description: 'Personal narrative — Libre Baskerville, warm amber accents, decorative scene breaks.', category: 'Fiction', templatePath: path.resolve(__dirname, 'typst-templates/memoir.typ'), mainfont: 'Libre Baskerville', sansfont: 'TeX Gyre Heros', monofont: 'DejaVu Sans Mono', gridType: 'trade', characteristics: ['Libre Baskerville', 'Warm amber accents', 'Decorative scene breaks', 'Intimate headings'] },
 };
 
 // ================================================================
@@ -782,6 +821,7 @@ const ctx = {
   persistPdf,
   resultStore,
   RESULTS_DIR,
+  jobGenerations,
   get activeSyncCompiles() { return activeSyncCompiles; },
   set activeSyncCompiles(v) { activeSyncCompiles = v; },
   MAX_SYNC_CONCURRENT,

@@ -16,13 +16,13 @@ function Nav() {
           </Link>
           {/* Desktop nav */}
           <div className="hidden items-center gap-6 md:flex">
-            <Link href="/pricing" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Pricing</Link>
-            <Link href="/journal" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Journal</Link>
-            <Link href="/docs" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-75 hover:text-[#FF3333]">Docs</Link>
+            <Link href="/pricing" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-200 ease-pp hover:text-[#FF3333]">Pricing</Link>
+            <Link href="/journal" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-200 ease-pp hover:text-[#FF3333]">Journal</Link>
+            <Link href="/docs" className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] transition-colors duration-200 ease-pp hover:text-[#FF3333]">Docs</Link>
             <NavAuth />
             <Link
               href="/app"
-              className="bg-[#FF3333] px-5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222]"
+              className="bg-[#FF3333] px-5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222]"
             >
               Open Editor
             </Link>
@@ -47,13 +47,13 @@ function Footer() {
               <CompositorMark size={26} />
               <span className="font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">PagePerfect</span>
             </div>
-            <p className="mt-3 max-w-xs font-body text-sm leading-relaxed text-[#555555]">
-              Professional typesetting in your browser. Built on LuaLaTeX. Inspired by M&uuml;ller-Brockmann.
+            <p className="mt-3 max-w-xs font-body text-sm leading-relaxed text-[#4a4a4a]">
+              Professional typesetting in your browser. Built on Typst. Inspired by M&uuml;ller-Brockmann.
             </p>
             {/* Colophon — desktop only, tucked under brand */}
             <div className="mt-6 hidden space-y-1 font-mono text-[10px] text-[#111111]/40 md:block">
               <p>Inter Tight / Source Serif 4 / IBM Plex Mono</p>
-              <p>LuaLaTeX + Pandoc</p>
+              <p>Typst</p>
               <p>EST. 2024</p>
             </div>
           </div>

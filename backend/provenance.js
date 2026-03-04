@@ -11,17 +11,17 @@ const { execSync } = require('child_process');
 
 // ── Detect runtime versions once at startup ──
 let _pandocVersion = 'unknown';
-let _texliveVersion = 'unknown';
+let _typstVersion = 'unknown';
 try {
   const pv = execSync('pandoc --version', { encoding: 'utf8', timeout: 3000 });
   const m = pv.match(/pandoc(?:\.exe)?\s+([\d.]+)/);
   if (m) _pandocVersion = m[1];
 } catch { /* pandoc not installed */ }
 try {
-  const tv = execSync('lualatex --version', { encoding: 'utf8', timeout: 3000 });
-  const m = tv.match(/Version\s+([\d.]+)/i) || tv.match(/TeX Live (\d+)/i);
-  if (m) _texliveVersion = m[1];
-} catch { /* lualatex not installed */ }
+  const tv = execSync('typst --version', { encoding: 'utf8', timeout: 3000 });
+  const m = tv.match(/typst\s+([\d.]+)/i) || tv.match(/([\d.]+)/);
+  if (m) _typstVersion = m[1];
+} catch { /* typst not installed */ }
 
 // ================================================================
 // Build Metadata
@@ -112,8 +112,8 @@ function generateBuildMetadata(opts) {
     system: {
       engine: 'PagePerfect',
       version: '3.1',
-      pdfEngine: 'lualatex',
-      pdfEngineVersion: _texliveVersion,
+      pdfEngine: 'typst',
+      pdfEngineVersion: _typstVersion,
       processor: 'pandoc',
       processorVersion: _pandocVersion,
     },
@@ -178,7 +178,7 @@ function generateMetadataPreamble(buildMeta) {
   return [
     '% ── Provenance & Build Metadata ──',
     '\\hypersetup{',
-    `  pdfproducer={PagePerfect ${buildMeta.system.version} / LuaLaTeX ${safeStr(buildMeta.system.pdfEngineVersion)} / Pandoc ${safeStr(buildMeta.system.processorVersion)}},`,
+    `  pdfproducer={PagePerfect ${buildMeta.system.version} / Typst ${safeStr(buildMeta.system.pdfEngineVersion)} / Pandoc ${safeStr(buildMeta.system.processorVersion)}},`,
     `  pdfcreator={PagePerfect Build ${safeStr(buildMeta.buildId)}},`,
     `  pdfsubject={Template: ${safeStr(buildMeta.config.template)} / Size: ${safeStr(buildMeta.config.pageSize)} / Margins: ${safeStr(buildMeta.config.marginPreset)}},`,
     `  pdfkeywords={PagePerfect, ${safeStr(buildMeta.config.template)}, ${safeStr(buildMeta.contentHash)}}`,

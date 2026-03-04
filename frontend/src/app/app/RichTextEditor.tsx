@@ -158,7 +158,7 @@ export default function RichTextEditor({
   return (
     <div className="flex h-full flex-col bg-white">
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 border-b border-[#111111]/[0.06] px-4 py-1.5">
+      <div className="flex items-center gap-0.5 border-b border-[#e5e5e0] px-4 py-1.5">
         <ToolbarButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
           <Undo className="h-3.5 w-3.5" />
         </ToolbarButton>
@@ -208,7 +208,7 @@ export default function RichTextEditor({
         <div className="flex-1" />
 
         {/* Mode toggle */}
-        <span className="mr-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/25">
+        <span className="mr-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">
           Rich Text
         </span>
         <button

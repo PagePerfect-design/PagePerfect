@@ -1,30 +1,80 @@
 'use client'
 
-import { motion, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
-import { useRef } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 
 export function HeroImage() {
-  const ref = useRef(null)
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start start', 'end start'],
-  })
+  const ref = useRef<HTMLDivElement>(null)
+  const rafRef = useRef<number>(0)
+  const [mounted, setMounted] = useState(false)
 
-  // Parallax: image moves slower than scroll, creating depth
-  const y = useTransform(scrollYProgress, [0, 1], [0, 120])
-  const rotateX = useTransform(scrollYProgress, [0, 1], [0, 12])
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
+  // Trigger entrance animation after mount
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 50)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const updateScrollProperties = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+
+    const rect = el.getBoundingClientRect()
+    const windowHeight = window.innerHeight
+    // offset: ['start start', 'end start'] means:
+    // progress=0 when element top hits viewport top
+    // progress=1 when element bottom hits viewport top
+    const totalTravel = rect.height
+    const distancePastTop = -rect.top
+    const progress = Math.max(0, Math.min(1, distancePastTop / totalTravel))
+
+    // Parallax: y 0->120, rotateX 0->12, opacity 1->0 (at 0.5)
+    const y = progress * 120
+    const rotateX = progress * 12
+    const opacity = Math.max(0, 1 - progress * 2)
+
+    el.style.setProperty('--scroll-y', `${y}px`)
+    el.style.setProperty('--scroll-rotateX', `${rotateX}deg`)
+    el.style.setProperty('--scroll-opacity', `${opacity}`)
+  }, [])
+
+  useEffect(() => {
+    function onScroll() {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = requestAnimationFrame(updateScrollProperties)
+    }
+
+    // Initial calculation
+    updateScrollProperties()
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      cancelAnimationFrame(rafRef.current)
+    }
+  }, [updateScrollProperties])
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0, y: 80, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: 1.0, duration: 1.4, ease: [0.25, 0.4, 0.25, 1] }}
       className="relative z-10 mx-auto mt-20 w-full max-w-4xl perspective-1000"
+      style={{
+        opacity: mounted ? 1 : 0,
+        transform: mounted
+          ? 'translateY(0) scale(1)'
+          : 'translateY(80px) scale(0.96)',
+        transition: 'opacity 1.4s cubic-bezier(0.25, 0.4, 0.25, 1) 1.0s, transform 1.4s cubic-bezier(0.25, 0.4, 0.25, 1) 1.0s',
+        willChange: 'opacity, transform',
+      }}
     >
-      <motion.div style={{ y, rotateX, opacity }}>
+      <div
+        style={{
+          transform: 'translateY(var(--scroll-y, 0px)) rotateX(var(--scroll-rotateX, 0deg))',
+          opacity: 'var(--scroll-opacity, 1)',
+          willChange: 'transform, opacity',
+        }}
+      >
         {/* Multi-color glow — atmosphere behind the image */}
         <div className="pointer-events-none absolute -inset-8 animate-pulse-slow rounded-full bg-gradient-to-r from-cyan-500/20 via-accent/25 to-purple-600/20 opacity-70 blur-[80px]" />
 
@@ -55,7 +105,7 @@ export function HeroImage() {
 
         {/* Ground shadow — anchors the image to 3D space */}
         <div className="pointer-events-none absolute -bottom-8 left-12 right-12 h-10 rounded-[50%] bg-black/50 blur-2xl" />
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   )
 }

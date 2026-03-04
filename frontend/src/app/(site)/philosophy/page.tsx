@@ -143,7 +143,7 @@ export default function PhilosophyPage() {
                 <h3 className="mt-2 font-display text-lg font-bold tracking-tight text-[#111111]">
                   {principle.title}
                 </h3>
-                <p className="mt-3 font-body text-[0.9375rem] leading-[1.7] text-[#555555]">
+                <p className="mt-3 font-body text-[0.9375rem] leading-[1.7] text-[#4a4a4a]">
                   {principle.body}
                 </p>
               </div>
@@ -173,7 +173,7 @@ export default function PhilosophyPage() {
                 Architecture
               </p>
               <div className="space-y-3">
-                <ColophonEntry label="Engine" value="LuaLaTeX + Pandoc" />
+                <ColophonEntry label="Engine" value="Typst" />
                 <ColophonEntry label="Grid" value="12-Column Modular" />
                 <ColophonEntry label="Baseline" value="11pt / 12pt" />
                 <ColophonEntry label="Scale" value="Golden Ratio (1.618)" />
@@ -227,7 +227,7 @@ export default function PhilosophyPage() {
           >
             Start Formatting
           </h2>
-          <p className="mx-auto mt-4 max-w-lg font-body text-base text-[#555555]">
+          <p className="mx-auto mt-4 max-w-lg font-body text-base text-[#4a4a4a]">
             Every principle on this page is built into PagePerfect — baseline
             grids, golden-ratio scales, and 15 templates engineered for
             readability and authority.
@@ -235,13 +235,13 @@ export default function PhilosophyPage() {
           <div className="mt-8 flex items-center justify-center gap-4">
             <Link
               href="/app"
-              className="border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222]"
+              className="border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222]"
             >
               Start Formatting
             </Link>
             <Link
               href="/docs"
-              className="border border-[#111111]/20 px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-75 hover:border-[#111111] hover:text-[#111111]"
+              className="border border-[#111111]/20 px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50 transition-all duration-200 ease-pp hover:border-[#111111] hover:text-[#111111]"
             >
               Read Docs
             </Link>
@@ -255,7 +255,7 @@ export default function PhilosophyPage() {
 function ColophonEntry({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <span className="font-mono text-[0.6875rem] uppercase tracking-[0.05em] text-[#555555]">
+      <span className="font-mono text-[0.6875rem] uppercase tracking-[0.05em] text-[#4a4a4a]">
         {label}
       </span>
       <span className="font-display text-[0.8125rem] font-semibold text-[#111111]">

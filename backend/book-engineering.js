@@ -98,7 +98,7 @@ const ENGINEERING_POLICIES = {
     floatPlacement: 'htbp',
     footnoteRule: '1in',
     raggedBottom: false,
-    microtype: false,          // pdflatex compatibility
+    microtype: false,          // Typst handles microtypography natively
     csquotes: false,
   },
 };
@@ -296,16 +296,68 @@ function lintManuscript(md, templateType = 'academic') {
 }
 
 // ================================================================
-// Compile Log Analysis
+// Typst Engineering Preamble
 // ================================================================
 
 /**
- * Parse LuaLaTeX log output for engineering issues.
+ * Generate Typst preamble for book engineering policies.
+ * Outputs Typst #set rules instead of LaTeX commands.
  *
- * @param {string} stderr — compilation stderr/log output
+ * @param {string} templateType — key into ENGINEERING_POLICIES
+ * @param {object} [overrides] — optional policy overrides
+ * @returns {string} Typst preamble snippet
+ */
+function generateTypstEngineeringPreamble(templateType, overrides = {}) {
+  const policy = { ...(ENGINEERING_POLICIES[templateType] || ENGINEERING_POLICIES.academic), ...overrides };
+  const commands = [
+    '// ── Book Engineering System ──',
+  ];
+
+  // Typst handles widow/orphan control internally via its own line-breaking
+  // algorithm (Knuth-Plass). Unlike LaTeX, there are no user-facing penalty
+  // knobs — Typst's algorithm inherently avoids widows/orphans in most cases.
+  //
+  // Justify and hyphenate are NOT emitted here. Every template already sets
+  // both explicitly, and this preamble comes AFTER the template in assembly
+  // order — emitting them here would override the template's intentional
+  // choices (e.g. exhibit/cinema want justify:false, verse/avantgarde want
+  // hyphenate:false). The template is the authority on its own typography.
+
+  // Explicitly request optimized (Knuth-Plass) line-breaking for all templates.
+  // This is the default for justified text in Typst, but we set it explicitly
+  // to ensure consistent quality even if Typst's defaults change.
+  commands.push('#set par(linebreaks: "optimized")');
+
+  // Typst's default hyphenation cost is 100%. Values below 100% make
+  // hyphenation MORE aggressive; values above 100% make it LESS aggressive.
+  // Previous values (10%, 40%, 70%) were all below default, causing excessive
+  // word breaks across all template categories.
+  if (policy.hyphenPenalty !== undefined && policy.hyphenPenalty <= 50) {
+    // Academic, editorial, creative: balanced — slightly above default
+    commands.push('#set text(costs: (hyphenation: 120%))');
+  } else if (policy.hyphenPenalty !== undefined && policy.hyphenPenalty <= 100) {
+    // Trade (fiction): readers find excessive hyphenation distracting
+    commands.push('#set text(costs: (hyphenation: 200%))');
+  } else {
+    // Corporate, basic: business docs should rarely hyphenate
+    commands.push('#set text(costs: (hyphenation: 300%))');
+  }
+
+  return commands.join('\n');
+}
+
+// ================================================================
+// Typst Compile Log Analysis
+// ================================================================
+
+/**
+ * Parse Typst compilation stderr for engineering issues.
+ * Typst warnings are structured differently from LaTeX.
+ *
+ * @param {string} stderr — Typst compilation output
  * @returns {{ overfullBoxes, underfullBoxes, warnings, pageBreakIssues }}
  */
-function analyzeCompileLog(stderr) {
+function analyzeTypstCompileLog(stderr) {
   const result = {
     overfullBoxes: [],
     underfullBoxes: [],
@@ -315,103 +367,40 @@ function analyzeCompileLog(stderr) {
     footnoteIssues: [],
   };
 
+  if (!stderr || typeof stderr !== 'string') return result;
+
   const lines = stderr.split('\n');
 
   for (const line of lines) {
-    // Overfull \hbox
-    const overfull = line.match(/Overfull \\hbox \((\d+\.?\d*)pt too wide\)(?:.*?at lines? (\d+))?/);
-    if (overfull) {
+    // Typst warning format: "warning: <message>"
+    const warning = line.match(/^warning:\s+(.+)/i);
+    if (warning) {
+      result.warnings.push({
+        severity: 'warn',
+        message: warning[1],
+      });
+    }
+
+    // Typst content overflow warnings
+    if (/content does not fit/.test(line) || /out of.*bounds/.test(line)) {
       result.overfullBoxes.push({
-        amount: parseFloat(overfull[1]),
-        line: overfull[2] ? parseInt(overfull[2]) : null,
-        severity: parseFloat(overfull[1]) > 10 ? 'warn' : 'info',
-        message: `Overfull hbox by ${overfull[1]}pt${overfull[2] ? ` at line ${overfull[2]}` : ''}`,
+        amount: 0,
+        line: null,
+        severity: 'warn',
+        message: line.trim(),
       });
     }
 
-    // Underfull \hbox
-    const underfull = line.match(/Underfull \\hbox(?:.*?badness (\d+))?(?:.*?at lines? (\d+))?/);
-    if (underfull) {
-      const badness = underfull[1] ? parseInt(underfull[1]) : 0;
-      if (badness > 5000) {
-        result.underfullBoxes.push({
-          badness,
-          line: underfull[2] ? parseInt(underfull[2]) : null,
-          severity: badness > 8000 ? 'warn' : 'info',
-          message: `Underfull hbox (badness ${badness})${underfull[2] ? ` at line ${underfull[2]}` : ''}`,
-        });
-      }
-    }
-
-    // Float warnings
-    if (/Too many unprocessed floats/.test(line)) {
-      result.floatIssues.push({
+    // Typst font warnings
+    if (/unknown font/i.test(line) || /font.*not found/i.test(line)) {
+      result.warnings.push({
         severity: 'warn',
-        message: 'Too many unprocessed floats. Consider fewer consecutive figures or [H] placement.',
-      });
-    }
-
-    // Footnote overflow
-    if (/Footnote.*split|split.*footnote/i.test(line)) {
-      result.footnoteIssues.push({
-        severity: 'warn',
-        message: 'Footnote split across pages. Consider shorter footnotes or endnotes.',
+        message: line.trim(),
       });
     }
   }
 
   return result;
-}
-
-// ================================================================
-// LaTeX Engineering Preamble
-// ================================================================
-
-/**
- * Generate LaTeX preamble for book engineering policies.
- *
- * @param {string} templateType — key into ENGINEERING_POLICIES
- * @param {object} [overrides] — optional policy overrides
- * @returns {string} LaTeX preamble snippet
- */
-function generateEngineeringPreamble(templateType, overrides = {}) {
-  const policy = { ...(ENGINEERING_POLICIES[templateType] || ENGINEERING_POLICIES.academic), ...overrides };
-  const commands = [
-    '% ── Book Engineering System ──',
-    '',
-    '% Widow and orphan control',
-    `\\widowpenalty=${policy.widowPenalty}`,
-    `\\clubpenalty=${policy.clubPenalty}`,
-    '',
-    '% Hyphenation and line breaking',
-    `\\hyphenpenalty=${policy.hyphenPenalty}`,
-    `\\tolerance=${policy.tolerance}`,
-    `\\emergencystretch=${policy.emergencyStretch}`,
-    '',
-    '% Float placement defaults',
-    `\\renewcommand{\\floatpagefraction}{0.8}`,
-    `\\renewcommand{\\topfraction}{0.9}`,
-    `\\renewcommand{\\bottomfraction}{0.8}`,
-    `\\renewcommand{\\textfraction}{0.1}`,
-    '',
-  ];
-
-  if (policy.raggedBottom) {
-    commands.push('', '\\raggedbottom');
-  } else {
-    commands.push('', '\\flushbottom');
-  }
-
-  // URL line breaking (safe for header-includes — url already loaded by hyperref)
-  commands.push(
-    '',
-    '% URL line breaking',
-    '\\makeatletter',
-    '\\g@addto@macro\\UrlBreaks{\\do\\/\\do\\-\\do\\.\\do\\=\\do\\?\\do\\&\\do\\_\\do\\~}',
-    '\\makeatother',
-  );
-
-  return commands.join('\n');
 }
 
 // ================================================================
@@ -421,6 +410,6 @@ function generateEngineeringPreamble(templateType, overrides = {}) {
 module.exports = {
   ENGINEERING_POLICIES,
   lintManuscript,
-  analyzeCompileLog,
-  generateEngineeringPreamble,
+  analyzeTypstCompileLog,
+  generateTypstEngineeringPreamble,
 };

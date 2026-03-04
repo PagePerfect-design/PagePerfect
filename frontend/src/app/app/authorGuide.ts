@@ -45,7 +45,7 @@ Tip: If you prefer automation, save as \`.docx\` and use a docx→Markdown conve
 
 ## 5) Errors & Warnings
 - **Undefined citations** → check spelling and presence in \`references.bib\`.
-- **Missing LaTeX package** → ask maintainer; they'll add it to the compiler image.
+- **Missing font or feature** → ask maintainer; they'll add it to the compiler image.
 - **Style warnings** (e.g., double spaces) → not fatal, but fix for polish.
 
 ## 6) Downloading

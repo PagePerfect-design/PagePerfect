@@ -4,11 +4,8 @@ FROM ubuntu:22.04
 # Set environment variables to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
+# ── Layer 1: Base tools (curl, wget) ──
 # LOCALE: C.UTF-8 is built into glibc on Debian/Ubuntu — no locale-gen needed.
-# This removes the en_US.UTF-8 dependency entirely. LuaLaTeX's luaotfload reads
-# LANG/LC_ALL; C.UTF-8 satisfies the "valid locale" requirement without the
-# locale package or locale-gen. One fewer failure surface.
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
@@ -19,34 +16,16 @@ RUN apt-get update && apt-get install -y \
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
-# Install Node.js 18
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs
-
-# Install Pandoc 3.6.2 from GitHub (Ubuntu 22.04 ships ancient 2.9)
-# Pandoc 3.x has built-in --citeproc, better error handling, modern template syntax
-RUN curl -fsSL -o /tmp/pandoc.deb \
-    https://github.com/jgm/pandoc/releases/download/3.6.2/pandoc-3.6.2-1-amd64.deb \
-    && dpkg -i /tmp/pandoc.deb \
-    && rm /tmp/pandoc.deb
-
-# Install LaTeX (LuaLaTeX + XeLaTeX) + Ghostscript
-# LuaLaTeX is the primary PDF engine — generates PDFs directly without xdvipdfmx,
-# avoiding the OpenType font embedding bugs in TeX Live 2021's xdvipdfmx driver.
-# XeLaTeX kept as fallback.
-# NOTE: TeX Live is pinned to Ubuntu 22.04's repo version (2021.20220204-1).
-# To upgrade, bump the base image or pin via tlmgr after install.
+# ── Layer 2: Fonts + Ghostscript (~700MB, changes rarely) ──
+# This layer is placed BEFORE Node/Pandoc/Typst so that version bumps
+# to those tools don't invalidate the expensive font download cache.
 RUN apt-get update && apt-get install -y \
-    texlive-latex-base=2021.20220204-1 \
-    texlive-latex-extra \
-    texlive-fonts-recommended \
-    texlive-fonts-extra \
-    texlive-luatex \
-    texlive-xetex \
-    texlive-latex-recommended \
     ghostscript \
     icc-profiles-free \
     # ── Font packages for PagePerfect templates ──
+    # TeX Live font packages (contain ETbb, Alegreya, Fira, EB Garamond, etc.)
+    texlive-fonts-recommended \
+    texlive-fonts-extra \
     # DejaVu family (Sans, Serif, Sans Mono) — used by 6+ templates
     fonts-dejavu \
     # Noto fonts — multilingual fallback (Arabic, CJK, Devanagari, Hebrew, Thai)
@@ -64,20 +43,43 @@ RUN apt-get update && apt-get install -y \
     fontconfig \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Make TeX Live fonts visible to fontconfig (fc-list) ──
-# TeX Live installs OpenType/TrueType fonts under /usr/share/texlive/texmf-dist/fonts/
-# but fontconfig doesn't scan those directories by default. Without this, fc-list
-# won't find ETbb, Alegreya Sans, Fira Sans, Source Sans Pro, Libertinus, etc.
-# even though they're installed by texlive-fonts-extra.
+# ── Make TeX Live fonts visible to fontconfig ──
+# texlive-fonts-* installs fonts under /usr/share/texlive/texmf-dist/fonts/
+# but fontconfig doesn't scan those directories by default.
 RUN cp /usr/share/texlive/texmf-dist/fontconfig/conf.avail/*.conf /etc/fonts/conf.d/ 2>/dev/null || true \
     && printf '<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">\n<fontconfig>\n  <dir>/usr/share/texlive/texmf-dist/fonts/opentype</dir>\n  <dir>/usr/share/texlive/texmf-dist/fonts/truetype</dir>\n  <dir>/usr/share/texmf/fonts/opentype</dir>\n  <dir>/usr/share/texmf/fonts/truetype</dir>\n</fontconfig>\n' > /etc/fonts/conf.d/99-texlive-fonts.conf \
-    && fc-cache -fv \
-    && luaotfload-tool --update 2>/dev/null || true
+    && fc-cache -fv
+
+# ── Layer 3: Node.js 20 LTS ──
+# Direct binary from nodejs.org — no third-party repo needed.
+RUN NODE_VERSION="20.18.1" \
+    && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+        | tar -xJ -C /usr/local --strip-components=1 \
+    && node --version && npm --version
+
+# ── Layer 4: Pandoc 3.6.2 ──
+# Ubuntu 22.04 ships ancient 2.9; we need 3.x for --citeproc and modern template syntax.
+RUN curl -fsSL -o /tmp/pandoc.deb \
+    https://github.com/jgm/pandoc/releases/download/3.6.2/pandoc-3.6.2-1-amd64.deb \
+    && dpkg -i /tmp/pandoc.deb \
+    && rm /tmp/pandoc.deb
+
+# ── Layer 5: Typst ──
+# Modern typesetting engine — Knuth-Plass line-breaking, ~27x faster than TeX.
+# Reads fonts from system fontconfig dirs + any --font-path arguments.
+RUN TYPST_VERSION="0.13.1" \
+    && curl -fsSL -o /tmp/typst.tar.xz \
+       "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" \
+    && tar -xf /tmp/typst.tar.xz -C /tmp \
+    && mv /tmp/typst-x86_64-unknown-linux-musl/typst /usr/local/bin/typst \
+    && chmod +x /usr/local/bin/typst \
+    && rm -rf /tmp/typst* \
+    && typst --version
 
 # App dir
 WORKDIR /app
 
-# Install server deps
+# ── Layer 6: npm dependencies (changes with package-lock.json) ──
 COPY package*.json ./
 RUN npm ci --omit=dev
 
@@ -85,18 +87,16 @@ RUN npm ci --omit=dev
 COPY . .
 
 # SECURITY: Create non-root user for running the application.
-# If an attacker gains code execution (e.g. via LaTeX injection),
-# they will NOT have root privileges inside the container.
 RUN groupadd -r ppuser && useradd -r -g ppuser -d /app ppuser \
     && chown -R ppuser:ppuser /app \
     && mkdir -p /tmp && chmod 1777 /tmp
 
 # SECURITY: Make application code read-only to prevent tampering.
 # /tmp and /var/cache/fontconfig remain writable for compilation and font caching.
-RUN chmod -R a-w /app/templates /app/filters 2>/dev/null || true
+RUN chmod -R a-w /app/templates /app/typst-templates /app/filters 2>/dev/null || true
 
 # SECURITY: Set resource limits for compile processes in the ppuser profile.
-# Pandoc/LuaLaTeX spawns inherit these limits to prevent resource exhaustion.
+# Pandoc/Typst spawns inherit these limits to prevent resource exhaustion.
 # - Max 512MB virtual memory per process (RLIMIT_AS)
 # - Max 200 open file descriptors (RLIMIT_NOFILE)
 # - Max 50 child processes (RLIMIT_NPROC)

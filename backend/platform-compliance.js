@@ -184,8 +184,8 @@ function validatePlatform(opts, gridSystem) {
 
   // ── Margins ──
   if (gridSystem && spec.gutterMin) {
-    const geoString = gridSystem.calculateMargins(pageSize, marginPreset, template);
-    const marginMatch = geoString.match(/margin=([\d.]+)/);
+    const geoString = gridSystem.calculateTypstMargins(pageSize, marginPreset, template);
+    const marginMatch = geoString.match(/margin:\s*([\d.]+)/);
     const actualMargin = marginMatch ? parseFloat(marginMatch[1]) : 1.0;
     const isMetric = geoString.includes('mm');
     const marginInches = isMetric ? actualMargin / 25.4 : actualMargin;
@@ -247,7 +247,7 @@ function validatePlatform(opts, gridSystem) {
     checks.push({
       name: 'Font embedding',
       status: 'pass',
-      detail: 'LuaLaTeX + fontspec — all fonts embedded automatically.',
+      detail: 'Typst — all fonts embedded automatically.',
     });
   }
 

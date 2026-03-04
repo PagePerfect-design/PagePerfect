@@ -1,11 +1,11 @@
 'use client'
 import { useCallback, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { FileText, Check, ChevronRight } from 'lucide-react'
 
 import { SAMPLES } from './sample'
 import type { TemplateKey, Genre, Analysis, Platform } from './editor-types'
-import { ease, TEMPLATE_INFO, GENRE_ORDER, GENRE_LABELS } from './editor-types'
+import { TEMPLATE_INFO, GENRE_ORDER, GENRE_LABELS } from './editor-types'
+import TemplateCard from './TemplateCard'
 import { cleanFromWord, analyzeManuscript, wordCategory } from './editor-utils'
 
 const PLATFORM_OPTIONS: { key: Platform | 'generic'; label: string; detail: string }[] = [
@@ -113,19 +113,14 @@ export default function PortalStage({
   if (phase === 'idle') {
     return (
       <div
-        className="fixed inset-0 z-20 flex items-center justify-center"
+        className="fixed inset-0 z-20 flex items-center justify-center bg-[#FDFCF8]"
         onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
         onDragLeave={(e) => { if (e.currentTarget === e.target) setDragActive(false) }}
         onDrop={handleDrop}
       >
-        <AnimatePresence>
           {dragActive && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="absolute inset-0"
+            <div
+              className="absolute inset-0 animate-fade-in"
               style={{
                 backgroundImage:
                   'linear-gradient(to right, rgba(255,51,51,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,51,51,0.08) 1px, transparent 1px)',
@@ -133,13 +128,10 @@ export default function PortalStage({
               }}
             />
           )}
-        </AnimatePresence>
 
         <div className="relative z-10 w-full max-w-xl px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease }}
+          <div
+            className="animate-fade-in-up"
           >
             <h1 className="font-display text-[clamp(2.5rem,6vw,5rem)] font-extrabold leading-[0.9] tracking-tighter text-[#111111]">
               Drop your manuscript.
@@ -147,7 +139,7 @@ export default function PortalStage({
             <p className="mt-6 font-body text-lg text-[#111111]/60">
               .md, .txt, or .docx
             </p>
-          </motion.div>
+          </div>
 
           <input
             id="manuscript-upload"
@@ -158,14 +150,9 @@ export default function PortalStage({
             className="sr-only"
           />
 
-          <AnimatePresence>
             {pasteMode && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 12 }}
-                transition={{ duration: 0.25 }}
-                className="mt-8 w-full"
+              <div
+                className="mt-8 w-full animate-fade-in-up"
               >
                 <textarea
                   id="manuscript-paste"
@@ -180,7 +167,7 @@ export default function PortalStage({
                     }
                   }}
                   placeholder="Paste or type your manuscript here..."
-                  className="w-full h-48 resize-none rounded-lg border border-[#111111]/10 bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/25 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
+                  className="w-full h-48 resize-none border border-[#e5e5e0] bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/60 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
                   autoFocus
                 />
                 <div className="mt-3 flex items-center justify-between">
@@ -204,17 +191,13 @@ export default function PortalStage({
                     <ChevronRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
 
           {/* First-visit CTA — "See a finished book" */}
           {!pasteMode && !hasResumable && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.5 }}
-              className="mt-10"
+            <div
+              className="mt-10 animate-fade-in-up"
             >
               <button
                 onClick={() => onLoadSample('fiction')}
@@ -223,18 +206,15 @@ export default function PortalStage({
                 See a finished book
                 <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </button>
-              <p className="mt-3 font-mono text-[10px] text-[#111111]/30">
+              <p className="mt-3 font-mono text-[10px] text-[#111111]/50">
                 Loads a sample novel — KDP-ready in seconds
               </p>
-            </motion.div>
+            </div>
           )}
 
           {!pasteMode && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-              className="mt-8 flex items-center justify-center gap-6"
+            <div
+              className="mt-8 flex items-center justify-center gap-6 animate-fade-in"
             >
               <button
                 onClick={() => { setPasteMode(true); setPasteText('') }}
@@ -242,17 +222,17 @@ export default function PortalStage({
               >
                 Paste text
               </button>
-              <span className="text-[#111111]/40">|</span>
+              <span className="text-[#111111]/60">|</span>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
               >
                 Browse files
               </button>
-              <span className="text-[#111111]/40">|</span>
+              <span className="text-[#111111]/60">|</span>
               {SAMPLES.map((s, i) => (
                 <span key={s.key} className="inline-flex items-center gap-1">
-                  {i > 0 && <span className="text-[#111111]/20">/</span>}
+                  {i > 0 && <span className="text-[#111111]/60">/</span>}
                   <button
                     onClick={() => onLoadSample(s.key)}
                     className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
@@ -263,7 +243,7 @@ export default function PortalStage({
               ))}
               {isLoggedIn && onOpenManuscripts && (
                 <>
-                  <span className="text-[#111111]/40">|</span>
+                  <span className="text-[#111111]/60">|</span>
                   <button
                     onClick={onOpenManuscripts}
                     className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
@@ -274,7 +254,7 @@ export default function PortalStage({
               )}
               {hasResumable && onResume && (
                 <>
-                  <span className="text-[#111111]/40">|</span>
+                  <span className="text-[#111111]/60">|</span>
                   <button
                     onClick={onResume}
                     className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#FF3333]/70 transition-colors hover:text-[#FF3333]"
@@ -283,14 +263,12 @@ export default function PortalStage({
                   </button>
                 </>
               )}
-            </motion.div>
+            </div>
           )}
 
           {convertError && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-8 mx-auto max-w-sm rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-left"
+            <div
+              className="mt-8 mx-auto max-w-sm border border-red-500/20 bg-red-500/5 px-4 py-3 text-left animate-fade-in"
             >
               <p className="font-mono text-[11px] text-red-600">{convertError}</p>
               <button
@@ -299,17 +277,14 @@ export default function PortalStage({
               >
                 Dismiss
               </button>
-            </motion.div>
+            </div>
           )}
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="mt-16 font-mono text-[10px] text-[#111111]/50"
+          <p
+            className="mt-16 font-mono text-[10px] text-[#111111]/50 animate-fade-in"
           >
             Your text is stored only for your active session. Deleted on sign-out or within 24 hours.
-          </motion.p>
+          </p>
         </div>
       </div>
     )
@@ -317,27 +292,15 @@ export default function PortalStage({
 
   if (phase === 'analyzing') {
     return (
-      <div className="fixed inset-0 z-20 flex items-center justify-center">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5, ease }}
-          className="text-center"
+      <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#FDFCF8]">
+        <div
+          className="text-center animate-fade-in"
         >
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#FF3333]/20"
-              initial={{ width: 40, height: 40, opacity: 0.6 }}
-              animate={{ width: 300 + i * 100, height: 300 + i * 100, opacity: 0 }}
-              transition={{ duration: 1.5, delay: i * 0.3, repeat: Infinity }}
-            />
-          ))}
           <div className="relative z-10">
             <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
             <p className="font-mono text-[12px] text-[#111111]/50">Analyzing manuscript...</p>
           </div>
-        </motion.div>
+        </div>
       </div>
     )
   }
@@ -356,29 +319,26 @@ export default function PortalStage({
   const otherGenres = GENRE_ORDER.filter(g => g !== detectedGenre)
 
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center px-6 overflow-y-auto py-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease }}
-        className="w-full max-w-2xl my-auto"
+    <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#FDFCF8] px-6 overflow-y-auto py-8">
+      <div
+        className="w-full max-w-2xl my-auto animate-fade-in-up"
       >
-        <div className="border border-[#111111]/10 bg-white shadow-lg">
+        <div className="border border-[#111111] bg-white">
           {/* Header — manuscript stats */}
-          <div className="border-b border-[#111111]/[0.06] px-6 py-5">
+          <div className="border-b border-[#e5e5e0] px-6 py-5">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF3333]/10">
+              <div className="flex h-8 w-8 items-center justify-center bg-[#FF3333]/10">
                 <FileText className="h-4 w-4 text-[#FF3333]" />
               </div>
               <div>
                 <p className="font-display text-base font-semibold text-[#111111]">Manuscript analyzed</p>
-                <p className="font-mono text-[10px] text-[#111111]/40">{analysis && wordCategory(analysis.words)}</p>
+                <p className="font-mono text-[10px] text-[#111111]/60">{analysis && wordCategory(analysis.words)}</p>
               </div>
             </div>
           </div>
 
           {analysis && (
-            <div className="grid grid-cols-2 gap-px bg-[#111111]/[0.04] sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-px bg-[#e5e5e0] sm:grid-cols-4">
               {[
                 { label: 'Chapters', value: analysis.chapters || '—' },
                 { label: 'Words', value: analysis.words.toLocaleString() },
@@ -386,7 +346,7 @@ export default function PortalStage({
                 { label: 'Citations', value: analysis.hasReferences ? 'Found' : '—' },
               ].map((item) => (
                 <div key={item.label} className="bg-white px-4 py-3">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/40">{item.label}</p>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/60">{item.label}</p>
                   <p className="mt-1 font-display text-lg font-bold text-[#111111]">{item.value}</p>
                 </div>
               ))}
@@ -394,8 +354,8 @@ export default function PortalStage({
           )}
 
           {/* Title */}
-          <div className="border-t border-[#111111]/[0.06] px-6 py-5">
-            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">Working title</label>
+          <div className="border-t border-[#e5e5e0] px-6 py-5">
+            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">Working title</label>
             <input
               id="working-title"
               type="text"
@@ -403,13 +363,13 @@ export default function PortalStage({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="My Manuscript"
               autoFocus
-              className="w-full border-b border-[#111111]/[0.08] bg-transparent pb-2 font-display text-xl font-bold text-[#111111] placeholder:text-[#111111]/25 focus:border-[#FF3333] focus:outline-none"
+              className="w-full border-b border-[#e5e5e0] bg-transparent pb-2 font-display text-xl font-bold text-[#111111] placeholder:text-[#111111]/60 focus:border-[#FF3333] focus:outline-none"
             />
           </div>
 
           {/* Template picker */}
-          <div className="border-t border-[#111111]/[0.06] px-6 py-5">
-            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">
+          <div className="border-t border-[#e5e5e0] px-6 py-5">
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">
               Choose a design
               {detectedTemplate && (
                 <span className="ml-2 text-[#FF3333]/60">— recommended based on your manuscript</span>
@@ -423,38 +383,19 @@ export default function PortalStage({
                 const isRecommended = key === detectedTemplate
                 const isActive = key === activeTemplate
                 return (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedTemplate(key)}
-                    className={`relative border p-3 text-left transition-all ${
-                      isActive
-                        ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                        : 'border-[#111111]/10 hover:border-[#111111]/20'
-                    }`}
-                  >
+                  <div key={key} className="relative">
                     {isRecommended && (
-                      <span className="absolute -top-2 right-2 bg-[#FF3333] px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.1em] text-white">
+                      <span className="absolute -top-2 right-2 z-10 bg-[#FF3333] px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.1em] text-white">
                         Rec
                       </span>
                     )}
-                    {/* Type specimen preview */}
-                    <div className="mb-2 h-16 overflow-hidden border-b border-[#111111]/[0.04] pb-2">
-                      <p className={`text-[14px] font-semibold leading-tight text-[#111111]/80 ${
-                        info.font.includes('Garamond') || info.font.includes('Baskerville') || info.font.includes('Bembo') || info.font.includes('Latin Modern')
-                          ? 'font-body' : 'font-display'
-                      }`}>
-                        Chapter One
-                      </p>
-                      <p className={`mt-1 text-[9px] leading-relaxed text-[#111111]/40 ${
-                        info.font.includes('Garamond') || info.font.includes('Baskerville') || info.font.includes('Bembo') || info.font.includes('Latin Modern')
-                          ? 'font-body' : 'font-display'
-                      }`}>
-                        The morning light crept through the window, casting long shadows across the desk where the manuscript lay waiting.
-                      </p>
-                    </div>
-                    <span className="block font-mono text-[11px] font-semibold text-[#111111]/80">{info.name}</span>
-                    <span className="block font-mono text-[9px] text-[#111111]/40 mt-0.5">{info.subtitle}</span>
-                  </button>
+                    <TemplateCard
+                      templateKey={key}
+                      info={info}
+                      active={isActive}
+                      onClick={() => setSelectedTemplate(key)}
+                    />
+                  </div>
                 )
               })}
             </div>
@@ -463,7 +404,7 @@ export default function PortalStage({
             {!showAllTemplates ? (
               <button
                 onClick={() => setShowAllTemplates(true)}
-                className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
+                className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]/70"
               >
                 + Show all 15 templates
               </button>
@@ -474,28 +415,19 @@ export default function PortalStage({
                   if (!templates.length) return null
                   return (
                     <div key={genre} className="mt-3 first:mt-0">
-                      <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+                      <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">
                         {GENRE_LABELS[genre]}
                       </p>
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {templates.map((key) => {
-                          const info = TEMPLATE_INFO[key]
-                          const isActive = key === activeTemplate
-                          return (
-                            <button
-                              key={key}
-                              onClick={() => setSelectedTemplate(key)}
-                              className={`border p-3 text-left transition-all ${
-                                isActive
-                                  ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
-                                  : 'border-[#111111]/10 hover:border-[#111111]/20'
-                              }`}
-                            >
-                              <span className="block font-mono text-[11px] font-semibold text-[#111111]/80">{info.name}</span>
-                              <span className="block font-mono text-[9px] text-[#111111]/40 mt-0.5">{info.subtitle}</span>
-                            </button>
-                          )
-                        })}
+                        {templates.map((key) => (
+                          <TemplateCard
+                            key={key}
+                            templateKey={key}
+                            info={TEMPLATE_INFO[key]}
+                            active={key === activeTemplate}
+                            onClick={() => setSelectedTemplate(key)}
+                          />
+                        ))}
                       </div>
                     </div>
                   )
@@ -505,21 +437,21 @@ export default function PortalStage({
           </div>
 
           {/* Active template detail bar */}
-          <div className="flex items-start gap-3 border-t border-[#111111]/[0.06] px-6 py-3 bg-[#111111]/[0.02]">
+          <div className="flex items-start gap-3 border-t border-[#e5e5e0] px-6 py-3 bg-[#f5f5f0]">
             <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#FF3333]" />
             <div>
               <p className="text-[12px] font-medium text-[#111111]/70">
                 {TEMPLATE_INFO[activeTemplate].name} — {TEMPLATE_INFO[activeTemplate].vibe}
               </p>
-              <p className="mt-0.5 font-mono text-[10px] text-[#111111]/40">
+              <p className="mt-0.5 font-mono text-[10px] text-[#111111]/60">
                 Font: {TEMPLATE_INFO[activeTemplate].font} · You can change this anytime in the Style menu.
               </p>
             </div>
           </div>
 
           {/* Platform selection */}
-          <div className="border-t border-[#111111]/[0.06] px-6 py-4">
-            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">
+          <div className="border-t border-[#e5e5e0] px-6 py-4">
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">
               Where will you publish?
             </p>
             <div className="flex gap-2">
@@ -533,7 +465,7 @@ export default function PortalStage({
                   className={`flex-1 border px-3 py-2.5 text-left transition-all ${
                     selectedPlatform === p.key
                       ? 'border-[#FF3333] bg-[#FF3333]/[0.04]'
-                      : 'border-[#111111]/10 hover:border-[#111111]/20'
+                      : 'border-[#e5e5e0] hover:border-[#111111]/40'
                   }`}
                 >
                   <span className={`block font-mono text-[11px] font-semibold ${
@@ -541,16 +473,16 @@ export default function PortalStage({
                   }`}>
                     {p.label}
                   </span>
-                  <span className="block font-mono text-[9px] text-[#111111]/40 mt-0.5">{p.detail}</span>
+                  <span className="block font-mono text-[9px] text-[#111111]/60 mt-0.5">{p.detail}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-[#111111]/[0.06] px-6 py-4">
+          <div className="flex items-center justify-between border-t border-[#e5e5e0] px-6 py-4">
             <button
               onClick={() => { setText(''); setAnalysis(null); setPhase('idle'); setSelectedPlatform(null); setSelectedTemplate(null); setShowAllTemplates(false) }}
-              className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors hover:text-[#111111]/70"
+              className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]/70"
             >
               Start over
             </button>
@@ -563,7 +495,7 @@ export default function PortalStage({
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

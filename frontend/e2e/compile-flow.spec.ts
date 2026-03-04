@@ -2,16 +2,16 @@ import { test, expect } from '@playwright/test'
 
 /**
  * Compile flow E2E tests — verify the full manuscript → PDF pipeline.
- * Requires a running backend with Pandoc/LuaLaTeX installed.
+ * Requires a running backend with Pandoc/Typst installed.
  *
  * These tests are skipped in CI unless BACKEND_AVAILABLE=true is set,
- * because they require a fully configured backend with LaTeX toolchain.
+ * because they require a fully configured backend with Typst toolchain.
  */
 
 const BACKEND_AVAILABLE = process.env.BACKEND_AVAILABLE === 'true'
 
 test.describe('Compile flow', () => {
-  test.skip(!BACKEND_AVAILABLE, 'Requires running backend with Pandoc/LuaLaTeX')
+  test.skip(!BACKEND_AVAILABLE, 'Requires running backend with Pandoc/Typst')
 
   test('can type manuscript and trigger preview', async ({ page }) => {
     await page.goto('/app')

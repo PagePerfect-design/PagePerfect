@@ -34,7 +34,7 @@ type ReadinessChecks = {
   redis?: string
   pocketbase?: string
   pandoc?: string
-  lualatex?: string
+  typst?: string
   disk?: string
 }
 
@@ -125,7 +125,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
             <h2 className="font-display text-lg font-bold tracking-tight text-[#111111]">
               API Connectivity
             </h2>
-            <p className="mt-1 font-body text-sm text-[#555555]">
+            <p className="mt-1 font-body text-sm text-[#4a4a4a]">
               Frontend calls{' '}
               <code className="border border-[#e5e5e0] bg-[#f5f5f0] px-1.5 py-0.5 font-mono text-[12px] text-[#111111]">
                 /api/*
@@ -144,7 +144,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
           <button
             onClick={() => fetchAll()}
             disabled={loading}
-            className="min-h-[44px] border border-[#111111] bg-[#111111] px-5 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-colors duration-75 hover:bg-[#333333] disabled:opacity-50"
+            className="min-h-[44px] border border-[#111111] bg-[#111111] px-5 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-colors duration-200 ease-pp hover:bg-[#333333] disabled:opacity-50"
           >
             {loading ? 'Checking\u2026' : 'Re-check'}
           </button>
@@ -202,7 +202,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
           Server Capabilities
         </h2>
         {!details?.ok ? (
-          <p className="font-body text-sm text-[#555555]">
+          <p className="font-body text-sm text-[#4a4a4a]">
             No details endpoint or not available.
           </p>
         ) : (
@@ -255,13 +255,13 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
                   </span>
                 </div>
                 {details.fonts?.probeWorking && (
-                  <span className="font-mono text-[11px] text-[#555555]">
+                  <span className="font-mono text-[11px] text-[#4a4a4a]">
                     {details.fonts.available}/{details.fonts.total} installed
                   </span>
                 )}
               </div>
-              <p className="mt-1 ml-5 font-body text-sm text-[#555555]">
-                {details.pdfEngine === 'lualatex' ? 'LuaLaTeX' : 'XeLaTeX'} fonts required by the{' '}
+              <p className="mt-1 ml-5 font-body text-sm text-[#4a4a4a]">
+                Typst fonts required by the{' '}
                 {details.templates?.length || 15} design templates.
               </p>
 
@@ -289,7 +289,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
                 <div className="mt-3 ml-5">
                   <button
                     onClick={() => setFontExpanded(!fontExpanded)}
-                    className="min-h-[44px] font-mono text-[11px] text-[#FF3333] transition-colors duration-75 hover:text-[#E52222]"
+                    className="min-h-[44px] font-mono text-[11px] text-[#FF3333] transition-colors duration-200 ease-pp hover:text-[#E52222]"
                   >
                     {fontExpanded ? 'Hide' : 'Show'} full font inventory
                   </button>
@@ -322,7 +322,7 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
                                 {f.category}
                               </span>
                             </div>
-                            <div className="shrink-0 text-right font-mono text-[11px] text-[#555555]">
+                            <div className="shrink-0 text-right font-mono text-[11px] text-[#4a4a4a]">
                               {f.available === false && f.bestFallback ? (
                                 <span className="text-[#dc2626]">
                                   fallback: {f.bestFallback}
@@ -350,13 +350,13 @@ export default function StatusClient({ apiBase }: { apiBase: string }) {
       <div className="flex flex-wrap gap-3">
         <Link
           href="/app"
-          className="inline-flex min-h-[44px] items-center border border-[#FF3333] bg-[#FF3333] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-colors duration-75 hover:bg-[#E52222]"
+          className="inline-flex min-h-[44px] items-center border border-[#FF3333] bg-[#FF3333] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-colors duration-200 ease-pp hover:bg-[#E52222]"
         >
           Open Editor
         </Link>
         <Link
           href="/docs"
-          className="inline-flex min-h-[44px] items-center border border-[#111111] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111] transition-colors duration-75 hover:bg-[#111111] hover:text-white"
+          className="inline-flex min-h-[44px] items-center border border-[#111111] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111] transition-colors duration-200 ease-pp hover:bg-[#111111] hover:text-white"
         >
           Documentation
         </Link>

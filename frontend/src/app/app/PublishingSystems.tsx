@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   BookOpen,
   Quote,
@@ -101,7 +100,7 @@ function StatusBadge({ status }: { status: StatusIcon }) {
     case 'info':
       return <Info className="h-3 w-3 text-blue-500" />
     default:
-      return <span className="h-2 w-2 rounded-full bg-[#111111]/10" />
+      return <span className="h-2 w-2 bg-[#111111]/10" />
   }
 }
 
@@ -143,7 +142,7 @@ function CheckList({ checks }: { checks: CheckItem[] }) {
           </div>
           <div className="min-w-0">
             <span className="text-[11px] font-medium text-[#111111]/50">{check.name}</span>
-            <p className="text-[10px] leading-[1.5] text-[#111111]/35">{check.detail}</p>
+            <p className="text-[10px] leading-[1.5] text-[#111111]/55">{check.detail}</p>
           </div>
         </div>
       ))}
@@ -157,17 +156,17 @@ function StructurePanel({ data }: { data: any }) {
   return (
     <div className="space-y-3">
       {/* Section map */}
-      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#f5f5f0]">
         <div className="bg-white p-2.5">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Front Matter</p>
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/40">Front Matter</p>
           <p className="mt-1 text-[11px] font-medium text-[#111111]/60">{structure.frontMatter.length || '—'}</p>
         </div>
         <div className="bg-white p-2.5">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Body</p>
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/40">Body</p>
           <p className="mt-1 text-[11px] font-medium text-[#111111]/60">{structure.chapterCount} chapters</p>
         </div>
         <div className="bg-white p-2.5">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Back Matter</p>
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/40">Back Matter</p>
           <p className="mt-1 text-[11px] font-medium text-[#111111]/60">{structure.backMatter.length || '—'}</p>
         </div>
       </div>
@@ -178,8 +177,8 @@ function StructurePanel({ data }: { data: any }) {
           {sections.map((s: any, i: number) => (
             <div key={i} className="flex items-center gap-2 text-[10px]">
               <span className={`h-1.5 w-1.5 rounded-full ${s.matter === 'front' ? 'bg-blue-500' : s.matter === 'body' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              <span className="text-[#111111]/40">{s.label}</span>
-              <span className="text-[#111111]/20">line {s.line}</span>
+              <span className="text-[#111111]/60">{s.label}</span>
+              <span className="text-[#111111]/40">line {s.line}</span>
             </div>
           ))}
         </div>
@@ -187,7 +186,7 @@ function StructurePanel({ data }: { data: any }) {
 
       {/* Warnings & suggestions */}
       {warnings.length > 0 && (
-        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
+        <div className="space-y-1 border-t border-[#e5e5e0] pt-2">
           {warnings.map((w: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
@@ -197,7 +196,7 @@ function StructurePanel({ data }: { data: any }) {
         </div>
       )}
       {suggestions.length > 0 && (
-        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
+        <div className="space-y-1 border-t border-[#e5e5e0] pt-2">
           {suggestions.map((s: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <Info className="mt-0.5 h-3 w-3 shrink-0 text-blue-500" />
@@ -218,7 +217,7 @@ function TypographyPanel({ data }: { data: any }) {
         <ScoreRing score={data.score} grade={data.grade} />
         <div>
           <p className="text-[12px] font-medium text-[#111111]/60">Typography Score</p>
-          <p className="text-[10px] text-[#111111]/30">{data.score}/100 — {data.checks.filter((c: any) => c.status === 'pass').length}/{data.checks.length} checks passed</p>
+          <p className="text-[10px] text-[#111111]/50">{data.score}/100 — {data.checks.filter((c: any) => c.status === 'pass').length}/{data.checks.length} checks passed</p>
         </div>
       </div>
       <CheckList checks={data.checks} />
@@ -234,15 +233,15 @@ function PrintQAPanel({ data }: { data: any }) {
         <ScoreRing score={data.score} grade={data.grade} />
         <div>
           <p className="text-[12px] font-medium text-[#111111]/60">Print Quality Score</p>
-          <p className="text-[10px] text-[#111111]/30">{data.score}/100</p>
+          <p className="text-[10px] text-[#111111]/50">{data.score}/100</p>
         </div>
       </div>
       <CheckList checks={data.checks} />
       {data.recommendations?.length > 0 && (
-        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
-          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/20">Recommendations</p>
+        <div className="space-y-1 border-t border-[#e5e5e0] pt-2">
+          <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/40">Recommendations</p>
           {data.recommendations.map((r: string, i: number) => (
-            <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/35">• {r}</p>
+            <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/55">• {r}</p>
           ))}
         </div>
       )}
@@ -254,7 +253,7 @@ function AssetsPanel({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-4 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-4 gap-px overflow-hidden bg-[#f5f5f0]">
         {[
           { label: 'Figures', value: data.stats.figureCount },
           { label: 'Tables', value: data.stats.tableCount },
@@ -262,7 +261,7 @@ function AssetsPanel({ data }: { data: any }) {
           { label: 'No Caption', value: data.stats.missingCaptions },
         ].map(s => (
           <div key={s.label} className="bg-white p-2">
-            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
+            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/40">{s.label}</p>
             <p className="mt-0.5 text-[12px] font-bold text-[#111111]/60">{s.value}</p>
           </div>
         ))}
@@ -272,11 +271,11 @@ function AssetsPanel({ data }: { data: any }) {
           {data.issues.slice(0, 8).map((issue: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <StatusBadge status={issue.severity as StatusIcon} />
-              <span className="text-[#111111]/35">{issue.message}</span>
+              <span className="text-[#111111]/55">{issue.message}</span>
             </div>
           ))}
           {data.issues.length > 8 && (
-            <p className="text-[9px] text-[#111111]/20">+ {data.issues.length - 8} more issues</p>
+            <p className="text-[9px] text-[#111111]/40">+ {data.issues.length - 8} more issues</p>
           )}
         </div>
       )}
@@ -288,14 +287,14 @@ function LintPanel({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#f5f5f0]">
         {[
           { label: 'Issues', value: data.stats.totalIssues, color: data.stats.totalIssues > 0 ? 'text-amber-500' : 'text-emerald-500' },
           { label: 'Warnings', value: data.stats.bySeverity?.warn || 0 },
           { label: 'Info', value: data.stats.bySeverity?.info || 0 },
         ].map(s => (
           <div key={s.label} className="bg-white p-2">
-            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
+            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/40">{s.label}</p>
             <p className={`mt-0.5 text-[12px] font-bold ${s.color || 'text-[#111111]/60'}`}>{s.value}</p>
           </div>
         ))}
@@ -306,8 +305,8 @@ function LintPanel({ data }: { data: any }) {
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <StatusBadge status={issue.severity as StatusIcon} />
               <div>
-                <span className="text-[#111111]/40">{issue.message}</span>
-                {issue.fix && <p className="text-[#111111]/25">{issue.fix}</p>}
+                <span className="text-[#111111]/60">{issue.message}</span>
+                {issue.fix && <p className="text-[#111111]/50">{issue.fix}</p>}
               </div>
             </div>
           ))}
@@ -324,21 +323,21 @@ function MultilingualPanel({ data }: { data: any }) {
     <div className="space-y-3">
       <div className="flex flex-wrap gap-1.5">
         {scriptAnalysis.scripts.map((s: any) => (
-          <span key={s.script} className="inline-flex items-center gap-1 rounded-full bg-[#111111]/[0.04] px-2 py-0.5 text-[10px]">
+          <span key={s.script} className="inline-flex items-center gap-1 bg-[#f5f5f0] px-2 py-0.5 text-[10px]">
             <span className={`h-1.5 w-1.5 rounded-full ${s.direction === 'rtl' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-            <span className="text-[#111111]/40">{s.label}</span>
-            <span className="text-[#111111]/20">{s.percentage}%</span>
+            <span className="text-[#111111]/60">{s.label}</span>
+            <span className="text-[#111111]/40">{s.percentage}%</span>
           </span>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-px rounded-lg overflow-hidden bg-[#111111]/[0.04]">
+      <div className="grid grid-cols-3 gap-px overflow-hidden bg-[#f5f5f0]">
         {[
           { label: 'RTL', value: scriptAnalysis.hasRTL ? 'Yes' : 'No' },
           { label: 'Mixed Dir', value: scriptAnalysis.hasMixedDirection ? 'Yes' : 'No' },
           { label: 'Diacritics', value: scriptAnalysis.hasDiacritics ? 'Yes' : 'No' },
         ].map(s => (
           <div key={s.label} className="bg-white p-2">
-            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
+            <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/40">{s.label}</p>
             <p className="mt-0.5 text-[11px] font-medium text-[#111111]/60">{s.value}</p>
           </div>
         ))}
@@ -348,7 +347,7 @@ function MultilingualPanel({ data }: { data: any }) {
           {recommendations.map((r: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-[10px]">
               <StatusBadge status={r.severity as StatusIcon} />
-              <span className="text-[#111111]/35">{r.message}</span>
+              <span className="text-[#111111]/55">{r.message}</span>
             </div>
           ))}
         </div>
@@ -364,15 +363,15 @@ function PlatformPanel({ data }: { data: any }) {
       <div className="flex items-center gap-2">
         <Shield className={`h-4 w-4 ${data.passed ? 'text-emerald-500' : 'text-amber-500'}`} />
         <p className="text-[12px] font-medium text-[#111111]/60">{data.platform}</p>
-        <span className={`rounded-full px-2 py-0.5 text-[9px] font-medium ${data.passed ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+        <span className={`px-2 py-0.5 text-[9px] font-medium ${data.passed ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
           {data.passed ? 'PASSED' : 'ISSUES'}
         </span>
       </div>
       <CheckList checks={data.checks} />
       {data.recommendations?.length > 0 && (
-        <div className="space-y-1 border-t border-[#111111]/[0.06] pt-2">
+        <div className="space-y-1 border-t border-[#e5e5e0] pt-2">
           {data.recommendations.map((r: string, i: number) => (
-            <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/35">• {r}</p>
+            <p key={i} className="text-[10px] leading-[1.5] text-[#111111]/55">• {r}</p>
           ))}
         </div>
       )}
@@ -384,14 +383,14 @@ function ProvenancePanel({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="space-y-2">
-      <div className="rounded-lg bg-[#111111]/[0.02] p-3 font-mono text-[10px] leading-[1.8]">
-        <div className="flex justify-between"><span className="text-[#111111]/25">Build ID</span><span className="text-[#111111]/40">{data.buildId}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Content Hash</span><span className="text-[#111111]/40">{data.contentHash}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Settings Hash</span><span className="text-[#111111]/40">{data.settingsHash}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Template</span><span className="text-[#111111]/40">{data.config?.template}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Page Size</span><span className="text-[#111111]/40">{data.config?.pageSize}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Words</span><span className="text-[#111111]/40">{data.wordCount?.toLocaleString()}</span></div>
-        <div className="flex justify-between"><span className="text-[#111111]/25">Engine</span><span className="text-[#111111]/40">{data.system?.engine} {data.system?.version}</span></div>
+      <div className="bg-[#111111]/[0.02] p-3 font-mono text-[10px] leading-[1.8]">
+        <div className="flex justify-between"><span className="text-[#111111]/50">Build ID</span><span className="text-[#111111]/60">{data.buildId}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Content Hash</span><span className="text-[#111111]/60">{data.contentHash}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Settings Hash</span><span className="text-[#111111]/60">{data.settingsHash}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Template</span><span className="text-[#111111]/60">{data.config?.template}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Page Size</span><span className="text-[#111111]/60">{data.config?.pageSize}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Words</span><span className="text-[#111111]/60">{data.wordCount?.toLocaleString()}</span></div>
+        <div className="flex justify-between"><span className="text-[#111111]/50">Engine</span><span className="text-[#111111]/60">{data.system?.engine} {data.system?.version}</span></div>
       </div>
     </div>
   )
@@ -400,14 +399,14 @@ function ProvenancePanel({ data }: { data: any }) {
 function ExtensionsPanel({ data }: { data: any }) {
   // Show available tokens (from /api/template-tokens)
   if (!data) return (
-    <p className="text-[10px] text-[#111111]/30">Template extension tokens allow safe overrides of typography, spacing, and heading styles within the design system&apos;s constraints.</p>
+    <p className="text-[10px] text-[#111111]/50">Template extension tokens allow safe overrides of typography, spacing, and heading styles within the design system&apos;s constraints.</p>
   )
   return (
     <div className="space-y-2">
       {Object.entries(data).map(([key, schema]: [string, any]) => (
         <div key={key} className="flex items-center justify-between text-[10px]">
-          <span className="text-[#111111]/35">{schema.label}</span>
-          <span className="font-mono text-[#111111]/20">{schema.default}{schema.unit ? schema.unit : ''}</span>
+          <span className="text-[#111111]/55">{schema.label}</span>
+          <span className="font-mono text-[#111111]/40">{schema.default}{schema.unit ? schema.unit : ''}</span>
         </div>
       ))}
     </div>
@@ -496,7 +495,7 @@ export default function PublishingSystems({
   }
 
   function renderSystemContent(key: SystemKey) {
-    if (!analysis) return <p className="text-[10px] text-[#111111]/20">Run analysis to see results.</p>
+    if (!analysis) return <p className="text-[10px] text-[#111111]/40">Run analysis to see results.</p>
 
     switch (key) {
       case 'structure':    return <StructurePanel data={analysis.structure} />
@@ -534,15 +533,11 @@ export default function PublishingSystems({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.3 }}
-      className="fixed right-0 top-[3.5rem] bottom-0 z-40 w-[380px] border-l border-[#111111]/[0.06] bg-white/95 backdrop-blur-xl overflow-hidden flex flex-col"
+    <div
+      className="fixed right-0 top-[3.5rem] bottom-0 z-40 w-[380px] border-l border-[#e5e5e0] bg-white/95 backdrop-blur-xl overflow-hidden flex flex-col animate-fade-in"
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-[#e5e5e0] px-4 py-3">
         <div className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4 text-[#FF3333]" />
           <span className="font-display text-sm font-semibold text-[#111111]/80">Publishing Systems</span>
@@ -551,12 +546,12 @@ export default function PublishingSystems({
           <button
             onClick={runAnalysis}
             disabled={status === 'loading'}
-            className="flex h-7 items-center gap-1.5 rounded-full bg-[#FF3333]/10 px-3 text-[10px] font-medium text-[#FF3333] transition-colors hover:bg-[#FF3333]/20 disabled:opacity-50"
+            className="flex h-7 items-center gap-1.5 bg-[#FF3333]/10 px-3 text-[10px] font-medium text-[#FF3333] transition-colors hover:bg-[#FF3333]/20 disabled:opacity-50"
           >
             {status === 'loading' ? <Loader2 className="h-3 w-3 animate-spin" /> : <BarChart3 className="h-3 w-3" />}
             {status === 'loading' ? 'Analyzing...' : 'Analyze'}
           </button>
-          <button onClick={onClose} className="text-[#111111]/25 hover:text-[#111111]/40">
+          <button onClick={onClose} className="text-[#111111]/50 hover:text-[#111111]/60">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -564,15 +559,15 @@ export default function PublishingSystems({
 
       {/* Summary bar */}
       {analysis?.summary && (
-        <div className="grid grid-cols-4 gap-px bg-[#111111]/[0.04] border-b border-[#111111]/[0.06]">
+        <div className="grid grid-cols-4 gap-px bg-[#f5f5f0] border-b border-[#e5e5e0]">
           {[
             { label: 'Typo', value: analysis.summary.typographyGrade, color: analysis.summary.typographyGrade === 'A' ? 'text-emerald-500' : 'text-amber-500' },
             { label: 'QA', value: analysis.summary.printQAGrade, color: analysis.summary.printQAGrade === 'A' ? 'text-emerald-500' : 'text-amber-500' },
             { label: 'Lint', value: analysis.summary.lintIssues, color: analysis.summary.lintIssues === 0 ? 'text-emerald-500' : 'text-amber-500' },
-            { label: 'KDP', value: analysis.summary.platformPassed ? '✓' : '—', color: analysis.summary.platformPassed ? 'text-emerald-500' : 'text-[#111111]/25' },
+            { label: 'KDP', value: analysis.summary.platformPassed ? '✓' : '—', color: analysis.summary.platformPassed ? 'text-emerald-500' : 'text-[#111111]/50' },
           ].map(s => (
             <div key={s.label} className="bg-white px-2 py-2 text-center">
-              <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/20">{s.label}</p>
+              <p className="font-mono text-[7px] uppercase tracking-[0.15em] text-[#111111]/40">{s.label}</p>
               <p className={`mt-0.5 font-display text-sm font-bold ${s.color}`}>{s.value}</p>
             </div>
           ))}
@@ -581,7 +576,7 @@ export default function PublishingSystems({
 
       {/* Error state */}
       {error && (
-        <div className="mx-4 mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2">
+        <div className="mx-4 mt-3 border border-red-500/20 bg-red-500/5 px-3 py-2">
           <p className="font-mono text-[10px] text-red-500">{error}</p>
         </div>
       )}
@@ -593,50 +588,44 @@ export default function PublishingSystems({
             <div key={sys.key} className="mb-1">
               <button
                 onClick={() => toggleSystem(sys.key)}
-                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-all ${
+                className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-all ${
                   expandedSystem === sys.key
-                    ? 'bg-[#111111]/[0.04]'
+                    ? 'bg-[#f5f5f0]'
                     : 'hover:bg-[#111111]/[0.02]'
                 }`}
               >
-                <span className="shrink-0 text-[#111111]/30">{sys.icon}</span>
+                <span className="shrink-0 text-[#111111]/50">{sys.icon}</span>
                 <div className="min-w-0 flex-1">
                   <span className="text-[11px] font-medium text-[#111111]/50">{sys.label}</span>
                 </div>
                 <StatusBadge status={getSystemStatus(sys.key)} />
                 {expandedSystem === sys.key
-                  ? <ChevronUp className="h-3 w-3 shrink-0 text-[#111111]/20" />
-                  : <ChevronDown className="h-3 w-3 shrink-0 text-[#111111]/20" />
+                  ? <ChevronUp className="h-3 w-3 shrink-0 text-[#111111]/40" />
+                  : <ChevronDown className="h-3 w-3 shrink-0 text-[#111111]/40" />
                 }
               </button>
 
-              <AnimatePresence>
                 {expandedSystem === sys.key && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
+                  <div
+                    className="overflow-hidden animate-fade-in"
                   >
                     <div className="px-3 pb-3 pt-1">
-                      <p className="mb-2 text-[9px] text-[#111111]/20">{sys.description}</p>
+                      <p className="mb-2 text-[9px] text-[#111111]/40">{sys.description}</p>
                       {status === 'loading' ? (
                         <div className="flex items-center gap-2 py-3">
-                          <Loader2 className="h-3 w-3 animate-spin text-[#111111]/20" />
-                          <span className="text-[10px] text-[#111111]/20">Analyzing...</span>
+                          <Loader2 className="h-3 w-3 animate-spin text-[#111111]/40" />
+                          <span className="text-[10px] text-[#111111]/40">Analyzing...</span>
                         </div>
                       ) : (
                         renderSystemContent(sys.key)
                       )}
                     </div>
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
             </div>
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }

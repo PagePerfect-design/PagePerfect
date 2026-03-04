@@ -1,0 +1,135 @@
+// Memoir — "This is My Story"
+// Warm, literary personal narrative — softer than Paperback, more intimate
+// Libre Baskerville body, decorative scene breaks, warm amber accents
+// Target: Memoir, autobiography, personal essays, travel writing
+//
+// Pure Typst template — no Pandoc syntax. Variables (pp-title, pp-mainfont, etc.) injected by compile pipeline.
+
+// ── COLORS ────────────────────────────────────────────────────
+#let memoiramber = rgb("8B6914")
+#let chapgrey = luma(179) // gray 70%
+
+// ── PAGE GEOMETRY ─────────────────────────────────────────────
+#set page(
+  margin: (top: 1in, bottom: 1in, left: 1in, right: 1in),
+  header: context {
+    let page-num = counter(page).at(here()).first()
+    if page-num <= 1 { return }
+    let is-odd = calc.odd(page-num)
+    set text(size: 8pt)
+    if is-odd {
+      // Odd pages: chapter name (italic) right-aligned
+      align(right, emph[
+        #context {
+          let headings = query(heading.where(level: 1).before(here()))
+          if headings.len() > 0 { headings.last().body }
+        }
+      ])
+    } else {
+      // Even pages: book title (italic) left-aligned
+      align(left, emph[#pp-title])
+    }
+  },
+  footer: context {
+    align(center, text(size: 9pt)[#counter(page).display()])
+  },
+)
+
+// ── TYPOGRAPHY — Warm Literary Serif ─────────────────────────
+#set text(
+  font: pp-mainfont,
+  size: 11pt,
+  ligatures: true,
+  kerning: true,
+  hyphenate: true,
+  lang: "en",
+)
+
+// ── SPACING — Comfortable reading ────────────────────────────
+#set par(
+  first-line-indent: 1.5em,
+  spacing: 0pt,
+  justify: true,
+  leading: 0.65em * 1.35,
+)
+
+// ── CHAPTER HEADINGS — Intimate, Warm ────────────────────────
+// Centered chapter number in grey + italic amber title + thin rule
+#show heading.where(level: 1): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
+  pagebreak(weak: true, to: "odd")
+  v(36pt)
+  align(center)[
+    #text(size: 11pt, fill: chapgrey)[#counter(heading).display()]
+    #v(12pt)
+    #text(size: 16pt, style: "italic", fill: memoiramber)[#it.body]
+    #v(6pt)
+    #line(length: 1.2cm, stroke: 0.3pt)
+  ]
+  v(24pt)
+}
+
+// H2: Left-aligned bold
+#show heading.where(level: 2): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
+  v(20pt)
+  text(size: 14pt, weight: "bold")[#it.body]
+  v(8pt)
+}
+
+// H3: Left-aligned italic
+#show heading.where(level: 3): it => {
+  set par(first-line-indent: 0pt, spacing: 0pt, justify: false)
+  v(14pt)
+  text(size: 11pt, style: "italic")[#it.body]
+  v(6pt)
+}
+
+// ── SCENE BREAKS ─────────────────────────────────────────────
+#let scene-break() = {
+  v(14pt)
+  align(center, text(size: 10pt, fill: memoiramber)[~ #h(1em) ~ #h(1em) ~])
+  v(14pt)
+}
+
+// ── BLOCK QUOTES — Warm, Intimate ────────────────────────────
+#show quote: it => {
+  pad(left: 1.5em, right: 1.5em)[
+    #set text(style: "italic")
+    #set par(leading: 0.65em * 1.2)
+    #it.body
+  ]
+}
+
+// ── LINKS ─────────────────────────────────────────────────────
+#show link: it => {
+  text(fill: memoiramber)[#it]
+}
+
+// ── LISTS ─────────────────────────────────────────────────────
+#set enum(indent: 1.5em)
+#set list(indent: 1.5em)
+
+// ── TABLES ────────────────────────────────────────────────────
+#show table: set text(size: 10pt)
+
+// %% CONTENT %%
+
+#if pp-title != none [
+// Title page — warm, centered, intimate
+#page(header: none, footer: none)[
+  #align(center + horizon)[
+    #text(size: 28pt, style: "italic", fill: memoiramber)[#pp-title]
+    #v(10pt)
+    #line(length: 1.5cm, stroke: 0.3pt)
+    #if pp-author != none [
+    #v(14pt)
+    #text(size: 14pt)[#pp-author]
+    ]
+    #if pp-date != none [
+    #v(8pt)
+    #text(size: 12pt, fill: chapgrey)[#pp-date]
+    ]
+  ]
+]
+]

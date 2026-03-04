@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { ARTICLES } from '../articles'
 
@@ -46,7 +47,7 @@ function estimateWordCount(article: (typeof ARTICLES)[number]): number {
   return Math.round(allText.split(/\s+/).length)
 }
 
-function JsonLd({ article }: { article: (typeof ARTICLES)[number] }) {
+function JsonLd({ article, nonce }: { article: (typeof ARTICLES)[number]; nonce: string }) {
   const seo = article.seo
   const wordCount = estimateWordCount(article)
 
@@ -87,6 +88,7 @@ function JsonLd({ article }: { article: (typeof ARTICLES)[number] }) {
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
     />
   )
@@ -102,6 +104,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default async function ArticlePage({ params }: Props) {
   const { slug } = await params
+  const nonce = (await headers()).get('x-nonce') ?? ''
   const index = ARTICLES.findIndex((a) => a.slug === slug)
   if (index === -1) notFound()
 
@@ -111,7 +114,7 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <>
-      <JsonLd article={article} />
+      <JsonLd article={article} nonce={nonce} />
       <main id="main">
         <article className="py-12 md:py-20">
           <div className="mx-auto max-w-3xl px-6 md:px-8">
@@ -210,14 +213,14 @@ export default async function ArticlePage({ params }: Props) {
               <p className="font-display text-lg font-bold text-[#111]">
                 Every principle above is built into PagePerfect.
               </p>
-              <p className="mt-2 max-w-md font-body text-sm text-[#555555]">
+              <p className="mt-2 max-w-md font-body text-sm text-[#4a4a4a]">
                 Baseline grids, proportional type scales, and 15 professionally engineered
                 templates. Preview for free, export KDP-ready PDFs from $19.99.
               </p>
               <div className="mt-5 flex items-center gap-4">
                 <Link
                   href="/app"
-                  className="inline-block border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-75 hover:bg-[#E52222] hover:border-[#E52222]"
+                  className="inline-block border border-[#FF3333] bg-[#FF3333] px-8 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222] hover:border-[#E52222]"
                 >
                   Open the Editor &rarr;
                 </Link>

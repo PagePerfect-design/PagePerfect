@@ -11,7 +11,6 @@ const rateLimit = require('express-rate-limit');
 const fontAvailability = require('../font-availability');
 const headingVariants = require('../heading-variants');
 const bookEngineering = require('../book-engineering');
-const multilingual = require('../multilingual');
 const provenance = require('../provenance');
 const log = require('../logger');
 const { processCompileJob } = require('../compile-worker');
@@ -166,10 +165,17 @@ module.exports = function compileRoutes(ctx) {
     };
     const pandoc = spawn('pandoc', [docxPath, '-t', 'markdown', '--wrap=none', `--resource-path=${tmpBase}`], { cwd: tmpBase, env: convEnv });
     let stdout = '', stderr = '';
+    let responded = false;
     pandoc.stdout.on('data', (d) => { stdout += d.toString(); });
     pandoc.stderr.on('data', (d) => { stderr += d.toString(); });
+    pandoc.on('error', (err) => {
+      log.error({ module: 'convert', err: err.message }, 'Pandoc spawn error');
+      try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+      if (!responded) { responded = true; res.status(500).json({ error: 'conversion_failed', message: 'Pandoc could not be started.' }); }
+    });
     const killer = setTimeout(() => { try { pandoc.kill('SIGKILL'); } catch {} }, 30_000);
     pandoc.on('close', (code) => {
+      if (responded) return;
       clearTimeout(killer);
       try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
       if (code === 0 && stdout.length > 0) return res.json({ markdown: stdout });
@@ -182,7 +188,7 @@ module.exports = function compileRoutes(ctx) {
   // POST /api/compile — Async (202 + polling) with sync fallback
   // ══════════════════════════════════════════════════════════
   router.post('/api/compile', ctx.compileLimiter, async (req, res) => {
-    let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts, headingVariant: hv, download, assets } = req.body || {};
+    let { manuscriptText, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts, headingVariant: hv, download, assets, author, date: docDate } = req.body || {};
     safeMode = Boolean(safeMode);
     compileMode = (compileMode === 'full') ? 'full' : 'fast';
     hv = headingVariants.HEADING_VARIANTS.includes(hv) ? hv : 'classic';
@@ -250,8 +256,29 @@ module.exports = function compileRoutes(ctx) {
         const queueKey = isDownload ? `dl-${crypto.randomUUID()}` : `preview-${user.userId || req.ip}`;
         if (!isDownload) {
           const existingJob = await ctx.compileQueue.getJob(queueKey);
-          if (existingJob) { const state = await existingJob.getState(); if (state === 'waiting' || state === 'delayed') await existingJob.remove(); }
+          if (existingJob) {
+            const state = await existingJob.getState();
+            // Remove stale jobs in ANY non-terminal state so new compiles aren't blocked.
+            // Previously only 'waiting'/'delayed' were cleared, leaving 'active' (stalled)
+            // jobs permanently blocking the deterministic preview ID.
+            if (['waiting', 'delayed', 'active', 'completed', 'failed'].includes(state)) {
+              if (state === 'active') log.warn({ module: 'compile', jobId: queueKey }, 'Clearing stalled active job — was blocking new compiles');
+              try { await existingJob.remove(); } catch (e) {
+                log.warn({ module: 'compile', jobId: queueKey, state, err: e.message }, 'Failed to remove existing job, will try discard');
+                try { await existingJob.discard(); await existingJob.moveToFailed(new Error('Superseded by new compile'), queueKey, false); } catch {}
+              }
+            }
+          }
+          // Clear cached result for this deterministic ID so the status endpoint
+          // doesn't short-circuit with a stale failure from Redis/in-memory cache.
+          ctx.deleteJobResult(queueKey);
         }
+
+        // Increment compile generation for this deterministic preview ID.
+        // The on('completed') handler checks this to discard stale results from
+        // old compiles that finish after a newer compile was enqueued.
+        const compileGen = (ctx.jobGenerations.get(queueKey) || 0) + 1;
+        ctx.jobGenerations.set(queueKey, compileGen);
 
         const manuscriptDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-enqueue-'));
         const manuscriptPath = path.join(manuscriptDir, 'manuscript.md');
@@ -261,8 +288,12 @@ module.exports = function compileRoutes(ctx) {
           manuscriptPath, template, title, pageSize, marginPreset,
           safeMode, compileMode, outputFormat,
           customFonts: customFonts || null, headingVariant: hv,
-          isDownload, userId: user.userId, extensions: req.body.extensions || null,
+          isDownload, userId: user.userId, userTier,
+          extensions: req.body.extensions || null,
           assets: validAssets.length > 0 ? validAssets : null,
+          author: typeof author === 'string' ? author.slice(0, 200) : null,
+          date: typeof docDate === 'string' ? docDate.slice(0, 100) : null,
+          _compileGen: compileGen,
         }, { jobId: queueKey, priority: ctx.hasTier(userTier, 'publisher') ? 1 : 5 });
 
         const resultSecret = !user.userId ? crypto.randomBytes(16).toString('hex') : null;
@@ -280,45 +311,63 @@ module.exports = function compileRoutes(ctx) {
     }
 
     // ── Sync fallback ──
+    // Without Redis/BullMQ, compile synchronously but store the result
+    // so the frontend can poll status and fetch SVG pages (same flow as async).
     if (ctx.activeSyncCompiles >= ctx.MAX_SYNC_CONCURRENT) return res.status(503).json({ error: 'server_busy', message: 'Server is at capacity. Please try again in a moment.' });
     ctx.activeSyncCompiles++;
 
-    try {
-      const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-sync-'));
-      const manuscriptPath = path.join(tmpDir, 'manuscript.md');
-      await fsp.writeFile(manuscriptPath, manuscriptText, 'utf8');
+    // Generate a deterministic job ID for this sync compile (same format as async)
+    const syncJobId = isDownload ? `dl-sync-${crypto.randomUUID()}` : `preview-sync-${user.userId || req.ip}`;
 
-      const result = await processCompileJob({
-        data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, extensions: req.body.extensions || null, assets: validAssets.length > 0 ? validAssets : null },
-      }, ctx.DESIGN_TEMPLATES);
+    // Clear any prior sync result for this key
+    ctx.deleteJobResult(syncJobId);
 
-      if (!result.success) { fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {}); return res.status(400).json(result); }
+    // Return 202 immediately so the frontend starts polling — compile runs in background
+    const resultSecret = !user.userId ? crypto.randomBytes(16).toString('hex') : null;
+    if (resultSecret) ctx.storeJobSecret(syncJobId, resultSecret);
 
-      const isEpub = result.outputFormat === 'EPUB3';
-      const contentType = isEpub ? 'application/epub+zip' : 'application/pdf';
-      const filename = isEpub ? `${slug(title) || 'manuscript'}.epub` : buildFilename(title, template, pageSize);
+    res.status(202).json({
+      jobId: syncJobId, status: 'queued', message: 'Compilation started.',
+      statusUrl: `/api/compile/status/${syncJobId}`, resultUrl: `/api/compile/result/${syncJobId}`,
+      ...(resultSecret ? { resultSecret } : {}),
+    });
 
-      if (result.buildId) res.setHeader('X-PP-Build-Id', result.buildId);
-      if (result.contentHash) res.setHeader('X-PP-Content-Hash', result.contentHash);
-      if (result.elapsed) res.setHeader('X-PP-Compile-Time', String(result.elapsed));
-      if (result.fontFallback) res.setHeader('X-PP-Font-Fallback', result.fontFallback);
-      res.setHeader('X-PP-Watermarked', result.needsWatermark ? 'true' : 'false');
-      res.setHeader('X-PP-Template', result.template || template);
-      res.setHeader('X-PP-Format', result.outputFormat || 'PDF');
-      res.setHeader('X-PP-Filename', filename);
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-      res.setHeader('Cache-Control', 'no-store');
+    // Run compile in background (response already sent)
+    (async () => {
+      try {
+        const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-sync-'));
+        const manuscriptPath = path.join(tmpDir, 'manuscript.md');
+        await fsp.writeFile(manuscriptPath, manuscriptText, 'utf8');
 
-      const stream = fs.createReadStream(result.pdfPath);
-      stream.on('close', () => { fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {}); fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {}); });
-      stream.pipe(res);
-    } catch (err) {
-      log.error({ module: 'compile:sync', err: err.message }, 'Compilation error');
-      if (!res.headersSent) res.status(500).json({ error: 'compile_failed', message: err.message });
-    } finally {
-      ctx.activeSyncCompiles--;
-    }
+        const result = await processCompileJob({
+          id: syncJobId,
+          data: { manuscriptPath, template, title, pageSize, marginPreset, safeMode, compileMode, outputFormat, customFonts: customFonts || null, headingVariant: hv, isDownload, userId: user.userId, userTier, extensions: req.body.extensions || null, assets: validAssets.length > 0 ? validAssets : null, author: typeof author === 'string' ? author.slice(0, 200) : null, date: typeof docDate === 'string' ? docDate.slice(0, 100) : null },
+        }, ctx.DESIGN_TEMPLATES);
+
+        if (!result.success) {
+          fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+          ctx.storeJobResult(syncJobId, result);
+          return;
+        }
+
+        // Persist PDF to results store so it survives temp dir cleanup
+        const persistedPath = await ctx.persistPdf(syncJobId, result.pdfPath);
+        if (persistedPath) {
+          result.pdfPath = persistedPath;
+          if (result.tmpBase) fsp.rm(result.tmpBase, { recursive: true, force: true }).catch(() => {});
+          delete result.tmpBase;
+        }
+        fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+
+        ctx.storeJobResult(syncJobId, result);
+        log.info({ module: 'compile:sync', jobId: syncJobId, template, elapsed: result.elapsed, svgPages: (result.svgPages || []).length }, 'Sync compile stored');
+      } catch (err) {
+        log.error({ module: 'compile:sync', jobId: syncJobId, err: err.message }, 'Sync compilation error');
+        ctx.storeJobResult(syncJobId, { success: false, error: 'compile_failed', message: err.message, warnings: [] });
+      } finally {
+        ctx.activeSyncCompiles--;
+      }
+    })();
   });
 
   // ══════════════════════════════════════════════════════════
@@ -344,7 +393,14 @@ module.exports = function compileRoutes(ctx) {
       // If debug contains a disk reference, load and return the full payload
       if (result.debug && result.debug.debugRef && typeof result.debug.debugRef === 'string') {
         try {
-          const raw = fs.readFileSync(result.debug.debugRef, 'utf8');
+          // SECURITY: Validate debugRef is within the expected debug directory to prevent path traversal
+          const DEBUG_DIR = path.join(os.tmpdir(), 'pp-debug');
+          const resolvedPath = path.resolve(result.debug.debugRef);
+          if (!resolvedPath.startsWith(DEBUG_DIR)) {
+            log.warn({ module: 'status', jobId: id, debugRef: result.debug.debugRef }, 'Debug artifact path traversal attempt blocked');
+            return { texSource: null, latexLog: null, headerTex: null, filesInDir: [], captureError: 'Invalid debug reference path' };
+          }
+          const raw = fs.readFileSync(resolvedPath, 'utf8');
           return JSON.parse(raw);
         } catch {
           log.warn({ module: 'status', jobId: id, debugRef: result.debug.debugRef }, 'Failed to load debug artifacts from disk');
@@ -356,7 +412,7 @@ module.exports = function compileRoutes(ctx) {
 
     const cached = await ctx.getJobResult(id);
     if (cached) {
-      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, debugMeta: cached.debugMeta || null, resultUrl: `/api/compile/result/${id}` });
+      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, debugMeta: cached.debugMeta || null, engine: cached.engine || null, layoutReport: cached.layoutReport || null, svgPageCount: cached.svgPageCount || 0, resultUrl: `/api/compile/result/${id}` });
       const debug = resolveDebug(cached);
       return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: cached.detail, debug, debugMeta: cached.debugMeta || null });
     }
@@ -374,12 +430,23 @@ module.exports = function compileRoutes(ctx) {
           if (state === 'completed' || state === 'failed') {
             const rv = job.returnvalue;
             if (rv && typeof rv === 'object') {
+              // Guard: check compile generation to avoid storing stale results.
+              // BullMQ may return a completed job from an OLD compile after the
+              // deterministic ID was reused for a newer compile.
+              const rvGen = rv._compileGen ?? job.data?._compileGen;
+              const currentGen = ctx.jobGenerations.get(id);
+              if (rvGen !== undefined && currentGen !== undefined && rvGen < currentGen) {
+                // Stale result from superseded compile — tell frontend to keep polling
+                return res.json({ jobId: id, status: 'active', progress: 0 });
+              }
+
               // Persist PDF if the on('completed') handler hasn't done it yet
               const alreadyPersisted = ctx.resultStore ? ctx.resultStore.owns(rv.pdfPath) : (rv.pdfPath && rv.pdfPath.startsWith(ctx.RESULTS_DIR));
               if (rv.success && rv.pdfPath && !alreadyPersisted) {
                 try {
                   const persistedPath = await ctx.persistPdf(id, rv.pdfPath);
                   if (persistedPath) {
+                    // SVG pages are in-memory (rv.svgPages) — no file copy needed.
                     if (rv.tmpBase) fsp.rm(rv.tmpBase, { recursive: true, force: true }).catch(() => {});
                     rv.pdfPath = persistedPath;
                     delete rv.tmpBase;
@@ -388,7 +455,7 @@ module.exports = function compileRoutes(ctx) {
               }
               ctx.storeJobResult(id, rv);
               if (rv.success) {
-                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, debugMeta: rv.debugMeta || null, resultUrl: `/api/compile/result/${id}` });
+                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, debugMeta: rv.debugMeta || null, engine: rv.engine || null, layoutReport: rv.layoutReport || null, svgPageCount: rv.svgPageCount || 0, resultUrl: `/api/compile/result/${id}` });
               }
               const debug = resolveDebug(rv);
               return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail, debug, debugMeta: rv.debugMeta || null });
@@ -422,8 +489,11 @@ module.exports = function compileRoutes(ctx) {
     } else {
       const storedSecret = await ctx.getJobSecret(id);
       if (storedSecret) {
-        const providedSecret = req.query.secret || req.headers['x-pp-result-secret'];
-        if (providedSecret !== storedSecret) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
+        const providedSecret = String(req.query.secret || req.headers['x-pp-result-secret'] || '');
+        // Timing-safe comparison to prevent brute-force timing attacks
+        const secretsMatch = storedSecret.length === providedSecret.length &&
+          crypto.timingSafeEqual(Buffer.from(storedSecret), Buffer.from(providedSecret));
+        if (!secretsMatch) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
         ctx.deleteJobResult(`${id}:secret`);
       }
     }
@@ -451,8 +521,77 @@ module.exports = function compileRoutes(ctx) {
     const stream = ctx.resultStore
       ? ctx.resultStore.createReadStream(result.pdfPath)
       : fs.createReadStream(result.pdfPath);
-    stream.on('error', () => { if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' }); });
+    stream.on('error', (err) => {
+      log.error({ module: 'compile:stream', jobId: id, err: err.message }, 'PDF stream error');
+      stream.destroy();
+      if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read PDF.' });
+    });
+    res.on('close', () => { if (!stream.destroyed) stream.destroy(); });
     stream.pipe(res);
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // GET /api/compile/pages/:id — Bulk SVG pages (all in one JSON response)
+  // Eliminates per-page file serving — SVGs flow through memory/Redis.
+  // ══════════════════════════════════════════════════════════
+  router.get('/api/compile/pages/:id', async (req, res) => {
+    const { id } = req.params;
+    const result = await ctx.getJobResult(id);
+    if (!result) return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });
+    if (!result.success) return res.status(400).json({ error: 'compile_failed', message: 'Compilation was not successful.' });
+
+    // Auth check (same as result endpoint)
+    if (result.userId) {
+      try {
+        const requester = await ctx.verifyUserTier(req);
+        if (requester.userId !== result.userId) return res.status(403).json({ error: 'forbidden', message: 'Not authorized.' });
+      } catch { return res.status(403).json({ error: 'forbidden', message: 'Not authorized.' }); }
+    } else {
+      const storedSecret = await ctx.getJobSecret(id);
+      if (storedSecret) {
+        const providedSecret = String(req.query.secret || req.headers['x-pp-result-secret'] || '');
+        const secretsMatch = storedSecret.length === providedSecret.length &&
+          crypto.timingSafeEqual(Buffer.from(storedSecret), Buffer.from(providedSecret));
+        if (!secretsMatch) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
+      }
+    }
+
+    res.json({ pages: result.svgPages || [], total: result.svgPageCount || 0 });
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // GET /api/compile/page/:id/:page — Serve individual SVG page (legacy)
+  // ══════════════════════════════════════════════════════════
+  router.get('/api/compile/page/:id/:page', async (req, res) => {
+    const { id, page } = req.params;
+    const pageNum = parseInt(page, 10);
+    if (isNaN(pageNum) || pageNum < 1) return res.status(400).json({ error: 'invalid_page', message: 'Page number must be a positive integer.' });
+
+    const result = await ctx.getJobResult(id);
+    if (!result) return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });
+    if (!result.success) return res.status(400).json({ error: 'compile_failed', message: 'Compilation was not successful.' });
+
+    // Auth check (same as result endpoint)
+    if (result.userId) {
+      const requester = await ctx.verifyUserTier(req);
+      if (requester.userId !== result.userId) return res.status(403).json({ error: 'forbidden', message: 'Not authorized.' });
+    } else {
+      const storedSecret = await ctx.getJobSecret(id);
+      if (storedSecret) {
+        const providedSecret = req.query.secret || req.headers['x-pp-result-secret'];
+        if (providedSecret !== storedSecret) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
+      }
+    }
+
+    // SVG pages are stored alongside the PDF, prefixed with jobId
+    const pdfDir = path.dirname(result.pdfPath);
+    const svgFile = path.join(pdfDir, `${id}-page-${pageNum}.svg`);
+
+    if (!fs.existsSync(svgFile)) return res.status(404).json({ error: 'page_not_found', message: `SVG page ${pageNum} not found.` });
+
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    fs.createReadStream(svgFile).pipe(res);
   });
 
   // ══════════════════════════════════════════════════════════
@@ -547,7 +686,14 @@ module.exports = function compileRoutes(ctx) {
     };
     res.setHeader('Content-Type', mimeMap[ext] || 'application/octet-stream');
     res.setHeader('Cache-Control', 'private, max-age=3600');
-    fs.createReadStream(filePath).pipe(res);
+    const stream = fs.createReadStream(filePath);
+    stream.on('error', (err) => {
+      log.error({ module: 'assets:stream', assetId: id, err: err.message }, 'Asset stream error');
+      stream.destroy();
+      if (!res.headersSent) res.status(500).json({ error: 'stream_error', message: 'Failed to read asset.' });
+    });
+    res.on('close', () => { if (!stream.destroyed) stream.destroy(); });
+    stream.pipe(res);
   });
 
   // ══════════════════════════════════════════════════════════
@@ -601,91 +747,117 @@ module.exports = function compileRoutes(ctx) {
 
     const templateType = tpl.gridType || 'academic';
     const effectiveMd = safeMode ? stripCitations(manuscriptText) : manuscriptText;
-    const isFast = compileMode === 'fast';
 
     const fontResolution = fontAvailability.resolveFont(tpl.mainfont);
     const effectiveMainfont = fontResolution.resolved;
-    const sansResolution = tpl.sansfont ? fontAvailability.resolveFont(tpl.sansfont) : null;
-    const monoResolution = tpl.monofont ? fontAvailability.resolveFont(tpl.monofont) : null;
 
-    let templateContent = await fsp.readFile(tpl.templatePath, 'utf8');
-    const fontReplacements = [
-      { original: tpl.mainfont, resolved: effectiveMainfont },
-      ...(sansResolution ? [{ original: tpl.sansfont, resolved: sansResolution.resolved }] : []),
-      ...(monoResolution ? [{ original: tpl.monofont, resolved: monoResolution.resolved }] : []),
-    ];
-    for (const { original, resolved } of fontReplacements) {
-      if (original !== resolved) {
-        const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        templateContent = templateContent.replace(new RegExp(`(\\\\set(?:main|sans|mono)font\\{)${escaped}(\\})`, 'g'), `$1${resolved}$2`);
-      }
-    }
-
-    const preambleParts = [];
+    // Read the pure Typst template and split at %% CONTENT %% marker
+    const typstTemplatePath = path.resolve(__dirname, '..', 'typst-templates', `${tplKey}.typ`);
+    let tplContent;
     try {
-      preambleParts.push(bookEngineering.generateEngineeringPreamble(templateType));
-      const scriptAnalysis = multilingual.detectScripts(effectiveMd);
-      if (scriptAnalysis.isMultiscript || scriptAnalysis.hasRTL) preambleParts.push(multilingual.generateMultilingualPreamble(scriptAnalysis));
-      const buildMeta = provenance.generateBuildMetadata({ manuscriptText, template: tplKey, pageSize: validSizes[0], marginPreset, safeMode, compileMode, title, headingVariant: batchVariant, customFonts: customFonts || null });
-      preambleParts.push(provenance.generateMetadataPreamble(buildMeta));
+      tplContent = await fsp.readFile(typstTemplatePath, 'utf8');
+    } catch {
+      return res.status(500).json({ error: 'template_not_found', message: `Typst template "${tplKey}" not found.` });
+    }
+    const CONTENT_MARKER = '// %% CONTENT %%';
+    const markerIdx = tplContent.indexOf(CONTENT_MARKER);
+    if (markerIdx < 0) {
+      return res.status(500).json({ error: 'template_marker_missing', message: `Template "${tplKey}" missing %% CONTENT %% marker.` });
+    }
+    const tplStyle = tplContent.slice(0, markerIdx).trim();
+    const tplContentSection = tplContent.slice(markerIdx + CONTENT_MARKER.length).trim();
+
+    // Assemble shared preamble parts
+    const headingVariantsTypst = require('../heading-variants-typst');
+    const latexSanitizer = require('../latex-sanitizer');
+    const safeTitle = latexSanitizer.sanitizeTitle(title);
+    const typstStr = (s) => s == null ? 'none' : '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+
+    let engineeringPreamble = '';
+    let variantPreamble = '';
+    try {
+      engineeringPreamble = bookEngineering.generateTypstEngineeringPreamble(templateType);
+      variantPreamble = headingVariantsTypst.getTypstVariantPreamble(tplKey, batchVariant) || '';
     } catch { return res.status(500).json({ error: 'preamble_error', message: 'Failed to assemble compile preamble.' }); }
 
-    const batchVarPreamble = headingVariants.getVariantPreamble(tplKey, batchVariant);
-    if (batchVarPreamble) preambleParts.push(batchVarPreamble);
-    const preambleStr = preambleParts.join('\n\n');
+    const tplClass = headingVariants.TEMPLATE_CLASS[tplKey] || 'article';
+    const topLevelDiv = tplClass === 'book' ? 'chapter' : 'section';
 
     log.info({ module: 'batch', sizeCount: validSizes.length, template: tplKey, variant: batchVariant }, 'Starting batch compile');
 
     const pdfs = [];
     const errors = [];
 
+    const batchLocale = process.env.PP_SPAWN_LOCALE !== undefined ? process.env.PP_SPAWN_LOCALE : 'C.UTF-8';
+    const BATCH_SPAWN_ENV = {
+      PATH: process.env.PATH,
+      HOME: process.env.HOME || '/app',
+      TMPDIR: os.tmpdir(),
+      LANG: batchLocale,
+      LC_ALL: batchLocale,
+      LC_CTYPE: batchLocale,
+      SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
+    };
+
     for (const size of validSizes) {
       if (!ALL_MARGINS.has(marginPreset)) marginPreset = 'normal';
-      const geo = ctx.gridSystem.calculateMargins(size, marginPreset, templateType);
+      const geo = ctx.gridSystem.calculateTypstMargins(size, marginPreset, templateType, tplKey);
       const tmpBase = await fsp.mkdtemp(path.join(os.tmpdir(), 'pp-batch-'));
 
       try {
         const mdPath = path.join(tmpBase, 'input.md');
+        const bodyPath = path.join(tmpBase, 'body.typ');
+        const mainPath = path.join(tmpBase, 'main.typ');
         const pdfPath = path.join(tmpBase, 'output.pdf');
         await fsp.writeFile(mdPath, effectiveMd, 'utf8');
-        const tplPath = path.join(tmpBase, 'template.latex');
-        await fsp.writeFile(tplPath, templateContent, 'utf8');
-        const headerPath = path.join(tmpBase, 'header.tex');
-        await fsp.writeFile(headerPath, `\\geometry{${geo}}\n\n${preambleStr}`, 'utf8');
 
-        if (customFonts && typeof customFonts === 'object') {
-          for (const slot of ['main', 'sans', 'mono']) {
-            const fontId = customFonts[slot];
-            if (!fontId || typeof fontId !== 'string') continue;
-            const srcDir = path.join(CUSTOM_FONTS_DIR_GLOBAL, fontId);
-            if (!fs.existsSync(srcDir)) continue;
-            const files = fs.readdirSync(srcDir).filter(f => /\.(ttf|otf|woff2?)$/i.test(f));
-            if (files.length > 0) fs.copyFileSync(path.join(srcDir, files[0]), path.join(tmpBase, files[0]));
-          }
-        }
-
+        // Step A: Pandoc body-only conversion
         const batchFromFormat = safeMode ? '--from=markdown-raw_tex-raw_attribute' : PANDOC_HAS_CITEPROC ? '--from=markdown+citations-raw_tex-raw_attribute' : '--from=markdown-raw_tex-raw_attribute';
-        const args = [mdPath, batchFromFormat, '--pdf-engine=lualatex', `--resource-path=${tmpBase}`, '-M', `title=${title}`, `--template=${tplPath}`, '-H', headerPath, '-V', `mainfont=${effectiveMainfont}`, ...(isFast ? [] : ['-V', 'microtype=true', '-V', 'csquotes=true']), '-o', pdfPath];
-        if (!safeMode) args.push(...citeprocArgs(BIB_PATH));
+        const pandocArgs = [mdPath, batchFromFormat, '-t', 'typst', `--top-level-division=${topLevelDiv}`, `--resource-path=${tmpBase}`, '-o', bodyPath];
+        if (!safeMode) pandocArgs.push(...citeprocArgs(BIB_PATH));
 
-        // SECURITY + LOCALE: Use the same minimal environment as the main compile path.
-        const batchLocale = process.env.PP_SPAWN_LOCALE !== undefined ? process.env.PP_SPAWN_LOCALE : 'C.UTF-8';
-        const BATCH_SPAWN_ENV = {
-          PATH: process.env.PATH,
-          HOME: process.env.HOME || '/app',
-          TMPDIR: os.tmpdir(),
-          LANG: batchLocale,
-          LC_ALL: batchLocale,
-          LC_CTYPE: batchLocale,
-          TEXMFHOME: process.env.TEXMFHOME || '',
-          TEXMFVAR: process.env.TEXMFVAR || '',
-          SOURCE_DATE_EPOCH: String(Math.floor(Date.now() / 1000)),
-        };
-        const compileResult = await new Promise((resolve) => {
-          const proc = spawn('pandoc', args, { cwd: tmpBase, env: BATCH_SPAWN_ENV });
+        const pandocResult = await new Promise((resolve) => {
+          const proc = spawn('pandoc', pandocArgs, { cwd: tmpBase, env: BATCH_SPAWN_ENV });
           let stderr = '';
           proc.stderr.on('data', (d) => { stderr += d.toString(); });
-          proc.on('error', () => resolve({ success: false, error: 'Pandoc spawn failed' }));
+          proc.on('error', () => resolve({ ok: false, error: 'Pandoc spawn failed' }));
+          const kill = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} resolve({ ok: false, error: 'Timeout' }); }, COMPILE_TIMEOUT_MS);
+          proc.on('close', (code) => {
+            clearTimeout(kill);
+            code === 0 ? resolve({ ok: true }) : resolve({ ok: false, error: sanitizeStderr(stderr.split('\n').slice(-5).join('\n')) });
+          });
+        });
+
+        if (!pandocResult.ok) {
+          errors.push({ pageSize: size, error: pandocResult.error || 'Pandoc conversion failed' });
+          try { fs.rmSync(tmpBase, { recursive: true, force: true }); } catch {}
+          continue;
+        }
+
+        // Step B: Assemble main.typ
+        const bodyContent = await fsp.readFile(bodyPath, 'utf8');
+        const mainParts = [
+          '#let horizontalrule = { v(1.5em); align(center)[#text(size: 9pt, fill: luma(140))[\\* #h(1em) \\* #h(1em) \\*]]; v(1.5em) }',
+          '#show figure.where(kind: table): it => it.body',
+          `#let pp-title = ${typstStr(safeTitle)}`,
+          '#let pp-author = none',
+          '#let pp-date = none',
+          `#let pp-mainfont = ${typstStr(effectiveMainfont)}`,
+          tplStyle,
+          geo,
+          engineeringPreamble,
+          variantPreamble,
+          tplContentSection,
+          bodyContent,
+        ];
+        await fsp.writeFile(mainPath, mainParts.filter(Boolean).join('\n\n'), 'utf8');
+
+        // Step C: Typst compile
+        const compileResult = await new Promise((resolve) => {
+          const proc = spawn('typst', ['compile', 'main.typ', 'output.pdf'], { cwd: tmpBase, env: BATCH_SPAWN_ENV });
+          let stderr = '';
+          proc.stderr.on('data', (d) => { stderr += d.toString(); });
+          proc.on('error', () => resolve({ success: false, error: 'Typst spawn failed' }));
           const kill = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} resolve({ success: false, error: 'Timeout' }); }, COMPILE_TIMEOUT_MS);
           proc.on('close', (code) => {
             clearTimeout(kill);

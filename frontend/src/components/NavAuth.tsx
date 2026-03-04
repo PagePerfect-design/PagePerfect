@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
-import { isPocketBaseConfigured } from '@/lib/supabase'
+import { isPocketBaseConfigured } from '@/lib/pocketbase'
 
 export default function NavAuth() {
   const { user, profile, loading, signOut } = useAuth()
@@ -44,7 +44,7 @@ export default function NavAuth() {
           </span>
           <span className="max-w-[100px] truncate">{displayName}</span>
         </button>
-        <div className="invisible absolute right-0 top-full z-50 mt-2 w-48 rounded-xl border border-border bg-surface-raised p-1 opacity-0 shadow-elevated transition-all group-hover:visible group-hover:opacity-100">
+        <div className="invisible absolute right-0 top-full z-50 mt-2 w-48 rounded-xl border border-border bg-surface-raised p-1 opacity-0 shadow-elevated transition-all group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
           <div className="border-b border-border px-3 py-2">
             <p className="truncate text-xs text-text-tertiary">{user.email}</p>
           </div>

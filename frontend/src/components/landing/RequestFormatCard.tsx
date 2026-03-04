@@ -162,7 +162,7 @@ export function RequestFormatCard() {
             <button
               type="submit"
               disabled={state === 'sending'}
-              className="mt-auto w-full border border-[#111111] bg-transparent py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111] transition-all duration-75 hover:bg-[#111111] hover:text-white disabled:opacity-40"
+              className="mt-auto w-full border border-[#111111] bg-transparent py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111] transition-all duration-200 ease-pp hover:bg-[#111111] hover:text-white disabled:opacity-40"
             >
               {state === 'sending' ? 'Sending\u2026' : 'Request Format'}
             </button>

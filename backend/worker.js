@@ -62,9 +62,9 @@ const DESIGN_TEMPLATES = {
   thesis: { name: 'Thesis', templatePath: null, mainfont: 'Latin Modern Roman', sansfont: 'Latin Modern Sans', monofont: 'Latin Modern Mono', gridType: 'thesis' },
   memoir: { name: 'Memoir', templatePath: null, mainfont: 'Libre Baskerville', sansfont: 'TeX Gyre Heros', monofont: 'DejaVu Sans Mono', gridType: 'trade' },
 };
-const templateDir = path.resolve(__dirname, 'templates');
+const templateDir = path.resolve(__dirname, 'typst-templates');
 for (const name of Object.keys(DESIGN_TEMPLATES)) {
-  const tplPath = path.resolve(templateDir, `${name}.latex`);
+  const tplPath = path.resolve(templateDir, `${name}.typ`);
   if (fs.existsSync(tplPath)) {
     DESIGN_TEMPLATES[name].templatePath = tplPath;
   }

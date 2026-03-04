@@ -1,203 +1,46 @@
 'use client'
-import { useEffect, useRef, useState, useCallback } from 'react'
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMPILE SHELL — Swiss Typographic Control Panel
+   Single-screen workspace: ControlStrip (left) + Preview (right)
+   No stages. No overlays. The book is always visible.
+   ═══════════════════════════════════════════════════════════════════ */
+
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import CompositorMark from '@/components/CompositorMark'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Keyboard, ChevronLeft, ChevronRight, X } from 'lucide-react'
-import dynamic from 'next/dynamic'
-
-const RichTextEditor = dynamic(() => import('./RichTextEditor'), { ssr: false })
+import { Download, Loader2, Cloud, CloudOff, ArrowLeft, RotateCcw } from 'lucide-react'
+import Tooltip from './Tooltip'
 
 import { SAMPLES } from './sample'
-import PublishingSystems from './PublishingSystems'
 import { useAuth } from '@/lib/auth-context'
 import { loadManuscript as loadLocalManuscript, saveManuscript as saveLocalManuscript, loadAssets as loadLocalAssets, saveAssets as saveLocalAssets } from '@/lib/manuscript-store'
 import { useManuscript } from '@/lib/use-manuscript'
 import type { ManuscriptListItem } from '@/lib/use-manuscript'
 
-// Decomposed modules
 import type {
   TemplateKey, HeadingVariant, PageSize, MarginPreset,
-  CompileMode, Stage, HudTab, CustomFont, Platform, Prefs, Asset,
+  CompileMode, CustomFont, Platform, Prefs, Asset, ViewMode,
 } from './editor-types'
 import { TEMPLATE_INFO, TEMPLATE_KEYS, PAGE_SIZES, MARGIN_INFO, PREFS_KEY, hasTier } from './editor-types'
+import { cleanFromWord, analyzeManuscript } from './editor-utils'
+
+import ControlStrip from './ControlStrip'
+import StatusBar from './StatusBar'
 import PortalStage from './PortalStage'
 import PreviewPane from './PreviewPane'
-import FloatingHUD from './FloatingHUD'
-import TopBar from './TopBar'
-import LaunchOverlay from './LaunchOverlay'
 import ManuscriptBrowser from './ManuscriptBrowser'
-import ImageUpload from './ImageUpload'
 import { useCompileQueue } from './useCompileQueue'
 
 /* ═══════════════════════════════════════════════════════════════════
-   LAYER 0: THE VOID — Background canvas
-   ═══════════════════════════════════════════════════════════════════ */
-
-function VoidLayer({ gridVisible }: { gridVisible: boolean }) {
-  return (
-    <div className="fixed inset-0 -z-10 bg-[#FDFCF8]">
-      <div
-        className="absolute inset-0 transition-opacity duration-700"
-        style={{
-          opacity: gridVisible ? 0.06 : 0,
-          backgroundImage:
-            'linear-gradient(to right, #111111 1px, transparent 1px), linear-gradient(to bottom, #111111 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      />
-      <div
-        className="absolute inset-0 transition-opacity duration-1000"
-        style={{
-          opacity: gridVisible ? 1 : 0.4,
-          background: 'radial-gradient(ellipse 900px 700px at 50% 45%, rgba(255,255,255,0.5), transparent)',
-        }}
-      />
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   KEYBOARD SHORTCUTS LEGEND
-   ═══════════════════════════════════════════════════════════════════ */
-
-function ShortcutLegend({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  if (!visible) return null
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 8 }}
-      className="fixed bottom-24 right-6 z-50 border border-[#111111]/10 bg-white p-4 shadow-elevated backdrop-blur-xl"
-    >
-      <div className="mb-2 flex items-center justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/30">Shortcuts</span>
-        <button onClick={onClose} className="text-[#111111]/25 hover:text-[#111111]/50">
-          <X className="h-3 w-3" />
-        </button>
-      </div>
-      <div className="space-y-1.5 font-mono text-[11px]">
-        {[
-          ['Left / Right', 'Cycle templates'],
-          ['Space', 'Recompile'],
-          ['E', 'Toggle editor'],
-          ['S', 'Publishing systems'],
-          ['P', 'Export / publish'],
-          ['?', 'Toggle shortcuts'],
-          ['Esc', 'Close panel'],
-        ].map(([key, desc]) => (
-          <div key={key} className="flex items-center gap-3">
-            <kbd className="rounded bg-[#111111]/[0.06] px-1.5 py-0.5 text-[10px] text-[#111111]/40">{key}</kbd>
-            <span className="text-[#111111]/30">{desc}</span>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   MANUSCRIPT EDITOR OVERLAY
-   ═══════════════════════════════════════════════════════════════════ */
-
-function EditorOverlay({
-  manuscript,
-  onChange,
-  onClose,
-  assets,
-  onAssetsChange,
-}: {
-  manuscript: string
-  onChange: (m: string) => void
-  onClose: () => void
-  assets: Asset[]
-  onAssetsChange: (assets: Asset[]) => void
-}) {
-  const [editorMode, setEditorMode] = useState<'markdown' | 'richtext'>('richtext')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  const handleInsertMarkdown = useCallback((text: string) => {
-    const ta = textareaRef.current
-    if (ta) {
-      const start = ta.selectionStart
-      const before = manuscript.slice(0, start)
-      const after = manuscript.slice(ta.selectionEnd)
-      const newValue = `${before}${text}\n${after}`
-      onChange(newValue)
-      // Restore cursor after the inserted text
-      requestAnimationFrame(() => {
-        ta.selectionStart = ta.selectionEnd = start + text.length + 1
-        ta.focus()
-      })
-    } else {
-      onChange(manuscript + '\n' + text + '\n')
-    }
-  }, [manuscript, onChange])
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.25 }}
-      className="fixed inset-0 z-30 flex pointer-events-none"
-    >
-      <div className="pointer-events-auto flex w-full flex-col border-r border-[#111111]/[0.08] bg-white sm:w-1/2">
-        {editorMode === 'markdown' ? (
-          <>
-            <div className="flex items-center justify-between border-b border-[#111111]/[0.06] px-4 py-2.5 sm:px-5">
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/30">Markdown</span>
-              <div className="flex items-center gap-3 sm:gap-4">
-                <button
-                  onClick={() => setEditorMode('richtext')}
-                  className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/30 hover:text-[#111111]/50"
-                >
-                  <span className="hidden sm:inline">Switch to Rich Text</span>
-                  <span className="sm:hidden">Rich Text</span>
-                </button>
-                <button onClick={onClose} className="font-mono text-[11px] text-[#111111]/30 hover:text-[#111111]/50">
-                  Close
-                </button>
-              </div>
-            </div>
-            <textarea
-              id="manuscript-editor"
-              ref={textareaRef}
-              value={manuscript}
-              onChange={(e) => onChange(e.target.value)}
-              className="flex-1 resize-none bg-transparent p-4 font-mono text-sm leading-[1.8] text-[#111111]/70 caret-[#FF3333] focus:outline-none sm:p-6"
-              placeholder="# Chapter One&#10;&#10;Write here..."
-              autoFocus
-            />
-            <div className="border-t border-[#111111]/[0.06] px-4 py-3 sm:px-5">
-              <ImageUpload
-                assets={assets}
-                onAssetsChange={onAssetsChange}
-                onInsertMarkdown={handleInsertMarkdown}
-              />
-            </div>
-          </>
-        ) : (
-          <RichTextEditor
-            markdown={manuscript}
-            onChange={onChange}
-            onClose={() => setEditorMode('markdown')}
-          />
-        )}
-      </div>
-      {/* Right half is transparent — preview shows through */}
-    </motion.div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   MAIN SHELL — THE LAYER CAKE ORCHESTRATOR
+   MAIN SHELL — Single-screen workspace
    ═══════════════════════════════════════════════════════════════════ */
 
 export default function CompileShell() {
   const searchParams = useSearchParams()
-  const [stage, setStage] = useState<Stage>('portal')
+
+  // ── Core state ──
   const [manuscript, setManuscript] = useState('')
   const [template, setTemplate] = useState<TemplateKey>('symphony')
   const [headingVariant, setHeadingVariant] = useState<HeadingVariant>('classic')
@@ -206,21 +49,21 @@ export default function CompileShell() {
   const [marginPreset, setMarginPreset] = useState<MarginPreset>('normal')
   const [safeMode, setSafeMode] = useState<boolean>(true)
   const [compileMode, setCompileMode] = useState<CompileMode>('fast')
-  const [hudTab, setHudTab] = useState<HudTab>(null)
-  const [showEditor, setShowEditor] = useState(true)
-  const [showShortcuts, setShowShortcuts] = useState(false)
-  const [showSystems, setShowSystems] = useState(false)
   const [customFont, setCustomFont] = useState<CustomFont>(null)
   const [assets, setAssets] = useState<Asset[]>([])
   const [fontUploading, setFontUploading] = useState(false)
-  const [mobileGateDismissed, setMobileGateDismissed] = useState(false)
+  const [targetPlatform, setTargetPlatform] = useState<Platform | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('single')
+
+  // ── UI state ──
   const [mounted, setMounted] = useState(false)
   const [clientIsMobile, setClientIsMobile] = useState(false)
+  const [mobileGateDismissed, setMobileGateDismissed] = useState(false)
   const [showManuscripts, setShowManuscripts] = useState(false)
   const [manuscriptList, setManuscriptList] = useState<ManuscriptListItem[]>([])
   const [manuscriptListLoading, setManuscriptListLoading] = useState(false)
-  const [targetPlatform, setTargetPlatform] = useState<Platform | null>(null)
 
+  // ── Auth & persistence ──
   const { user, tier, publisherWindowEnd, refreshUser } = useAuth()
   const {
     manuscriptId,
@@ -233,7 +76,8 @@ export default function CompileShell() {
     saveError: manuscriptSaveError,
   } = useManuscript(user?.id ?? null)
 
-  // ── Compile queue hook — encapsulates compile, debounce, polling ──
+  // ── Compile queue ──
+  // We always pass stage='design' since there are no stages anymore
   const {
     loading,
     status,
@@ -242,13 +86,15 @@ export default function CompileShell() {
     pdfUrl,
     lastDownloadWatermarked,
     quality,
+    svgPages,
+    changeReason,
     compile,
   } = useCompileQueue({
     manuscript, template, headingVariant, title, pageSize, marginPreset,
-    safeMode, compileMode, customFont, assets, stage, refreshUser,
+    safeMode, compileMode, customFont, assets, stage: 'design', refreshUser,
   })
 
-  // Hydration-safe: only after mount do we read window (avoids server/client mismatch)
+  // ── Mount & mobile detection ──
   useEffect(() => {
     setMounted(true)
     setClientIsMobile(typeof window !== 'undefined' && window.innerWidth < 768)
@@ -257,7 +103,7 @@ export default function CompileShell() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  // Read template from URL params
+  // ── URL template param ──
   useEffect(() => {
     const urlTemplate = searchParams.get('template')
     if (urlTemplate && urlTemplate in TEMPLATE_INFO) {
@@ -265,7 +111,7 @@ export default function CompileShell() {
     }
   }, [searchParams])
 
-  // Load saved preferences and manuscript on mount
+  // ── Load saved prefs + manuscript on mount ──
   useEffect(() => {
     try {
       const raw = localStorage.getItem(PREFS_KEY)
@@ -288,14 +134,14 @@ export default function CompileShell() {
     })
   }, [])
 
-  // Save preferences
+  // ── Save preferences ──
   useEffect(() => {
-    if (stage === 'portal') return
+    if (!manuscript) return
     const prefs: Prefs = { template, pageSize, marginPreset, safeMode, title, headingVariant }
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)) } catch { /* ignore */ }
-  }, [template, headingVariant, pageSize, marginPreset, safeMode, title, stage])
+  }, [template, headingVariant, pageSize, marginPreset, safeMode, title, manuscript])
 
-  // Auto-save manuscript to IndexedDB + PocketBase (3s debounce)
+  // ── Auto-save manuscript (3s debounce) ──
   const manuscriptSaveRef = useRef<number | null>(null)
   useEffect(() => {
     if (!manuscript) return
@@ -310,14 +156,14 @@ export default function CompileShell() {
     return () => { if (manuscriptSaveRef.current) window.clearTimeout(manuscriptSaveRef.current) }
   }, [manuscript, title, template, pageSize, marginPreset, safeMode, saveManuscript])
 
-  // Save assets to IndexedDB when they change
+  // ── Save assets to IndexedDB ──
   useEffect(() => {
     void saveLocalAssets(assets)
   }, [assets])
 
-  // Keyboard shortcuts (design stage)
+  // ── Keyboard shortcuts ──
   useEffect(() => {
-    if (stage !== 'design') return
+    if (!manuscript) return // No shortcuts when empty state
 
     function handleKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement).tagName
@@ -343,30 +189,8 @@ export default function CompileShell() {
           void compile(false)
           break
         }
-        case 'e':
-        case 'E': {
-          setShowEditor(prev => !prev)
-          break
-        }
-        case 'p':
-        case 'P': {
-          if (status === 'success') setStage('launch')
-          break
-        }
-        case 's':
-        case 'S': {
-          setShowSystems(prev => !prev)
-          break
-        }
-        case '?': {
-          setShowShortcuts(prev => !prev)
-          break
-        }
         case 'Escape': {
-          setHudTab(null)
-          setShowShortcuts(false)
-          setShowEditor(false)
-          setShowSystems(false)
+          setShowManuscripts(false)
           break
         }
       }
@@ -375,23 +199,47 @@ export default function CompileShell() {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage, template, status])
+  }, [manuscript, template])
 
-  // Close HUD when clicking outside
-  const handleVoidClick = useCallback((e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('[data-hud]') || (e.target as HTMLElement).closest('[data-topbar]')) return
-    setHudTab(null)
-  }, [])
+  const wordCount = useMemo(() => manuscript.split(/\s+/).filter(w => w.length > 0).length, [manuscript])
 
-  const wordCount = manuscript.split(/\s+/).filter(w => w.length > 0).length
+  // ── Handlers ──
 
-  // ── Stage handlers ──
+  function handleFileAccepted(file: File) {
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext === 'docx') {
+      // Convert .docx via API
+      file.arrayBuffer().then(async (buf) => {
+        try {
+          const resp = await fetch('/api/convert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: buf,
+          })
+          if (!resp.ok) return
+          const { markdown } = await resp.json()
+          if (markdown) handleTextAccepted(markdown)
+        } catch { /* ignore */ }
+      })
+    } else {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const result = ev.target?.result
+        if (typeof result === 'string') handleTextAccepted(result)
+      }
+      reader.readAsText(file)
+    }
+  }
 
-  function handlePortalAccept(text: string, portalTitle: string, detectedTemplate?: TemplateKey) {
-    setManuscript(text)
-    setTitle(portalTitle || 'My Manuscript')
-    if (detectedTemplate) setTemplate(detectedTemplate)
-    setStage('design')
+  function handleTextAccepted(raw: string) {
+    const cleaned = cleanFromWord(raw)
+    setManuscript(cleaned)
+    // Auto-detect genre and set template
+    const analysis = analyzeManuscript(cleaned)
+    if (analysis.detected?.template) {
+      setTemplate(analysis.detected.template)
+    }
+    if (!title) setTitle('My Manuscript')
   }
 
   function handleLoadSample(sampleKey: string) {
@@ -399,7 +247,6 @@ export default function CompileShell() {
     setManuscript(sample.md)
     setTitle(sample.title)
     setTemplate(sample.template)
-    setStage('design')
   }
 
   async function handleOpenManuscripts() {
@@ -420,7 +267,6 @@ export default function CompileShell() {
       if (loaded.marginPreset in MARGIN_INFO) setMarginPreset(loaded.marginPreset as MarginPreset)
       setSafeMode(loaded.safeMode)
       setShowManuscripts(false)
-      if (stage === 'portal') setStage('design')
     }
   }
 
@@ -434,7 +280,12 @@ export default function CompileShell() {
     setManuscript('')
     setTitle('')
     setShowManuscripts(false)
-    setStage('portal')
+  }
+
+  function handlePortalAccept(text: string, inTitle: string, detectedTemplate?: TemplateKey) {
+    setManuscript(text)
+    if (inTitle) setTitle(inTitle)
+    if (detectedTemplate) setTemplate(detectedTemplate)
   }
 
   function handleDownload(exportPlatform?: Platform) {
@@ -461,34 +312,21 @@ export default function CompileShell() {
     }
   }
 
-  function handleFontRemove() {
-    setCustomFont(null)
-  }
-
-  // ── Mobile gate — editor is desktop-only (only after mount to avoid hydration mismatch) ──
+  // ── Mobile gate ──
   if (mounted && clientIsMobile && !mobileGateDismissed) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050505] px-6">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#FDFCF8] px-6">
         <div className="max-w-md text-center">
-          <CompositorMark size={32} className="mx-auto mb-8 invert opacity-30" />
-          <h1 className="font-display text-2xl font-bold text-white/90">
-            Desktop Required
-          </h1>
-          <p className="mt-4 font-body text-sm leading-relaxed text-white/50">
+          <CompositorMark size={32} className="mx-auto mb-8 opacity-30" />
+          <h1 className="font-display text-2xl font-bold text-[#111111]">Desktop Required</h1>
+          <p className="mt-4 font-body text-sm leading-relaxed text-[#111111]/50">
             PagePerfect&rsquo;s editor requires a desktop browser for the full typesetting experience.
-            Open this page on a laptop or tablet.
           </p>
           <div className="mt-8 flex flex-col items-center gap-4">
-            <Link
-              href="/"
-              className="inline-flex h-10 items-center px-6 font-mono text-[11px] uppercase tracking-[0.1em] text-white/60 transition-colors hover:text-white"
-            >
+            <Link href="/" className="inline-flex h-10 items-center px-6 font-mono text-[11px] uppercase tracking-[0.1em] text-[#111111]/60 transition-colors hover:text-[#111111]">
               Back to Home
             </Link>
-            <button
-              onClick={() => setMobileGateDismissed(true)}
-              className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/25 transition-colors hover:text-white/50"
-            >
+            <button onClick={() => setMobileGateDismissed(true)} className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/30 transition-colors hover:text-[#111111]/60">
               Continue anyway
             </button>
           </div>
@@ -497,56 +335,169 @@ export default function CompileShell() {
     )
   }
 
-  // ── Render: The Layer Cake ──
+  const hasManuscript = manuscript.trim().length > 0
+
+  // ── RENDER: The Single-Screen Workspace ──
 
   return (
-    <>
-      {/* Layer 0: The Void */}
-      <VoidLayer gridVisible={stage === 'design'} />
-
-      <AnimatePresence mode="wait">
-        {/* Stage: Portal (ingest) */}
-        {stage === 'portal' && (
-          <motion.div key="portal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
-            <PortalStage
-              onAccept={handlePortalAccept}
-              onLoadSample={handleLoadSample}
-              onOpenManuscripts={handleOpenManuscripts}
-              isLoggedIn={!!user}
-              hasResumable={!!manuscript.trim()}
-              onResume={() => setStage('design')}
-              onPlatformSelect={setTargetPlatform}
-            />
-            {/* Manuscript browser (portal stage) */}
-            <AnimatePresence>
-              {showManuscripts && (
-                <ManuscriptBrowser
-                  visible={showManuscripts}
-                  manuscripts={manuscriptList}
-                  loading={manuscriptListLoading}
-                  currentId={manuscriptId}
-                  onLoad={handleLoadManuscript}
-                  onDelete={handleDeleteManuscript}
-                  onNew={handleNewManuscript}
-                  onClose={() => setShowManuscripts(false)}
+    <div className="fixed inset-0 flex flex-col bg-[#FDFCF8]">
+      {/* ── TopBar ────────────────────────────────────────── */}
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#111111]/10 px-4">
+        {/* Left: home + title */}
+        <div className="flex items-center gap-3 min-w-0">
+          <Tooltip content="Back to home" placement="bottom">
+            <Link
+              href="/"
+              className="flex h-8 w-8 shrink-0 items-center justify-center text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </Link>
+          </Tooltip>
+          <div className="h-4 w-px bg-[#e5e5e0]" />
+          {hasManuscript ? (
+            <>
+              <Tooltip content="Click to rename" placement="bottom" delay={800}>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="min-w-0 max-w-[280px] bg-transparent font-display text-sm font-semibold text-[#111111]/80 placeholder:text-[#111111]/40 focus:text-[#111111] focus:outline-none"
+                  placeholder="Untitled"
                 />
+              </Tooltip>
+              <span className="hidden shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/40 sm:inline">
+                {wordCount.toLocaleString()} words
+              </span>
+              {/* Cloud sync */}
+              {!!user && (
+                <>
+                  <div className="h-3 w-px bg-[#e5e5e0]" />
+                  {manuscriptSaving ? (
+                    <Tooltip content="Saving to cloud..." placement="bottom">
+                      <span><Loader2 className="h-2.5 w-2.5 animate-spin text-[#111111]/40" /></span>
+                    </Tooltip>
+                  ) : manuscriptSaveError ? (
+                    <Tooltip content="Sync failed" detail={manuscriptSaveError || 'Check your connection'} placement="bottom">
+                      <span><CloudOff className="h-2.5 w-2.5 text-red-500/50" /></span>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip content="Saved to cloud" placement="bottom">
+                      <span><Cloud className="h-2.5 w-2.5 text-emerald-600/40" /></span>
+                    </Tooltip>
+                  )}
+                </>
               )}
-            </AnimatePresence>
-          </motion.div>
-        )}
+            </>
+          ) : (
+            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">PagePerfect</span>
+          )}
+        </div>
 
-        {/* Stage: Design (the main workspace) */}
-        {stage === 'design' && (
-          <motion.div
-            key="design"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className="fixed inset-0 pt-[3.5rem]"
-            onClick={handleVoidClick}
-          >
-            {/* Layer 1: The Levitating Book */}
+        {/* Right: actions */}
+        <div className="flex shrink-0 items-center gap-2">
+          {/* New manuscript */}
+          {hasManuscript && (
+            <Tooltip content="Start new manuscript" detail="Clears current work" placement="bottom">
+              <button
+                onClick={handleNewManuscript}
+                className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
+              >
+                New
+              </button>
+            </Tooltip>
+          )}
+          {/* My manuscripts */}
+          {!!user && (
+            <Tooltip content="Open saved manuscripts" shortcut="Esc to close" placement="bottom">
+              <button
+                onClick={handleOpenManuscripts}
+                className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
+              >
+                Manuscripts
+              </button>
+            </Tooltip>
+          )}
+
+          {hasManuscript && (
+            <>
+              <div className="h-3 w-px bg-[#e5e5e0]" />
+              {/* Compile button */}
+              <Tooltip content="Recompile preview" detail="Auto-compiles after 3s of inactivity" shortcut="Space" placement="bottom">
+                <button
+                  onClick={() => compile(false)}
+                  disabled={loading}
+                  className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70 disabled:opacity-30"
+                >
+                  {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
+                  <span className="hidden sm:inline">Compile</span>
+                </button>
+              </Tooltip>
+
+              {/* Download button — always visible, THE red CTA */}
+              <Tooltip
+                content={status === 'success' ? 'Export your book as PDF' : 'Compile first to enable download'}
+                detail={status === 'success' ? 'Opens export with pre-flight checks' : 'Waiting for successful compile'}
+                placement="bottom"
+              >
+                <button
+                  onClick={() => handleDownload(targetPlatform || 'kdp')}
+                  disabled={status !== 'success'}
+                  className="flex h-8 items-center gap-1.5 bg-[#FF3333] px-4 font-mono text-[9px] uppercase tracking-[0.1em] text-white transition-all duration-200 hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Download className="h-3 w-3" />
+                  <span className="hidden sm:inline">Download PDF</span>
+                </button>
+              </Tooltip>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Main workspace ─────────────────────────────── */}
+      {hasManuscript ? (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left: Control strip */}
+          <ControlStrip
+            manuscript={manuscript}
+            onManuscriptChange={setManuscript}
+            onFileUpload={handleFileAccepted}
+            assets={assets}
+            onAssetsChange={setAssets}
+            template={template}
+            headingVariant={headingVariant}
+            onTemplateChange={setTemplate}
+            onHeadingVariantChange={setHeadingVariant}
+            pageSize={pageSize}
+            marginPreset={marginPreset}
+            onPageSizeChange={setPageSize}
+            onMarginChange={setMarginPreset}
+            userTier={tier}
+            compileMode={compileMode}
+            safeMode={safeMode}
+            customFont={customFont}
+            fontUploading={fontUploading}
+            onCompileModeChange={setCompileMode}
+            onSafeModeChange={setSafeMode}
+            onFontUpload={handleFontUpload}
+            onFontRemove={() => setCustomFont(null)}
+            status={status}
+            quality={quality}
+            pdfUrl={pdfUrl}
+            lastDownloadWatermarked={lastDownloadWatermarked}
+            publisherWindowEnd={publisherWindowEnd}
+            wordCount={wordCount}
+            manuscriptText={manuscript}
+            title={title}
+            customFontForExport={customFont}
+            safeModeForExport={safeMode}
+            compileModeForExport={compileMode}
+            headingVariantForExport={headingVariant}
+            onDownload={handleDownload}
+            targetPlatform={targetPlatform}
+          />
+
+          {/* Right: Preview */}
+          <div className="relative flex-1">
             <PreviewPane
               pdfUrl={pdfUrl}
               loading={loading}
@@ -555,169 +506,43 @@ export default function CompileShell() {
               debug={debug}
               isWatermarked={!hasTier(tier, 'publisher') && !!pdfUrl}
               quality={quality}
+              svgPages={svgPages}
+              changeReason={changeReason}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
               onRetry={() => compile(false)}
-              sideBySide={showEditor}
             />
+          </div>
+        </div>
+      ) : (
+        /* ── Ingestion gate: full-screen when no manuscript ── */
+        <PortalStage
+          onAccept={handlePortalAccept}
+          onLoadSample={handleLoadSample}
+          onOpenManuscripts={user ? handleOpenManuscripts : undefined}
+          isLoggedIn={!!user}
+          onPlatformSelect={setTargetPlatform}
+        />
+      )}
 
-            {/* Layer 2: Top Bar */}
-            <div data-topbar>
-              <TopBar
-                title={title}
-                wordCount={wordCount}
-                status={status}
-                loading={loading}
-                errors={errors}
-                showEditor={showEditor}
-                showSystems={showSystems}
-                saving={manuscriptSaving}
-                saveError={manuscriptSaveError}
-                isLoggedIn={!!user}
-                onTitleChange={setTitle}
-                onBack={() => setStage('portal')}
-                onPublish={() => setStage('launch')}
-                onCompile={() => compile(false)}
-                onToggleEditor={() => setShowEditor(prev => !prev)}
-                onToggleSystems={() => setShowSystems(prev => !prev)}
-                onShowManuscripts={handleOpenManuscripts}
-              />
-            </div>
+      {/* ── Status bar ────────────────────────────────────── */}
+      {hasManuscript && (
+        <StatusBar status={status} quality={quality} />
+      )}
 
-            {/* Layer 2: Floating HUD dock */}
-            <div data-hud>
-              <FloatingHUD
-                template={template}
-                headingVariant={headingVariant}
-                pageSize={pageSize}
-                marginPreset={marginPreset}
-                compileMode={compileMode}
-                safeMode={safeMode}
-                status={status}
-                activeTab={hudTab}
-                customFont={customFont}
-                fontUploading={fontUploading}
-                userTier={tier}
-                onTabChange={setHudTab}
-                onTemplateChange={setTemplate}
-                onHeadingVariantChange={setHeadingVariant}
-                onPageSizeChange={setPageSize}
-                onMarginChange={setMarginPreset}
-                onCompileModeChange={setCompileMode}
-                onSafeModeChange={setSafeMode}
-                onFontUpload={handleFontUpload}
-                onFontRemove={handleFontRemove}
-                quality={quality}
-              />
-            </div>
-
-            {/* Keyboard shortcut hint */}
-            <div className="fixed bottom-20 right-4 z-30 sm:bottom-8 sm:right-6">
-              <button
-                onClick={() => setShowShortcuts(prev => !prev)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#111111]/[0.06] text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.10] hover:text-[#111111]/50"
-              >
-                <Keyboard className="h-3 w-3" />
-              </button>
-            </div>
-
-            {/* Shortcut legend */}
-            <ShortcutLegend visible={showShortcuts} onClose={() => setShowShortcuts(false)} />
-
-            {/* Editor overlay */}
-            <AnimatePresence>
-              {showEditor && (
-                <EditorOverlay
-                  manuscript={manuscript}
-                  onChange={setManuscript}
-                  onClose={() => setShowEditor(false)}
-                  assets={assets}
-                  onAssetsChange={setAssets}
-                />
-              )}
-            </AnimatePresence>
-
-            {/* Publishing Systems panel */}
-            <AnimatePresence>
-              {showSystems && (
-                <PublishingSystems
-                  manuscript={manuscript}
-                  template={template}
-                  pageSize={pageSize}
-                  marginPreset={marginPreset}
-                  visible={showSystems}
-                  onClose={() => setShowSystems(false)}
-                />
-              )}
-            </AnimatePresence>
-
-            {/* Manuscript browser */}
-            <AnimatePresence>
-              {showManuscripts && (
-                <ManuscriptBrowser
-                  visible={showManuscripts}
-                  manuscripts={manuscriptList}
-                  loading={manuscriptListLoading}
-                  currentId={manuscriptId}
-                  onLoad={handleLoadManuscript}
-                  onDelete={handleDeleteManuscript}
-                  onNew={handleNewManuscript}
-                  onClose={() => setShowManuscripts(false)}
-                />
-              )}
-            </AnimatePresence>
-
-            {/* Template nav hint — bottom left */}
-            <div className="fixed bottom-10 left-6 z-30 hidden items-center gap-2 lg:flex">
-              <button
-                onClick={() => {
-                  const idx = TEMPLATE_KEYS.indexOf(template)
-                  setTemplate(TEMPLATE_KEYS[(idx - 1 + TEMPLATE_KEYS.length) % TEMPLATE_KEYS.length])
-                }}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#111111]/[0.06] text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.10] hover:text-[#111111]/50"
-              >
-                <ChevronLeft className="h-3 w-3" />
-              </button>
-              <span className="font-mono text-[10px] text-[#111111]/35">
-                {TEMPLATE_INFO[template].subtitle}
-              </span>
-              <button
-                onClick={() => {
-                  const idx = TEMPLATE_KEYS.indexOf(template)
-                  setTemplate(TEMPLATE_KEYS[(idx + 1) % TEMPLATE_KEYS.length])
-                }}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#111111]/[0.06] text-[#111111]/30 transition-colors hover:bg-[#111111]/[0.10] hover:text-[#111111]/50"
-              >
-                <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Stage: Launch (export overlay) — renders on top of everything */}
-      <AnimatePresence>
-        {stage === 'launch' && (
-          <LaunchOverlay
-            title={title}
-            template={template}
-            headingVariant={headingVariant}
-            pageSize={pageSize}
-            marginPreset={marginPreset}
-            wordCount={wordCount}
-            manuscript={manuscript}
-            safeMode={safeMode}
-            compileMode={compileMode}
-            pdfUrl={pdfUrl}
-            customFont={customFont}
-            onBack={() => setStage('design')}
-            onDownload={handleDownload}
-            lastDownloadWatermarked={lastDownloadWatermarked}
-            userTier={tier}
-            publisherWindowEnd={publisherWindowEnd}
-            quality={quality}
-            targetPlatform={targetPlatform}
-          />
-        )}
-      </AnimatePresence>
-    </>
+      {/* ── Manuscript browser modal ──────────────────────── */}
+      {showManuscripts && (
+        <ManuscriptBrowser
+          visible={showManuscripts}
+          manuscripts={manuscriptList}
+          loading={manuscriptListLoading}
+          currentId={manuscriptId}
+          onLoad={handleLoadManuscript}
+          onDelete={handleDeleteManuscript}
+          onNew={handleNewManuscript}
+          onClose={() => setShowManuscripts(false)}
+        />
+      )}
+    </div>
   )
 }

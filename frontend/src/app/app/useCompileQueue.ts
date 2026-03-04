@@ -4,10 +4,10 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import type {
   TemplateKey, HeadingVariant, PageSize, MarginPreset,
   CompileMode, CustomFont, Status, CompileError, Stage, Platform,
-  CompileQuality, CompileDebug, Asset,
+  CompileQuality, CompileDebug, Asset, ChangeReason,
 } from './editor-types'
 import { adjustHeadingsForTemplate, buildFilename, abortableDelay } from './editor-utils'
-import { createClient, isPocketBaseConfigured } from '@/lib/supabase'
+import { createClient, isPocketBaseConfigured } from '@/lib/pocketbase'
 import { debugLog } from './debug-log'
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -42,7 +42,11 @@ export function useCompileQueue({
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [lastDownloadWatermarked, setLastDownloadWatermarked] = useState(false)
   const [quality, setQuality] = useState<CompileQuality>(null)
+  const [svgPages, setSvgPages] = useState<string[]>([])
+  const [changeReason, setChangeReason] = useState<ChangeReason>(null)
   const pdfBlobRef = useRef<Blob | null>(null)
+
+  const [resultSecret, setResultSecret] = useState<string | null>(null)
 
   const debounceRef = useRef<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -53,6 +57,14 @@ export function useCompileQueue({
   useEffect(() => {
     return () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl) }
   }, [pdfUrl])
+
+  // Abort in-flight requests on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
 
   // ── Immediate status feedback on settings change ──
   // Show "compiling" immediately when any design parameter changes so the user
@@ -65,20 +77,19 @@ export function useCompileQueue({
   const prevCompileModeRef = useRef(compileMode)
   useEffect(() => {
     if (stage !== 'design') return
-    const changed =
-      prevTemplateRef.current !== template ||
-      prevVariantRef.current !== headingVariant ||
-      prevPageSizeRef.current !== pageSize ||
-      prevMarginRef.current !== marginPreset ||
-      prevSafeModeRef.current !== safeMode ||
-      prevCompileModeRef.current !== compileMode
+    const templateChanged = prevTemplateRef.current !== template || prevVariantRef.current !== headingVariant
+    const layoutChanged = prevPageSizeRef.current !== pageSize || prevMarginRef.current !== marginPreset
+    const settingsChanged = prevSafeModeRef.current !== safeMode || prevCompileModeRef.current !== compileMode
     prevTemplateRef.current = template
     prevVariantRef.current = headingVariant
     prevPageSizeRef.current = pageSize
     prevMarginRef.current = marginPreset
     prevSafeModeRef.current = safeMode
     prevCompileModeRef.current = compileMode
-    if (changed && pdfUrl) setStatus('compiling')
+    if ((templateChanged || layoutChanged || settingsChanged) && pdfUrl) {
+      setStatus('compiling')
+      setChangeReason(templateChanged ? 'template' : layoutChanged ? 'layout' : 'settings')
+    }
   }, [template, headingVariant, pageSize, marginPreset, safeMode, compileMode, stage, pdfUrl])
 
   // ── Shared handler for setting PDF blob/URL from a successful response ──
@@ -88,6 +99,7 @@ export function useCompileQueue({
     setPdfUrl(prev => { if (prev) URL.revokeObjectURL(prev); return url })
     setStatus('success')
     setErrors([])
+    setChangeReason(null)
     if (downloadAfter) {
       const a = document.createElement('a')
       a.href = url
@@ -106,6 +118,12 @@ export function useCompileQueue({
     }
   }, [title, template, pageSize, refreshUser])
 
+  // Helper to clear preview state on errors (so ErrorPanel renders)
+  const clearPreview = useCallback(() => {
+    pdfBlobRef.current = null
+    setPdfUrl(prev => { if (prev) URL.revokeObjectURL(prev); return null })
+  }, [])
+
   // ── The compile function ──
   const compile = useCallback(async (downloadAfter: boolean, exportPlatform?: Platform, _isAutoRetry?: boolean) => {
     // ╔═ H5: compile() invoked ═╗
@@ -123,6 +141,8 @@ export function useCompileQueue({
     setStatus('compiling')
     setErrors([])
     setDebug(null)
+    // Clear SVG pages so we fall back to PDF iframe (old PDF stays visible under overlay)
+    setSvgPages([])
 
     try {
       const effectiveMd = adjustHeadingsForTemplate(manuscript, template)
@@ -185,7 +205,7 @@ export function useCompileQueue({
         // ╔═ H1: POST rejected ═╗
         debugLog('H1', 'POST rejected', { status: resp.status, payload })
 
-        pdfBlobRef.current = null
+        clearPreview()
         const msgs: CompileError[] = []
         // Prefer structured errors from backend
         if (Array.isArray(payload?.errors) && payload.errors.length > 0) {
@@ -204,7 +224,9 @@ export function useCompileQueue({
       }
 
       // Phase 2: Async Polling (202 Accepted)
-      const { jobId, resultSecret } = await resp.json()
+      const { jobId, resultSecret: secret } = await resp.json()
+      const resultSecret = secret || null
+      setResultSecret(resultSecret)
       // ╔═ H2: 202 body parsed ═╗
       debugLog('H2', '202 body parsed', { jobId, hasJobId: typeof jobId === 'string' && jobId.length > 0, hasSecret: !!resultSecret })
       setStatus('queued')
@@ -224,6 +246,7 @@ export function useCompileQueue({
         try {
           const statusResp = await fetch(`/api/compile/status/${jobId}`, {
             signal: controller.signal,
+            cache: 'no-store',
           })
           if (gen !== compileGenRef.current) return
 
@@ -240,7 +263,7 @@ export function useCompileQueue({
                 return
               }
               // Already retried once — show a quiet message
-              pdfBlobRef.current = null
+              clearPreview()
               setErrors([{ message: 'Preview expired. Click Retry to recompile.', isSoft: true }])
               setStatus('error')
               return
@@ -265,7 +288,7 @@ export function useCompileQueue({
 
           if (statusData.status === 'failed') {
             debugLog('H3', 'Job failed', { jobId, statusData })
-            pdfBlobRef.current = null
+            clearPreview()
             const msgs: CompileError[] = []
             // Prefer structured errors from backend
             if (Array.isArray(statusData.errors) && statusData.errors.length > 0) {
@@ -292,6 +315,10 @@ export function useCompileQueue({
                 overfullBoxes: statusData.compileLog?.overfull ?? 0,
                 underfullBoxes: statusData.compileLog?.underfull ?? 0,
                 buildId: statusData.buildId ?? null,
+                engine: statusData.engine ?? null,
+                layoutReport: statusData.layoutReport ?? null,
+                svgPageCount: statusData.svgPageCount ?? 0,
+                jobId: jobId ?? null,
               })
             }
 
@@ -306,6 +333,7 @@ export function useCompileQueue({
             const pdfResp = await fetch(`/api/compile/result/${jobId}`, {
               headers: resultHeaders,
               signal: controller.signal,
+              cache: 'no-store',
             })
             if (gen !== compileGenRef.current) return
 
@@ -322,7 +350,7 @@ export function useCompileQueue({
               }
               let payload: { message?: string; detail?: string } | null = null
               try { payload = await pdfResp.json() } catch { /* noop */ }
-              pdfBlobRef.current = null
+              clearPreview()
               const msgs: CompileError[] = []
               if (pdfResp.status === 404 || pdfResp.status === 410) {
                 msgs.push({ message: 'Preview expired. Click Retry to recompile.', isSoft: true })
@@ -341,13 +369,34 @@ export function useCompileQueue({
 
             debugLog('H4', 'PDF blob received', { jobId, blobSize: blob.size })
             handlePdfBlob(blob, pdfResp, downloadAfter)
+
+            // Phase 4: Fetch SVG pages in bulk (non-blocking — PDF already shown)
+            const svgCount = statusData.svgPageCount ?? 0
+            if (svgCount > 0) {
+              const svgHeaders: Record<string, string> = { ...fetchHeaders }
+              if (resultSecret) svgHeaders['x-pp-result-secret'] = resultSecret
+              fetch(`/api/compile/pages/${jobId}`, {
+                headers: svgHeaders,
+                signal: controller.signal,
+                cache: 'no-store',
+              })
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                  if (gen === compileGenRef.current && data?.pages?.length > 0) {
+                    setSvgPages(data.pages)
+                  }
+                })
+                .catch(() => { /* SVG fetch failed — PDF iframe stays as fallback */ })
+            } else {
+              setSvgPages([])
+            }
             return
           }
         } catch (err) {
           if (err instanceof DOMException && err.name === 'AbortError') return
           networkErrors++
           if (networkErrors > 3) {
-            pdfBlobRef.current = null
+            clearPreview()
             setErrors([{ message: 'Network disconnected.', fix: 'Check your internet connection and retry.', severity: 'error', category: 'network' }])
             setStatus('error')
             return
@@ -356,7 +405,7 @@ export function useCompileQueue({
       }
 
       // Polling exhausted — compile took too long
-      pdfBlobRef.current = null
+      clearPreview()
       setErrors([{ message: 'Compilation timed out. Please try again.', fix: 'Try Fast compile mode, or split into smaller sections.', severity: 'error', category: 'timeout' }])
       setStatus('error')
     } catch (e: unknown) {
@@ -364,30 +413,37 @@ export function useCompileQueue({
       // ╔═ H1: Outer catch — compile threw ═╗
       if (e instanceof Error && e.name !== 'AbortError') {
         debugLog('H1', 'compile() threw', { name: e.name, message: e.message })
-        pdfBlobRef.current = null
+        clearPreview()
         setErrors([{ message: 'Network or server error. Please try again.', fix: 'Check your connection or try again.', severity: 'error', category: 'network' }])
         setStatus('error')
       }
     } finally {
       setLoading(false)
     }
-  }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, customFont, assets, handlePdfBlob])
+  }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, customFont, assets, handlePdfBlob, clearPreview])
 
   // Keep a ref to the latest compile so the debounce timer always calls the current version
   const compileRef = useRef(compile)
   compileRef.current = compile
 
-  // ── Debounced auto-compile in design stage ──
+  // ── Auto-compile in design stage ──
+  // Text changes: 3s debounce (user is still typing)
+  // Design changes (template, size, margins, etc.): immediate (user made a deliberate choice)
   const prevManuscriptRef = useRef(manuscript)
   useEffect(() => {
     if (stage !== 'design' || !manuscript.trim()) return
     if (debounceRef.current) window.clearTimeout(debounceRef.current)
     const isTextChange = prevManuscriptRef.current !== manuscript
     prevManuscriptRef.current = manuscript
-    const delay = isTextChange ? 3000 : 1500
-    debounceRef.current = window.setTimeout(() => { void compileRef.current(false) }, delay)
+    if (isTextChange) {
+      // Text edit — debounce 3s to avoid compiling mid-sentence
+      setChangeReason('text')
+      debounceRef.current = window.setTimeout(() => { void compileRef.current(false) }, 3000)
+    } else {
+      // Design change (template, page size, margins, heading variant, etc.) — compile immediately
+      void compileRef.current(false)
+    }
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manuscript, template, headingVariant, title, pageSize, marginPreset, safeMode, compileMode, stage])
 
   return {
@@ -399,6 +455,9 @@ export function useCompileQueue({
     pdfBlobRef,
     lastDownloadWatermarked,
     quality,
+    svgPages,
+    changeReason,
+    resultSecret,
     compile,
   }
 }

@@ -61,7 +61,7 @@ describe('generateBuildMetadata', () => {
     const meta = generateBuildMetadata(baseOpts);
     expect(meta.system.engine).toBe('PagePerfect');
     expect(meta.system.version).toBe('3.1');
-    expect(meta.system.pdfEngine).toBe('lualatex');
+    expect(meta.system.pdfEngine).toBe('typst');
     expect(meta.system.processor).toBe('pandoc');
   });
 

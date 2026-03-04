@@ -63,7 +63,7 @@ export default function MobileNav() {
 
       {/* Slide-down panel */}
       <div
-        className={`fixed inset-x-0 top-0 z-50 max-h-dvh overflow-y-auto bg-[#FDFCF8] shadow-lg transition-transform duration-250 ease-out ${
+        className={`fixed inset-x-0 top-0 z-50 max-h-dvh overflow-y-auto bg-[#FDFCF8] shadow-lg transition-transform duration-350 ease-pp ease-out ${
           open ? 'translate-y-0' : '-translate-y-full'
         }`}
         role="dialog"
@@ -98,7 +98,7 @@ export default function MobileNav() {
               key={href}
               href={href}
               onClick={close}
-              className={`flex h-12 items-center border-b border-[#111111]/10 font-mono text-[12px] uppercase tracking-[0.12em] transition-colors duration-75 ${
+              className={`flex h-12 items-center border-b border-[#111111]/10 font-mono text-[12px] uppercase tracking-[0.12em] transition-colors duration-200 ease-pp ${
                 pathname === href ? 'text-[#FF3333]' : 'text-[#111111]'
               }`}
             >
@@ -117,7 +117,7 @@ export default function MobileNav() {
           <Link
             href="/app"
             onClick={close}
-            className="flex h-12 w-full items-center justify-center bg-[#FF3333] font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-colors duration-75 hover:bg-[#E52222]"
+            className="flex h-12 w-full items-center justify-center bg-[#FF3333] font-mono text-[11px] uppercase tracking-[0.1em] text-white transition-colors duration-200 ease-pp hover:bg-[#E52222]"
           >
             Open Editor
           </Link>

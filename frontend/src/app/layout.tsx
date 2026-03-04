@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { headers } from 'next/headers'
 import { Inter_Tight, Source_Serif_4, IBM_Plex_Mono } from 'next/font/google'
+import { ViewTransitions } from 'next-view-transitions'
 import Providers from '@/components/Providers'
 
 const display = Inter_Tight({ subsets: ['latin'], variable: '--font-display', weight: ['400','500','600','700','800'] })
@@ -9,7 +11,7 @@ const mono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-mono', weight
 
 export const metadata: Metadata = {
   title: 'PagePerfect — Professional Typesetting in Your Browser',
-  description: 'Transform Markdown into beautifully typeset, print-ready PDFs. Powered by LuaLaTeX with Muller-Brockmann grid systems, golden-ratio typography, and baseline grids.',
+  description: 'Transform Markdown into beautifully typeset, print-ready PDFs. Powered by Typst with Muller-Brockmann grid systems, golden-ratio typography, and baseline grids.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
@@ -24,15 +26,22 @@ export const metadata: Metadata = {
   themeColor: '#FDFCF8',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Read the nonce from middleware so Next.js applies it to its hydration scripts.
+  // Without this read, inline <script> tags lack the nonce and CSP blocks them.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const nonce = (await headers()).get('x-nonce') ?? ''
+
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
-      <body className="flex min-h-dvh flex-col bg-[#FDFCF8] text-[#111111] antialiased">
-        <div className="bg-noise" />
-        <Providers>
-          {children}
-        </Providers>
-      </body>
-    </html>
+    <ViewTransitions>
+      <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+        <body className="flex min-h-dvh flex-col bg-[#FDFCF8] text-[#111111] antialiased">
+          <div className="bg-noise" />
+          <Providers>
+            {children}
+          </Providers>
+        </body>
+      </html>
+    </ViewTransitions>
   )
 }
