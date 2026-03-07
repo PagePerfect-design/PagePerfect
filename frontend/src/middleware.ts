@@ -9,12 +9,12 @@ export function middleware(request: NextRequest) {
   // 'unsafe-inline' in style-src is required by Tailwind and React inline styles.
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://js.stripe.com https://challenges.cloudflare.com`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://pb.pageperfect.studio https://api.stripe.com",
-    "frame-src 'self' blob: https://js.stripe.com",
+    "connect-src 'self' https://pb.pageperfect.studio https://api.stripe.com https://challenges.cloudflare.com",
+    "frame-src 'self' blob: https://js.stripe.com https://challenges.cloudflare.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

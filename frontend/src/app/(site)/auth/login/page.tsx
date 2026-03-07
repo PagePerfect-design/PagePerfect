@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { useAuth } from '@/lib/auth-context'
+import { useTurnstile } from '@/lib/turnstile'
 
 function LoginForm() {
   const { signIn, signUp, signInWithOAuth } = useAuth()
@@ -17,12 +18,20 @@ function LoginForm() {
   )
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const { token: turnstileToken, resetToken, TurnstileWidget, isConfigured: turnstileConfigured } = useTurnstile()
 
   const next = searchParams.get('next') ?? '/app'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+
+    // Turnstile gate: if configured but no token yet, wait briefly
+    if (turnstileConfigured && !turnstileToken) {
+      setError('Verifying — please try again in a moment.')
+      return
+    }
+
     setLoading(true)
 
     const fn = mode === 'login' ? signIn : signUp
@@ -36,6 +45,7 @@ function LoginForm() {
         setError(null)
         setLoading(false)
         setMode('login')
+        resetToken()
         setError('Check your email to confirm your account, then sign in.')
       } else {
         router.push(next)
@@ -135,6 +145,8 @@ function LoginForm() {
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             />
           </div>
+
+          <TurnstileWidget />
 
           <button
             type="submit"

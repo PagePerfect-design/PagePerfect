@@ -32,6 +32,7 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import type { StripeElementsOptions } from '@stripe/stripe-js'
 import { useAuth } from '@/lib/auth-context'
 import { stripePromise, createPayment } from '@/lib/stripe'
+import { useTurnstile } from '@/lib/turnstile'
 
 // ── Tier data — editorial prose, not bullet lists ──
 
@@ -437,6 +438,7 @@ export default function PricingPage() {
   const [error, setError] = useState<string | null>(null)
   const [successTier, setSuccessTier] = useState<string | null>(null)
   const [publisherDaysLeft, setPublisherDaysLeft] = useState<number | null>(null)
+  const { token: turnstileToken, resetToken, TurnstileWidget } = useTurnstile()
 
   // Hydration-safe: compute publisher window days left only on client
   useEffect(() => {
@@ -477,7 +479,9 @@ export default function PricingPage() {
         tierKey,
         user.id,
         user.email,
+        turnstileToken,
       )
+      resetToken()
       setClientSecret(secret)
       setCheckoutTier(tierKey)
     } catch (e) {
@@ -521,6 +525,7 @@ export default function PricingPage() {
 
   return (
     <main id="main" className="bg-[#FDFCF8]">
+      <TurnstileWidget />
       {/* ── HEADER ── */}
       <section className="pt-32 pb-16 md:pt-44 md:pb-20">
         <div ref={headerRef} className="mx-auto max-w-6xl px-6 md:px-8">

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { useAuth } from '@/lib/auth-context'
+import { useTurnstile } from '@/lib/turnstile'
 
 function ForgotPasswordForm() {
   const { resetPassword } = useAuth()
@@ -11,10 +12,17 @@ function ForgotPasswordForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const { token: turnstileToken, resetToken, TurnstileWidget, isConfigured: turnstileConfigured } = useTurnstile()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+
+    if (turnstileConfigured && !turnstileToken) {
+      setError('Verifying — please try again in a moment.')
+      return
+    }
+
     setLoading(true)
 
     const { error: err } = await resetPassword(email)
@@ -23,6 +31,7 @@ function ForgotPasswordForm() {
       setError(err.message)
     } else {
       setSent(true)
+      resetToken()
     }
     setLoading(false)
   }
@@ -108,6 +117,8 @@ function ForgotPasswordForm() {
               autoFocus
             />
           </div>
+
+          <TurnstileWidget />
 
           <button
             type="submit"

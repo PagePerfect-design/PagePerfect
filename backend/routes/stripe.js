@@ -1,5 +1,6 @@
 const express = require('express');
 const log = require('../logger');
+const { verifyTurnstile } = require('../middleware/turnstile');
 
 /**
  * Stripe routes — webhook + payment creation.
@@ -186,7 +187,7 @@ module.exports = function stripeRoutes(ctx) {
   );
 
   // ── Stripe Payment Creation ──
-  router.post('/api/stripe/create-payment', async (req, res) => {
+  router.post('/api/stripe/create-payment', verifyTurnstile, async (req, res) => {
     if (!ctx.stripe) {
       return res.status(501).json({ error: 'Stripe not configured' });
     }
