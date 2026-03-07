@@ -124,7 +124,13 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 #     --tmpfs /var/cache/fontconfig:rw,size=32m \
 #     --memory=1g --memory-swap=1g \
 #     --pids-limit=100 \
+#     --network none \
 #     pageperfect-backend
+#
+# NOTE: --network none isolates the container from all network access.
+# The compile worker trusts enqueue-time tier verification, so it does
+# not need network access. If Redis/PocketBase are on the same host,
+# use a dedicated Docker network instead of --network none.
 
 # Start server — cap V8 heap to prevent unbounded memory growth under load
 CMD ["node", "--max-old-space-size=512", "index.js"]

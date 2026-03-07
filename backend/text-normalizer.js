@@ -525,25 +525,53 @@ function titleCase(str) {
 }
 
 /**
- * Strip remote image URLs from Markdown.
+ * Strip remote image/resource URLs from Markdown and HTML.
  *
  * Pandoc will attempt to fetch any remote image URL (http/https) during
- * compilation, which can be abused to saturate bandwidth, fill disk, or
- * stall workers. This function replaces remote image references with a
- * text placeholder. Local/relative paths are left untouched.
+ * compilation, which can be abused for SSRF, bandwidth exhaustion, disk
+ * filling, or worker stalling. This function replaces remote references
+ * with text placeholders. Local/relative paths are left untouched.
+ *
+ * SECURITY: Also strips HTML tags that could fetch remote resources
+ * (img, video, audio, iframe, source, embed, object, link, script).
+ * Even though -raw_tex strips raw HTML, this provides defense-in-depth.
  *
  * @param {string} md - Markdown text
  * @returns {{ text: string, stripped: number }} Cleaned text + count of stripped images
  */
 function stripRemoteImages(md) {
   let stripped = 0;
-  const text = md.replace(
+
+  // 1. Strip Markdown image syntax with remote URLs: ![alt](http...)
+  let text = md.replace(
     /!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g,
     (_match, alt) => {
       stripped++;
       return `[Remote image removed: ${alt || 'untitled'}]`;
     }
   );
+
+  // 2. Strip HTML tags that fetch remote resources (defense-in-depth).
+  // Covers <img>, <video>, <audio>, <iframe>, <source>, <embed>, <object>,
+  // <link>, <script> with src/href pointing to http(s) URLs.
+  text = text.replace(
+    /<(img|video|audio|iframe|source|embed|object|link|script)\b[^>]*(?:src|href)\s*=\s*["']?https?:\/\/[^"'>]*["']?[^>]*\/?>/gi,
+    () => {
+      stripped++;
+      return '[Remote content removed]';
+    }
+  );
+
+  // 3. Strip HTML event handler attributes (onclick, onerror, onload, etc.)
+  // that could execute JavaScript in contexts where HTML is rendered.
+  text = text.replace(
+    /<[a-z]+\b[^>]*\bon(?:error|load|click|mouseover|focus|blur|submit)\s*=\s*["'][^"']*["'][^>]*>/gi,
+    () => {
+      stripped++;
+      return '[Inline script removed]';
+    }
+  );
+
   return { text, stripped };
 }
 
