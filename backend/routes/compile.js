@@ -589,21 +589,27 @@ module.exports = function compileRoutes(ctx) {
     if (!result) return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });
     if (!result.success) return res.status(400).json({ error: 'compile_failed', message: 'Compilation was not successful.' });
 
-    // Auth check (same as result endpoint)
+    // Auth check — SECURITY: use timing-safe comparison (same as modern endpoints)
     if (result.userId) {
       const requester = await ctx.verifyUserTier(req);
       if (requester.userId !== result.userId) return res.status(403).json({ error: 'forbidden', message: 'Not authorized.' });
     } else {
       const storedSecret = await ctx.getJobSecret(id);
       if (storedSecret) {
-        const providedSecret = req.query.secret || req.headers['x-pp-result-secret'];
-        if (providedSecret !== storedSecret) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
+        const providedSecret = String(req.query.secret || req.headers['x-pp-result-secret'] || '');
+        const secretsMatch = storedSecret.length === providedSecret.length &&
+          crypto.timingSafeEqual(Buffer.from(storedSecret), Buffer.from(providedSecret));
+        if (!secretsMatch) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
       }
     }
 
-    // SVG pages are stored alongside the PDF, prefixed with jobId
+    // SECURITY: Validate SVG path is within the expected results directory.
+    // Prevents path traversal if the job ID or pdfPath is ever manipulated.
     const pdfDir = path.dirname(result.pdfPath);
-    const svgFile = path.join(pdfDir, `${id}-page-${pageNum}.svg`);
+    const svgFile = path.resolve(pdfDir, `${path.basename(id)}-page-${pageNum}.svg`);
+    if (!svgFile.startsWith(path.resolve(pdfDir))) {
+      return res.status(400).json({ error: 'invalid_path', message: 'Invalid page path.' });
+    }
 
     if (!fs.existsSync(svgFile)) return res.status(404).json({ error: 'page_not_found', message: `SVG page ${pageNum} not found.` });
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const fsp = require('fs').promises;
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const manuscriptStructure = require('../manuscript-structure');
 const referencesSystem = require('../references-system');
 const figuresSystem = require('../figures-system');
@@ -20,6 +21,17 @@ const BIB_PATH = path.resolve(__dirname, '..', 'references/references.bib');
  */
 module.exports = function analysisRoutes(ctx) {
   const router = express.Router();
+
+  // SECURITY: Rate limit analysis endpoints — CPU-intensive operations
+  const analysisLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'rate_limited', message: 'Too many analysis requests. Please try again later.' },
+  });
+  router.use('/api/analyze', analysisLimiter);
+  router.use('/api/validate', analysisLimiter);
 
   // ── Structure ──
   router.post('/api/analyze/structure', (req, res) => {

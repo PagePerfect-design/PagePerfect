@@ -16,7 +16,7 @@ module.exports = function contactRoutes() {
     message: { error: 'rate_limited', message: 'Too many contact requests. Please try again later.' },
   });
 
-  router.post('/api/contact', contactLimiter, async (req, res) => {
+  router.post('/api/contact', express.json({ limit: '100kb' }), contactLimiter, async (req, res) => {
     // Honeypot check
     if (req.body.website) return res.json({ ok: true });
 
