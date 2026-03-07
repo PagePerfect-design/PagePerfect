@@ -1,257 +1,147 @@
-# PLAN: Split Pipeline — Pandoc Body-Only + Direct Typst Compile
+# Cloudflare Turnstile Integration Plan
 
-## Problem
+## Why Turnstile
 
-Pandoc is a middleman between our templates and Typst. It forces:
-- Templates written in Pandoc's `$variable$` syntax instead of native Typst
-- `#let horizontalrule` needed because Pandoc's Typst writer emits it (not a Typst concept)
-- Debugging across TWO systems (Pandoc template expansion + Typst compilation)
-- Header-include scoping issues, variable conflicts, version-dependent bugs
-
-## Solution: Split the Pipeline
-
-**Current (broken):**
-```
-Markdown → Pandoc [parse + template + call typst] → PDF
-```
-
-**New (clean):**
-```
-Markdown → Pandoc [parse only] → body.typ → JS assembles main.typ → Typst compile → PDF
-```
-
-Keep Pandoc for what it's great at (Markdown parsing, citations, Lua filters).
-Remove Pandoc from what it's bad at (template system, engine management).
-
----
+Cloudflare Turnstile is the right fit for PagePerfect:
+- **Free** — no usage caps
+- **Invisible mode** — zero visual footprint, preserves Swiss/Ogilvy precision aesthetic
+- **No puzzles** — never degrades UX with image grids or distorted text
+- **Privacy-first** — no tracking cookies, GDPR-friendly
+- The existing honeypot + timestamp checks on the contact form are good but insufficient against sophisticated bots
 
 ## Architecture
 
-### New Pandoc Command (body conversion only)
+**Invisible widget** on the frontend generates a one-time token in the background. The token is sent as a header (`x-turnstile-token`) with protected API requests. A shared Express middleware on the backend verifies the token against Cloudflare's `/siteverify` endpoint before the request reaches the route handler.
+
 ```
-pandoc input.md \
-  --from=markdown[+citations][-raw_tex][-raw_attribute] \
-  -t typst \
-  --top-level-division=chapter|section \
-  --resource-path=<tmpBase> \
-  [--citeproc --bibliography=refs.bib] \
-  [--lua-filter fountain.lua] \
-  -o body.typ
-```
-
-No `--pdf-engine`. No `--template`. No `-H`. No `-V`. No `-M`.
-
-### New Typst Command (direct compilation)
-```
-typst compile [--font-path <dir>] main.typ output.pdf
-```
-
-### main.typ Assembly (JavaScript string concatenation)
-
-Order matters — Typst #set rules are cumulative, later overrides earlier:
-
-```typst
-// ── 1. PREAMBLE (compile-worker.js) ──
-#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
-#let pp-title = "Book Title"
-#let pp-author = "Author Name"        // or: none
-#let pp-date = none
-#let pp-mainfont = "Alegreya Sans"
-
-// ── 2. TEMPLATE STYLE (from template file, before %% CONTENT %% marker) ──
-// #set page(...), #set text(...), #show heading..., #show quote..., etc.
-
-// ── 3. GRID OVERRIDE (grid-system.js — overrides template's default margins) ──
-#set page(width: 6in, height: 9in, margin: 0.694in)
-
-// ── 4. ENGINEERING (book-engineering.js) ──
-#set par(justify: true)
-#set text(hyphenate: true)
-
-// ── 5. HEADING VARIANT (heading-variants-typst.js — if not 'classic') ──
-#show heading.where(level: 1): it => { ... }
-
-// ── 6. WATERMARK (watermark-typst.js — if free tier) ──
-#set page(background: { ... })
-
-// ── 7. BUILD PROVENANCE ──
-// Build: abc123 | 2026-02-27T12:00:00Z
-
-// ── 8. TEMPLATE CONTENT (from template file, after %% CONTENT %% marker) ──
-// Title page using pp-title, pp-author
-
-// ── 9. BODY (from Pandoc's body.typ output) ──
-// All converted Markdown content, citations already resolved by citeproc
+Browser                         Backend                      Cloudflare
+  │                               │                              │
+  │ Turnstile invisible widget    │                              │
+  │ generates token (background)  │                              │
+  │                               │                              │
+  │ POST /api/contact             │                              │
+  │ x-turnstile-token: <token>    │                              │
+  │ ─────────────────────────────>│                              │
+  │                               │ POST /turnstile/v0/siteverify│
+  │                               │ secret + token ─────────────>│
+  │                               │                              │
+  │                               │ { success: true } <──────────│
+  │                               │                              │
+  │                               │ proceed to route handler     │
+  │ <─────────────────────────────│                              │
 ```
 
----
+## Protected Endpoints
 
-## Template Conversion (15 files)
+| Endpoint | Why | Token Source |
+|----------|-----|-------------|
+| `POST /api/contact` | Spam target, sends real email via Resend | Contact form widget |
+| `POST /api/stripe/create-payment` | Payment abuse | Pricing page widget |
 
-Each template: Pandoc-Typst hybrid → pure Typst.
+Auth forms (login, signup, forgot-password) go directly to PocketBase from the client — they don't route through our Express backend. Rather than proxying auth through Express just for Turnstile, we add the invisible widget to auth forms and verify client-side before calling PocketBase. This is a speed bump — bots can bypass it, but it blocks automated scripts that don't execute JavaScript. PocketBase's own rate limiting provides the server-side layer.
 
-### Syntax changes per template:
-| Before (Pandoc syntax) | After (pure Typst) |
-|---|---|
-| `$title$` | `pp-title` |
-| `$author$` | `pp-author` |
-| `$date$` | `pp-date` |
-| `$if(title)$...$endif$` | `#if pp-title != none [...]` |
-| `$if(author)$...$endif$` | `#if pp-author != none [...]` |
-| `$if(mainfont)$$mainfont$$else$Default$endif$` | `pp-mainfont` |
-| `$for(header-includes)$...$endfor$` | **DELETE** (JS assembly handles this) |
-| `$body$` | **DELETE** (JS assembly appends body) |
-| `$if(bibliography)$...$endif$` | **DELETE** (citeproc inlines it in body) |
-| `#let horizontalrule = ...` | **DELETE** (preamble defines it once) |
+**NOT protected** (by design):
+- `POST /api/compile` — auto-fires on debounce (1s). Tokens are single-use and expire in 5 min. Re-generating tokens every keystroke would thrash the widget. Existing rate limiting (20/min/IP) + auth tier checks are sufficient.
+- `POST /api/analyze/*` — triggered automatically by the editor. Same debounce concern. Rate limiting (30/min) covers this.
+- `POST /api/stripe/webhook` — server-to-server, already HMAC-verified by Stripe.
 
-### Structural change:
-Add `// %% CONTENT %%` marker between style rules and title page.
-compile-worker.js splits on this to insert overrides between style and content.
+## Implementation Steps
 
-### Example: paperback.typ
+### Step 1: Install `@marsidev/react-turnstile`
 
-**Before:**
-```typst
-#set text(font: "$if(mainfont)$$mainfont$$else$Alegreya Sans$endif$", ...)
-align(left, smallcaps[$if(title)$$title$$endif$])
-#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
-$for(header-includes)$
-$header-includes$
-$endfor$
-$if(title)$
-#page(...)[#text(...)[$title$] $if(author)$#text(...)[$author$]$endif$]
-$endif$
-$body$
-$if(bibliography)$...$endif$
+```bash
+cd frontend && npm install @marsidev/react-turnstile
 ```
 
-**After:**
-```typst
-#set text(font: pp-mainfont, ...)
-align(left, smallcaps[#pp-title])
-// %% CONTENT %%
-#if pp-title != none [
-  #page(...)[#text(...)[#pp-title] #if pp-author != none [#text(...)[#pp-author]]]
-]
-```
+Most mature React wrapper. TypeScript-first, SSR-safe, supports invisible mode.
 
----
+### Step 2: Create shared Turnstile hook — `frontend/src/lib/turnstile.tsx`
 
-## Files Changed
+A reusable `useTurnstile()` hook that:
+- Renders an invisible `<Turnstile>` widget
+- Exposes `token` state and a `resetToken()` function
+- Handles `onExpire` by auto-resetting (tokens expire after 5 min)
+- Returns a `<TurnstileWidget>` component to place in forms
 
-### Phase 1: Convert 15 templates (independent, can be done in parallel)
-```
-backend/typst-templates/chicago.typ
-backend/typst-templates/symphony.typ
-backend/typst-templates/thesis.typ
-backend/typst-templates/minimal.typ
-backend/typst-templates/paperback.typ
-backend/typst-templates/memoir.typ
-backend/typst-templates/exhibit.typ
-backend/typst-templates/heirloom.typ
-backend/typst-templates/verse.typ
-backend/typst-templates/chronicle.typ
-backend/typst-templates/international.typ
-backend/typst-templates/operator.typ
-backend/typst-templates/matrix.typ
-backend/typst-templates/avantgarde.typ
-backend/typst-templates/cinema.typ
-```
+This keeps Turnstile logic in one place rather than duplicating across forms.
 
-### Phase 2: Rewrite compile-worker.js (core change)
-Lines ~295-570: Replace monolithic Pandoc call with 2-step pipeline.
-Keep: PocketBase auth, EPUB, error handling, provenance, pre-flight, PDF/X.
+### Step 3: Create backend verification middleware — `backend/middleware/turnstile.js`
 
-### Phase 3: Update batch compile in routes/compile.js
-Lines ~620-700: Same structural change as compile-worker.js.
+Extracts token from `x-turnstile-token` header or request body field `turnstileToken`. POSTs to `https://challenges.cloudflare.com/turnstile/v0/siteverify`. Returns 403 if verification fails. Skips verification if `TURNSTILE_SECRET_KEY` is not set (dev mode graceful degradation).
 
-### Phase 4: Update tests
-`backend/tests/template-regression.test.js` — adapt for new template format.
+### Step 4: Wire into contact form — `RequestFormatCard.tsx`
 
-### Unchanged:
-- `compileEpub()` — Pandoc for EPUB (no templates involved)
-- `POST /api/convert` — Pandoc for .docx→markdown (no templates involved)
-- All frontend files
-- grid-system.js, book-engineering.js, heading-variants-typst.js, watermark-typst.js
-- typography-assurance.js, layout-sanity-checker.js, typst-error-translator.js
+- Import `useTurnstile()` hook
+- Render invisible widget inside the form
+- Send token as `turnstileToken` field in the POST body
+- Reset token after successful submission (for "Send another" flow)
+- Keep existing honeypot + timestamp checks as additional layers
 
----
+### Step 5: Wire into auth forms
 
-## compile-worker.js: New Pipeline (pseudocode)
+**`login/page.tsx`:**
+- Add invisible widget to `LoginForm`
+- Check for valid token before calling `signIn()` / `signUp()`
+- If no token yet, show brief "Verifying..." state (rare — widget usually resolves in <1s)
 
-```javascript
-// ── STEP A: Pandoc converts Markdown → Typst body ──
-const bodyPath = path.join(tmpBase, 'body.typ');
-const pandocArgs = [
-  mdPath, fromFmt, '-t', 'typst',
-  `--top-level-division=${topLevelDiv}`,
-  `--resource-path=${tmpBase}`,
-  ...luaFilters,          // fountain.lua for cinema
-  ...(safeMode ? [] : citeprocArgs(BIB_PATH)),
-  '-o', bodyPath,
-];
-// spawn('pandoc', pandocArgs, { cwd: tmpBase })
+**`forgot-password/page.tsx`:**
+- Same pattern — check token before calling `resetPassword()`
 
-// ── STEP B: Read template, split at marker ──
-const tplContent = await fsp.readFile(typstTemplatePath, 'utf8');
-const markerIdx = tplContent.indexOf('// %% CONTENT %%');
-const tplStyle = markerIdx >= 0 ? tplContent.slice(0, markerIdx) : tplContent;
-const tplContent = markerIdx >= 0 ? tplContent.slice(markerIdx + '// %% CONTENT %%'.length) : '';
+### Step 6: Wire into Stripe payment creation — `pricing/page.tsx`
 
-// ── STEP C: Assemble main.typ ──
-const bodyContent = await fsp.readFile(bodyPath, 'utf8');
-const mainTyp = [
-  // 1. Preamble
-  `#let horizontalrule = line(start: (25%,0%), end: (75%,0%))`,
-  `#let pp-title = ${typstString(safeTitle)}`,
-  `#let pp-author = ${author ? typstString(author) : 'none'}`,
-  `#let pp-date = ${date ? typstString(date) : 'none'}`,
-  `#let pp-mainfont = ${typstString(mainFont)}`,
-  // 2. Template style
-  tplStyle.trim(),
-  // 3. Grid override
-  geo,
-  // 4. Engineering
-  engineering,
-  // 5. Heading variant
-  headingVariant || '',
-  // 6. Watermark
-  needsWatermark ? watermarkPreamble : '',
-  // 7. Provenance
-  `// Build: ${buildMeta.buildId} | ${buildMeta.timestamp}`,
-  // 8. Template content (title page)
-  tplContentSection.trim(),
-  // 9. Body
-  bodyContent,
-].filter(Boolean).join('\n\n');
+- Add invisible widget to the pricing page
+- Send token with `createPayment()` call as header
+- Backend `/api/stripe/create-payment` applies `verifyTurnstile` middleware
 
-await fsp.writeFile(path.join(tmpBase, 'main.typ'), mainTyp, 'utf8');
+### Step 7: Update CSP — `middleware.ts`
 
-// ── STEP D: Typst compile ──
-const typstArgs = ['compile'];
-if (customFontDir) typstArgs.push('--font-path', customFontDir);
-typstArgs.push('main.typ', 'output.pdf');
-// spawn('typst', typstArgs, { cwd: tmpBase })
-```
+Add Cloudflare Turnstile origins to Content Security Policy:
+- `script-src`: add `https://challenges.cloudflare.com`
+- `frame-src`: add `https://challenges.cloudflare.com`
+- `connect-src`: add `https://challenges.cloudflare.com`
 
-### Helper: typstString()
-```javascript
-function typstString(s) {
-  // Escape for Typst string literal: backslash, double-quote
-  return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
-}
-```
+### Step 8: Environment variables
 
----
+**Frontend (Vercel):**
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` — public site key from Cloudflare dashboard
 
-## Risk Assessment
+**Backend (Coolify):**
+- `TURNSTILE_SECRET_KEY` — secret key for server-side verification
 
-| Risk | Mitigation |
-|---|---|
-| Typst #set scope | We concatenate into one file — all in same scope |
-| Pandoc body output changes | Pandoc 3.6.2 pinned in Dockerfile |
-| Template split marker fragile | Validated at compile time — error if missing |
-| Citations break | citeproc runs in Pandoc step, inlines bibliography |
-| Custom fonts | `typst compile --font-path` replaces Pandoc font handling |
-| EPUB path breaks | Unchanged — still uses Pandoc directly |
-| Two spawns instead of one | Pandoc body-only is fast (~200ms); Typst compile is the slow part |
+**Development (Cloudflare test keys — always pass):**
+- Site key: `1x00000000000000000000AA`
+- Secret key: `1x0000000000000000000000000000000AA`
+
+### Step 9: Update `.env.example` files
+
+Add the new variables with comments to both `frontend/.env.example` and `backend/.env.example`.
+
+## Aesthetic Considerations
+
+- **Invisible mode = zero visual impact.** No widget, no badge, no "protected by" text. The Swiss grid remains pristine.
+- If Cloudflare ever escalates to a visible challenge (rare, only for highly suspicious traffic), it renders in a small iframe. We cannot style it, but it's transient and self-dismissing.
+- No "I'm not a robot" checkbox anywhere. That's consumer SaaS — we're a precision instrument.
+- Error state when verification fails: use the existing error display pattern — `border border-[#dc2626]/20 bg-[#dc2626]/5` with monospace text. Message: "Verification failed. Please refresh and try again."
+
+## Graceful Degradation
+
+- If `TURNSTILE_SECRET_KEY` is not set, the backend middleware passes through without verification. Local dev works without a Cloudflare account.
+- If `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is not set, the frontend hook returns a null token and doesn't render the widget. Forms work normally.
+- If the Cloudflare `/siteverify` API is unreachable (network error), the middleware logs a warning and passes through — we don't block legitimate users because Cloudflare is down.
+
+## File Changes Summary
+
+| File | Change |
+|------|--------|
+| `frontend/package.json` | Add `@marsidev/react-turnstile` |
+| `frontend/src/lib/turnstile.tsx` | **NEW** — shared hook + widget component |
+| `frontend/src/components/landing/RequestFormatCard.tsx` | Add Turnstile to contact form |
+| `frontend/src/app/(site)/auth/login/page.tsx` | Add Turnstile to login/signup |
+| `frontend/src/app/(site)/auth/forgot-password/page.tsx` | Add Turnstile to password reset |
+| `frontend/src/app/(site)/pricing/page.tsx` | Add Turnstile to payment flow |
+| `frontend/src/middleware.ts` | Update CSP for Turnstile origins |
+| `frontend/.env.example` | Add `NEXT_PUBLIC_TURNSTILE_SITE_KEY` |
+| `backend/middleware/turnstile.js` | **NEW** — verification middleware |
+| `backend/routes/contact.js` | Apply `verifyTurnstile` middleware |
+| `backend/routes/stripe.js` | Apply `verifyTurnstile` to create-payment |
+| `backend/.env.example` | Add `TURNSTILE_SECRET_KEY` |
