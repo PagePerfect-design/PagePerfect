@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const log = require('../logger');
+const { verifyTurnstile } = require('../middleware/turnstile');
 
 /**
  * Contact / Format Request route (Resend email).
@@ -16,7 +17,7 @@ module.exports = function contactRoutes() {
     message: { error: 'rate_limited', message: 'Too many contact requests. Please try again later.' },
   });
 
-  router.post('/api/contact', express.json({ limit: '100kb' }), contactLimiter, async (req, res) => {
+  router.post('/api/contact', express.json({ limit: '100kb' }), contactLimiter, verifyTurnstile, async (req, res) => {
     // Honeypot check
     if (req.body.website) return res.json({ ok: true });
 

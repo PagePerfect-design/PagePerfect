@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, FormEvent } from 'react'
+import { useTurnstile } from '@/lib/turnstile'
 
 type FormState = 'idle' | 'sending' | 'sent' | 'error'
 
@@ -10,6 +11,7 @@ export function RequestFormatCard() {
   const [message, setMessage] = useState('')
   const honeypotRef = useRef<HTMLInputElement>(null)
   const timestampRef = useRef(Date.now())
+  const { token: turnstileToken, resetToken, TurnstileWidget } = useTurnstile()
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -44,6 +46,7 @@ export function RequestFormatCard() {
           email: trimmedEmail,
           message: trimmedMessage,
           _t: timestampRef.current,
+          turnstileToken: turnstileToken || undefined,
         }),
       })
 
@@ -51,6 +54,7 @@ export function RequestFormatCard() {
         setState('sent')
         setEmail('')
         setMessage('')
+        resetToken()
       } else {
         setState('error')
       }
@@ -158,6 +162,8 @@ export function RequestFormatCard() {
                 </a>
               </p>
             )}
+
+            <TurnstileWidget />
 
             <button
               type="submit"
