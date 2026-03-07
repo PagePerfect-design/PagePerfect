@@ -12,6 +12,7 @@ const fontAvailability = require('../font-availability');
 const headingVariants = require('../heading-variants');
 const bookEngineering = require('../book-engineering');
 const provenance = require('../provenance');
+const latexSanitizer = require('../latex-sanitizer');
 const log = require('../logger');
 const { processCompileJob } = require('../compile-worker');
 const { checkExportEntitlement } = require('../entitlements');
@@ -207,6 +208,18 @@ module.exports = function compileRoutes(ctx) {
     if (!manuscriptText || typeof manuscriptText !== 'string') return res.status(400).json({ error: 'invalid_request', message: 'manuscriptText is required' });
     const mdBytes = Buffer.byteLength(manuscriptText, 'utf8');
     if (mdBytes > MAX_MD_BYTES) return res.status(413).json({ error: 'payload_too_large', message: `Manuscript exceeds limit (${mdBytes} > ${MAX_MD_BYTES} bytes).` });
+
+    // SECURITY: Block LaTeX injection attempts at the API boundary.
+    // Defense-in-depth: even though -raw_tex strips raw LaTeX, reject
+    // manuscripts containing known attack patterns outright.
+    if (latexSanitizer.hasInjectionAttempt(manuscriptText)) {
+      log.warn({ module: 'compile', ip: req.ip }, 'Blocked manuscript with LaTeX injection patterns');
+      return res.status(400).json({ error: 'injection_detected', message: 'Manuscript contains prohibited LaTeX commands. Remove any \\input, \\write18, \\directlua, or similar commands and try again.' });
+    }
+    if (typeof title === 'string' && latexSanitizer.hasInjectionAttempt(title)) {
+      log.warn({ module: 'compile', ip: req.ip }, 'Blocked title with LaTeX injection patterns');
+      return res.status(400).json({ error: 'injection_detected', message: 'Title contains prohibited LaTeX commands.' });
+    }
 
     const user = await ctx.verifyUserTier(req);
     const userTier = user.tier;
@@ -410,11 +423,16 @@ module.exports = function compileRoutes(ctx) {
       return result.debug || null;
     };
 
+    // SECURITY: In production, strip internal debug data from responses.
+    // Debug artifacts (texSource, latexLog, headerTex, filesInDir, stack traces)
+    // can leak container paths, template internals, and system configuration.
+    const isProduction = process.env.NODE_ENV === 'production';
+
     const cached = await ctx.getJobResult(id);
     if (cached) {
-      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, debugMeta: cached.debugMeta || null, engine: cached.engine || null, layoutReport: cached.layoutReport || null, svgPageCount: cached.svgPageCount || 0, resultUrl: `/api/compile/result/${id}` });
-      const debug = resolveDebug(cached);
-      return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: cached.detail, debug, debugMeta: cached.debugMeta || null });
+      if (cached.success) return res.json({ jobId: id, status: 'completed', elapsed: cached.elapsed, outputFormat: cached.outputFormat, needsWatermark: cached.needsWatermark, warnings: cached.warnings, compileLog: cached.compileLog, typographyReport: cached.typographyReport || null, buildId: cached.buildId || null, exportSnapshot: cached.exportSnapshot || null, debugMeta: isProduction ? null : (cached.debugMeta || null), engine: cached.engine || null, layoutReport: cached.layoutReport || null, svgPageCount: cached.svgPageCount || 0, resultUrl: `/api/compile/result/${id}` });
+      const debug = isProduction ? null : resolveDebug(cached);
+      return res.json({ jobId: id, status: 'failed', error: cached.error, message: cached.message, errors: cached.errors || null, warnings: cached.warnings, detail: isProduction ? null : cached.detail, debug, debugMeta: isProduction ? null : (cached.debugMeta || null) });
     }
     if (ctx.compileQueue) {
       try {
@@ -455,10 +473,10 @@ module.exports = function compileRoutes(ctx) {
               }
               ctx.storeJobResult(id, rv);
               if (rv.success) {
-                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, debugMeta: rv.debugMeta || null, engine: rv.engine || null, layoutReport: rv.layoutReport || null, svgPageCount: rv.svgPageCount || 0, resultUrl: `/api/compile/result/${id}` });
+                return res.json({ jobId: id, status: 'completed', elapsed: rv.elapsed, outputFormat: rv.outputFormat, needsWatermark: rv.needsWatermark, warnings: rv.warnings, compileLog: rv.compileLog, typographyReport: rv.typographyReport || null, buildId: rv.buildId || null, exportSnapshot: rv.exportSnapshot || null, debugMeta: isProduction ? null : (rv.debugMeta || null), engine: rv.engine || null, layoutReport: rv.layoutReport || null, svgPageCount: rv.svgPageCount || 0, resultUrl: `/api/compile/result/${id}` });
               }
-              const debug = resolveDebug(rv);
-              return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: rv.detail, debug, debugMeta: rv.debugMeta || null });
+              const debug = isProduction ? null : resolveDebug(rv);
+              return res.json({ jobId: id, status: 'failed', error: rv.error, message: rv.message, errors: rv.errors || null, warnings: rv.warnings, detail: isProduction ? null : rv.detail, debug, debugMeta: isProduction ? null : (rv.debugMeta || null) });
             }
             // BullMQ says done but no return value yet — brief poll continuation
             return res.json({ jobId: id, status: 'active', progress: job.progress || 0 });
@@ -571,21 +589,27 @@ module.exports = function compileRoutes(ctx) {
     if (!result) return res.status(404).json({ error: 'not_found', message: 'Result not found or expired.' });
     if (!result.success) return res.status(400).json({ error: 'compile_failed', message: 'Compilation was not successful.' });
 
-    // Auth check (same as result endpoint)
+    // Auth check — SECURITY: use timing-safe comparison (same as modern endpoints)
     if (result.userId) {
       const requester = await ctx.verifyUserTier(req);
       if (requester.userId !== result.userId) return res.status(403).json({ error: 'forbidden', message: 'Not authorized.' });
     } else {
       const storedSecret = await ctx.getJobSecret(id);
       if (storedSecret) {
-        const providedSecret = req.query.secret || req.headers['x-pp-result-secret'];
-        if (providedSecret !== storedSecret) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
+        const providedSecret = String(req.query.secret || req.headers['x-pp-result-secret'] || '');
+        const secretsMatch = storedSecret.length === providedSecret.length &&
+          crypto.timingSafeEqual(Buffer.from(storedSecret), Buffer.from(providedSecret));
+        if (!secretsMatch) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
       }
     }
 
-    // SVG pages are stored alongside the PDF, prefixed with jobId
+    // SECURITY: Validate SVG path is within the expected results directory.
+    // Prevents path traversal if the job ID or pdfPath is ever manipulated.
     const pdfDir = path.dirname(result.pdfPath);
-    const svgFile = path.join(pdfDir, `${id}-page-${pageNum}.svg`);
+    const svgFile = path.resolve(pdfDir, `${path.basename(id)}-page-${pageNum}.svg`);
+    if (!svgFile.startsWith(path.resolve(pdfDir))) {
+      return res.status(400).json({ error: 'invalid_path', message: 'Invalid page path.' });
+    }
 
     if (!fs.existsSync(svgFile)) return res.status(404).json({ error: 'page_not_found', message: `SVG page ${pageNum} not found.` });
 

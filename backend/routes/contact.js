@@ -16,7 +16,7 @@ module.exports = function contactRoutes() {
     message: { error: 'rate_limited', message: 'Too many contact requests. Please try again later.' },
   });
 
-  router.post('/api/contact', contactLimiter, async (req, res) => {
+  router.post('/api/contact', express.json({ limit: '100kb' }), contactLimiter, async (req, res) => {
     // Honeypot check
     if (req.body.website) return res.json({ ok: true });
 
@@ -28,7 +28,12 @@ module.exports = function contactRoutes() {
     const message = String(req.body.message || '').trim().slice(0, 5000);
 
     if (!email || !message) return res.status(400).json({ error: 'missing_fields', message: 'Email and message are required.' });
+    // SECURITY: Strict email validation — reject newlines, null bytes, and
+    // characters that could enable email header injection via replyTo field.
+    if (/[\r\n\0]/.test(email)) return res.status(400).json({ error: 'invalid_email', message: 'Invalid email address.' });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'invalid_email', message: 'Invalid email address.' });
+    // Reject emails with angle brackets or commas (multi-recipient injection)
+    if (/[<>,;]/.test(email)) return res.status(400).json({ error: 'invalid_email', message: 'Invalid email address.' });
 
     const resendKey = process.env.RESEND_API_KEY;
     if (!resendKey) {
