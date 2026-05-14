@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Reveal, RevealGroup } from '@/components/Reveal'
 import { ChapterOpener } from './ChapterOpener'
-import { FootnoteList } from './Footnote'
+import { FootnoteRef, FootnoteList } from './Footnote'
 
 const TIERS = [
   {
@@ -51,7 +51,7 @@ export function ChapterTerms() {
           <p>
             Three offers. No subscription unless you ask for one. The free
             tier is genuinely useful — not a demo. Pay only when the book is
-            finished and you need a watermark-free export.
+            finished and you need a watermark-free export<FootnoteRef chapter="v" n={1} />.
           </p>
         </ChapterOpener>
 
