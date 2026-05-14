@@ -173,7 +173,7 @@ function PageAnatomyDiagram() {
       {/* Callouts */}
       {/* Bleed callout */}
       <line x1="20" y1="20" x2="-30" y2="-20" stroke="#FF3333" strokeWidth="1" />
-      <text x="-130" y="-25" fontFamily="monospace" fontSize="9" fill="#FF3333">BLEED 0.125"</text>
+      <text x="-130" y="-25" fontFamily="monospace" fontSize="9" fill="#FF3333">{'BLEED 0.125"'}</text>
 
       {/* Trim callout */}
       <line x1="60" y1="60" x2="-20" y2="40" stroke="#111111" strokeWidth="1" />
@@ -181,7 +181,7 @@ function PageAnatomyDiagram() {
 
       {/* Gutter callout */}
       <line x1="120" y1="400" x2="-10" y2="400" stroke="#111111" strokeWidth="1" />
-      <text x="-120" y="403" fontFamily="monospace" fontSize="9" fill="#111111">GUTTER 0.875"</text>
+      <text x="-120" y="403" fontFamily="monospace" fontSize="9" fill="#111111">{'GUTTER 0.875"'}</text>
 
       {/* Baseline callout */}
       <line x1="480" y1="290" x2="620" y2="290" stroke="#111111" strokeWidth="1" />

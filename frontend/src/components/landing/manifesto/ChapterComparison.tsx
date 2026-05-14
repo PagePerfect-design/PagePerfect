@@ -121,7 +121,7 @@ export function ChapterComparison() {
             className="mx-auto mt-16 max-w-2xl border-l-2 border-[#FF3333] pl-6 font-body italic leading-[1.45] text-[#111111]"
             style={{ fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)' }}
           >
-            "The same words. A different book."
+            &ldquo;The same words. A different book.&rdquo;
           </blockquote>
         </Reveal>
 

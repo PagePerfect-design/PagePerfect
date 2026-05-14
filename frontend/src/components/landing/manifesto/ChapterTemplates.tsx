@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Reveal, RevealGroup } from '@/components/Reveal'
+import { RevealGroup } from '@/components/Reveal'
 import { ChapterOpener } from './ChapterOpener'
 import { RequestFormatCard } from '../RequestFormatCard'
 import { TEMPLATES, SPECIMENS } from './template-specimens'

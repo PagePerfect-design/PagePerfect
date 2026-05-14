@@ -20,7 +20,7 @@ export function ChapterProblem() {
             You wake up to a rejection email
             <FootnoteRef chapter="i" n={1} />: <em>margins do not meet specifications</em>.
             You spent two months writing the book and forty hours formatting it,
-            and Amazon's automated review killed it in three seconds.
+            and Amazon&rsquo;s automated review killed it in three seconds.
           </p>
         </ChapterOpener>
 
@@ -43,8 +43,8 @@ export function ChapterProblem() {
 
           <Marginalia side="right" label="Common rejections">
             <ul className="space-y-2">
-              <li>· Margins under 0.375" gutter</li>
-              <li>· Spine width outside ±0.0625"</li>
+              <li>· Margins under 0.375&rdquo; gutter</li>
+              <li>· Spine width outside ±0.0625&rdquo;</li>
               <li>· Non-embedded fonts</li>
               <li>· RGB images in CMYK pipeline</li>
               <li>· Trim mark / bleed misalignment</li>
