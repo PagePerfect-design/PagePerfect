@@ -58,7 +58,7 @@ export function ChapterTemplates() {
                   {/* Enlarged specimen — 240px target via aspect-ratio + overflow */}
                   <div
                     className="mx-4 mt-4 border border-[#111111]/10"
-                    style={{ aspectRatio: '5 / 8', minHeight: '240px' }}
+                    style={{ aspectRatio: '5 / 8', minHeight: '240px', overflow: 'hidden' }}
                   >
                     {Specimen && (
                       <div className="h-full w-full" style={{ transform: 'scale(1.85)', transformOrigin: 'top left' }}>
