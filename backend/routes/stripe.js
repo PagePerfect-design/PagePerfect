@@ -1,5 +1,6 @@
 const express = require('express');
 const log = require('../logger');
+const { verifyTurnstile } = require('../middleware/turnstile');
 
 /**
  * Stripe routes — webhook + payment creation.
@@ -102,10 +103,17 @@ module.exports = function stripeRoutes(ctx) {
           const userId = pi.metadata?.user_id;
           log.info({ module: 'stripe', customer: pi.customer, tier, userId }, 'PaymentIntent succeeded');
 
-          if (userId && tier === 'publisher') {
-            await activatePublisherWindow(userId, pi.customer);
+          // SECURITY: Validate metadata values — only allow known tiers and
+          // alphanumeric user IDs to prevent privilege escalation via metadata.
+          const validTiers = new Set(['publisher', 'studio']);
+          if (userId && typeof userId === 'string' && /^[a-zA-Z0-9]+$/.test(userId) && validTiers.has(tier)) {
+            if (tier === 'publisher') {
+              await activatePublisherWindow(userId, pi.customer);
+            } else {
+              await upgradeTier(userId, tier, pi.customer, null);
+            }
           } else if (userId && tier) {
-            await upgradeTier(userId, tier, pi.customer, null);
+            log.warn({ module: 'stripe', tier, userId: String(userId).slice(0, 30) }, 'Rejected webhook with invalid tier or userId format');
           }
           break;
         }
@@ -115,8 +123,12 @@ module.exports = function stripeRoutes(ctx) {
           const userId = session.metadata?.user_id;
           log.info({ module: 'stripe', customer: session.customer, tier, userId }, 'Checkout completed');
 
-          if (userId && tier) {
+          // SECURITY: Same metadata validation as payment_intent.succeeded
+          const validCheckoutTiers = new Set(['publisher', 'studio']);
+          if (userId && typeof userId === 'string' && /^[a-zA-Z0-9]+$/.test(userId) && validCheckoutTiers.has(tier)) {
             await upgradeTier(userId, tier, session.customer, session.subscription || null);
+          } else if (userId && tier) {
+            log.warn({ module: 'stripe', tier, userId: String(userId).slice(0, 30) }, 'Rejected checkout webhook with invalid tier or userId format');
           }
           break;
         }
@@ -130,7 +142,13 @@ module.exports = function stripeRoutes(ctx) {
           }
 
           try {
+            // SECURITY: Strict Stripe customer ID validation — must match cus_XXXX format.
+            // Prevents PocketBase filter injection via crafted customer IDs.
             const custId = String(sub.customer).replace(/[^a-zA-Z0-9_]/g, '');
+            if (!/^cus_[a-zA-Z0-9]+$/.test(custId)) {
+              log.warn({ module: 'stripe', rawCustomer: String(sub.customer).slice(0, 50) }, 'Invalid Stripe customer ID format — aborting downgrade');
+              break;
+            }
             const filter = encodeURIComponent(`stripe_customer_id='${custId}'`);
             const listResp = await ctx.pbFetch(`/api/collections/users/records?filter=${filter}`);
             if (!listResp || !listResp.ok) {
@@ -169,7 +187,7 @@ module.exports = function stripeRoutes(ctx) {
   );
 
   // ── Stripe Payment Creation ──
-  router.post('/api/stripe/create-payment', async (req, res) => {
+  router.post('/api/stripe/create-payment', verifyTurnstile, async (req, res) => {
     if (!ctx.stripe) {
       return res.status(501).json({ error: 'Stripe not configured' });
     }

@@ -752,15 +752,25 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
-// Request logging
+// SECURITY: Request ID for forensic correlation — every request gets a unique ID.
+// Enables tracing a single request across all log entries during incident response.
+app.use((req, res, next) => {
+  req.id = require('crypto').randomUUID();
+  res.setHeader('X-Request-Id', req.id);
+  next();
+});
+
+// Request logging (includes request ID + IP for forensic correlation)
 app.use((req, res, next) => {
   const start = Date.now();
-  res.on('finish', () => { log.info({ method: req.method, url: req.originalUrl, status: res.statusCode, ms: Date.now() - start }, 'request'); });
+  res.on('finish', () => { log.info({ reqId: req.id, method: req.method, url: req.originalUrl, status: res.statusCode, ms: Date.now() - start, ip: req.ip }, 'request'); });
   next();
 });
 
 app.use(express.json({ limit: '5mb' }));
 
+// SECURITY: CORS defaults to restrictive. In development with NODE_ENV unset,
+// allow all origins for convenience. In production, enforce origin allowlist.
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? (origin, callback) => callback(null, isAllowedOrigin(origin))
@@ -829,6 +839,8 @@ const ctx = {
 
 // ================================================================
 // Debug Ingest — client-side diagnostic logs (ephemeral, in-memory)
+// SECURITY: Only available in development. Disabled in production
+// to prevent information leakage and abuse.
 // ================================================================
 
 const DEBUG_SESSION_LOGS = new Map();       // sessionId → [entries]
@@ -836,9 +848,17 @@ const DEBUG_MAX_ENTRIES = 200;
 const DEBUG_MAX_SESSIONS = 50;
 const DEBUG_TTL_MS = 30 * 60 * 1000;       // 30 min
 
-app.post('/api/debug/ingest', (req, res) => {
+const debugLimiter = rateLimit({
+  windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'rate_limited', message: 'Too many debug requests.' },
+});
+
+app.post('/api/debug/ingest', debugLimiter, (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(404).json({ error: 'not_found' });
+
   const { sessionId, entries } = req.body || {};
-  if (!sessionId || !Array.isArray(entries)) return res.status(400).json({ ok: false });
+  if (!sessionId || typeof sessionId !== 'string' || sessionId.length > 64) return res.status(400).json({ ok: false });
+  if (!Array.isArray(entries)) return res.status(400).json({ ok: false });
 
   if (!DEBUG_SESSION_LOGS.has(sessionId)) {
     // Evict oldest if at capacity
@@ -850,6 +870,7 @@ app.post('/api/debug/ingest', (req, res) => {
   }
   const session = DEBUG_SESSION_LOGS.get(sessionId);
   for (const e of entries.slice(0, 50)) {
+    if (typeof e !== 'object' || e === null) continue;
     session.entries.push({ t: Date.now(), ...e });
     if (session.entries.length > DEBUG_MAX_ENTRIES) session.entries.shift();
   }
@@ -860,7 +881,9 @@ app.post('/api/debug/ingest', (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/debug/session/:id', (req, res) => {
+app.get('/api/debug/session/:id', debugLimiter, (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(404).json({ error: 'not_found' });
+
   const session = DEBUG_SESSION_LOGS.get(req.params.id);
   if (!session) return res.status(404).json({ error: 'not_found' });
   res.json({ sessionId: req.params.id, entries: session.entries });

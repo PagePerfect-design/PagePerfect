@@ -285,6 +285,18 @@ async function _processCompileJobInner(job, templateRegistry) {
   }
 
   // ── Warnings accumulator (declared early — used by multiple stages below) ──
+  // SECURITY: Defense-in-depth injection check at compile time.
+  // The API route should have already blocked this, but verify again
+  // in case the worker receives jobs from other sources.
+  if (latexSanitizer.hasInjectionAttempt(manuscriptText)) {
+    log.warn({ jobId: job.id }, 'Blocked manuscript with LaTeX injection patterns at compile time');
+    return buildFailureResult({
+      error: 'injection_detected',
+      message: 'Manuscript contains prohibited LaTeX commands.',
+      debugMeta: buildDebugMeta(job),
+    });
+  }
+
   const warnings = styleWarnings(manuscriptText);
 
   // ── Normalize text for format-agnostic input ──

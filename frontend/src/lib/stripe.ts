@@ -21,10 +21,14 @@ export async function createPayment(
   tier: 'publisher' | 'studio',
   userId: string,
   email?: string,
+  turnstileToken?: string | null,
 ): Promise<{ clientSecret: string }> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (turnstileToken) headers['x-turnstile-token'] = turnstileToken
+
   const res = await fetch('/api/stripe/create-payment', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ tier, user_id: userId, email }),
   })
 
