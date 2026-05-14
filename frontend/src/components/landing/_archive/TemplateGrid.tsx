@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { RequestFormatCard } from './RequestFormatCard'
+import { RequestFormatCard } from '../RequestFormatCard'
 
 // ── Template Data with exact font stacks and grid math ──────────
 const TEMPLATES = [
