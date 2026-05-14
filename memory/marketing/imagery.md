@@ -114,7 +114,8 @@ Columns: `Date | Asset | Mode | Subject | Prompt | Negative | Rendered path | Al
 
 | Date | Asset | Mode | Subject | Prompt | Negative | Rendered path | Alt text |
 |------|-------|------|---------|--------|----------|---------------|----------|
-| <!-- seeded empty; image-direction skill appends --> | | | | | | | |
+| 2026-05-14 | landing-cover | photoreal | Linen-bound hardcover, blind-debossed cover detail | A linen-bound hardcover at rest on a cream paper surface, three-quarter angle, soft directional studio light from the left, raking shadow, blind-debossed cover detail visible. | no hands, no faces, no text, no logos, no reflections of cameras, no neon, no cyberpunk, no meme, no screens, no laptops, no phones | frontend/public/landing/landing-cover.webp | A linen-bound hardcover at rest on cream paper, cover blind-debossed. |
+| 2026-05-14 | landing-engine-masthead | photoreal | Type specimen sheet with numeric scales and baseline rules | A typographic specimen sheet showing numeric scales and baseline rules, ink still wet, raking light, cream paper surface, close-cropped, editorial product photography. | no hands, no faces, no text, no logos, no reflections of cameras, no neon, no cyberpunk, no meme, no screens, no laptops, no phones | frontend/public/landing/landing-engine-masthead.webp | A typographic specimen sheet showing numeric scales and baseline rules under raking light. |
 
 ## Changelog
 
