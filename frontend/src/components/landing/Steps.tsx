@@ -1,6 +1,6 @@
 'use client'
 
-import { Reveal } from '@/components/Reveal'
+import { Reveal, RevealGroup } from '@/components/Reveal'
 
 const STEPS = [
   {
@@ -47,9 +47,9 @@ export function HowItWorks() {
 
         {/* ── Steps ── */}
         <div>
-          {STEPS.map((step, i) => (
-            <Reveal key={step.num} delay={i * 0.08}>
-              <div>
+          <RevealGroup staggerDelay={0.06}>
+            {STEPS.map((step) => (
+              <div key={step.num}>
                 <div className="h-px bg-[#111111]" />
                 <div className="grid grid-cols-1 gap-4 py-10 md:grid-cols-[5rem_1fr_1fr] md:items-baseline md:gap-10 md:py-14">
                   {/* Step number */}
@@ -73,8 +73,8 @@ export function HowItWorks() {
                   </p>
                 </div>
               </div>
-            </Reveal>
-          ))}
+            ))}
+          </RevealGroup>
           <div className="h-px bg-[#111111]" />
         </div>
       </div>

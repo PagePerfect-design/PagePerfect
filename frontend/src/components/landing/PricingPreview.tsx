@@ -135,7 +135,7 @@ export function PricingPreview() {
           <div className="mt-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <Link
               href="/pricing"
-              className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/35 transition-colors duration-200 ease-pp hover:text-[#111111]"
+              className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111] underline underline-offset-4 transition-colors duration-200 ease-pp hover:text-[#111111]"
             >
               Compare all plans &amp; FAQ &rarr;
             </Link>

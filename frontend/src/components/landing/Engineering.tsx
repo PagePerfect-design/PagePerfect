@@ -1,6 +1,6 @@
 'use client'
 
-import { Reveal } from '@/components/Reveal'
+import { Reveal, RevealGroup } from '@/components/Reveal'
 
 const CAPABILITIES = [
   {
@@ -60,7 +60,7 @@ export function Engineering() {
         {/* ── Header ── */}
         <Reveal>
           <div className="mb-12 max-w-3xl md:mb-16">
-            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+            <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#555555]">
               Compliance infrastructure
             </p>
             <h2 className="font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
@@ -77,15 +77,17 @@ export function Engineering() {
         </Reveal>
 
         {/* ── Capabilities Grid — gap trick for clean rules ── */}
-        <Reveal delay={0.12}>
-          <div className="border-2 border-[#111111] bg-[#111111]">
-            <div className="grid grid-cols-1 gap-[2px] sm:grid-cols-2">
+        <div className="border-2 border-[#111111] bg-[#111111]">
+          <RevealGroup
+            staggerDelay={0.06}
+            className="grid grid-cols-1 gap-[2px] sm:grid-cols-2"
+          >
             {CAPABILITIES.map((cap) => (
               <div
                 key={cap.category}
                 className="bg-[#FDFCF8] p-6 md:p-8"
               >
-                <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+                <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#555555]">
                   {cap.category}
                 </p>
                 <ul className="space-y-2">
@@ -98,14 +100,13 @@ export function Engineering() {
                 </ul>
               </div>
             ))}
-            </div>
-          </div>
-        </Reveal>
+          </RevealGroup>
+        </div>
 
         {/* ── Specification Table ── */}
         <Reveal delay={0.2}>
           <div className="mt-12">
-            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#555555]">
               Specification
             </p>
             <div className="border-t-2 border-b-2 border-[#111111]">
@@ -117,7 +118,7 @@ export function Engineering() {
                     i < SPECS.length - 1 ? 'border-b border-[#111111]/8' : '',
                   ].filter(Boolean).join(' ')}
                 >
-                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/30">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#555555]">
                     {spec.label}
                   </span>
                   <span className="font-mono text-[10px] text-[#111111]/60">

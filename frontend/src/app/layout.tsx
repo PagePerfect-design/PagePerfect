@@ -1,5 +1,12 @@
 import type { Metadata } from 'next'
+// CSS cascade order (load globals.css first so :root tokens are defined,
+// then component layers, then context layers, then motion last so the
+// reduced-motion universal cap can override component transitions).
 import './globals.css'
+import './globals-buttons.css'
+import './globals-docs.css'
+import './globals-journal.css'
+import './globals-motion.css'
 import { headers } from 'next/headers'
 import { Inter_Tight, Source_Serif_4, IBM_Plex_Mono } from 'next/font/google'
 import { ViewTransitions } from 'next-view-transitions'

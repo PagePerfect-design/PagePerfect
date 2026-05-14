@@ -292,10 +292,16 @@ function verifyWebhook(rawBody, signature) {
   hmac.update(typeof rawBody === 'string' ? rawBody : rawBody);
   const expected = hmac.digest('hex');
 
-  return crypto.timingSafeEqual(
-    Buffer.from(expected, 'hex'),
-    Buffer.from(signature, 'hex')
-  );
+  // timingSafeEqual throws if buffer lengths differ (e.g. malformed hex,
+  // truncated header). A malformed signature is just "invalid", not an error.
+  try {
+    const expectedBuf = Buffer.from(expected, 'hex');
+    const sigBuf = Buffer.from(signature, 'hex');
+    if (expectedBuf.length !== sigBuf.length) return false;
+    return crypto.timingSafeEqual(expectedBuf, sigBuf);
+  } catch {
+    return false;
+  }
 }
 
 // ================================================================

@@ -2,6 +2,14 @@
 
 import { Reveal } from '@/components/Reveal'
 
+// Mockup typography — intentional. The .docx side uses Times New Roman to mimic
+// raw Word output; the .pdf side uses Georgia to mimic professional book interior
+// typesetting. These are visual specimens, not the page's actual typography.
+const mockupStyles = {
+  times: { fontFamily: 'Times New Roman, serif' },
+  georgia: { fontFamily: 'Georgia, serif' },
+} as const
+
 export function Comparison() {
   return (
     <section className="relative bg-[#FDFCF8] py-20 md:py-28">
@@ -30,8 +38,8 @@ export function Comparison() {
           <div className="border-2 border-[#111111]">
             <div className="grid grid-cols-1 md:grid-cols-2">
 
-              {/* LEFT: Word doc */}
-              <div className="border-b-2 border-[#111111] md:border-b-0 md:border-r-2">
+              {/* LEFT: Word doc — intentionally-bad typography specimen; hidden from AT so screen readers don't narrate the broken mockup copy */}
+              <div aria-hidden="true" className="border-b-2 border-[#111111] md:border-b-0 md:border-r-2">
                 <div className="border-b border-[#111111]/10 px-4 py-2">
                   <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]">
                     .docx &mdash; Microsoft Word
@@ -39,10 +47,10 @@ export function Comparison() {
                 </div>
                 <div className="bg-white p-6 md:p-8 lg:p-10">
                   <div className="max-w-md">
-                    <div className="mb-4 text-[18px] font-bold uppercase text-black/60" style={{ fontFamily: 'Times New Roman, serif' }}>
+                    <div className="mb-4 text-[18px] font-bold uppercase text-black/60" style={mockupStyles.times}>
                       CHAPTER ONE
                     </div>
-                    <div className="space-y-3 text-[13px] leading-[1.6] text-black/50" style={{ fontFamily: 'Times New Roman, serif' }}>
+                    <div className="space-y-3 text-[13px] leading-[1.6] text-black/50" style={mockupStyles.times}>
                       <p>
                         <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>The morning light filtered through the old windows of the library, casting long shadows across the worn wooden desk where she&apos;d spent every morning for the past three years.&nbsp;&nbsp;The coffee had gone cold again.
                       </p>
@@ -76,13 +84,13 @@ export function Comparison() {
                     <p className="mb-6 text-center font-mono text-[7px] uppercase tracking-[0.35em] text-black/15">
                       Chapter One
                     </p>
-                    <h3 className="mb-1 text-center text-[20px] font-normal tracking-wide text-black/65" style={{ fontFamily: 'Georgia, serif' }}>
+                    <h3 className="mb-1 text-center text-[20px] font-normal tracking-wide text-black/65" style={mockupStyles.georgia}>
                       The Beginning
                     </h3>
                     <div className="mx-auto mb-5 h-px w-10 bg-black/10" />
 
-                    <div className="text-[12px] leading-[1.9] text-black/45" style={{ fontFamily: 'Georgia, serif' }}>
-                      <span className="float-left mr-1.5 mt-[1px] text-[36px] leading-[0.8] text-black/55" style={{ fontFamily: 'Georgia, serif' }}>
+                    <div className="text-[12px] leading-[1.9] text-black/45" style={mockupStyles.georgia}>
+                      <span className="float-left mr-1.5 mt-[1px] text-[36px] leading-[0.8] text-black/55" style={mockupStyles.georgia}>
                         T
                       </span>
                       he morning light filtered through the old windows of the library, casting long shadows across the worn wooden desk where she had spent every morning for the past three years. The coffee had gone cold again.

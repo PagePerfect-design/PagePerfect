@@ -13,6 +13,7 @@
  */
 
 const { execSync } = require('child_process');
+const log = require('./logger');
 
 // ================================================================
 // Font Name Aliases
@@ -282,7 +283,7 @@ function probeInstalledFonts(forceRefresh = false) {
       }
     }
   } catch (err) {
-    console.warn('[font-availability] fc-list failed — font probing unavailable:', err.message);
+    log.warn({ module: 'font-availability', err: err.message }, 'fc-list failed — font probing unavailable');
   }
 
   // ── Secondary: luaotfload font names database ──
@@ -306,7 +307,7 @@ function probeInstalledFonts(forceRefresh = false) {
   } catch (err) {
     // luaotfload-tool may not be available outside Docker — that's fine
     if (families.size === 0) {
-      console.warn('[font-availability] luaotfload-tool also failed:', err.message);
+      log.warn({ module: 'font-availability', err: err.message }, 'luaotfload-tool also failed');
     }
   }
 

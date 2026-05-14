@@ -28,6 +28,13 @@ interface RevealProps {
   direction?: keyof typeof DIRECTION_MAP
   className?: string
   once?: boolean
+  /**
+   * Apply 4px blur during the reveal. Default `true` (display-scale headlines).
+   * Set `false` on small body copy (14–16px) where crispness matters and there
+   * is no crossfade discontinuity to mask. Also drops `filter` from the
+   * transitionProperty list to avoid paint cost on an unchanged property.
+   */
+  blur?: boolean
 }
 
 export function Reveal({
@@ -36,6 +43,7 @@ export function Reveal({
   direction = 'up',
   className = '',
   once = true,
+  blur = true,
 }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [isInView, setIsInView] = useState(false)
@@ -53,7 +61,7 @@ export function Reveal({
           setIsInView(false)
         }
       },
-      { rootMargin: '-80px' }
+      { rootMargin: '-80px', threshold: 0.1 }
     )
     observer.observe(el)
     return () => observer.disconnect()
@@ -64,25 +72,30 @@ export function Reveal({
   }
 
   const { x, y } = DIRECTION_MAP[direction]
+  const transitionProperty = blur
+    ? 'opacity, transform, filter'
+    : 'opacity, transform'
 
   const hiddenStyle: React.CSSProperties = {
     opacity: 0,
     transform: `translate(${x}px, ${y}px)`,
-    filter: 'blur(4px)',
+    ...(blur ? { filter: 'blur(4px)' } : null),
+    transitionProperty,
     transitionDelay: `${delay}s`,
   }
 
   const visibleStyle: React.CSSProperties = {
     opacity: 1,
     transform: 'translate(0px, 0px)',
-    filter: 'blur(0px)',
+    ...(blur ? { filter: 'blur(0px)' } : null),
+    transitionProperty,
     transitionDelay: `${delay}s`,
   }
 
   return (
     <div
       ref={ref}
-      className={`transition-all duration-700 ease-[cubic-bezier(0.25,0.4,0.25,1)] ${className}`}
+      className={`duration-700 ease-[cubic-bezier(0.25,0.4,0.25,1)] ${className}`}
       style={isInView ? visibleStyle : hiddenStyle}
     >
       {children}

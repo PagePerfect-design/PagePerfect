@@ -18,7 +18,7 @@ export function Hero() {
             </h1>
           </Reveal>
 
-          <Reveal delay={0.1}>
+          <Reveal delay={0.1} blur={false}>
             <p className="mt-8 max-w-md font-body text-sm leading-[1.7] text-[#111111]/50 md:text-base md:leading-[1.7]">
               Paste your manuscript. Pick a trim size. Get a print-compliant PDF
               that passes Amazon KDP and IngramSpark review on the first upload.
@@ -30,12 +30,12 @@ export function Hero() {
             <div className="mt-10 flex flex-col items-start gap-4">
               <Link
                 href="/app"
-                className="inline-flex h-12 items-center bg-[#FF3333] px-10 font-mono text-[11px] uppercase tracking-[0.12em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222]"
+                className="inline-flex h-12 items-center bg-[#FF3333] px-10 font-mono text-[11px] uppercase tracking-[0.12em] text-white transition-[background-color,transform] duration-200 ease-pp hover:bg-[#E52222] active:scale-[0.97]"
               >
                 Start Free &mdash; No Signup
               </Link>
 
-              <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/25">
+              <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#555555]">
                 Full editor &middot; All 15 templates &middot; Watermarked preview
               </p>
             </div>

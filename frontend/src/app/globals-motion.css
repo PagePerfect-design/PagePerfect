@@ -1,0 +1,91 @@
+/* ========================================================================
+   PagePerfect — Motion (extracted from globals.css)
+   Nav underline reveal, view transitions, keyframes, reduced-motion contract.
+   Loaded AFTER components so reduced-motion's universal cap can override.
+   Reduced-motion contract owner: Noor (Design Council). See memory/design/motion.md.
+   ======================================================================== */
+
+/* ===== Nav link underline reveal ===== */
+[data-specimen] nav a[href]:not([class*="bg-"]) {
+  position: relative;
+}
+[data-specimen] nav a[href]:not([class*="bg-"])::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #FF3333;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--t-fast) var(--ease-pp);
+}
+[data-specimen] nav a[href]:not([class*="bg-"]):hover::after {
+  transform: scaleX(1);
+}
+
+/* ===== View Transitions — page-to-page cross-fade ===== */
+::view-transition-old(root) {
+  animation: var(--t-medium) var(--ease-pp) both vtFadeOut;
+}
+::view-transition-new(root) {
+  animation: var(--t-medium) var(--ease-pp) both vtFadeIn;
+}
+@keyframes vtFadeOut {
+  to { opacity: 0; }
+}
+@keyframes vtFadeIn {
+  from { opacity: 0; }
+}
+
+/* Skeleton loading pulse — referenced by .skeleton (defined in globals.css) */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* ===== Reduced motion =====
+ * Each animation needs a designed fallback, not just a 0.01ms duration that
+ * makes loading states invisible. We:
+ *   1. Globally cap transition/animation durations as a safety net.
+ *   2. Explicitly disable view-transition cross-fade.
+ *   3. Replace the skeleton pulse with a static slightly-dimmed surface so
+ *      "loading" remains visible without motion.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+  .skeleton {
+    animation: none !important;
+    opacity: 0.7;
+  }
+  /* PreviewPane scan line (inline animation in PreviewPane.tsx) —
+     animation is throttled to 0.01ms by the universal rule above;
+     also pin to centre instead of stuck-at-top so the visual still reads
+     as "in progress" without motion. */
+  [style*="skeleton-scan"] {
+    top: 50% !important;
+  }
+  /* Cookie banner — designed fallback for L1's enter animation.
+     L1 (CookieConsent.tsx) adds a translateY enter; reduced-motion users
+     get the banner via fade-only (the universal rule above caps the
+     opacity transition; we cancel the translate so it doesn't motion-jump).
+     TODO[L1 reconciliation]: confirm the actual selector used by L1.
+     Currently targeting both [data-cookie-consent] (predicted real) and
+     [data-pp-banner] (placeholder). Conductor will collapse to one. */
+  [data-cookie-consent],
+  [data-pp-banner] {
+    transform: none !important;
+  }
+}

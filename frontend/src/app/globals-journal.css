@@ -1,0 +1,183 @@
+/* ========================================================================
+   PagePerfect — Journal context (extracted from globals.css)
+   Scoped to [data-journal] for the article pages.
+   Inherits specimen palette from [data-specimen] in site layout.
+   ======================================================================== */
+
+/* ===== Journal — Swiss Editorial Articles ===== */
+/* Scoped to [data-journal] for the article pages.
+   Inherits specimen palette from [data-specimen] in site layout. */
+
+.journal-article {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: #2a2a2a;
+}
+
+.journal-article p {
+  margin-bottom: 1.5rem;
+}
+
+/* Drop cap on the first paragraph of each article */
+.journal-drop-cap::first-letter {
+  float: left;
+  font-family: var(--font-display);
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 0.8;
+  padding-right: 0.5rem;
+  padding-top: 0.25rem;
+  color: #111111;
+}
+
+/* Section subheads inside articles */
+.journal-subhead {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111111;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+/* Article header */
+.journal-header {
+  border-bottom: 2px solid #111111;
+  padding-bottom: 2rem;
+  margin-bottom: 2.5rem;
+}
+
+.journal-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #111111;
+}
+
+.journal-meta {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(17, 17, 17, 0.5);
+  margin-top: 1rem;
+}
+
+/* Article conclusion — bordered top, weighted */
+.journal-conclusion {
+  border-top: 1px solid #e5e5e0;
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+}
+
+/* Article card on index page */
+.journal-card {
+  display: block;
+  padding: 2rem 0;
+  border-bottom: 1px solid #e5e5e0;
+  transition: background var(--t-fast) var(--ease-pp),
+              transform var(--t-medium) var(--ease-pp);
+}
+.journal-card:hover {
+  background: rgba(0, 0, 0, 0.015);
+}
+.journal-card:first-child {
+  border-top: 2px solid #111111;
+}
+
+.journal-card-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111111;
+  line-height: 1.2;
+  transition: color var(--t-fast) var(--ease-pp);
+}
+.journal-card:hover .journal-card-title {
+  color: #FF3333;
+}
+
+.journal-card-excerpt {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #444444;
+  margin-top: 0.5rem;
+}
+
+.journal-card-meta {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(17, 17, 17, 0.5);
+  margin-top: 0.75rem;
+}
+
+/* Journal category filter — active states */
+.journal-category-active {
+  border-left: 2px solid #111111;
+  padding-left: 0.5rem;
+}
+.journal-chip-active {
+  border-color: #111111;
+  color: #111111;
+  background: rgba(17, 17, 17, 0.04);
+}
+
+/* Journal sidebar */
+.journal-sidebar {
+  position: sticky;
+  top: 3.5rem;
+  height: calc(100dvh - 3.5rem);
+  overflow-y: auto;
+  border-right: 1px solid #e5e5e0;
+  background: #f5f5f0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.08) transparent;
+}
+.journal-sidebar::-webkit-scrollbar { width: 4px; }
+.journal-sidebar::-webkit-scrollbar-track { background: transparent; }
+.journal-sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 2px; }
+
+.journal-sidebar a {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: #555550;
+  padding: 0.375rem 1.5rem;
+  border-left: 3px solid transparent;
+  transition: color var(--t-fast) var(--ease-pp), border-color var(--t-fast) var(--ease-pp);
+  line-height: 1.4;
+}
+.journal-sidebar a:hover {
+  color: #1a1a1a;
+}
+.journal-sidebar a[data-active="true"] {
+  color: #1a1a1a;
+  font-weight: 600;
+  border-left-color: #FF3333;
+}
+.journal-sidebar .journal-sidebar-group {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(17, 17, 17, 0.5);
+  padding: 1.25rem 1.5rem 0.5rem;
+}
+
+/* ===== Journal card hover lift =====
+   This standalone override lands AFTER the .journal-card:hover { background }
+   rule above to preserve the original two-rule cascade from pre-split globals.css.
+   Keeping both in this file ensures correct stacking regardless of layout.tsx
+   import order shifts. */
+.journal-card:hover {
+  transform: translateY(-1px);
+}
