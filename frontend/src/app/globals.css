@@ -385,3 +385,25 @@ body[data-editor] > * > footer { display: none !important; }
 
 /* The standalone .journal-card:hover transform lives in globals-journal.css
    alongside the rest of the .journal-card rules to preserve cascade order. */
+
+/* ── Manifesto drop cap ─────────────────────────────────────────
+ * Used by ChapterOpener's first paragraph. The drop cap colour
+ * comes from a CSS variable set on the element so we can recolour
+ * it for the ink-stock chapter (red) without an extra class.
+ */
+.manifesto-dropcap > p:first-of-type::first-letter,
+.manifesto-dropcap > :first-child:not(p)::first-letter {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: 4em;
+  line-height: 0.85;
+  float: left;
+  padding-right: 0.08em;
+  padding-top: 0.04em;
+  color: var(--dropcap-color, #111111);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No motion involved in dropcap itself, but document intent. */
+  .manifesto-dropcap { transition: none; }
+}

@@ -1,8 +1,5 @@
-import Link from 'next/link'
-import { RequestFormatCard } from './RequestFormatCard'
-
 // ── Template Data with exact font stacks and grid math ──────────
-const TEMPLATES = [
+export const TEMPLATES = [
   {
     key: 'symphony',
     name: 'Symphony',
@@ -162,7 +159,7 @@ const TEMPLATES = [
 //   font-display (Inter Tight)  → sans-serif templates
 //   font-mono  (IBM Plex Mono)  → monospace templates
 
-function SymphonySpecimen() {
+export function SymphonySpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[14%] py-[10%] font-body text-[5px] leading-[1.6] text-[#111]/60">
       <div className="mb-2 text-center">
@@ -181,7 +178,7 @@ function SymphonySpecimen() {
   )
 }
 
-function PaperbackSpecimen() {
+export function PaperbackSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[12%] py-[12%] font-display text-[5px] leading-[1.7] text-[#111]/55">
       <div className="mb-3">
@@ -198,7 +195,7 @@ function PaperbackSpecimen() {
   )
 }
 
-function ChronicleSpecimen() {
+export function ChronicleSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] p-[8%] font-display">
       <div className="mb-1 border-b border-[#111]" />
@@ -223,7 +220,7 @@ function ChronicleSpecimen() {
   )
 }
 
-function MatrixSpecimen() {
+export function MatrixSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[10%] py-[10%] font-display text-[4.5px] leading-[1.5] text-[#111]/55">
       <div className="mb-2">
@@ -262,7 +259,7 @@ function MatrixSpecimen() {
   )
 }
 
-function ChicagoSpecimen() {
+export function ChicagoSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[15%] py-[12%] font-body text-[5px] leading-[1.6] text-[#111]/60">
       <div className="mb-3 text-center">
@@ -281,7 +278,7 @@ function ChicagoSpecimen() {
   )
 }
 
-function ExhibitSpecimen() {
+export function ExhibitSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[10%] py-[14%] font-display text-[5px] leading-[1.8] text-[#111]/50">
       <div className="mb-4">
@@ -298,7 +295,7 @@ function ExhibitSpecimen() {
   )
 }
 
-function AvantGardeSpecimen() {
+export function AvantGardeSpecimen() {
   return (
     <div className="relative flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[8%] py-[8%] font-display">
       <div className="mb-1 h-[2px] bg-[#111]" />
@@ -320,7 +317,7 @@ function AvantGardeSpecimen() {
   )
 }
 
-function CinemaSpecimen() {
+export function CinemaSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[15%] py-[10%] font-mono text-[4.5px] leading-[1.5] text-[#111]/65">
       <div className="mb-2 uppercase text-[#111]/40">
@@ -342,7 +339,7 @@ function CinemaSpecimen() {
   )
 }
 
-function InternationalSpecimen() {
+export function InternationalSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] p-[8%] font-display">
       <div className="mb-1 flex items-baseline justify-between border-b border-[#111] pb-0.5">
@@ -365,7 +362,7 @@ function InternationalSpecimen() {
   )
 }
 
-function MinimalSpecimen() {
+export function MinimalSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[14%] py-[12%] font-body text-[5px] leading-[1.65] text-[#111]/55">
       <div className="mb-3">
@@ -382,7 +379,7 @@ function MinimalSpecimen() {
   )
 }
 
-function HeirloomSpecimen() {
+export function HeirloomSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[10%] py-[10%]">
       <div className="mb-1 text-center">
@@ -407,7 +404,7 @@ function HeirloomSpecimen() {
   )
 }
 
-function OperatorSpecimen() {
+export function OperatorSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[10%] py-[10%] font-display text-[4.5px] leading-[1.5] text-[#111]/55">
       <div className="mb-2">
@@ -432,7 +429,7 @@ function OperatorSpecimen() {
   )
 }
 
-function VerseSpecimen() {
+export function VerseSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[18%] py-[14%] font-body text-[5px] leading-[1.8] text-[#111]/55">
       <div className="mb-3 text-center">
@@ -448,7 +445,7 @@ function VerseSpecimen() {
   )
 }
 
-function ThesisSpecimen() {
+export function ThesisSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[12%] py-[10%] font-body text-[5px] leading-[2] text-[#111]/55">
       <div className="mb-2">
@@ -465,7 +462,7 @@ function ThesisSpecimen() {
   )
 }
 
-function MemoirSpecimen() {
+export function MemoirSpecimen() {
   return (
     <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[14%] py-[12%] font-body text-[5px] leading-[1.6] text-[#111]/55">
       <div className="mb-3 text-center">
@@ -485,7 +482,7 @@ function MemoirSpecimen() {
 }
 
 // Map template keys to their specimen components
-const SPECIMENS: Record<string, () => React.JSX.Element> = {
+export const SPECIMENS: Record<string, () => React.JSX.Element> = {
   symphony: SymphonySpecimen,
   paperback: PaperbackSpecimen,
   chronicle: ChronicleSpecimen,
@@ -501,93 +498,4 @@ const SPECIMENS: Record<string, () => React.JSX.Element> = {
   verse: VerseSpecimen,
   thesis: ThesisSpecimen,
   memoir: MemoirSpecimen,
-}
-
-// ── Main Component ──────────────────────────────────────────────
-
-export function TemplateGrid() {
-  return (
-    <section className="relative bg-[#FDFCF8] py-20 md:py-28">
-      <div className="mx-auto max-w-7xl px-6 md:px-8">
-
-        {/* ── Header ── */}
-        <div className="mb-12 max-w-3xl md:mb-16">
-          <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
-            15 production-ready designs
-          </p>
-          <h2 className="font-display text-[clamp(2rem,5vw,4.5rem)] font-extrabold leading-[0.88] tracking-tighter text-[#111111]">
-            Pick your genre.
-            <br />
-            We handle the rest.
-          </h2>
-          <p className="mt-5 max-w-lg font-body text-sm leading-[1.7] text-[#111111]/45">
-            Each template is a complete, print-validated layout system &mdash;
-            correct margins, professional heading hierarchy, and KDP-compliant
-            geometry. Every design passes platform review out of the box.
-          </p>
-        </div>
-
-        {/* ── Ruled Grid — gap trick: #111 bg shows through 2px gaps as rules ── */}
-        <div className="border-2 border-[#111111] bg-[#111111]">
-          <div className="grid grid-cols-1 gap-[2px] sm:grid-cols-2 lg:grid-cols-4">
-            {TEMPLATES.map((t, i) => {
-              const Specimen = SPECIMENS[t.key]
-              return (
-                <Link
-                  key={t.key}
-                  href={`/app?template=${t.key}`}
-                  className="group block bg-[#FDFCF8] transition-colors duration-200 ease-pp hover:bg-[#F5F4F0]"
-                >
-                  {/* Category + plate number */}
-                  <div className="flex items-baseline justify-between px-5 pt-5">
-                    <span className="font-mono text-[8px] uppercase tracking-[0.15em] text-[#111111]/25">
-                      {t.category}
-                    </span>
-                    <span className="font-mono text-[8px] text-[#111111]/20">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                  </div>
-
-                  <h3 className="px-5 pt-2 font-display text-lg font-bold tracking-tight text-[#111111] md:text-xl">
-                    {t.name}
-                  </h3>
-
-                  {/* Visual specimen — mini-page showing the template's layout */}
-                  <div className="mx-3 mt-3 border border-[#111111]/10">
-                    {Specimen && <Specimen />}
-                  </div>
-
-                  {/* Font stack + grid math */}
-                  <div className="space-y-1 px-5 pb-5 pt-3">
-                    <div className="flex items-baseline justify-between">
-                      <span className="font-mono text-[8px] text-[#111111]/30">Font</span>
-                      <span className="font-mono text-[8px] text-[#111111]/50">{t.font}</span>
-                    </div>
-                    <div className="flex items-baseline justify-between">
-                      <span className="font-mono text-[8px] text-[#111111]/30">Base</span>
-                      <span className="font-mono text-[8px] text-[#111111]/50">{t.baseline} / {t.leading}</span>
-                    </div>
-                    <div className="flex items-baseline justify-between">
-                      <span className="font-mono text-[8px] text-[#111111]/30">Scale</span>
-                      <span className="font-mono text-[8px] text-[#111111]/50">{t.scale}</span>
-                    </div>
-                    {t.sans !== '—' && (
-                      <div className="flex items-baseline justify-between">
-                        <span className="font-mono text-[8px] text-[#111111]/30">Sans</span>
-                        <span className="font-mono text-[8px] text-[#111111]/50">{t.sans}</span>
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              )
-            })}
-
-            {/* 16th slot — Ogilvy CTA: catch users who scrolled past all 15 */}
-            <RequestFormatCard />
-          </div>
-        </div>
-
-      </div>
-    </section>
-  )
 }
