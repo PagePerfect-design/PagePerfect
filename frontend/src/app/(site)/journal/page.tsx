@@ -12,6 +12,7 @@ export const metadata: Metadata = {
     description:
       'Essays on typography, layout, and visual communication. Where Swiss precision meets conversion-driven design.',
     type: 'website',
+    images: ['/og-image.png'],
   },
 }
 
