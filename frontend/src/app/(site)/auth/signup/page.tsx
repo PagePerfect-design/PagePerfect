@@ -3,17 +3,17 @@ import type { Metadata } from 'next'
 import { AuthForm } from '../_components/AuthForm'
 
 export const metadata: Metadata = {
-  title: 'Sign in — PagePerfect',
-  description: 'Sign in to PagePerfect to save manuscripts and access premium features.',
+  title: 'Create your account — PagePerfect',
+  description: 'Create a free PagePerfect account. Free to start, upgrade anytime.',
   openGraph: {
-    title: 'Sign in — PagePerfect',
-    description: 'Sign in to PagePerfect to save manuscripts and access premium features.',
+    title: 'Create your account — PagePerfect',
+    description: 'Create a free PagePerfect account. Free to start, upgrade anytime.',
     type: 'website',
     images: ['/og-image.png'],
   },
 }
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
     <Suspense
       fallback={
@@ -22,7 +22,7 @@ export default function LoginPage() {
         </div>
       }
     >
-      <AuthForm initialMode="login" />
+      <AuthForm initialMode="signup" />
     </Suspense>
   )
 }
