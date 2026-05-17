@@ -1,9 +1,11 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import NavAuth from '@/components/NavAuth'
 import CompositorMark from '@/components/CompositorMark'
 import MobileNav from '@/components/MobileNav'
 import FooterAccordion from '@/components/FooterAccordion'
 import CookieConsent from '@/components/CookieConsent'
+import { BaselineGridOverlay } from '@/components/dev/BaselineGridOverlay'
 
 function Nav() {
   return (
@@ -105,6 +107,9 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <div className="flex-1">{children}</div>
       <Footer />
       <CookieConsent />
+      <Suspense fallback={null}>
+        <BaselineGridOverlay />
+      </Suspense>
     </div>
   )
 }
