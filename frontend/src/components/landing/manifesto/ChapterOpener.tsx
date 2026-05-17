@@ -77,7 +77,7 @@ export function ChapterOpener({
 
       <Reveal direction="up" delay={0.1} blur={false}>
         <div
-          className="manifesto-dropcap mt-10 max-w-[36rem] font-body leading-[1.7]"
+          className="manifesto-dropcap mt-10 max-w-[36rem] font-body leading-8"
           style={{
             color: ink,
             fontSize: '1.125rem',

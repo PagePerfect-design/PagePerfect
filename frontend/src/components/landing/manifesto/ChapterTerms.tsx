@@ -79,7 +79,7 @@ export function ChapterTerms() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-4 max-w-md font-body text-[15px] leading-[1.7] text-[#333333]">
+                  <p className="mt-4 max-w-md font-body text-[15px] leading-7 text-[#333333]">
                     {tier.body}
                   </p>
                 </div>
