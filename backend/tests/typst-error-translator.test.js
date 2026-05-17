@@ -120,6 +120,44 @@ describe('translateStderr', () => {
     expect(result.summary.serverErrors).toBe(0);
     expect(result.summary.clientErrors).toBe(1);
   });
+
+  describe('engine_internal classification', () => {
+    test('classifies "text does not have field children" as engine_internal', () => {
+      const result = translateStderr('error: text does not have field "children"');
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].category).toBe('engine_internal');
+      expect(result.errors[0].fix).toMatch(/different template/i);
+      expect(result.errors[0].isServerError).toBe(true);
+    });
+
+    test('classifies "cannot access field X" as engine_internal', () => {
+      const result = translateStderr('error: cannot access field "headings" on type content');
+      expect(result.errors[0].category).toBe('engine_internal');
+    });
+
+    test('classifies "is not callable" as engine_internal', () => {
+      const result = translateStderr('error: foo is not callable');
+      expect(result.errors[0].category).toBe('engine_internal');
+    });
+
+    test('classifies "panicked" runtime errors as engine_internal', () => {
+      const result = translateStderr('error: panicked at unwrap on None');
+      expect(result.errors[0].category).toBe('engine_internal');
+    });
+
+    test('summary counts engine_internal as serverError', () => {
+      const result = translateStderr('error: text does not have field "children"');
+      expect(result.summary.serverErrors).toBe(1);
+      expect(result.summary.clientErrors).toBe(0);
+    });
+
+    test('engine_internal fix steers user to a different template', () => {
+      const result = translateStderr('error: type mismatch');
+      expect(result.errors[0].fix).toMatch(/paperback|chronicle|exhibit/i);
+      // Critically: NOT the opaque "simplify your manuscript" fallback
+      expect(result.errors[0].fix).not.toMatch(/simplify/i);
+    });
+  });
 });
 
 describe('translateCompileFailure', () => {

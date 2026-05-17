@@ -48,7 +48,7 @@ export function ChapterEngine() {
             <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#f5f5f0]">
               <Image
                 src="/landing/landing-engine-masthead.webp"
-                alt="A typographic specimen sheet showing numeric scales and baseline rules under raking light."
+                alt="Engine masthead: Typst wordmark, modular type scale (9/11/14/22/28pt), and engine colophon (Typst 0.13, Pandoc 3.x, Ghostscript 10.x)."
                 width={1408}
                 height={768}
                 className="h-full w-full object-cover"

@@ -362,7 +362,12 @@ describe('GET /api/compile/result/:id', () => {
       expect(res.headers['content-type']).toBe('application/pdf');
     });
 
-    test('deletes secret after successful verification', async () => {
+    test('secret survives for the result TTL so retries work', async () => {
+      // Previous behavior: deleted the secret after the first successful read,
+      // which meant a single network hiccup mid-download produced a 403 on
+      // retry. Now: the secret lives for the result's natural ~30-min TTL —
+      // matching the /api/compile/pages handler's behavior — so re-fetching
+      // with a valid secret succeeds.
       const pdfPath = await createTempPdf();
       const secret = 'one-time-secret-token';
       const ctx = createCtx();
@@ -381,7 +386,7 @@ describe('GET /api/compile/result/:id', () => {
         headers: { 'x-pp-result-secret': secret },
       });
 
-      expect(ctx.deleteJobResult).toHaveBeenCalledWith('consume-secret:secret');
+      expect(ctx.deleteJobResult).not.toHaveBeenCalledWith('consume-secret:secret');
     });
   });
 
