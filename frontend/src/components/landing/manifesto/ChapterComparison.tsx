@@ -48,7 +48,7 @@ export function ChapterComparison() {
                         CHAPTER ONE
                       </div>
                       <div
-                        className="space-y-4 text-[13px] leading-[1.6] text-black/50"
+                        className="space-y-4 text-[13px] leading-6 text-black/50"
                         style={mockupStyles.times}
                       >
                         <p>
@@ -84,7 +84,7 @@ export function ChapterComparison() {
                       </h3>
                       <div className="mx-auto mb-6 h-px w-10 bg-black/10" />
                       <div
-                        className="text-[12px] leading-[1.9] text-black/45"
+                        className="text-[12px] leading-6 text-black/45"
                         style={mockupStyles.georgia}
                       >
                         <span
@@ -118,7 +118,7 @@ export function ChapterComparison() {
         {/* Pull-quote */}
         <Reveal direction="up" delay={0.2} blur={false}>
           <blockquote
-            className="mx-auto mt-16 max-w-2xl border-l-2 border-[#FF3333] pl-6 font-body italic leading-[1.45] text-[#111111]"
+            className="mx-auto mt-16 max-w-2xl border-l-2 border-[#FF3333] pl-6 font-body italic leading-9 text-[#111111]"
             style={{ fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)' }}
           >
             &ldquo;The same words. A different book.&rdquo;

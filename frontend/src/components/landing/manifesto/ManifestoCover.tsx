@@ -55,7 +55,7 @@ export function ManifestoCover() {
 
             <Reveal direction="up" delay={0.15} blur={false}>
               <p
-                className="mt-8 max-w-md font-body italic leading-[1.6] text-[#333333]"
+                className="mt-8 max-w-md font-body italic leading-8 text-[#333333]"
                 style={{ fontSize: '1.125rem' }}
               >
                 Paste your manuscript. Pick a trim size. Get a print-compliant

@@ -27,7 +27,7 @@ export function Marginalia({
           {label}
         </p>
       )}
-      <div className="font-mono text-[11px] leading-[1.55] tracking-[0.01em] text-[#555555]">
+      <div className="font-mono text-[11px] leading-5 tracking-[0.01em] text-[#555555]">
         {children}
       </div>
     </aside>

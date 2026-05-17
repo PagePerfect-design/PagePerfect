@@ -26,7 +26,7 @@ export function ChapterProblem() {
 
         {/* Body + marginalia */}
         <div className="grid grid-cols-1 gap-10 md:grid-cols-[1fr_14rem] md:gap-16">
-          <div className="space-y-5 font-body text-[15px] leading-[1.8] text-[#333333]">
+          <div className="space-y-5 font-body text-[15px] leading-7 text-[#333333]">
             <p>
               Word can write a book. Word cannot
               <em> typeset </em>
@@ -64,15 +64,15 @@ export function ChapterProblem() {
               </span>
             </div>
             <div className="px-6 py-6 md:px-10 md:py-8">
-              <p className="font-mono text-[11px] leading-[1.6] text-[#111111]">
+              <p className="font-mono text-[11px] leading-5 text-[#111111]">
                 Your manuscript file does not meet our publishing requirements.
               </p>
-              <ul className="mt-4 space-y-1.5 font-mono text-[11px] leading-[1.6] text-[#555555]">
+              <ul className="mt-4 space-y-1.5 font-mono text-[11px] leading-5 text-[#555555]">
                 <li>· Inner margin is less than the required minimum for your page count.</li>
                 <li>· Embedded fonts are missing on pages 12, 47, 113.</li>
                 <li>· Bleed not detected on full-bleed images.</li>
               </ul>
-              <p className="mt-4 font-mono text-[11px] leading-[1.6] text-[#555555]">
+              <p className="mt-4 font-mono text-[11px] leading-5 text-[#555555]">
                 Please revise and resubmit.
               </p>
             </div>
