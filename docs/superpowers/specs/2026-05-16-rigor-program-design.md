@@ -1,7 +1,8 @@
 # Rigor Program — Design Spec
 
-> Date: 2026-05-16 · Status: **Draft for approval** · Author: spec only; no implementation until approved
-> Branch: `docs/rigor-program`
+> Date: 2026-05-16 · Status: **Approved 2026-05-17** (canonical plan for the redesign program) · Branch: `docs/rigor-program`
+>
+> Phase 0 — Functional Verification — was added 2026-05-17 by the conductor before Phase 1. The compile-pipeline and editor flow must be verified functional before Phase 3 (Editor redesign) begins; if any P0 functional defect is found, it is fixed via `fix-bug` before redesign starts. The original 7-phase sequence (§5) is otherwise unchanged.
 
 ## Mission
 
