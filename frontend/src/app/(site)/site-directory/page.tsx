@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     description:
       'Complete directory of every page, tool, and resource on PagePerfect.',
     type: 'website',
+    images: ['/og-image.png'],
   },
 }
 

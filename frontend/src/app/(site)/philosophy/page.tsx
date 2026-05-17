@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     description:
       'The grid system is an aid, not a guarantee. PagePerfect brings the mathematical precision of the International Typographic Style to the modern manuscript.',
     type: 'website',
+    images: ['/og-image.png'],
   },
 }
 

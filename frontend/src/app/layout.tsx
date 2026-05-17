@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 // CSS cascade order (load globals.css first so :root tokens are defined,
 // then component layers, then context layers, then motion last so the
 // reduced-motion universal cap can override component transitions).
@@ -16,9 +16,14 @@ const display = Inter_Tight({ subsets: ['latin'], variable: '--font-display', we
 const body = Source_Serif_4({ subsets: ['latin'], variable: '--font-body' })
 const mono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-mono', weight: ['400','600'] })
 
+const TITLE = 'PagePerfect — Professional Typesetting in Your Browser'
+const DESCRIPTION =
+  'Transform Markdown into beautifully typeset, print-ready PDFs. Powered by Typst with Muller-Brockmann grid systems, golden-ratio typography, and baseline grids.'
+
 export const metadata: Metadata = {
-  title: 'PagePerfect — Professional Typesetting in Your Browser',
-  description: 'Transform Markdown into beautifully typeset, print-ready PDFs. Powered by Typst with Muller-Brockmann grid systems, golden-ratio typography, and baseline grids.',
+  metadataBase: new URL('https://pageperfect.studio'),
+  title: TITLE,
+  description: DESCRIPTION,
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
@@ -28,6 +33,31 @@ export const metadata: Metadata = {
     ],
     apple: '/apple-touch-icon.png',
   },
+  openGraph: {
+    type: 'website',
+    siteName: 'PagePerfect',
+    title: TITLE,
+    description: DESCRIPTION,
+    url: '/',
+    locale: 'en_US',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'PagePerfect — Professional typesetting in your browser.',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITLE,
+    description: 'Transform Markdown into beautifully typeset, print-ready PDFs.',
+    images: ['/og-image.png'],
+  },
+}
+
+export const viewport: Viewport = {
   themeColor: '#FDFCF8',
 }
 

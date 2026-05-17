@@ -34,6 +34,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: article.date,
       authors: ['PagePerfect Editorial'],
       section: article.category,
+      images: ['/og-image.png'],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: seo?.metaTitle || article.title,
+      description,
+      images: ['/og-image.png'],
     },
   }
 }
