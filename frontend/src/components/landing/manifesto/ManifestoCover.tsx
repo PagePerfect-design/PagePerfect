@@ -85,14 +85,11 @@ export function ManifestoCover() {
           <div className="relative h-full min-h-[40vh] w-full overflow-hidden">
             <Image
               src="/landing/landing-cover.webp"
-              alt="A linen-bound hardcover at rest on cream paper, cover blind-debossed."
+              alt="Cover specimen: numeral I, red accent rule, the lead 'Markdown, precisely set.'"
               width={1408}
               height={768}
               priority
               className="h-full w-full object-cover"
-              // If the asset is missing, next/image throws — but the page is server-rendered
-              // and the missing asset shows a broken-image icon. Acceptable degradation until
-              // the Runware bootstrap plan ships.
             />
           </div>
         </div>

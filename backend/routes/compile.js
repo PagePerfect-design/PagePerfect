@@ -512,7 +512,8 @@ module.exports = function compileRoutes(ctx) {
         const secretsMatch = storedSecret.length === providedSecret.length &&
           crypto.timingSafeEqual(Buffer.from(storedSecret), Buffer.from(providedSecret));
         if (!secretsMatch) return res.status(403).json({ error: 'forbidden', message: 'Invalid result secret.' });
-        ctx.deleteJobResult(`${id}:secret`);
+        // Secret survives for the result's TTL — see /api/compile/pages handler for the
+        // canonical pattern. Deleting on first read broke retries on flaky networks.
       }
     }
 

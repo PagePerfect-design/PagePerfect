@@ -12,7 +12,29 @@
 
 'use strict';
 
-const SERVER_ERROR_CATEGORIES = new Set(['server', 'engine']);
+const SERVER_ERROR_CATEGORIES = new Set(['server', 'engine', 'engine_internal']);
+
+/**
+ * Patterns that indicate a Typst runtime/template error caused by an
+ * engine-internal mismatch between Pandoc's emitted Typst and the
+ * template's expectations (e.g. `text does not have field "children"`,
+ * `cannot access field X on type Y`, `expected sequence, found content`).
+ * These typically don't carry file:line:column and reach users as black
+ * boxes. Surfacing a distinct category lets the response steer the
+ * user to a different template instead of "simplify your manuscript".
+ */
+const ENGINE_INTERNAL_PATTERNS = [
+  /does not have field/i,
+  /cannot access field/i,
+  /is not callable/i,
+  /expected sequence,/i,
+  /type mismatch/i,
+  /panicked/i,
+];
+
+function isEngineInternal(msg) {
+  return ENGINE_INTERNAL_PATTERNS.some((re) => re.test(msg));
+}
 
 /**
  * Parse a single Typst error/warning line into a structured object.
@@ -52,6 +74,7 @@ function parseLine(line) {
  * Classify a Typst error message into a category.
  */
 function classifyError(msg) {
+  if (isEngineInternal(msg)) return 'engine_internal';
   const lower = msg.toLowerCase();
   if (lower.includes('unknown font') || lower.includes('font')) return 'font';
   if (lower.includes('unknown variable') || lower.includes('expected')) return 'syntax';
@@ -76,6 +99,10 @@ function suggestFix(parsed) {
       return 'An image could not be processed. Try re-exporting as PNG or JPG.';
     case 'layout':
       return 'Content overflows the page. Try wider margins or a larger page size.';
+    case 'engine_internal':
+      // Template hit a Pandoc→Typst conversion edge case. The user can't
+      // fix their manuscript here — the smart action is a different template.
+      return 'This template hit an engine edge case on your manuscript. Try a different template — paperback, chronicle, or exhibit handle a wide range of inputs cleanly.';
     default:
       return 'Simplify your manuscript and try again.';
   }

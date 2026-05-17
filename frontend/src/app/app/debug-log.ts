@@ -1,8 +1,13 @@
 /**
  * Lightweight debug logger for compile diagnostics.
- * Logs are buffered and flushed to /api/debug/ingest in batches.
+ * In development, logs are buffered and POSTed to /api/debug/ingest in
+ * batches for server-side correlation. In production, the backend
+ * returns 404 on that endpoint by design — so we skip the network call
+ * entirely and the logger reduces to a console.log shim.
  * Each page load gets a unique sessionId.
  */
+
+const IS_DEV = process.env.NODE_ENV !== 'production'
 
 const SESSION_ID =
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -13,12 +18,17 @@ const buffer: Array<{ tag: string; msg: string; data?: Record<string, unknown> }
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 
 function scheduleFlush() {
+  if (!IS_DEV) return
   if (flushTimer) return
   flushTimer = setTimeout(flush, 2000)
 }
 
 async function flush() {
   flushTimer = null
+  if (!IS_DEV) {
+    buffer.length = 0
+    return
+  }
   if (buffer.length === 0) return
   const entries = buffer.splice(0, 50)
   try {
@@ -28,7 +38,6 @@ async function flush() {
       body: JSON.stringify({ sessionId: SESSION_ID, entries }),
     })
   } catch {
-    // Network failure — re-queue entries (drop if too many)
     if (buffer.length < 150) buffer.unshift(...entries)
   }
 }
@@ -38,9 +47,11 @@ async function flush() {
  */
 export function debugLog(tag: string, msg: string, data?: Record<string, unknown>) {
   const entry = { tag, msg, data }
-  console.log(`[pp:${tag}]`, msg, data ?? '')
-  buffer.push(entry)
-  scheduleFlush()
+  if (IS_DEV) {
+    console.log(`[pp:${tag}]`, msg, data ?? '')
+    buffer.push(entry)
+    scheduleFlush()
+  }
 }
 
 /**

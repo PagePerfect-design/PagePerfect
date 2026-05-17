@@ -4,7 +4,7 @@ Token summary for PagePerfect's **Swiss-Ogilvy specimen** system. Canonical valu
 
 ## The specimen canon (every PagePerfect surface)
 
-**Use where:** every `(site)` surface — landing, journal, docs, pricing, status, auth pages. The editor (`/app`) uses the same accent and type system but inverts the surface (`bg-[#050505]` rich ink — see Editor canon below). There is no third "marketing-only" or "Glass" canon.
+**Use where:** every `(site)` surface — landing, journal, docs, pricing, status, auth pages — **and the editor (`/app`)** as of 2026-05-17. The editor adopted the specimen palette so the brand is one continuous monograph from landing through editor. The dark `--void` / `--surface` tokens (see Editor dark mode below) remain as opt-in tokens for an upcoming dark-mode toggle. There is no third "marketing-only" or "Glass" canon.
 
 ### Surface tokens — `(site)` cream-on-ink specimen
 
@@ -19,20 +19,20 @@ Token summary for PagePerfect's **Swiss-Ogilvy specimen** system. Canonical valu
 | Border subtle | `#e5e5e0` | Hairlines, inner dividers |
 | Surface | `#f5f5f0` | Sidebar backgrounds, subtle fills |
 
-### Surface tokens — Editor canon (`/app`)
+### Surface tokens — Editor dark mode (opt-in, future)
 
-The editor inverts the specimen. Same accent, same type system, dark ink stock.
+The editor's **default** canon is the same cream-on-ink specimen as `(site)` (decided 2026-05-17 per Rigor Program §3.1: the brand is one monograph). The tokens below remain available as a future opt-in dark mode, but are NOT applied by default. Don't add new `bg-[--void]` / `bg-[--surface]` usages to the editor without a flag-gated context.
 
 | Token (`globals.css`) | Hex | Usage |
 |-----------------------|-----|-------|
-| `--void` | `#050505` | Root `<body>` background — rich black, "heavy cardstock," not void |
-| `--surface` | `#0a0a0a` | Editor surfaces |
-| `--surface-raised` | `#111111` | Raised panels, cards |
-| `--surface-overlay` | `#1a1a1a` | Modals, tooltips, overlays |
-| `--surface-subtle` | `#222222` | Subtle inset blocks |
-| `--text-primary` | `#f2f2f0` | Editor primary text (warm white) |
-| `--text-secondary` | `#a8a8a0` | Editor secondary |
-| `--text-tertiary` | `#6a6a64` | Editor tertiary |
+| `--void` | `#050505` | Opt-in dark-mode `<body>` background |
+| `--surface` | `#0a0a0a` | Opt-in dark-mode editor surfaces |
+| `--surface-raised` | `#111111` | Opt-in dark-mode raised panels, cards |
+| `--surface-overlay` | `#1a1a1a` | Opt-in dark-mode modals, tooltips, overlays |
+| `--surface-subtle` | `#222222` | Opt-in dark-mode subtle inset blocks |
+| `--text-primary` | `#f2f2f0` | Opt-in dark-mode primary text (warm white) |
+| `--text-secondary` | `#a8a8a0` | Opt-in dark-mode secondary |
+| `--text-tertiary` | `#6a6a64` | Opt-in dark-mode tertiary |
 
 ### Accent — Printer's Red (single accent across canons)
 
