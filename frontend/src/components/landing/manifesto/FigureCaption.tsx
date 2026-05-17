@@ -11,7 +11,7 @@ interface FigureCaptionProps {
 export function FigureCaption({ number, children, className = '' }: FigureCaptionProps) {
   return (
     <figcaption
-      className={`mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#555555] ${className}`}
+      className={`mt-4 font-mono text-[10px] uppercase tracking-[0.12em] text-[#555555] ${className}`}
     >
       <span className="text-[#111111]">{number}</span>
       <span aria-hidden="true"> — </span>
