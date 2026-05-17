@@ -234,7 +234,7 @@ describe('POST /api/stripe/webhook — tier transitions', () => {
         object: {
           customer: 'cus_studio',
           subscription: null,
-          metadata: { tier: 'studio', user_id: 'user_42' },
+          metadata: { tier: 'studio', user_id: 'user42' },
         },
       },
     });
@@ -248,7 +248,7 @@ describe('POST /api/stripe/webhook — tier transitions', () => {
     expect(resp.status).toBe(200);
     const patchCalls = pbCalls.filter(c => c.method === 'PATCH');
     expect(patchCalls.length).toBe(1);
-    expect(patchCalls[0].path).toBe('/api/collections/users/records/user_42');
+    expect(patchCalls[0].path).toBe('/api/collections/users/records/user42');
     expect(JSON.parse(patchCalls[0].body)).toMatchObject({
       tier: 'studio',
       stripe_customer_id: 'cus_studio',
@@ -263,7 +263,7 @@ describe('POST /api/stripe/webhook — tier transitions', () => {
         if (!opts || opts.method === 'GET' || opts.method == null) {
           return {
             ok: true, status: 200,
-            async json() { return { id: 'user_42', publisher_window_end: null }; },
+            async json() { return { id: 'user42', publisher_window_end: null }; },
           };
         }
         return { ok: true, status: 200 };
@@ -277,7 +277,7 @@ describe('POST /api/stripe/webhook — tier transitions', () => {
       data: {
         object: {
           customer: 'cus_pub',
-          metadata: { tier: 'publisher', user_id: 'user_42' },
+          metadata: { tier: 'publisher', user_id: 'user42' },
         },
       },
     });
@@ -310,7 +310,7 @@ describe('POST /api/stripe/webhook — tier transitions', () => {
         if (!opts || opts.method === 'GET' || opts.method == null) {
           return {
             ok: true, status: 200,
-            async json() { return { id: 'user_active', publisher_window_end: futureEnd }; },
+            async json() { return { id: 'useractive', publisher_window_end: futureEnd }; },
           };
         }
         return { ok: true, status: 200 };
@@ -322,7 +322,7 @@ describe('POST /api/stripe/webhook — tier transitions', () => {
       id: 'evt_pub_extend',
       type: 'payment_intent.succeeded',
       data: {
-        object: { customer: 'cus_x', metadata: { tier: 'publisher', user_id: 'user_active' } },
+        object: { customer: 'cus_x', metadata: { tier: 'publisher', user_id: 'useractive' } },
       },
     });
 
