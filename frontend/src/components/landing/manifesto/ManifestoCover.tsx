@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { Reveal } from '@/components/Reveal'
+import { CoverSpecimen } from './CoverSpecimen'
 
 export function ManifestoCover() {
   return (
@@ -80,18 +80,9 @@ export function ManifestoCover() {
           </Reveal>
         </div>
 
-        {/* Right column — Runware cover photograph (slot) */}
+        {/* Right column — typography specimen (the cover IS the specimen) */}
         <div className="relative border-t border-[#111111] bg-[#f5f5f0] md:border-l md:border-t-0">
-          <div className="relative h-full min-h-[40vh] w-full overflow-hidden">
-            <Image
-              src="/landing/landing-cover.webp"
-              alt="Cover specimen: numeral I, red accent rule, the lead 'Markdown, precisely set.'"
-              width={1408}
-              height={768}
-              priority
-              className="h-full w-full object-cover"
-            />
-          </div>
+          <CoverSpecimen />
         </div>
       </div>
     </section>
