@@ -48,7 +48,7 @@ export function ChapterComparison() {
                         CHAPTER ONE
                       </div>
                       <div
-                        className="space-y-3 text-[13px] leading-[1.6] text-black/50"
+                        className="space-y-4 text-[13px] leading-[1.6] text-black/50"
                         style={mockupStyles.times}
                       >
                         <p>
@@ -77,28 +77,28 @@ export function ChapterComparison() {
                         Chapter One
                       </p>
                       <h3
-                        className="mb-1 text-center text-[20px] font-normal tracking-wide text-black/65"
+                        className="mb-2 text-center text-[20px] font-normal tracking-wide text-black/65"
                         style={mockupStyles.georgia}
                       >
                         The Beginning
                       </h3>
-                      <div className="mx-auto mb-5 h-px w-10 bg-black/10" />
+                      <div className="mx-auto mb-6 h-px w-10 bg-black/10" />
                       <div
                         className="text-[12px] leading-[1.9] text-black/45"
                         style={mockupStyles.georgia}
                       >
                         <span
-                          className="float-left mr-1.5 mt-[1px] text-[36px] leading-[0.8] text-black/55"
+                          className="float-left mr-2 mt-[1px] text-[36px] leading-[0.8] text-black/55"
                           style={mockupStyles.georgia}
                         >
                           T
                         </span>
                         he morning light filtered through the old windows of the library, casting long shadows across the worn wooden desk where she had spent every morning for the past three years. The coffee had gone cold again.
-                        <p className="mt-2.5">
+                        <p className="mt-2">
                           She picked up the manuscript&thinsp;—&thinsp;three hundred pages of her life&rsquo;s work, still unfinished, still demanding more. The margins were wrong. The font was wrong.
                         </p>
                       </div>
-                      <div className="mt-5 flex items-center justify-center gap-2">
+                      <div className="mt-6 flex items-center justify-center gap-2">
                         <div className="h-px w-6 bg-black/6" />
                         <span className="font-mono text-[8px] tracking-[0.2em] text-black/15">7</span>
                         <div className="h-px w-6 bg-black/6" />
@@ -109,7 +109,7 @@ export function ChapterComparison() {
               </div>
             </div>
 
-            <FigureCaption number="Fig. 2" className="mt-3">
+            <FigureCaption number="Fig. 2" className="mt-4">
               Same words, different book. Left: Word default output. Right: PagePerfect compiled interior.
             </FigureCaption>
           </figure>

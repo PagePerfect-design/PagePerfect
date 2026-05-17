@@ -30,7 +30,7 @@ interface FootnoteListProps {
 export function FootnoteList({ chapter, notes }: FootnoteListProps) {
   return (
     <footer className="mt-16 border-t border-[#111111]/15 pt-6">
-      <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em] text-[#555555]">
+      <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#555555]">
         Notes
       </p>
       <ol className="space-y-2">
@@ -38,7 +38,7 @@ export function FootnoteList({ chapter, notes }: FootnoteListProps) {
           <li
             key={n}
             id={`fn-${chapter}-${n}`}
-            className="flex gap-3 font-mono text-[11px] leading-[1.55] text-[#333333]"
+            className="flex gap-4 font-mono text-[11px] leading-[1.55] text-[#333333]"
           >
             <span className="shrink-0 text-[#555555]">{n}.</span>
             <span className="flex-1">

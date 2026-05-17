@@ -55,7 +55,7 @@ export function ChapterOpener({
           <div>
             {kicker && (
               <p
-                className="mb-3 font-mono text-[9px] uppercase tracking-[0.15em]"
+                className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em]"
                 style={{ color: muted }}
               >
                 {kicker}

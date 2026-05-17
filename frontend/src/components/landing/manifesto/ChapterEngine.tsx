@@ -77,7 +77,7 @@ export function ChapterEngine() {
             <div className="border-2 border-[#111111] bg-[#ffffff] p-6 md:p-10">
               <PageAnatomyDiagram />
             </div>
-            <FigureCaption number="Fig. 3" className="mt-3">
+            <FigureCaption number="Fig. 3" className="mt-4">
               Print interior page anatomy. Trim 5 × 8 in. Bleed 0.125 in. Inner margin 0.875 in.
             </FigureCaption>
           </figure>
@@ -109,7 +109,7 @@ export function ChapterEngine() {
               {COLOPHON_ROWS.map(([label, value], i) => (
                 <div
                   key={label}
-                  className={`grid grid-cols-[8rem_1fr] py-2.5 md:grid-cols-[10rem_1fr] ${
+                  className={`grid grid-cols-[8rem_1fr] py-2 md:grid-cols-[10rem_1fr] ${
                     i < COLOPHON_ROWS.length - 1 ? 'border-b border-[#111111]/10' : ''
                   }`}
                 >

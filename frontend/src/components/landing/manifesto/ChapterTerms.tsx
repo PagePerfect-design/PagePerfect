@@ -99,7 +99,7 @@ export function ChapterTerms() {
                     <Link
                       href={tier.href}
                       className={
-                        'inline-flex h-11 items-center px-7 font-mono text-[11px] uppercase tracking-[0.1em] transition-[background-color,color,transform] duration-200 ease-pp active:scale-[0.97] ' +
+                        'inline-flex h-12 items-center px-8 font-mono text-[11px] uppercase tracking-[0.1em] transition-[background-color,color,transform] duration-200 ease-pp active:scale-[0.97] ' +
                         (tier.variant === 'primary'
                           ? 'bg-[#FF3333] text-white hover:bg-[#E52222]'
                           : tier.variant === 'black'

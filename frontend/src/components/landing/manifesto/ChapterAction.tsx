@@ -34,7 +34,7 @@ export function ChapterAction() {
         </Reveal>
 
         <Reveal direction="up" delay={0.2} blur={false}>
-          <div className="mt-12 flex flex-col items-start gap-5">
+          <div className="mt-12 flex flex-col items-start gap-6">
             <Link
               href="/app"
               className="inline-flex h-14 items-center bg-[#FF3333] px-12 font-mono text-[12px] uppercase tracking-[0.15em] text-white transition-[background-color,transform] duration-200 ease-pp hover:bg-[#E52222] active:scale-[0.97]"
