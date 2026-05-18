@@ -15,7 +15,7 @@
  */
 
 import sharp from 'sharp'
-import toIco from 'to-ico'
+import pngToIco from 'png-to-ico'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -282,7 +282,7 @@ async function main() {
   await write(resolve(PUBLIC, 'android-chrome-512x512-maskable.png'), maskable512)
 
   console.log('Building favicon.ico (16, 32, 48)...')
-  const ico = await toIco([fav16, fav32, fav48])
+  const ico = await pngToIco([fav16, fav32, fav48])
   await write(resolve(PUBLIC, 'favicon.ico'), ico)
 
   console.log('Rendering OG card 1200×630...')
