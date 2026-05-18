@@ -38,7 +38,7 @@ export function FootnoteList({ chapter, notes }: FootnoteListProps) {
           <li
             key={n}
             id={`fn-${chapter}-${n}`}
-            className="flex gap-4 font-mono text-[11px] leading-5 text-[#333333]"
+            className="flex gap-4 font-mono text-[11px] leading-4 text-[#333333]"
           >
             <span className="shrink-0 text-[#555555]">{n}.</span>
             <span className="flex-1">
