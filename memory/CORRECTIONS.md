@@ -29,7 +29,22 @@ Append-only log of lessons from mistakes. When a rule here conflicts with a rule
 **Rule going forward:** Do not attempt to write `.claude/settings.json` from Claude Code. Surface the recommended JSON to the user; they paste it via `vim` (or any other text editor) themselves. Re-attempts waste a tool call + create a permission denial trace.
 **Canonical home:** Already in `CLAUDE.md` (the "Suggested `.claude/settings.json`" section). Keep this CORRECTIONS entry as a pointer-on-failure.
 
+## 2026-07-06 — Canon docs asserted a contrast ratio that was mathematically wrong
+
+**What happened:** `tokens.md`, `accessibility.md`, and `DESIGN.md` all sanctioned `rgba(17,17,17,0.5)` for labels claiming "≥ 4.5:1 — AA". Actual blend on cream `#FDFCF8` is ~`#878786` ≈ 3.5:1 — fails AA for normal-size text. Dozens of live `text-[#111111]/40-/50` labels shipped on the strength of that wrong number.
+**Root cause:** A stated ratio in a memory doc was never recomputed; audits inherited the claim as a sanctioned exception.
+**Rule going forward:** Contrast claims in canon docs are verified by computation, not trusted. Label floor is solid `#555555`; 50% ink is decorative/aria-hidden or ≥18px display furniture only. Docs corrected 2026-07-06.
+**Canonical home:** `memory/design/tokens.md` + `memory/design/accessibility.md` (corrected in place).
+
+## 2026-07-06 — Audit imports before auditing style
+
+**What happened:** 7 of 19 editor components (~2,900 lines: TopBar, FloatingHUD, LaunchOverlay, IngestZone, PublishingSystems, TemplateNotes, TemplateHelp) were dead code with zero imports; ~150 of 559 design-audit findings targeted files nobody rendered. The Design Council review caught it; the per-file audit did not.
+**Root cause:** Per-file audits assume the file is live. `components.md` also still documented all seven as live.
+**Rule going forward:** Before any per-file sweep (audit, restyle, migration), grep each target's importers first; dead files get deleted, not remediated. Keep `components.md` in sync when components are added/removed.
+**Canonical home:** This entry.
+
 ## Changelog
 
 - 2026-04-14: File created as part of `CLAUDE.md` refactor.
 - 2026-05-14: Added claude-mem precedence rule + `.claude/settings.json` operator-only rule.
+- 2026-07-06: Added contrast-math verification rule + audit-imports-first rule.
