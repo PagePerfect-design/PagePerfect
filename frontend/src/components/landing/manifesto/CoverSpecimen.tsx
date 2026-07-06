@@ -16,28 +16,28 @@ export function CoverSpecimen() {
     <div
       role="img"
       aria-label="Typography specimen — interior book page set in Source Serif 4, 16 on 32, baseline grid visible."
-      className="relative flex h-full min-h-[60vh] w-full flex-col bg-[#F9F8F4] px-[10%] py-[12%] md:min-h-0 md:px-[14%] md:py-[16%]"
+      className="relative flex h-full min-h-[60vh] w-full flex-col bg-paper-stock px-[10%] py-[12%] md:min-h-0 md:px-[14%] md:py-[16%]"
     >
       {/* Running head — italic chapter title left, mono folio numeral right */}
-      <div className="flex items-baseline justify-between font-body text-[12px] italic text-[#111111]/40">
+      <div className="flex items-baseline justify-between font-body text-[12px] italic text-[#111111]/60">
         <span>On Typography</span>
         <span className="font-mono not-italic tracking-[0.2em]">— III —</span>
       </div>
 
       {/* Chapter opener block */}
       <div className="mt-16 text-center md:mt-24" aria-hidden="true">
-        <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[#111111]/40">
+        <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[#111111]/50">
           Chapter Three
         </p>
         <h3 className="mt-4 font-body text-[28px] font-normal italic leading-tight text-[#111111] md:text-[32px]">
           On the Precision of the Line
         </h3>
-        <div className="mx-auto mt-6 h-px w-12 bg-[#111111]/30" />
+        <div className="mx-auto mt-6 h-px w-12 bg-[#111111]/40" />
       </div>
 
       {/* Body — a single typeset paragraph with a real drop cap */}
       <div
-        className="mt-12 font-body text-[15px] leading-8 text-[#111111]/85 md:mt-16 md:text-[16px]"
+        className="mt-12 font-body text-[15px] leading-8 text-[#111111] md:mt-16 md:text-[16px]"
         aria-hidden="true"
       >
         <p className="indent-[1.5em] text-justify">
@@ -52,7 +52,7 @@ export function CoverSpecimen() {
       </div>
 
       {/* Folio + colophon — sits at the bottom of the page */}
-      <div className="mt-auto flex items-baseline justify-between border-t border-[#111111]/10 pt-6 font-mono text-[9px] uppercase tracking-[0.28em] text-[#111111]/40">
+      <div className="mt-auto flex items-baseline justify-between border-t border-[#111111]/10 pt-6 font-mono text-[9px] uppercase tracking-[0.28em] text-[#111111]/50">
         <span>Set in Source Serif 4 · 16 / 32</span>
         <span>· 47 ·</span>
       </div>

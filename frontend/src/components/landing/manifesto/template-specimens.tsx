@@ -161,7 +161,7 @@ export const TEMPLATES = [
 
 export function SymphonySpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[14%] py-[10%] font-body text-[5px] leading-[1.6] text-[#111]/60">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[14%] py-[10%] font-body text-[5px] leading-[1.6] text-[#111]/60">
       <div className="mb-2 text-center">
         <span className="font-mono text-[3.5px] uppercase tracking-[0.2em] text-[#111]/20">Chapter Three</span>
         <div className="mt-0.5 font-display text-[8px] font-bold leading-tight text-[#111]">On Typography</div>
@@ -180,7 +180,7 @@ export function SymphonySpecimen() {
 
 export function PaperbackSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[12%] py-[12%] font-display text-[5px] leading-[1.7] text-[#111]/55">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[12%] py-[12%] font-display text-[5px] leading-[1.7] text-[#111]/55">
       <div className="mb-3">
         <div className="text-[14px] font-extrabold leading-none text-[#111]/[0.06]">1</div>
         <div className="mt-0.5 text-[7px] font-semibold leading-tight text-[#111]">The Departure</div>
@@ -197,7 +197,7 @@ export function PaperbackSpecimen() {
 
 export function ChronicleSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] p-[8%] font-display">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock p-[8%] font-display">
       <div className="mb-1 border-b border-[#111]" />
       <div className="mb-2 grid grid-cols-[1fr_2fr] gap-1">
         <div className="text-[11px] font-extrabold leading-none text-[#111]">01</div>
@@ -222,7 +222,7 @@ export function ChronicleSpecimen() {
 
 export function MatrixSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[10%] py-[10%] font-display text-[4.5px] leading-[1.5] text-[#111]/55">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[10%] py-[10%] font-display text-[4.5px] leading-[1.5] text-[#111]/55">
       <div className="mb-2">
         <div className="text-[6.5px] font-bold uppercase tracking-tight text-[#111]">Q4 Performance</div>
         <div className="mt-0.5 h-[1.5px] w-3 bg-[#111]" />
@@ -261,7 +261,7 @@ export function MatrixSpecimen() {
 
 export function ChicagoSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[15%] py-[12%] font-body text-[5px] leading-[1.6] text-[#111]/60">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[15%] py-[12%] font-body text-[5px] leading-[1.6] text-[#111]/60">
       <div className="mb-3 text-center">
         <span className="text-[4px] uppercase tracking-[0.25em] text-[#111]/25">II</span>
         <div className="mt-1 text-[7px] font-bold leading-tight text-[#111]">Form and Content</div>
@@ -280,7 +280,7 @@ export function ChicagoSpecimen() {
 
 export function ExhibitSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[10%] py-[14%] font-display text-[5px] leading-[1.8] text-[#111]/50">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[10%] py-[14%] font-display text-[5px] leading-[1.8] text-[#111]/50">
       <div className="mb-4">
         <div className="text-[10px] font-extrabold leading-[0.9] tracking-tight text-[#111]">
           White<br />Space
@@ -297,7 +297,7 @@ export function ExhibitSpecimen() {
 
 export function AvantGardeSpecimen() {
   return (
-    <div className="relative flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[8%] py-[8%] font-display">
+    <div className="relative flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[8%] py-[8%] font-display">
       <div className="mb-1 h-[2px] bg-[#111]" />
       <div className="text-[16px] font-extrabold leading-[0.85] tracking-tighter text-[#111]">
         BREAK
@@ -319,7 +319,7 @@ export function AvantGardeSpecimen() {
 
 export function CinemaSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[15%] py-[10%] font-mono text-[4.5px] leading-[1.5] text-[#111]/65">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[15%] py-[10%] font-mono text-[4.5px] leading-[1.5] text-[#111]/65">
       <div className="mb-2 uppercase text-[#111]/40">
         Int. Coffee Shop &mdash; Day
       </div>
@@ -341,7 +341,7 @@ export function CinemaSpecimen() {
 
 export function InternationalSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] p-[8%] font-display">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock p-[8%] font-display">
       <div className="mb-1 flex items-baseline justify-between border-b border-[#111] pb-0.5">
         <span className="text-[4px] font-bold uppercase tracking-[0.15em] text-[#111]/40">Typografie</span>
         <span className="text-[8px] font-extrabold leading-none text-[#111]">01</span>
@@ -364,7 +364,7 @@ export function InternationalSpecimen() {
 
 export function MinimalSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[14%] py-[12%] font-body text-[5px] leading-[1.65] text-[#111]/55">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[14%] py-[12%] font-body text-[5px] leading-[1.65] text-[#111]/55">
       <div className="mb-3">
         <div className="text-[7px] font-bold text-[#111]">1&ensp;Introduction</div>
       </div>
@@ -381,7 +381,7 @@ export function MinimalSpecimen() {
 
 export function HeirloomSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[10%] py-[10%]">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[10%] py-[10%]">
       <div className="mb-1 text-center">
         <div className="font-mono text-[3px] tracking-[0.3em] text-[#111]/20">&bull; &bull; &bull;</div>
         <div className="mt-1 font-body text-[8px] font-bold italic leading-tight text-[#111]">Heritage Bread</div>
@@ -397,7 +397,7 @@ export function HeirloomSpecimen() {
           <p className="mt-[3px] font-body text-[3.5px] italic text-[#111]/30">Serves 4&ensp;&middot;&ensp;45 min prep</p>
         </div>
       </div>
-      <div className="mt-auto border-t border-[#111]/8 pt-0.5">
+      <div className="mt-auto border-t border-[#111]/10 pt-0.5">
         <span className="font-mono text-[3px] text-[#111]/15">Heirloom Kitchen &middot; 42</span>
       </div>
     </div>
@@ -406,7 +406,7 @@ export function HeirloomSpecimen() {
 
 export function OperatorSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[10%] py-[10%] font-display text-[4.5px] leading-[1.5] text-[#111]/55">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[10%] py-[10%] font-display text-[4.5px] leading-[1.5] text-[#111]/55">
       <div className="mb-2">
         <div className="text-[6px] font-bold text-[#111]">3.2&ensp;Configuration</div>
         <div className="mt-0.5 h-px w-full bg-[#111]/10" />
@@ -431,7 +431,7 @@ export function OperatorSpecimen() {
 
 export function VerseSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[18%] py-[14%] font-body text-[5px] leading-[1.8] text-[#111]/55">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[18%] py-[14%] font-body text-[5px] leading-[1.8] text-[#111]/55">
       <div className="mb-3 text-center">
         <div className="font-body text-[7px] italic leading-tight text-[#111]">Aubade</div>
         <div className="mx-auto mt-1 h-px w-3 bg-[#111]/10" />
@@ -447,7 +447,7 @@ export function VerseSpecimen() {
 
 export function ThesisSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[12%] py-[10%] font-body text-[5px] leading-[2] text-[#111]/55">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[12%] py-[10%] font-body text-[5px] leading-[2] text-[#111]/55">
       <div className="mb-2">
         <div className="text-[6px] font-bold text-[#111]">2.1&ensp;Literature Review</div>
       </div>
@@ -464,7 +464,7 @@ export function ThesisSpecimen() {
 
 export function MemoirSpecimen() {
   return (
-    <div className="flex h-[130px] flex-col overflow-hidden bg-[#F9F8F4] px-[14%] py-[12%] font-body text-[5px] leading-[1.6] text-[#111]/55">
+    <div className="flex h-[130px] flex-col overflow-hidden bg-paper-stock px-[14%] py-[12%] font-body text-[5px] leading-[1.6] text-[#111]/55">
       <div className="mb-3 text-center">
         <div className="font-mono text-[3.5px] text-[#111]/20">3</div>
         <div className="mt-0.5 text-[7px] italic leading-tight text-[#111]">The House on Elm Street</div>

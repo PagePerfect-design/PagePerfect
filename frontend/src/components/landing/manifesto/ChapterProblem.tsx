@@ -56,10 +56,10 @@ export function ChapterProblem() {
         <Reveal direction="up" delay={0.2}>
           <figure className="mt-16 border-2 border-[#111111] bg-[#ffffff]">
             <div className="flex items-center justify-between border-b border-[#111111]/15 bg-[#f5f5f0] px-4 py-2">
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]">
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]">
                 Amazon KDP · Manuscript review
               </span>
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#FF3333]">
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#E52222]">
                 Rejected
               </span>
             </div>

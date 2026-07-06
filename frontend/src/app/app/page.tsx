@@ -10,9 +10,9 @@ export default function AppPage() {
   return (
     <Suspense fallback={
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-          <span className="text-sm text-text-tertiary">Loading editor...</span>
+        <div role="status" aria-live="polite" className="flex flex-col items-center gap-2">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#111111]/20 border-t-[#111111]" />
+          <span className="text-sm text-[#555555]">Loading editor...</span>
         </div>
       </div>
     }>

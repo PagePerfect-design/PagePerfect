@@ -319,14 +319,14 @@ export default function CompileShell() {
         <div className="max-w-md text-center">
           <CompositorMark size={32} className="mx-auto mb-8 opacity-30" />
           <h1 className="font-display text-2xl font-bold text-[#111111]">Desktop Required</h1>
-          <p className="mt-4 font-body text-sm leading-relaxed text-[#111111]/50">
+          <p className="mt-4 font-body text-sm leading-relaxed text-[#444444]">
             PagePerfect&rsquo;s editor requires a desktop browser for the full typesetting experience.
           </p>
           <div className="mt-8 flex flex-col items-center gap-4">
             <Link href="/" className="inline-flex h-10 items-center px-6 font-mono text-[11px] uppercase tracking-[0.1em] text-[#111111]/60 transition-colors hover:text-[#111111]">
               Back to Home
             </Link>
-            <button onClick={() => setMobileGateDismissed(true)} className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/30 transition-colors hover:text-[#111111]/60">
+            <button onClick={() => setMobileGateDismissed(true)} className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555555] transition-colors hover:text-[#111111]">
               Continue anyway
             </button>
           </div>
@@ -343,14 +343,19 @@ export default function CompileShell() {
     <div className="fixed inset-0 flex flex-col bg-[#FDFCF8]">
       {/* ── TopBar ────────────────────────────────────────── */}
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#111111]/10 px-4">
+        {/* Screen reader: announce compile status changes */}
+        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {loading ? 'Compiling manuscript...' : status === 'error' && errors.length > 0 ? `Compile error: ${errors[0]?.message || 'Unknown error'}` : status === 'success' ? 'Compilation complete' : ''}
+        </div>
         {/* Left: home + title */}
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
           <Tooltip content="Back to home" placement="bottom">
             <Link
               href="/"
-              className="flex h-8 w-8 shrink-0 items-center justify-center text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
+              aria-label="Back to home"
+              className="flex h-8 w-8 shrink-0 items-center justify-center text-[#555555] transition-colors duration-200 hover:text-[#111111]"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
+              <ArrowLeft className="h-4 w-4" />
             </Link>
           </Tooltip>
           <div className="h-4 w-px bg-[#e5e5e0]" />
@@ -361,35 +366,38 @@ export default function CompileShell() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="min-w-0 max-w-[280px] bg-transparent font-display text-sm font-semibold text-[#111111]/80 placeholder:text-[#111111]/40 focus:text-[#111111] focus:outline-none"
+                  aria-label="Manuscript title"
+                  className="min-w-0 max-w-[280px] bg-transparent font-display text-sm font-semibold text-[#111111] placeholder:text-[#555555] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#111111]"
                   placeholder="Untitled"
                 />
               </Tooltip>
-              <span className="hidden shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/40 sm:inline">
+              <span className="hidden shrink-0 font-mono text-[10px] uppercase tracking-[0.1em] tabular-nums text-[#555555] sm:inline">
                 {wordCount.toLocaleString()} words
               </span>
               {/* Cloud sync */}
               {!!user && (
                 <>
                   <div className="h-3 w-px bg-[#e5e5e0]" />
-                  {manuscriptSaving ? (
-                    <Tooltip content="Saving to cloud..." placement="bottom">
-                      <span><Loader2 className="h-2.5 w-2.5 animate-spin text-[#111111]/40" /></span>
-                    </Tooltip>
-                  ) : manuscriptSaveError ? (
-                    <Tooltip content="Sync failed" detail={manuscriptSaveError || 'Check your connection'} placement="bottom">
-                      <span><CloudOff className="h-2.5 w-2.5 text-red-500/50" /></span>
-                    </Tooltip>
-                  ) : (
-                    <Tooltip content="Saved to cloud" placement="bottom">
-                      <span><Cloud className="h-2.5 w-2.5 text-emerald-600/40" /></span>
-                    </Tooltip>
-                  )}
+                  <span aria-live="polite">
+                    {manuscriptSaving ? (
+                      <Tooltip content="Saving to cloud..." placement="bottom">
+                        <span><Loader2 className="h-3 w-3 animate-spin text-[#555555]" /><span className="sr-only">Saving</span></span>
+                      </Tooltip>
+                    ) : manuscriptSaveError ? (
+                      <Tooltip content="Sync failed" detail={manuscriptSaveError || 'Check your connection'} placement="bottom">
+                        <span><CloudOff className="h-3 w-3 text-[#E52222]" /><span className="sr-only">Save failed</span></span>
+                      </Tooltip>
+                    ) : (
+                      <Tooltip content="Saved to cloud" placement="bottom">
+                        <span><Cloud className="h-3 w-3 text-emerald-600" /><span className="sr-only">Saved</span></span>
+                      </Tooltip>
+                    )}
+                  </span>
                 </>
               )}
             </>
           ) : (
-            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/40">PagePerfect</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#555555]">PagePerfect</span>
           )}
         </div>
 
@@ -400,7 +408,7 @@ export default function CompileShell() {
             <Tooltip content="Start new manuscript" detail="Clears current work" placement="bottom">
               <button
                 onClick={handleNewManuscript}
-                className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
+                className="flex h-8 items-center border border-[#e5e5e0] px-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#555555] transition-colors duration-200 hover:border-[#111111]/40 hover:text-[#111111]"
               >
                 New
               </button>
@@ -411,7 +419,7 @@ export default function CompileShell() {
             <Tooltip content="Open saved manuscripts" shortcut="Esc to close" placement="bottom">
               <button
                 onClick={handleOpenManuscripts}
-                className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70"
+                className="flex h-8 items-center border border-[#e5e5e0] px-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#555555] transition-colors duration-200 hover:border-[#111111]/40 hover:text-[#111111]"
               >
                 Manuscripts
               </button>
@@ -426,7 +434,7 @@ export default function CompileShell() {
                 <button
                   onClick={() => compile(false)}
                   disabled={loading}
-                  className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/40 transition-colors duration-200 hover:text-[#111111]/70 disabled:opacity-30"
+                  className="flex h-8 items-center gap-2 border border-[#e5e5e0] px-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#555555] transition-colors duration-200 hover:border-[#111111]/40 hover:text-[#111111] disabled:opacity-30"
                 >
                   {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
                   <span className="hidden sm:inline">Compile</span>
@@ -442,7 +450,7 @@ export default function CompileShell() {
                 <button
                   onClick={() => handleDownload(targetPlatform || 'kdp')}
                   disabled={status !== 'success'}
-                  className="flex h-8 items-center gap-1.5 bg-[#FF3333] px-4 font-mono text-[9px] uppercase tracking-[0.1em] text-white transition-all duration-200 hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="flex h-8 items-center gap-2 bg-[#FF3333] px-4 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <Download className="h-3 w-3" />
                   <span className="hidden sm:inline">Download PDF</span>

@@ -92,8 +92,8 @@
 
   --text-primary: #1a1a1a;
   --text-secondary: #5c5c5c;
-  --text-tertiary: #999999;
-  --text-ghost: #c0c0c0;
+  --text-tertiary: #555555;
+  --text-ghost: #555555;
 
   --accent: #FF3333;
   --accent-hover: #E52222;
@@ -124,7 +124,9 @@
 
 /* ===== Global Resets ===== */
 html, body { height: 100%; }
-html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
 
 body {
   background: #FDFCF8;
@@ -140,11 +142,11 @@ html {
 }
 html::-webkit-scrollbar { width: 6px; }
 html::-webkit-scrollbar-track { background: transparent; }
-html::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+html::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
 
-/* ===== Selection — registration blue ===== */
+/* ===== Selection — printer's red (AA: white on #E52222 = 4.6:1) ===== */
 ::selection {
-  background: #FF3333;
+  background: #E52222;
   color: white;
 }
 
@@ -163,8 +165,8 @@ html::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radiu
 
   --text-primary: #111111;
   --text-secondary: #444444;
-  --text-tertiary: #777777;
-  --text-ghost: #AAAAAA;
+  --text-tertiary: #555555;
+  --text-ghost: rgba(17, 17, 17, 0.5);
 
   --accent: #FF3333;
   --accent-hover: #E52222;
@@ -249,26 +251,6 @@ body:has([data-specimen]) > .bg-noise { display: none; }
   color: var(--text-ghost);
 }
 
-/* ===== Crop marks — print registration aesthetic ===== */
-.crop-mark {
-  position: relative;
-}
-.crop-mark::before,
-.crop-mark::after {
-  content: '';
-  position: absolute;
-  background: rgba(255, 255, 255, 0.12);
-}
-/* Top-left corner */
-.crop-mark-tl::before {
-  top: -1px; left: -12px;
-  width: 12px; height: 1px;
-}
-.crop-mark-tl::after {
-  top: -12px; left: -1px;
-  width: 1px; height: 12px;
-}
-
 /* ===== Divider — simple hairline ===== */
 .divider {
   height: 1px;
@@ -279,31 +261,6 @@ body:has([data-specimen]) > .bg-noise { display: none; }
 .colophon {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-}
-
-/* ===== Form controls (dark) ===== */
-.input-dark {
-  background: var(--void);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  color: #f2f2f0;
-  transition: border-color var(--t-fast) var(--ease-pp);
-}
-.input-dark:hover {
-  border-color: rgba(255, 255, 255, 0.22);
-}
-.input-dark:focus {
-  border-color: var(--accent);
-  outline: none;
-}
-.input-dark::placeholder { color: rgba(255, 255, 255, 0.2); }
-select.input-dark {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236a6a64' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  padding-right: 2rem;
 }
 
 /* ===== Paper preview surface ===== */
@@ -329,7 +286,7 @@ select.input-dark {
 .skip-link {
   position: absolute; left: -9999px; top: 0; z-index: 1000;
   background: var(--accent); color: #fff;
-  padding: 0.5rem 0.75rem; border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem; border-radius: 0;
 }
 .skip-link:focus { left: 1rem; top: 1rem; outline: 2px solid var(--accent-hover); }
 *:focus-visible {
@@ -346,7 +303,6 @@ select.input-dark {
   border-radius: 0;
 }
 [data-specimen] .skeleton { background: #e5e5e0; }
-:root .skeleton { background: rgba(255,255,255,0.06); }
 
 /* ===== Editor mode — hide footer, lock scroll ===== */
 body[data-editor] { overflow: hidden !important; height: 100dvh !important; }

@@ -65,9 +65,10 @@ export default function TemplateCard({
   return (
     <button
       onClick={onClick}
-      className={`flex h-[72px] flex-col border p-2 text-left transition-all duration-150 ${
+      aria-pressed={active}
+      className={`flex h-[72px] flex-col border p-2 text-left transition-all duration-200 ${
         active
-          ? 'border-[#FF3333] bg-[#FF3333]/[0.03]'
+          ? 'border-[#111111] bg-[#111111]/[0.03]'
           : 'border-[#e5e5e0] hover:border-[#111111]/30 hover:bg-[#111111]/[0.01]'
       }`}
     >
@@ -75,11 +76,11 @@ export default function TemplateCard({
       <Specimen spec={info.spec} active={active} />
       {/* Footer — always at the bottom, same position in every card */}
       <div className="mt-auto flex items-end justify-between gap-1 pt-1">
-        <span className={`truncate font-mono text-[9px] leading-none ${active ? 'text-[#111111]/70' : 'text-[#111111]/40'}`}>
+        <span className={`truncate font-mono text-[10px] leading-none ${active ? 'text-[#111111]' : 'text-[#555555]'}`}>
           {info.name}
         </span>
-        <span className={`shrink-0 font-mono text-[7px] uppercase leading-none tracking-[0.08em] ${
-          active ? 'text-[#FF3333]/60' : 'text-[#111111]/25'
+        <span className={`shrink-0 font-mono text-[10px] uppercase leading-none tracking-[0.1em] ${
+          active ? 'text-[#111111]' : 'text-[#555555]'
         }`}>
           {info.kind}
         </span>

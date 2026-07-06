@@ -24,13 +24,10 @@ export default {
           DEFAULT: '#f5f5f0',
           warm: '#eae8e1',
           cool: '#e0dfd8',
-        },
-
-        // Registration Blue — the ONLY accent. Like a printer's registration mark.
-        // Solid, sharp, never glowing. Used sparingly: links, one CTA, one rule.
-        reg: {
-          DEFAULT: '#0033ff',
-          light: '#2255ff',
+          // Simulated book-paper tone for typeset specimens (CoverSpecimen,
+          // template-specimens) — one step warmer than site cream #FDFCF8 so
+          // pages read as physical objects.
+          stock: '#F9F8F4',
         },
 
         // ── Semantic tokens (resolve via CSS variables) ──────────────
@@ -128,6 +125,7 @@ export default {
         'pp-dramatic': 'cubic-bezier(0.22, 0.61, 0.36, 1)',
       },
       transitionDuration: {
+        '250': '250ms',
         '350': '350ms',
       },
       animation: {

@@ -99,10 +99,11 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`flex h-7 w-7 items-center justify-center transition-colors ${
+      aria-label={title}
+      className={`flex h-8 w-8 items-center justify-center transition-colors ${
         active
-          ? 'bg-[#FF3333]/10 text-[#FF3333]'
-          : 'text-[#111111]/40 hover:bg-[#111111]/[0.06] hover:text-[#111111]/70'
+          ? 'bg-[#111111]/[0.06] text-[#111111]'
+          : 'text-[#555555] hover:bg-[#111111]/[0.06] hover:text-[#111111]'
       } ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
     >
       {children}
@@ -125,6 +126,8 @@ export default function RichTextEditor({
   onClose: () => void
 }) {
   const editor = useEditor({
+    // Client-only render: avoids Tiptap's SSR hydration error under Next.js
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
@@ -138,7 +141,7 @@ export default function RichTextEditor({
     content: markdownToHtml(markdown),
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[400px] px-6 py-4 font-body text-[15px] leading-[1.8] text-[#111111]/80',
+        class: 'prose prose-sm max-w-none prose-headings:text-[#111111] prose-code:text-[#111111] prose-blockquote:text-[#444444] focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#e5e5e0] min-h-[400px] px-6 py-4 font-body text-[15px] leading-[1.8] text-[#333333]',
       },
     },
     onUpdate: ({ editor: ed }) => {
@@ -208,12 +211,12 @@ export default function RichTextEditor({
         <div className="flex-1" />
 
         {/* Mode toggle */}
-        <span className="mr-2 font-mono text-[9px] uppercase tracking-[0.12em] text-[#111111]/50">
+        <span className="mr-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[#555555]">
           Rich Text
         </span>
         <button
           onClick={onClose}
-          className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/40 hover:text-[#111111]/70"
+          className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#555555] hover:text-[#111111]"
         >
           Switch to Markdown
         </button>

@@ -74,7 +74,7 @@ export function ChapterTerms() {
                       Subscription {tier.roman} · {tier.name}
                     </h3>
                     {'recommended' in tier && tier.recommended && (
-                      <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#FF3333]">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]">
                         Recommended
                       </span>
                     )}

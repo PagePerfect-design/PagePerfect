@@ -8,7 +8,9 @@ export function ManifestoCover() {
   return (
     <section id="cover" aria-label="Front matter">
       {/* ─── Half-title page ────────────────────────────────────────────── */}
-      <div className="relative flex min-h-[88vh] items-center justify-center border-b border-[#111111] bg-[#FDFCF8] px-6 md:px-8">
+      {/* 62vh (not 88): the half-title stays a front-matter beat, but the
+          title page's offer + red CTA crest the fold on a 900px viewport */}
+      <div className="relative flex min-h-[62vh] items-center justify-center border-b border-[#111111] bg-[#FDFCF8] px-6 md:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <Reveal direction="up" blur={false}>
             <p className="mb-10 font-mono text-[10px] uppercase tracking-[0.2em] text-[#555555]">
