@@ -27,14 +27,16 @@ function generateTypstWatermarkPreamble() {
 
   // Apply opacity directly to the watermark text color (not via overlay).
   // luma(180) at 93% transparency gives a very faint grey mark.
-  const transparency = (100 - opacity) / 100; // 0.93
+  // Typst's `transparentize` takes a ratio (93%), not a float — emitting a
+  // bare 0.93 fails with "expected ratio, found float".
+  const transparency = 100 - opacity; // 93 — percent
 
   return `
 // ── PagePerfect Watermark: The Compositor's Mark ──────────────────
 // Müller-Brockmann-inspired registration marks, tiled diagonally.
 // Injected for free-tier downloads only.
 
-#let pp-wm-color = luma(180).transparentize(${transparency})
+#let pp-wm-color = luma(180).transparentize(${transparency}%)
 
 #let pp-watermark-tile() = {
   box(width: 0.9in, height: 0.7in)[

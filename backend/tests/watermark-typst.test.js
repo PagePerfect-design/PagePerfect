@@ -17,7 +17,7 @@ describe('generateTypstWatermarkPreamble', () => {
   test('defines pp-wm-color with transparentize', () => {
     expect(output).toContain('#let pp-wm-color');
     expect(output).toContain('luma(180)');
-    expect(output).toContain('transparentize(0.93)');
+    expect(output).toContain('transparentize(93%)');
   });
 
   test('defines pp-watermark-tile function', () => {
@@ -67,9 +67,11 @@ describe('generateTypstWatermarkPreamble', () => {
     expect(output).toContain('fill: pp-wm-color');
   });
 
-  test('uses transparency ratio not percentage', () => {
-    // Should be 0.93 not 93%
-    expect(output).toContain('0.93');
-    expect(output).not.toMatch(/transparentize\(93%\)/);
+  test('passes a Typst ratio, not a bare float', () => {
+    // Typst `color.transparentize` requires a ratio (93%). A bare float
+    // (0.93) fails compilation with "expected ratio, found float", which
+    // broke every free-tier download. Regression guard for that fix.
+    expect(output).toMatch(/transparentize\(93%\)/);
+    expect(output).not.toMatch(/transparentize\(\s*0?\.\d+\s*\)/);
   });
 });
