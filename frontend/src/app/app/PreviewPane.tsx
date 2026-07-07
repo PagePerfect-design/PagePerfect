@@ -22,7 +22,7 @@ function BookSkeleton() {
             animation: 'skeleton-scan 2s ease-in-out infinite alternate',
           }}
         />
-        <style>{`@keyframes skeleton-scan { from { top: 10%; } to { top: 90%; } }`}</style>
+        <style>{`@keyframes skeleton-scan { from { transform: translateY(0) } to { transform: translateY(416px) } }`}</style>
         <div className="absolute inset-x-[15%] top-[12%] space-y-3">
           <div className="h-4 w-3/5 bg-[#e5e5e0]" />
           <div className="h-2 w-4/5 bg-[#f5f5f0]" />
@@ -32,7 +32,7 @@ function BookSkeleton() {
             ))}
           </div>
         </div>
-        <p className="absolute bottom-[8%] left-0 right-0 text-center font-mono text-[10px] text-[#111111]/50">
+        <p className="absolute bottom-[8%] left-0 right-0 text-center font-mono text-[10px] text-[#555555]">
           Typesetting...
         </p>
       </div>
@@ -48,10 +48,10 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
   if (!quality || quality.typographyGrade === null) return null
 
   const gradeColor = {
-    'A': 'text-emerald-600 border-emerald-500/20 bg-emerald-500/[0.06]',
-    'B': 'text-blue-600 border-blue-500/20 bg-blue-500/[0.06]',
-    'C': 'text-amber-600 border-amber-500/20 bg-amber-500/[0.06]',
-    'D': 'text-red-600 border-red-500/20 bg-red-500/[0.06]',
+    'A': 'text-emerald-700 border-emerald-500/20 bg-emerald-500/[0.06]',
+    'B': 'text-blue-700 border-blue-500/20 bg-blue-500/[0.06]',
+    'C': 'text-amber-700 border-amber-500/20 bg-amber-500/[0.06]',
+    'D': 'text-[#E52222] border-[#E52222]/20 bg-[#E52222]/[0.06]',
   }[quality.typographyGrade] || 'text-[#111111]/60 border-[#e5e5e0] bg-[#f5f5f0]'
 
   const hasWarnings = quality.overfullBoxes > 0 || quality.underfullBoxes > 0
@@ -61,13 +61,13 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
       className="absolute top-2 right-2 z-20 flex flex-wrap items-center gap-1 sm:top-3 sm:right-3 sm:gap-2 animate-fade-in"
     >
       <div className={`flex items-center gap-1.5 border px-2 py-1 ${gradeColor}`}>
-        <span className="font-mono text-[9px] uppercase tracking-wider opacity-60">Typography</span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.1em]">Typography</span>
         <span className="font-mono text-[11px] font-bold">{quality.typographyGrade}</span>
       </div>
       {hasWarnings && (
         <div className="flex items-center gap-1 border border-amber-500/20 bg-amber-500/[0.06] px-2 py-1">
-          <AlertTriangle className="h-2.5 w-2.5 text-amber-500/60" />
-          <span className="font-mono text-[9px] text-amber-600/60">
+          <AlertTriangle className="h-2.5 w-2.5 text-amber-600" />
+          <span className="font-mono text-[10px] text-amber-700">
             {quality.overfullBoxes > 0 && `${quality.overfullBoxes} overfull`}
             {quality.overfullBoxes > 0 && quality.underfullBoxes > 0 && ', '}
             {quality.underfullBoxes > 0 && `${quality.underfullBoxes} underfull`}
@@ -76,12 +76,12 @@ function QualityBadge({ quality }: { quality: CompileQuality }) {
       )}
       {quality.engine && (
         <div className="border border-[#e5e5e0] bg-[#f5f5f0] px-2 py-1" title={quality.engine}>
-          <span className="font-mono text-[8px] text-[#111111]/50">{quality.engine}</span>
+          <span className="font-mono text-[10px] text-[#555555]">{quality.engine}</span>
         </div>
       )}
       {quality.buildId && (
         <div className="border border-[#e5e5e0] bg-[#f5f5f0] px-2 py-1" title={quality.buildId}>
-          <span className="font-mono text-[8px] text-[#111111]/50">{quality.buildId.slice(0, 20)}</span>
+          <span className="font-mono text-[10px] text-[#555555]">{quality.buildId.slice(0, 20)}</span>
         </div>
       )}
     </div>
@@ -111,12 +111,12 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
   return (
     <div className="flex h-full w-full items-center justify-center bg-[#FDFCF8] p-4 sm:p-8">
       <div className="w-full max-w-[420px]">
-        <div className={`mb-4 flex h-10 w-10 items-center justify-center border ${isExpired ? 'border-amber-500/20 bg-amber-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
+        <div className={`mb-4 flex h-10 w-10 items-center justify-center border ${isExpired ? 'border-amber-500/20 bg-amber-500/5' : 'border-[#E52222]/20 bg-[#E52222]/5'}`}>
           {isExpired
-            ? <RotateCcw className="h-4 w-4 text-amber-500/60" />
-            : <AlertTriangle className="h-4 w-4 text-red-500/60" />}
+            ? <RotateCcw className="h-4 w-4 text-amber-600" />
+            : <AlertTriangle className="h-4 w-4 text-[#E52222]" />}
         </div>
-        <p className={`mb-3 font-mono text-[11px] font-medium uppercase tracking-wider ${isExpired ? 'text-amber-600/70' : 'text-red-600/70'}`}>
+        <p className={`mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.1em] ${isExpired ? 'text-amber-700' : 'text-[#E52222]'}`}>
           {isExpired ? 'Preview Expired' : 'Typesetting Error'}
         </p>
         {visibleErrors.map((e, i) => (
@@ -131,50 +131,50 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
         )}
         {errors.some(e => e.message.startsWith('__detail__')) && (
           <details className="mt-4">
-            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
+            <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.1em] text-[#555555] transition-colors hover:text-[#111111]">
               Engine log
             </summary>
-            <pre className="mt-2 max-h-[200px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
+            <pre className="mt-2 max-h-[200px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[10px] leading-relaxed text-[#444444]">
               {errors.filter(e => e.message.startsWith('__detail__')).map(e => e.message.replace('__detail__', '')).join('\n')}
             </pre>
           </details>
         )}
         {debug?.latexLog && (
           <details className="mt-2">
-            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
+            <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.1em] text-[#555555] transition-colors hover:text-[#111111]">
               Full engine log
             </summary>
-            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[10px] leading-relaxed text-[#444444]">
               {debug.latexLog}
             </pre>
           </details>
         )}
         {debug?.texSource && (
           <details className="mt-2">
-            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
+            <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.1em] text-[#555555] transition-colors hover:text-[#111111]">
               Generated Typst source
             </summary>
-            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[10px] leading-relaxed text-[#444444]">
               {debug.texSource}
             </pre>
           </details>
         )}
         {debug?.headerTex && (
           <details className="mt-2">
-            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
+            <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.1em] text-[#555555] transition-colors hover:text-[#111111]">
               Injected preamble (header.tex)
             </summary>
-            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
+            <pre className="mt-2 max-h-[300px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[10px] leading-relaxed text-[#444444]">
               {debug.headerTex}
             </pre>
           </details>
         )}
         {debug?.filesInDir && debug.filesInDir.length > 0 && (
           <details className="mt-2">
-            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-[#111111]/50 transition-colors hover:text-[#111111]/60">
+            <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.1em] text-[#555555] transition-colors hover:text-[#111111]">
               Files in compile directory
             </summary>
-            <pre className="mt-2 max-h-[150px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[9px] leading-relaxed text-[#111111]/60">
+            <pre className="mt-2 max-h-[150px] overflow-auto whitespace-pre-wrap break-all border border-[#e5e5e0] bg-[#f5f5f0] p-3 font-mono text-[10px] leading-relaxed text-[#444444]">
               {debug.filesInDir.join('\n')}
             </pre>
           </details>
@@ -182,7 +182,7 @@ function ErrorPanel({ errors, debug, onRetry }: { errors: CompileError[]; debug?
         {onRetry && (
           <button
             onClick={onRetry}
-            className={`mt-4 inline-flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors ${
+            className={`mt-4 inline-flex items-center gap-1.5 border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors ${
               isExpired
                 ? 'border-[#FF3333] bg-[#FF3333] text-white hover:bg-[#E52222]'
                 : 'border-[#111111]/20 bg-white text-[#111111]/70 hover:border-[#111111]/40 hover:text-[#111111]'
@@ -328,7 +328,8 @@ function PageViewer({
         <button
           onClick={goPrev}
           disabled={!hasPrev}
-          className="flex h-7 w-7 items-center justify-center text-[#111111]/50 transition-colors hover:text-[#111111] disabled:opacity-20 disabled:cursor-not-allowed"
+          aria-label="Previous page"
+          className="flex h-8 w-8 items-center justify-center text-[#555555] transition-colors hover:text-[#111111] disabled:opacity-20 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
@@ -346,7 +347,8 @@ function PageViewer({
         <button
           onClick={goNext}
           disabled={!hasNext}
-          className="flex h-7 w-7 items-center justify-center text-[#111111]/50 transition-colors hover:text-[#111111] disabled:opacity-20 disabled:cursor-not-allowed"
+          aria-label="Next page"
+          className="flex h-8 w-8 items-center justify-center text-[#555555] transition-colors hover:text-[#111111] disabled:opacity-20 disabled:cursor-not-allowed"
         >
           <ChevronRight className="h-3.5 w-3.5" />
         </button>
@@ -409,10 +411,10 @@ export default function PreviewPane({
           <Tooltip content="Single page view" detail="Scroll through pages one at a time" shortcut="↑ ↓">
             <button
               onClick={() => onViewModeChange('single')}
-              className={`flex items-center gap-1 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
+              className={`flex items-center gap-1 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors ${
                 viewMode === 'single'
                   ? 'text-[#111111] bg-[#111111]/5'
-                  : 'text-[#111111]/40 hover:text-[#111111]/60'
+                  : 'text-[#555555] hover:text-[#111111]'
               }`}
             >
               <FileText className="h-3 w-3" />
@@ -422,10 +424,10 @@ export default function PreviewPane({
           <Tooltip content="Book spread view" detail="Two-page spread like an open book">
             <button
               onClick={() => onViewModeChange('spread')}
-              className={`flex items-center gap-1 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
+              className={`flex items-center gap-1 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors ${
                 viewMode === 'spread'
                   ? 'text-[#111111] bg-[#111111]/5'
-                  : 'text-[#111111]/40 hover:text-[#111111]/60'
+                  : 'text-[#555555] hover:text-[#111111]'
               }`}
             >
               <BookOpen className="h-3 w-3" />
@@ -434,7 +436,7 @@ export default function PreviewPane({
           </Tooltip>
           <div className="ml-2 h-3.5 w-px bg-[#e5e5e0]" />
           <Tooltip content="Keyboard shortcuts" detail="← → cycle templates · Space to compile · ↑ ↓ turn pages">
-            <button className="flex h-5 w-5 items-center justify-center border border-[#111111]/10 font-mono text-[8px] text-[#111111]/30 transition-colors hover:text-[#111111]/50">
+            <button className="flex h-6 w-6 items-center justify-center border border-[#111111]/10 font-mono text-[10px] text-[#555555] transition-colors hover:text-[#111111]">
               ?
             </button>
           </Tooltip>
@@ -451,12 +453,12 @@ export default function PreviewPane({
               {/* ── Layer 1: PDF iframe (base layer, always present when pdfUrl exists) ── */}
               {pdfUrl && (
                 <div
-                  className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ease-pp ${
+                  className={`absolute inset-0 flex items-center justify-center transition-opacity duration-350 ease-pp ${
                     useSvg ? 'opacity-0 pointer-events-none' : 'opacity-100'
                   }`}
                 >
                   <div
-                    className="relative h-full w-full max-h-[780px] max-w-[560px] mx-auto overflow-hidden bg-white transition-shadow duration-500"
+                    className="relative h-full w-full max-h-[780px] max-w-[560px] mx-auto overflow-hidden bg-white transition-shadow duration-350"
                     style={{
                       boxShadow: status === 'success'
                         ? '0 2px 8px rgba(0,0,0,0.08), 0 12px 40px -8px rgba(0,0,0,0.12)'
@@ -472,8 +474,8 @@ export default function PreviewPane({
                     {status === 'success' && !useSvg && quality && <QualityBadge quality={quality} />}
                     {/* SVG loading indicator — shows when SVG is expected but hasn't arrived */}
                     {svgExpected && (
-                      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center bg-[#111111]/5 py-1">
-                        <span className="font-mono text-[9px] text-[#111111]/40">Loading page viewer...</span>
+                      <div aria-live="polite" className="absolute bottom-0 left-0 right-0 flex items-center justify-center bg-[#111111]/5 py-1">
+                        <span className="font-mono text-[10px] text-[#111111]/50">Loading page viewer...</span>
                       </div>
                     )}
                   </div>
@@ -510,11 +512,11 @@ export default function PreviewPane({
                         <div className="mx-auto mb-3 flex h-16 w-12 items-center justify-center border border-[#e5e5e0]">
                           <FileText className="h-5 w-5 text-[#111111]/40" />
                         </div>
-                        <p className="font-mono text-[11px] text-[#111111]/50">Your preview will appear here</p>
-                        <p className="mt-2 font-mono text-[9px] text-[#111111]/35">
-                          Use the <span className="font-semibold text-[#111111]/50">Style</span> and <span className="font-semibold text-[#111111]/50">Layout</span> controls below to design your book
+                        <p className="font-display text-[14px] text-[#111111]">Your preview will appear here</p>
+                        <p className="mt-2 font-mono text-[10px] text-[#555555]">
+                          Use the <span className="font-semibold text-[#111111]">Style</span> and <span className="font-semibold text-[#111111]">Layout</span> controls below to design your book
                         </p>
-                        <ChevronDown className="mx-auto mt-3 h-3.5 w-3.5 text-[#111111]/25" />
+                        <ChevronDown className="mx-auto mt-3 h-3.5 w-3.5 text-[#555555]" />
                       </div>
                     </div>
                   )}
@@ -528,7 +530,7 @@ export default function PreviewPane({
                   {hasQualityWarning && quality?.typographyGrade && (
                     <div
                       className={`flex items-center gap-2 px-3 py-2 animate-fade-in ${
-                        quality.typographyGrade === 'D' ? 'bg-red-500/90' : 'bg-amber-500/90'
+                        quality.typographyGrade === 'D' ? 'bg-[#E52222]/90' : 'bg-amber-500/90'
                       }`}
                     >
                       <AlertTriangle className="h-3 w-3 shrink-0 text-white/80" />
@@ -541,11 +543,11 @@ export default function PreviewPane({
                   )}
                   {/* Watermark banner */}
                   {isWatermarked && (
-                    <div className="flex items-center justify-between bg-amber-500/90 px-3 py-1.5">
-                      <span className="font-mono text-[10px] font-medium uppercase tracking-wider text-white">
+                    <div className="flex items-center justify-between bg-amber-500/90 px-4 py-2">
+                      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-white">
                         Free preview — watermarked
                       </span>
-                      <a href="/pricing" className="font-mono text-[10px] font-medium uppercase tracking-wider text-white underline decoration-white/50 hover:decoration-white">
+                      <a href="/pricing" className="font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-white underline decoration-white/50 hover:decoration-white">
                         Upgrade
                       </a>
                     </div>
@@ -556,11 +558,11 @@ export default function PreviewPane({
               {/* ── Compile-in-progress overlay — always rendered, visibility via CSS opacity ── */}
               {hasPreview && (
                 <div
-                  className={`absolute inset-0 z-10 flex items-center justify-center bg-[#FDFCF8]/60 backdrop-blur-[2px] transition-opacity duration-300 ease-pp ${
+                  className={`absolute inset-0 z-10 flex items-center justify-center bg-[#FDFCF8]/60 backdrop-blur-[2px] transition-opacity duration-250 ease-pp ${
                     isCompiling ? 'opacity-100' : 'opacity-0 pointer-events-none'
                   }`}
                 >
-                  <div className="flex flex-col items-center gap-3">
+                  <div aria-live="polite" className="flex flex-col items-center gap-3">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
                     <span className="font-mono text-[11px] text-[#111111]/60">{overlayLabel}</span>
                   </div>

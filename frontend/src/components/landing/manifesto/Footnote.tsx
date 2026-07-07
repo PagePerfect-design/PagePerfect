@@ -30,7 +30,7 @@ interface FootnoteListProps {
 export function FootnoteList({ chapter, notes }: FootnoteListProps) {
   return (
     <footer className="mt-16 border-t border-[#111111]/15 pt-6">
-      <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#555555]">
+      <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-[#555555]">
         Notes
       </p>
       <ol className="space-y-2">

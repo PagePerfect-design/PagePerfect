@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useId, cloneElement } from 'react'
 import { createPortal } from 'react-dom'
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -97,6 +97,7 @@ export default function Tooltip({
   children,
   disabled,
 }: TooltipProps) {
+  const id = useId()
   const [visible, setVisible] = useState(false)
   const [position, setPosition] = useState<Position | null>(null)
   const triggerRef = useRef<HTMLElement>(null)
@@ -141,6 +142,16 @@ export default function Tooltip({
     }
   }, [visible, placement, hide])
 
+  // Escape dismisses the tooltip while visible
+  useEffect(() => {
+    if (!visible) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') hide()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [visible, hide])
+
   // Cleanup timer on unmount
   useEffect(() => {
     return () => {
@@ -159,7 +170,7 @@ export default function Tooltip({
       onBlur={hide}
       style={{ display: 'contents' }}
     >
-      {children}
+      {cloneElement(children, { 'aria-describedby': visible ? id : undefined })}
     </span>
   )
 
@@ -167,6 +178,7 @@ export default function Tooltip({
     ? createPortal(
         <div
           ref={tipRef}
+          id={id}
           role="tooltip"
           className="fixed z-[99999] pointer-events-none"
           style={{
@@ -176,18 +188,18 @@ export default function Tooltip({
             transition: 'opacity 0.1s ease-out',
           }}
         >
-          <div className="border border-[#111111]/15 bg-white px-2.5 py-1.5 shadow-md max-w-[240px]">
-            <p className="font-mono text-[10px] leading-snug text-[#111111]/80 whitespace-nowrap">
+          <div className="border border-[#111111]/15 bg-white px-2 py-2 shadow-md max-w-[240px]">
+            <p className="font-mono text-[10px] leading-snug text-[#111111] whitespace-nowrap">
               {content}
             </p>
             {detail && (
-              <p className="mt-0.5 font-mono text-[9px] leading-snug text-[#111111]/50">
+              <p className="mt-0.5 font-mono text-[10px] leading-snug text-[#555555]">
                 {detail}
               </p>
             )}
             {shortcut && (
-              <p className="mt-1 font-mono text-[8px] uppercase tracking-wider text-[#111111]/40">
-                <kbd className="inline-flex items-center border border-[#111111]/10 bg-[#f5f5f0] px-1 py-0.5 font-mono text-[8px]">
+              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50">
+                <kbd className="inline-flex items-center border border-[#111111]/10 bg-[#f5f5f0] px-1 py-0.5 font-mono text-[10px]">
                   {shortcut}
                 </kbd>
               </p>

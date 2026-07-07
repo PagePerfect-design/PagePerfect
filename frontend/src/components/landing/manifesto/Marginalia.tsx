@@ -23,7 +23,7 @@ export function Marginalia({
       className={`max-w-[14rem] ${side === 'left' ? 'text-right' : 'text-left'} ${className}`}
     >
       {label && (
-        <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#555555]">
+        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.15em] text-[#555555]">
           {label}
         </p>
       )}

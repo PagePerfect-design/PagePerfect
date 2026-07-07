@@ -41,7 +41,7 @@ export function ChapterAction() {
             >
               Start formatting →
             </Link>
-            <p className="font-mono italic text-[12px] text-[#555555]" style={{ fontFamily: 'var(--font-body), serif' }}>
+            <p className="font-body italic text-[12px] text-[#555555]">
               No account. No install. No learning curve.
             </p>
           </div>
@@ -50,7 +50,7 @@ export function ChapterAction() {
         {/* Inline colophon — replaces standalone Colophon chapter; footer carries the legal colophon */}
         <Reveal direction="up" delay={0.3} blur={false}>
           <div className="mt-32 border-t border-[#111111]/15 pt-8">
-            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-[#555555]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#555555]">
               Composed in Inter Tight, Source Serif 4, and IBM Plex Mono.
               Set against the PagePerfect specimen system. Engine: Typst.
               Converter: Pandoc 3.x.  · MMXXVI

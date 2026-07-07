@@ -115,12 +115,22 @@ export default function ImageUpload({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => fileInputRef.current?.click()}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            fileInputRef.current?.click()
+          }
+        }}
+        aria-live="polite"
         className={`
           flex cursor-pointer items-center justify-center gap-2 border border-dashed px-3 py-2.5
           font-mono text-[10px] uppercase tracking-[0.1em] transition-colors
+          focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#111111]
           ${dragOver
             ? 'border-[#FF3333] bg-[#FF3333]/5 text-[#FF3333]'
-            : 'border-[#111111]/20 text-[#111111]/50 hover:border-[#111111]/40 hover:text-[#111111]/70'
+            : 'border-[#111111]/20 text-[#555555] hover:border-[#111111]/40 hover:text-[#111111]'
           }
           ${uploading ? 'pointer-events-none opacity-50' : ''}
         `}
@@ -140,7 +150,8 @@ export default function ImageUpload({
       {/* Error message */}
       {error && (
         <div
-          className="flex items-start gap-1.5 text-[11px] text-red-600 animate-fade-in"
+          role="alert"
+          className="flex items-start gap-1.5 text-[11px] text-[#E52222] animate-fade-in"
         >
           <AlertCircle className="mt-0.5 h-3 w-3 flex-shrink-0" />
           <span>{error}</span>
@@ -155,20 +166,21 @@ export default function ImageUpload({
               key={asset.assetId}
               className="group flex items-center gap-2 border border-[#111111]/8 bg-white px-2 py-1.5 animate-fade-in"
             >
-              <ImageIcon className="h-3 w-3 flex-shrink-0 text-[#111111]/40" />
+              <ImageIcon className="h-3 w-3 flex-shrink-0 text-[#555555]" />
               <button
                 onClick={() => insertAsset(asset)}
-                className="flex-1 truncate text-left font-mono text-[10px] text-[#111111]/50 hover:text-[#FF3333] transition-colors"
+                className="flex-1 truncate text-left font-mono text-[10px] text-[#555555] hover:text-[#FF3333] transition-colors"
                 title={`Click to insert ![${asset.originalName}](${asset.filename}) into manuscript`}
               >
                 {asset.originalName}
               </button>
-              <span className="font-mono text-[9px] text-[#111111]/40">
+              <span className="font-mono text-[10px] text-[#555555]">
                 {formatSize(asset.size)}
               </span>
               <button
                 onClick={() => removeAsset(asset.assetId)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-[#111111]/40 hover:text-[#FF3333]"
+                aria-label="Remove image"
+                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity text-[#555555] hover:text-[#FF3333]"
                 title="Remove image"
               >
                 <X className="h-3 w-3" />

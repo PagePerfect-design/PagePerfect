@@ -3,10 +3,10 @@
 import { useRef, useEffect, useState, Children, type ReactNode } from 'react'
 
 const DIRECTION_MAP = {
-  up:    { y: 24, x: 0 },
-  down:  { y: -24, x: 0 },
-  left:  { y: 0, x: 24 },
-  right: { y: 0, x: -24 },
+  up:    { y: 16, x: 0 },
+  down:  { y: -16, x: 0 },
+  left:  { y: 0, x: 16 },
+  right: { y: 0, x: -16 },
   none:  { y: 0, x: 0 },
 } as const
 
@@ -46,25 +46,49 @@ export function Reveal({
   blur = true,
 }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const [isInView, setIsInView] = useState(false)
+  // 'ssr'    — pre-hydration: rendered fully visible so first paint (and no-JS,
+  //            and search engines) always show content. LCP never waits on JS.
+  // 'hidden' — below the fold after hydration, awaiting scroll into view
+  // 'shown'  — revealed (transitions from 'hidden')
+  const [state, setState] = useState<'ssr' | 'hidden' | 'shown'>('ssr')
   const prefersReducedMotion = usePrefersReducedMotion()
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsInView(true)
-          if (once) observer.disconnect()
-        } else if (!once) {
-          setIsInView(false)
-        }
-      },
-      { rootMargin: '-80px', threshold: 0.1 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
+
+    // Reveal once the element's top edge has crossed into the viewport (with a
+    // small bottom inset so tall blocks begin as soon as they appear). Uses a
+    // live measurement, so instant jumps — anchor links, End key, find-in-page,
+    // scroll restoration — all reveal correctly, unlike an IntersectionObserver
+    // whose entry callback can be missed on a teleporting scroll.
+    const inView = () => ref.current!.getBoundingClientRect().top < window.innerHeight - 48
+
+    // In or above the viewport at mount: show immediately, never animate — we
+    // must not flash-hide content the reader is already looking at.
+    if (inView()) { setState('shown'); return }
+
+    setState('hidden')
+
+    let raf = 0
+    const check = () => {
+      raf = 0
+      if (inView()) {
+        setState('shown')
+        if (once) detach()
+      } else if (!once) {
+        setState('hidden')
+      }
+    }
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(check) }
+    const detach = () => {
+      if (raf) cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    return detach
   }, [once])
 
   if (prefersReducedMotion) {
@@ -92,11 +116,14 @@ export function Reveal({
     transitionDelay: `${delay}s`,
   }
 
+  // 'ssr' renders with no inline style at all: visible, no transition armed.
+  const style = state === 'shown' ? visibleStyle : state === 'hidden' ? hiddenStyle : undefined
+
   return (
     <div
       ref={ref}
-      className={`duration-700 ease-[cubic-bezier(0.25,0.4,0.25,1)] ${className}`}
-      style={isInView ? visibleStyle : hiddenStyle}
+      className={`duration-500 ease-[cubic-bezier(0.25,0.4,0.25,1)] ${className}`}
+      style={style}
     >
       {children}
     </div>

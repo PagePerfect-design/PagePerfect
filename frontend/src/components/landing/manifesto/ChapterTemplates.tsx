@@ -10,7 +10,7 @@ export function ChapterTemplates() {
   return (
     <section
       id="ch-iii"
-      className="relative border-b border-[#FDFCF8]/20 bg-[#050505] px-6 py-24 md:px-8 md:py-36"
+      className="relative border-b border-[#FDFCF8]/20 bg-[#111111] px-6 py-24 md:px-8 md:py-32"
     >
       <div className="mx-auto max-w-6xl">
         <ChapterOpener
@@ -39,14 +39,14 @@ export function ChapterTemplates() {
                 <Link
                   key={t.key}
                   href={`/app?template=${t.key}`}
-                  className="group block bg-[#FDFCF8] transition-colors duration-200 ease-pp hover:bg-[#F5F4F0]"
+                  className="group block bg-[#FDFCF8] transition-colors duration-200 ease-pp hover:bg-[#f5f5f0]"
                 >
                   {/* Plate number + category */}
                   <div className="flex items-baseline justify-between px-6 pt-6">
-                    <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/40">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/50">
                       Pl. {String(i + 1).padStart(2, '0')}
                     </span>
-                    <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/30">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/50">
                       {t.category}
                     </span>
                   </div>
@@ -70,16 +70,16 @@ export function ChapterTemplates() {
                   {/* Font + grid math */}
                   <div className="space-y-1 px-6 pb-6 pt-4">
                     <div className="flex items-baseline justify-between">
-                      <span className="font-mono text-[9px] text-[#111111]/30">Font</span>
-                      <span className="font-mono text-[9px] text-[#111111]/55">{t.font}</span>
+                      <span className="font-mono text-[10px] text-[#111111]/50">Font</span>
+                      <span className="font-mono text-[10px] text-[#111111]/55">{t.font}</span>
                     </div>
                     <div className="flex items-baseline justify-between">
-                      <span className="font-mono text-[9px] text-[#111111]/30">Base</span>
-                      <span className="font-mono text-[9px] text-[#111111]/55">{t.baseline} / {t.leading}</span>
+                      <span className="font-mono text-[10px] text-[#111111]/50">Base</span>
+                      <span className="font-mono text-[10px] text-[#111111]/55">{t.baseline} / {t.leading}</span>
                     </div>
                     <div className="flex items-baseline justify-between">
-                      <span className="font-mono text-[9px] text-[#111111]/30">Scale</span>
-                      <span className="font-mono text-[9px] text-[#111111]/55">{t.scale}</span>
+                      <span className="font-mono text-[10px] text-[#111111]/50">Scale</span>
+                      <span className="font-mono text-[10px] text-[#111111]/55">{t.scale}</span>
                     </div>
                   </div>
                 </Link>

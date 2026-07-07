@@ -26,7 +26,7 @@ export function ChapterOpener({
 }: ChapterOpenerProps) {
   const isInk = tone === 'ink'
   const ink = isInk ? '#FDFCF8' : '#111111'
-  const muted = isInk ? '#a8a8a0' : '#555555'
+  const muted = isInk ? 'rgba(253,252,248,0.6)' : '#555555'
   const rule = isInk ? '#FDFCF8' : '#111111'
   const dropCapColor = isInk ? '#FF3333' : '#111111'
 
@@ -55,7 +55,7 @@ export function ChapterOpener({
           <div>
             {kicker && (
               <p
-                className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em]"
+                className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em]"
                 style={{ color: muted }}
               >
                 {kicker}
@@ -77,7 +77,7 @@ export function ChapterOpener({
 
       <Reveal direction="up" delay={0.1} blur={false}>
         <div
-          className="manifesto-dropcap mt-10 max-w-[36rem] font-body leading-8"
+          className="manifesto-dropcap mt-10 max-w-[36rem] font-body leading-8 md:ml-[8.5rem]"
           style={{
             color: ink,
             fontSize: '1.125rem',

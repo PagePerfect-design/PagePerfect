@@ -12,7 +12,7 @@ function Nav() {
     <nav className="sticky top-0 z-40 border-b border-[#111111] bg-[#FDFCF8]">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
         <div className="flex h-12 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">
+          <Link href="/" className="flex items-center gap-2.5 font-display text-[14px] font-extrabold tracking-[-0.02em] text-[#111111]">
             <CompositorMark size={26} />
             PagePerfect
           </Link>
@@ -24,7 +24,7 @@ function Nav() {
             <NavAuth />
             <Link
               href="/app"
-              className="bg-[#FF3333] px-5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222]"
+              className="bg-[#FF3333] px-6 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-white transition-all duration-200 ease-pp hover:bg-[#E52222]"
             >
               Open Editor
             </Link>
@@ -45,15 +45,15 @@ function Footer() {
         <div className="md:grid md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-12">
           {/* Brand */}
           <div className="mb-8 md:mb-0">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <CompositorMark size={26} />
-              <span className="font-display text-[13px] font-bold uppercase tracking-[0.08em] text-[#111111]">PagePerfect</span>
+              <span className="font-display text-[14px] font-extrabold tracking-[-0.02em] text-[#111111]">PagePerfect</span>
             </div>
-            <p className="mt-3 max-w-xs font-body text-sm leading-relaxed text-[#4a4a4a]">
+            <p className="mt-3 max-w-xs font-body text-sm leading-relaxed text-[#444444]">
               Professional typesetting in your browser. Built on Typst. Inspired by M&uuml;ller-Brockmann.
             </p>
             {/* Colophon — desktop only, tucked under brand */}
-            <div className="mt-6 hidden space-y-1 font-mono text-[10px] text-[#111111]/40 md:block">
+            <div className="mt-6 hidden space-y-1 font-mono text-[10px] text-[#111111]/50 md:block">
               <p>Inter Tight / Source Serif 4 / IBM Plex Mono</p>
               <p>Typst</p>
               <p>EST. 2024</p>
@@ -90,7 +90,7 @@ function Footer() {
 
         {/* Copyright */}
         <div className="mt-10 border-t border-[#111111] pt-6">
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#111111]/50">
+          <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#111111]/50">
             &copy; {new Date().getFullYear()} PagePerfect — a subsidiary of eazyaccess ltd.
           </p>
         </div>

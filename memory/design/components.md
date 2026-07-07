@@ -60,38 +60,34 @@ The `(site)/page.tsx` landing page composes these in order. Pure typography hero
 
 ## Editor components — `frontend/src/components/editor/`
 
-Full-screen editor at `/app`. Inverts the specimen — dark stock, same red accent, same type system. Uses additional motion primitives (Tooltip via `createPortal`, FloatingHUD with `aria-live`).
+Full-screen editor at `/app`. Same cream-on-ink specimen as `(site)` (Rigor §3.1, 2026-05-17) — one continuous monograph from landing through editor. Uses additional primitives (Tooltip via `createPortal`).
+
+Live components (2026-07-06 — seven dead components deleted: TopBar, FloatingHUD, LaunchOverlay, IngestZone, PublishingSystems, TemplateNotes, TemplateHelp; CompileShell renders its own inline top bar; export flow lives in ControlStrip):
 
 | Component | File | Role |
 |-----------|------|------|
-| `CompileShell` | `CompileShell.tsx` | Main editor container — composes everything else |
-| `TopBar` | `TopBar.tsx` | Editor top bar — file name, status, save state |
-| `ControlStrip` | `ControlStrip.tsx` | Template / page-size / margin-preset controls |
-| `FloatingHUD` | `FloatingHUD.tsx` | Floating HUD — typography grade (A/B/C/D), overfull count, compile timing |
-| `PreviewPane` | `PreviewPane.tsx` | Live PDF preview with `shadow-paper`; quality warning banner for C (amber) / D (red) |
-| `LaunchOverlay` | `LaunchOverlay.tsx` | Pre-export overlay — preflight checks, watermark notice, grade-D acknowledgment checkbox |
-| `PortalStage` | `PortalStage.tsx` | First-run / template-picker stage after ingest |
-| `IngestZone` | `IngestZone.tsx` | Manuscript ingest (paste / upload .md or .docx) |
+| `CompileShell` | `CompileShell.tsx` | Main editor container — inline top bar, composes everything else |
+| `ControlStrip` | `ControlStrip.tsx` | Template / page-size / margin-preset controls + export flow (preflight, grade-D acknowledgment) |
+| `PreviewPane` | `PreviewPane.tsx` | Live PDF/SVG preview with `shadow-paper`; quality warning banner for C (amber) / D (red) |
+| `PortalStage` | `PortalStage.tsx` | First-run ingest + template-picker stage |
 | `ImageUpload` | `ImageUpload.tsx` | Image asset upload |
-| `ManuscriptBrowser` | `ManuscriptBrowser.tsx` | Saved-manuscript list |
-| `RichTextEditor` | `RichTextEditor.tsx` | The Markdown editor surface |
+| `ManuscriptBrowser` | `ManuscriptBrowser.tsx` | Saved-manuscript list (modal dialog) |
+| `RichTextEditor` | `RichTextEditor.tsx` | Tiptap rich-text editor surface (`immediatelyRender: false` — SSR guard) |
 | `TemplateCard` | `TemplateCard.tsx` | Template card for the picker — type specimen preview |
-| `TemplateHelp` | `TemplateHelp.tsx` | Template help tooltip |
-| `TemplateNotes` | `TemplateNotes.tsx` | Template-specific usage notes |
-| `PublishingSystems` | `PublishingSystems.tsx` | Publishing-system comparison panel |
 | `StatusBar` | `StatusBar.tsx` | Bottom status bar |
 | `Tooltip` | `Tooltip.tsx` | Portal-rendered tooltip primitive |
-| `useCompileQueue` | `useCompileQueue.ts` | Compile queue hook (BullMQ status polling) |
+| `useCompileQueue` | `useCompileQueue.ts` | Compile queue hook (submit → poll → PDF blob → SVG pages) |
 | `SetEditorBodyAttr` | `SetEditorBodyAttr.tsx` | Sets `data-editor` body attribute for editor scope |
 
 ### Rules for editor components
 
-- Dark stock — `bg-[#050505]` body, `--surface` / `--surface-raised` / `--surface-overlay` for elevation.
-- Text: `--text-primary` (`#f2f2f0`) for body, `--text-secondary` / `--text-tertiary` for hierarchy. Never `#999` or lighter.
-- Red `#FF3333` remains the single high-value accent — used on "Export PDF" / "Download" only when the user is ready to commit.
-- Quality grades (A/B/C/D) pair color with the letter glyph — not color alone. Grade D requires explicit checkbox acknowledgment in `LaunchOverlay` before download enables.
+- Cream specimen — `bg-[#FDFCF8]` body; white cards with `#e5e5e0` hairlines; sharp geometry.
+- Three-tier ink (Design Council 2026-07-06): primary text/controls `#111111`; labels/help/metadata/functional icons `#555555` (NOT 50% ink — sub-AA on cream); hairlines-only `#e5e5e0`.
+- One red per screen: red `#FF3333` marks the Export/Download CTA and errors only. Selected/active states use the ink pattern (`border-[#111111] bg-[#111111]/[0.03]`). Small red text uses `#E52222` (AA).
+- Status trio: pass `emerald-700` / warn `amber-700` / fail `#E52222` — always paired with a text or glyph cue.
+- Quality grades (A/B/C/D) pair color with the letter glyph — not color alone. Grade D requires explicit checkbox acknowledgment (in ControlStrip's export section) before download enables.
 - Compile status / queue position / error states use `aria-live="polite"`.
-- Skeleton states use `animate-skeleton` (1.5s opacity pulse, infinite) — reduced-motion variant: static at `0.5` opacity.
+- Reduced motion: universal cap lives in `globals-motion.css` — no per-instance `motion-reduce:` classes needed.
 
 ## CSS utility surfaces (from `globals.css`)
 

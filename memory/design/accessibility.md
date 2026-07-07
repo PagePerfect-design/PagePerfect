@@ -10,7 +10,7 @@ See `tokens.md` for the full token ladder. The canonical PagePerfect color floor
 
 - Body copy on cream `#FDFCF8`: `#333333` minimum (≥ 12.6:1 — AAA).
 - Secondary text / descriptions: `#444444` – `#555555` (≥ 7.5:1 — AAA).
-- Labels / metadata / kickers: `#555555` minimum, or `rgba(17,17,17,0.5)` (≥ 4.5:1 — AA).
+- Labels / metadata / kickers: `#555555` minimum (7.5:1). **Correction 2026-07-06:** `rgba(17,17,17,0.5)` blends to ~`#878786` on cream — ~3.5:1, which FAILS AA for normal-size text. It is no longer sanctioned for functional text; permitted only on decorative/aria-hidden content or ≥18px/bold display furniture.
 - Never `#999` or lighter for functional text. Period.
 - Interactive text (links, buttons): AA minimum; AAA preferred on the red primary CTA.
 - Error / destructive: red `#FF3333` must hold AA on its container surface — verify against the actual background.

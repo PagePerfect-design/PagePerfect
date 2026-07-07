@@ -136,7 +136,7 @@ export default function PortalStage({
             <h1 className="font-display text-[clamp(2.5rem,6vw,5rem)] font-extrabold leading-[0.9] tracking-tighter text-[#111111]">
               Drop your manuscript.
             </h1>
-            <p className="mt-6 font-body text-lg text-[#111111]/60">
+            <p className="mt-6 font-body text-lg text-[#444444]">
               .md, .txt, or .docx
             </p>
           </div>
@@ -167,13 +167,14 @@ export default function PortalStage({
                     }
                   }}
                   placeholder="Paste or type your manuscript here..."
-                  className="w-full h-48 resize-none border border-[#e5e5e0] bg-white px-4 py-3 font-mono text-sm text-[#111111]/80 placeholder:text-[#111111]/60 focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
+                  aria-label="Manuscript text"
+                  className="w-full h-48 resize-none border border-[#e5e5e0] bg-white px-4 py-3 font-mono text-sm text-[#111111] placeholder:text-[#555555] focus:border-[#FF3333]/40 focus:outline-none focus:ring-1 focus:ring-[#FF3333]/20"
                   autoFocus
                 />
                 <div className="mt-3 flex items-center justify-between">
                   <button
                     onClick={() => { setPasteMode(false); setPasteText('') }}
-                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
+                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#555555] transition-colors hover:text-[#111111]"
                   >
                     Cancel
                   </button>
@@ -185,7 +186,7 @@ export default function PortalStage({
                       }
                     }}
                     disabled={!pasteText.trim()}
-                    className="inline-flex h-9 items-center gap-2 bg-[#FF3333] px-5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-white transition-all hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="inline-flex h-10 items-center gap-2 bg-[#FF3333] px-6 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-white transition-all hover:bg-[#E52222] disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     Continue
                     <ChevronRight className="h-3.5 w-3.5" />
@@ -206,7 +207,7 @@ export default function PortalStage({
                 See a finished book
                 <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </button>
-              <p className="mt-3 font-mono text-[10px] text-[#111111]/50">
+              <p className="mt-3 font-mono text-[10px] text-[#555555]">
                 Loads a sample novel — KDP-ready in seconds
               </p>
             </div>
@@ -218,24 +219,24 @@ export default function PortalStage({
             >
               <button
                 onClick={() => { setPasteMode(true); setPasteText('') }}
-                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#555555] transition-colors hover:text-[#111111]"
               >
                 Paste text
               </button>
-              <span className="text-[#111111]/60">|</span>
+              <span className="text-[#555555]">|</span>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#555555] transition-colors hover:text-[#111111]"
               >
                 Browse files
               </button>
-              <span className="text-[#111111]/60">|</span>
+              <span className="text-[#555555]">|</span>
               {SAMPLES.map((s, i) => (
                 <span key={s.key} className="inline-flex items-center gap-1">
-                  {i > 0 && <span className="text-[#111111]/60">/</span>}
+                  {i > 0 && <span className="text-[#555555]">/</span>}
                   <button
                     onClick={() => onLoadSample(s.key)}
-                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
+                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#555555] transition-colors hover:text-[#111111]"
                   >
                     {s.label} sample
                   </button>
@@ -243,10 +244,10 @@ export default function PortalStage({
               ))}
               {isLoggedIn && onOpenManuscripts && (
                 <>
-                  <span className="text-[#111111]/60">|</span>
+                  <span className="text-[#555555]">|</span>
                   <button
                     onClick={onOpenManuscripts}
-                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]"
+                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#555555] transition-colors hover:text-[#111111]"
                   >
                     My manuscripts
                   </button>
@@ -254,10 +255,10 @@ export default function PortalStage({
               )}
               {hasResumable && onResume && (
                 <>
-                  <span className="text-[#111111]/60">|</span>
+                  <span className="text-[#555555]">|</span>
                   <button
                     onClick={onResume}
-                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#FF3333]/70 transition-colors hover:text-[#FF3333]"
+                    className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#E52222] transition-colors hover:text-[#FF3333]"
                   >
                     Resume editing
                   </button>
@@ -268,12 +269,13 @@ export default function PortalStage({
 
           {convertError && (
             <div
-              className="mt-8 mx-auto max-w-sm border border-red-500/20 bg-red-500/5 px-4 py-3 text-left animate-fade-in"
+              role="alert"
+              className="mt-8 mx-auto max-w-sm border border-[#FF3333]/20 bg-[#FF3333]/5 px-4 py-3 text-left animate-fade-in"
             >
-              <p className="font-mono text-[11px] text-red-600">{convertError}</p>
+              <p className="font-mono text-[11px] text-[#E52222]">{convertError}</p>
               <button
                 onClick={() => setConvertError(null)}
-                className="mt-1 font-mono text-[10px] text-[#111111]/50 hover:text-[#111111]"
+                className="mt-1 font-mono text-[10px] text-[#555555] hover:text-[#111111]"
               >
                 Dismiss
               </button>
@@ -281,7 +283,7 @@ export default function PortalStage({
           )}
 
           <p
-            className="mt-16 font-mono text-[10px] text-[#111111]/50 animate-fade-in"
+            className="mt-16 font-mono text-[10px] text-[#555555] animate-fade-in"
           >
             Your text is stored only for your active session. Deleted on sign-out or within 24 hours.
           </p>
@@ -296,9 +298,9 @@ export default function PortalStage({
         <div
           className="text-center animate-fade-in"
         >
-          <div className="relative z-10">
+          <div className="relative z-10" role="status" aria-live="polite">
             <div className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2 border-[#FF3333] border-t-transparent" />
-            <p className="font-mono text-[12px] text-[#111111]/50">Analyzing manuscript...</p>
+            <p className="font-mono text-[12px] text-[#555555]">Analyzing manuscript...</p>
           </div>
         </div>
       </div>
@@ -332,7 +334,7 @@ export default function PortalStage({
               </div>
               <div>
                 <p className="font-display text-base font-semibold text-[#111111]">Manuscript analyzed</p>
-                <p className="font-mono text-[10px] text-[#111111]/60">{analysis && wordCategory(analysis.words)}</p>
+                <p className="font-mono text-[10px] text-[#555555]">{analysis && wordCategory(analysis.words)}</p>
               </div>
             </div>
           </div>
@@ -346,7 +348,7 @@ export default function PortalStage({
                 { label: 'Citations', value: analysis.hasReferences ? 'Found' : '—' },
               ].map((item) => (
                 <div key={item.label} className="bg-white px-4 py-3">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/60">{item.label}</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#555555]">{item.label}</p>
                   <p className="mt-1 font-display text-lg font-bold text-[#111111]">{item.value}</p>
                 </div>
               ))}
@@ -355,7 +357,7 @@ export default function PortalStage({
 
           {/* Title */}
           <div className="border-t border-[#e5e5e0] px-6 py-5">
-            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">Working title</label>
+            <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.15em] text-[#555555]">Working title</label>
             <input
               id="working-title"
               type="text"
@@ -363,16 +365,16 @@ export default function PortalStage({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="My Manuscript"
               autoFocus
-              className="w-full border-b border-[#e5e5e0] bg-transparent pb-2 font-display text-xl font-bold text-[#111111] placeholder:text-[#111111]/60 focus:border-[#FF3333] focus:outline-none"
+              className="w-full border-b border-[#e5e5e0] bg-transparent pb-2 font-display text-xl font-bold text-[#111111] placeholder:text-[#555555] focus:border-[#FF3333] focus:outline-none"
             />
           </div>
 
           {/* Template picker */}
           <div className="border-t border-[#e5e5e0] px-6 py-5">
-            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-[#555555]">
               Choose a design
               {detectedTemplate && (
-                <span className="ml-2 text-[#FF3333]/60">— recommended based on your manuscript</span>
+                <span className="ml-2 text-[#E52222]">— recommended based on your manuscript</span>
               )}
             </p>
 
@@ -385,7 +387,7 @@ export default function PortalStage({
                 return (
                   <div key={key} className="relative">
                     {isRecommended && (
-                      <span className="absolute -top-2 right-2 z-10 bg-[#FF3333] px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.1em] text-white">
+                      <span className="absolute -top-2 right-2 z-10 bg-[#FF3333] px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-white">
                         Rec
                       </span>
                     )}
@@ -404,7 +406,7 @@ export default function PortalStage({
             {!showAllTemplates ? (
               <button
                 onClick={() => setShowAllTemplates(true)}
-                className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]/70"
+                className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[#555555] transition-colors hover:text-[#111111]"
               >
                 + Show all 15 templates
               </button>
@@ -415,7 +417,7 @@ export default function PortalStage({
                   if (!templates.length) return null
                   return (
                     <div key={genre} className="mt-3 first:mt-0">
-                      <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#111111]/50">
+                      <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.15em] text-[#555555]">
                         {GENRE_LABELS[genre]}
                       </p>
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -438,12 +440,12 @@ export default function PortalStage({
 
           {/* Active template detail bar */}
           <div className="flex items-start gap-3 border-t border-[#e5e5e0] px-6 py-3 bg-[#f5f5f0]">
-            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#FF3333]" />
+            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#111111]" />
             <div>
-              <p className="text-[12px] font-medium text-[#111111]/70">
+              <p className="text-[12px] font-medium text-[#333333]">
                 {TEMPLATE_INFO[activeTemplate].name} — {TEMPLATE_INFO[activeTemplate].vibe}
               </p>
-              <p className="mt-0.5 font-mono text-[10px] text-[#111111]/60">
+              <p className="mt-0.5 font-mono text-[10px] text-[#555555]">
                 Font: {TEMPLATE_INFO[activeTemplate].font} · You can change this anytime in the Style menu.
               </p>
             </div>
@@ -451,7 +453,7 @@ export default function PortalStage({
 
           {/* Platform selection */}
           <div className="border-t border-[#e5e5e0] px-6 py-4">
-            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111]/60">
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.15em] text-[#555555]">
               Where will you publish?
             </p>
             <div className="flex gap-2">
@@ -462,18 +464,16 @@ export default function PortalStage({
                     setSelectedPlatform(p.key)
                     onPlatformSelect?.(p.key === 'generic' ? null : p.key as Platform)
                   }}
-                  className={`flex-1 border px-3 py-2.5 text-left transition-all ${
+                  className={`flex-1 border px-4 py-2 text-left transition-all ${
                     selectedPlatform === p.key
-                      ? 'border-[#FF3333] bg-[#FF3333]/[0.04]'
+                      ? 'border-[#111111] bg-[#111111]/[0.03]'
                       : 'border-[#e5e5e0] hover:border-[#111111]/40'
                   }`}
                 >
-                  <span className={`block font-mono text-[11px] font-semibold ${
-                    selectedPlatform === p.key ? 'text-[#FF3333]' : 'text-[#111111]/70'
-                  }`}>
+                  <span className="block font-mono text-[11px] font-semibold text-[#111111]">
                     {p.label}
                   </span>
-                  <span className="block font-mono text-[9px] text-[#111111]/60 mt-0.5">{p.detail}</span>
+                  <span className="block font-mono text-[10px] text-[#555555] mt-0.5">{p.detail}</span>
                 </button>
               ))}
             </div>
@@ -482,13 +482,13 @@ export default function PortalStage({
           <div className="flex items-center justify-between border-t border-[#e5e5e0] px-6 py-4">
             <button
               onClick={() => { setText(''); setAnalysis(null); setPhase('idle'); setSelectedPlatform(null); setSelectedTemplate(null); setShowAllTemplates(false) }}
-              className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#111111]/60 transition-colors hover:text-[#111111]/70"
+              className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#555555] transition-colors hover:text-[#111111]"
             >
               Start over
             </button>
             <button
               onClick={() => onAccept(text, title, activeTemplate)}
-              className="group inline-flex h-11 items-center gap-3 bg-[#FF3333] px-7 font-display text-[14px] font-semibold text-white transition-all duration-200 hover:bg-[#E52222]"
+              className="group inline-flex h-11 items-center gap-3 bg-[#FF3333] px-8 font-display text-[14px] font-semibold text-white transition-all duration-200 hover:bg-[#E52222]"
             >
               Start designing
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

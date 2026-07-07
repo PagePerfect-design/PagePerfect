@@ -14,7 +14,7 @@ Token summary for PagePerfect's **Swiss-Ogilvy specimen** system. Canonical valu
 | Ink | `#111111` | Headlines, borders, primary text, nav links |
 | Body | `#333333` – `#3a3a3a` | Paragraph copy |
 | Secondary | `#444444` – `#555555` | Descriptions, metadata, captions |
-| Labels | `#555555` or `rgba(17,17,17,0.5)` | Section numbers, kickers, mono labels |
+| Labels | `#555555` | Section numbers, kickers, mono labels. (`rgba(17,17,17,0.5)` retired for functional text 2026-07-06 — it blends to ~3.5:1 on cream, sub-AA; decorative/aria-hidden or ≥18px display furniture only) |
 | Border | `#111111` | Section separators, card borders, table rules |
 | Border subtle | `#e5e5e0` | Hairlines, inner dividers |
 | Surface | `#f5f5f0` | Sidebar backgrounds, subtle fills |

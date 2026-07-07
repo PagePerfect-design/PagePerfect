@@ -90,7 +90,7 @@ export function ChapterEngine() {
               <ul className="space-y-2">
                 {items.map((item) => (
                   <li key={item} className="flex items-start gap-2">
-                    <span className="mt-px text-[#111111]/25">·</span>
+                    <span className="mt-px text-[#111111]/50">·</span>
                     <span>{item}</span>
                   </li>
                 ))}
@@ -102,7 +102,7 @@ export function ChapterEngine() {
         {/* Colophon-style spec table */}
         <Reveal direction="up" delay={0.15} blur={false}>
           <div className="mt-20">
-            <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.15em] text-[#555555]">
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.15em] text-[#555555]">
               Colophon
             </p>
             <div className="border-t-2 border-b-2 border-[#111111]">
@@ -140,14 +140,14 @@ function PageAnatomyDiagram() {
       aria-label="Annotated page anatomy diagram showing bleed, trim, gutter, baseline, running head, and folio."
     >
       {/* Bleed (outer) */}
-      <rect x="20" y="20" width="560" height="760" fill="#fafaf5" stroke="#FF3333" strokeDasharray="4 4" strokeWidth="1" />
+      <rect x="20" y="20" width="560" height="760" fill="#f5f5f0" stroke="#FF3333" strokeDasharray="4 4" strokeWidth="1" />
       {/* Trim */}
       <rect x="60" y="60" width="480" height="680" fill="#ffffff" stroke="#111111" strokeWidth="1.5" />
       {/* Live area */}
       <rect x="120" y="120" width="360" height="560" fill="none" stroke="#111111" strokeDasharray="2 3" strokeWidth="0.75" opacity="0.4" />
 
       {/* Running head */}
-      <text x="300" y="100" textAnchor="middle" fontFamily="serif" fontStyle="italic" fontSize="11" fill="#111111" opacity="0.5">
+      <text x="300" y="100" textAnchor="middle" fontFamily="'Source Serif 4', serif" fontStyle="italic" fontSize="11" fill="#111111" opacity="0.5">
         Running head — chapter title
       </text>
 
@@ -166,38 +166,38 @@ function PageAnatomyDiagram() {
       ))}
 
       {/* Folio */}
-      <text x="300" y="720" textAnchor="middle" fontFamily="monospace" fontSize="9" fill="#111111" opacity="0.45">
+      <text x="300" y="720" textAnchor="middle" fontFamily="'IBM Plex Mono', monospace" fontSize="9" fill="#111111" opacity="0.5">
         7
       </text>
 
       {/* Callouts */}
       {/* Bleed callout */}
       <line x1="20" y1="20" x2="-30" y2="-20" stroke="#FF3333" strokeWidth="1" />
-      <text x="-130" y="-25" fontFamily="monospace" fontSize="9" fill="#FF3333">{'BLEED 0.125"'}</text>
+      <text x="-130" y="-25" fontFamily="'IBM Plex Mono', monospace" letterSpacing="0.1em" fontSize="9" fill="#FF3333">{'BLEED 0.125"'}</text>
 
       {/* Trim callout */}
       <line x1="60" y1="60" x2="-20" y2="40" stroke="#111111" strokeWidth="1" />
-      <text x="-120" y="35" fontFamily="monospace" fontSize="9" fill="#111111">TRIM 5 × 8</text>
+      <text x="-120" y="35" fontFamily="'IBM Plex Mono', monospace" letterSpacing="0.1em" fontSize="9" fill="#111111">TRIM 5 × 8</text>
 
       {/* Gutter callout */}
       <line x1="120" y1="400" x2="-10" y2="400" stroke="#111111" strokeWidth="1" />
-      <text x="-120" y="403" fontFamily="monospace" fontSize="9" fill="#111111">{'GUTTER 0.875"'}</text>
+      <text x="-120" y="403" fontFamily="'IBM Plex Mono', monospace" letterSpacing="0.1em" fontSize="9" fill="#111111">{'GUTTER 0.875"'}</text>
 
       {/* Baseline callout */}
       <line x1="480" y1="290" x2="620" y2="290" stroke="#111111" strokeWidth="1" />
-      <text x="625" y="293" fontFamily="monospace" fontSize="9" fill="#111111">BASELINE 12pt</text>
+      <text x="625" y="293" fontFamily="'IBM Plex Mono', monospace" letterSpacing="0.1em" fontSize="9" fill="#111111">BASELINE 12pt</text>
 
       {/* Running head callout */}
       <line x1="480" y1="100" x2="620" y2="100" stroke="#111111" strokeWidth="1" />
-      <text x="625" y="103" fontFamily="monospace" fontSize="9" fill="#111111">RUNNING HEAD</text>
+      <text x="625" y="103" fontFamily="'IBM Plex Mono', monospace" letterSpacing="0.1em" fontSize="9" fill="#111111">RUNNING HEAD</text>
 
       {/* Folio callout */}
       <line x1="320" y1="720" x2="620" y2="720" stroke="#111111" strokeWidth="1" />
-      <text x="625" y="723" fontFamily="monospace" fontSize="9" fill="#111111">FOLIO</text>
+      <text x="625" y="723" fontFamily="'IBM Plex Mono', monospace" letterSpacing="0.1em" fontSize="9" fill="#111111">FOLIO</text>
 
       {/* Live area callout */}
       <line x1="120" y1="120" x2="-10" y2="120" stroke="#111111" strokeWidth="1" />
-      <text x="-130" y="123" fontFamily="monospace" fontSize="9" fill="#111111">LIVE AREA</text>
+      <text x="-130" y="123" fontFamily="'IBM Plex Mono', monospace" letterSpacing="0.1em" fontSize="9" fill="#111111">LIVE AREA</text>
     </svg>
   )
 }

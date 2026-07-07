@@ -42,17 +42,13 @@ export function ManifestoFolio() {
   return (
     <aside
       aria-hidden="true"
-      className="pointer-events-none fixed left-6 top-1/2 z-30 hidden -translate-y-1/2 select-none lg:block"
+      className="pointer-events-none fixed left-6 top-1/2 z-30 hidden -translate-y-1/2 select-none min-[1440px]:block"
     >
       <div className="flex flex-col gap-2">
-        <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-[#111111]/55">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#111111]/55">
           Vol. I · Issue 01
         </p>
-        <div
-          role="status"
-          aria-live="polite"
-          className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111] transition-opacity duration-200"
-        >
+        <div className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#111111] transition-opacity duration-200">
           {activeChapter.label}
         </div>
       </div>
