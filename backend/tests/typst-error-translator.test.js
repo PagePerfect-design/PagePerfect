@@ -157,6 +157,36 @@ describe('translateStderr', () => {
       // Critically: NOT the opaque "simplify your manuscript" fallback
       expect(result.errors[0].fix).not.toMatch(/simplify/i);
     });
+
+    test('classifies "expected ratio, found float" as engine_internal, not a manuscript issue', () => {
+      // The free-tier watermark once emitted transparentize(0.93) — a bare
+      // float where Typst wanted a ratio ("expected ratio, found float"),
+      // which broke every free-tier download (PR #226). The old classifier
+      // matched the bare word "expected", called it 'syntax', and told users
+      // to "check your manuscript for special characters" — misdirection: this
+      // is a template/engine type bug the user cannot fix in their Markdown.
+      const result = translateStderr('error: watermark.typ:5:30: expected ratio, found float');
+      expect(result.errors[0].category).toBe('engine_internal');
+      expect(result.errors[0].isServerError).toBe(true);
+      // Not the old syntax misdirection; steer to a different template instead.
+      expect(result.errors[0].fix).not.toMatch(/special characters/i);
+      expect(result.errors[0].fix).toMatch(/different template/i);
+    });
+
+    test('classifies generic Typst type mismatches (expected X, found Y) as engine_internal', () => {
+      // The "expected <type>, found <type>" shape is a Typst runtime type
+      // error — always template/engine territory, never user input.
+      expect(translateStderr('error: t.typ:1:1: expected integer, found string').errors[0].category).toBe('engine_internal');
+      expect(translateStderr('error: t.typ:1:1: expected sequence, found content').errors[0].category).toBe('engine_internal');
+    });
+
+    test('does NOT misclassify parse-syntax expectations as engine_internal', () => {
+      // "expected closing bracket" is a genuine syntax expectation with no
+      // ", found <type>" — it must stay 'syntax', not get swept into the
+      // type-mismatch bucket.
+      const result = translateStderr('error: t.typ:1:1: expected closing bracket');
+      expect(result.errors[0].category).toBe('syntax');
+    });
   });
 });
 
