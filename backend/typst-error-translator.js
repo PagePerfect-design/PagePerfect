@@ -18,16 +18,23 @@ const SERVER_ERROR_CATEGORIES = new Set(['server', 'engine', 'engine_internal'])
  * Patterns that indicate a Typst runtime/template error caused by an
  * engine-internal mismatch between Pandoc's emitted Typst and the
  * template's expectations (e.g. `text does not have field "children"`,
- * `cannot access field X on type Y`, `expected sequence, found content`).
+ * `cannot access field X on type Y`, `expected ratio, found float`).
  * These typically don't carry file:line:column and reach users as black
  * boxes. Surfacing a distinct category lets the response steer the
  * user to a different template instead of "simplify your manuscript".
+ *
+ * `expected <type>, found <type>` is Typst's runtime type-mismatch shape —
+ * always template/engine territory, never user Markdown. (The free-tier
+ * watermark once emitted `transparentize(0.93)`, a float where Typst wanted
+ * a ratio, and the old `expected`→syntax rule wrongly blamed the manuscript.)
+ * The `, found ` guard keeps genuine parse expectations ("expected closing
+ * bracket") in the syntax bucket.
  */
 const ENGINE_INTERNAL_PATTERNS = [
   /does not have field/i,
   /cannot access field/i,
   /is not callable/i,
-  /expected sequence,/i,
+  /expected .+?, found /i,
   /type mismatch/i,
   /panicked/i,
 ];
